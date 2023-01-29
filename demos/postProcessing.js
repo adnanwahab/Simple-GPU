@@ -43,7 +43,7 @@ fn main(
         samp,
         (vec2<f32>(loadIndex) + vec2<f32>(0.25, 0.25)) / vec2<f32>(dims),
         0.0
-      ).brg;
+      ).rgb;
     }
   }
   workgroupBarrier();
@@ -106,7 +106,7 @@ fn vert_main(@builtin(vertex_index) VertexIndex : u32) -> VertexOutput {
 
 @fragment
 fn frag_main(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
-  return textureSample(myTexture, mySampler, fragUV);
+  return  textureSample(myTexture, mySampler, fragUV);
 }
 `
 async function postProcessing() {
@@ -118,7 +118,7 @@ async function postProcessing() {
   let cubeTexture = await webgpu.texture(img)
   const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
   const textures = [
-    (await webgpu.texture([srcWidth, srcHeight])).texture,
+    cubeTexture.texture,
     (await webgpu.texture([srcWidth, srcHeight])).texture,
   ]
 
@@ -129,7 +129,7 @@ async function postProcessing() {
               vertEntryPoint: "vert_main"
     },
     bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, cubeTexture.texture.createView()]]
+      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, textures[0].createView()]]
     }
   })
 
@@ -160,7 +160,7 @@ async function postProcessing() {
 
   let blockDim;
   const updateSettings = () => {
-    blockDim = tileDim - (settings.filterSize - 1);
+  blockDim = tileDim - (settings.filterSize - 1);
     device.queue.writeBuffer(
       blurParamsBuffer,
       0,
@@ -171,7 +171,7 @@ async function postProcessing() {
    updateSettings();
 
   function frame() {
-    compute()
+    //compute()
     draw()
   
     requestAnimationFrame(frame);

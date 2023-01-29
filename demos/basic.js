@@ -8,8 +8,7 @@ async function basic () {
 let webgpu = await simplegpu()
 
  webgpu.initDrawCall({
-    // Shaders in simplewebgpu. are just strings.  You can use glslify or whatever you want
-    // to define them.  No need to manually create shader objects.
+    // Shaders in simplewebgpu. are just strings. 
     frag: `
     @fragment
   fn main(
@@ -86,21 +85,3 @@ let webgpu = await simplegpu()
 }
 
 export default basic
-
-// simpleWebgpu.frame(({time}) => {
-//   // clear contents of the drawing buffer
-//   simpleWebgpu.clear({
-//     color: [0, 0, 0, 0],
-//     depth: 1
-//   })
-
-//   // draw a triangle using the command defined above
-//   drawTriangle({
-//     color: [
-//       Math.cos(time * 0.001),
-//       Math.sin(time * 0.0008),
-//       Math.cos(time * 0.003),
-//       1
-//     ]
-//   })
-// })
