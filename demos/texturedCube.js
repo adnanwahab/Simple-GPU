@@ -122,8 +122,8 @@ frag: `
   attributes: {
     position: new webgpu.attribute(
       cubeVertexArray, 0, 4),
-    color: new webgpu.attribute(
-        cubeVertexArray, 0, 4)
+    uv: new webgpu.attribute(
+        cubeVertexArray, 4 * 8, 4)
   },
   uniforms: {
     modelViewProjectionMatrix: getTransformationMatrix,
