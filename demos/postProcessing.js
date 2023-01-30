@@ -43,7 +43,7 @@ fn main(
         samp,
         (vec2<f32>(loadIndex) + vec2<f32>(0.25, 0.25)) / vec2<f32>(dims),
         0.0
-      ).rgb;
+      ).bgr;
     }
   }
   workgroupBarrier();
@@ -106,19 +106,19 @@ fn vert_main(@builtin(vertex_index) VertexIndex : u32) -> VertexOutput {
 
 @fragment
 fn frag_main(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
-  return  textureSample(myTexture, mySampler, fragUV);
+  return vec4<f32>(.5) + textureSample(myTexture, mySampler, fragUV);
 }
 `
 async function postProcessing() {
   let webgpu = await webgpuInit()
-  let context = webgpu.context, device = webgpu.device;
+  let device = webgpu.device;
 
   let img = new Image();
   img.src = '../data/webgpu.png'
   let cubeTexture = await webgpu.texture(img)
   const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
   const textures = [
-    cubeTexture.texture,
+    (await webgpu.texture([srcWidth, srcHeight])).texture,
     (await webgpu.texture([srcWidth, srcHeight])).texture,
   ]
 
@@ -145,10 +145,10 @@ async function postProcessing() {
 
       const buffer0 = utils.makeBuffer(device)
       const buffer1 = utils.makeBuffer(device)
-      const computeConstants = device.createBindGroup(utils.makeBindGroupDescriptor(blurPipeline.getBindGroupLayout(0), [cubeTexture.sampler, blurParamsBuffer]))
-      const computeBindGroup0 = device.createBindGroup(utils.makeBindGroupDescriptor(blurPipeline.getBindGroupLayout(1), [cubeTexture.texture.createView(), textures[0].createView(), buffer0], 1))
-      const computeBindGroup1 = device.createBindGroup(utils.makeBindGroupDescriptor(blurPipeline.getBindGroupLayout(1), [textures[0].createView(),  textures[1].createView(), buffer1,], 1))
-      const computeBindGroup2 = device.createBindGroup(utils.makeBindGroupDescriptor(blurPipeline.getBindGroupLayout(1), [textures[1].createView(),  textures[0].createView(), buffer0,], 1))
+      const computeConstants = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(0), [cubeTexture.sampler, blurParamsBuffer])
+      const computeBindGroup0 = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(1), [cubeTexture.texture.createView(), textures[0].createView(), buffer0], 1)
+      const computeBindGroup1 = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(1), [textures[0].createView(),  textures[1].createView(), buffer1,], 1)
+      const computeBindGroup2 = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(1), [textures[1].createView(),  textures[0].createView(), buffer0,], 1)
       return [computeConstants, computeBindGroup0, computeBindGroup1, computeBindGroup2]
     },
   })
@@ -171,7 +171,7 @@ async function postProcessing() {
    updateSettings();
 
   function frame() {
-    //compute()
+    compute()
     draw()
   
     requestAnimationFrame(frame);
@@ -180,4 +180,3 @@ async function postProcessing() {
 
   }
   export default postProcessing;
-//450 -> 150 3x

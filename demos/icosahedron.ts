@@ -3,8 +3,6 @@ import utils from '../lib/utils'
 import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 import simpleWebgpuInit from '../lib/main';
 
-
-
 async function main () {
   const adapter = await navigator.gpu.requestAdapter();
   const device = await adapter.requestDevice()

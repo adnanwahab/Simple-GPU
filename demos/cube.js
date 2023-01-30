@@ -3,12 +3,6 @@ import simpleWebgpuInit from '../lib/main';
 import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 //import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
 
-const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
-const cubePositionOffset = 0;
-const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
-const cubeUVOffset = 4 * 8;
-const cubeVertexCount = 36;
-
 // prettier-ignore
 const cubeVertexArray = ([
   //float4 position, float4 color, float2 uv,
