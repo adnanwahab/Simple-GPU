@@ -102,7 +102,7 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
       depthCompare: 'less',
       format: 'depth24plus'
     }
-  } as const)
+  })
 
   const depthTexture = device.createTexture({
     size: [canvas.width, canvas.height],
@@ -132,7 +132,7 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
   const view = matrixBuffer.subarray(16, 32)
   const projection = matrixBuffer.subarray(32, 48)
 
-  function frame (tick:number) {
+  function frame (tick) {
     mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0)
     mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0])
     mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
@@ -154,7 +154,7 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
         depthLoadOp: 'clear',
         depthStoreOp: 'store'
       }
-    } as const,)
+    })
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, uniformBindGroup)
     passEncoder.setVertexBuffer(0, icoVerts)

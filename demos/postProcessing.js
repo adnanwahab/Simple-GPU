@@ -43,7 +43,7 @@ fn main(
         samp,
         (vec2<f32>(loadIndex) + vec2<f32>(0.25, 0.25)) / vec2<f32>(dims),
         0.0
-      ).bgr;
+      ).rgb;
     }
   }
   workgroupBarrier();
