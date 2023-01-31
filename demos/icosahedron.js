@@ -12,12 +12,6 @@ async function main () {
 
   const canvas = webgpu.canvas
 
-  const icoVerts = device.createBuffer({
-    size: 3 * 12 * 4,
-    usage: GPUBufferUsage.VERTEX,
-    mappedAtCreation: true
-  })
-
   function makeBuffer(device, size=4, usage, data, type) {
     const buffer = device.createBuffer({
       size,
@@ -29,40 +23,54 @@ async function main () {
     return buffer;
   }
 
-  // makeBuffer(device, 3 * 12 * 4, 'VERTEX', )
+  const VERTS = [
+    -1,
+    -1.6180340051651,
+    0,
+    1,
+    -1.6180340051651,
+    0,
+    -1,
+    1.6180340051651,
+    0,
+    1,
+    1.6180340051651,
+    0,
+    0,
+    -1,
+    -1.6180340051651,
+    0,
+    1,
+    -1.6180340051651,
+    0,
+    -1,
+    1.6180340051651,
+    0,
+    1,
+    1.6180340051651,
+    -1.6180340051651,
+    0,
+    -1,
+    -1.6180340051651,
+    0,
+    1,
+    1.6180340051651,
+    0,
+    -1,
+    1.6180340051651,
+    0,
+    1
+]
+const icoVerts = makeBuffer(device, 3 * 12 * 4, 'VERTEX', VERTS, Float32Array)
 
-  // makeBuffer(device, 3 * 20 * 2, 'INDEX', [
-  //   5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
-  //   9, 6, 7,  9, 2,  8, 10, 1, 4, 10,  4, 5,
-  //   11, 3, 7, 11, 1, 10,  4, 1, 0,  7,  3, 2,
-  //   8, 4, 0,  8, 5,  4,  9, 7, 2,  9,  8, 0,
-  //   10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
-  // ], Uint16Array);
-  
-  const VERTS = new Float32Array(icoVerts.getMappedRange())
-  for (let i = 0, v = 0; i < 3; ++i)
-  for (let b = -1; b <=1; b += 2)
-  for (let a = -1; a <= 1; a += 2) {
-      VERTS[v + i] = a
-      VERTS[v + ((i + 1) % 3)] = b * 0.5 * (1 + Math.sqrt(5))
-      v += 3
-  }
-  icoVerts.unmap()
-
-  const icoFaces = device.createBuffer({
-    size: 3 * 20 * 2,
-    usage: GPUBufferUsage.INDEX,
-    mappedAtCreation: true
-  })
-  new Uint16Array(icoFaces.getMappedRange()).set([
-    5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
-    9, 6, 7,  9, 2,  8, 10, 1, 4, 10,  4, 5,
-    11, 3, 7, 11, 1, 10,  4, 1, 0,  7,  3, 2,
-    8, 4, 0,  8, 5,  4,  9, 7, 2,  9,  8, 0,
-    10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
-  ])
-  icoFaces.unmap()
-  
+const icoFaceData = [
+  5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
+  9, 6, 7,  9, 2,  8, 10, 1, 4, 10,  4, 5,
+  11, 3, 7, 11, 1, 10,  4, 1, 0,  7,  3, 2,
+  8, 4, 0,  8, 5,  4,  9, 7, 2,  9,  8, 0,
+  10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
+]
+  const icoFaces = makeBuffer(device, 3 * 20 * 2, 'INDEX', icoFaceData, Uint16Array)
 
   const shaderModule = device.createShaderModule({
     code: `
