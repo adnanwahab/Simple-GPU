@@ -4,23 +4,41 @@ import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 import simpleWebgpuInit from '../lib/main';
 
 async function main () {
-  const adapter = await navigator.gpu.requestAdapter();
-  const device = await adapter.requestDevice()
+  const webgpu = await simpleWebgpuInit();
+  const device = webgpu.device
+  const context = webgpu.context
+
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
 
-  const canvas = utils.createCanvas()
-  const context = canvas.getContext('webgpu')
-  context.configure({
-    device,
-    format: presentationFormat,
-    alphaMode: 'opaque',
-  })
+  const canvas = webgpu.canvas
 
   const icoVerts = device.createBuffer({
     size: 3 * 12 * 4,
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true
   })
+
+  function makeBuffer(device, size=4, usage, data, type) {
+    const buffer = device.createBuffer({
+      size,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage[usage],
+    });
+    new type(buffer.getMappedRange()).set(data)
+    buffer.unmap();
+    return buffer;
+  }
+
+  // makeBuffer(device, 3 * 12 * 4, 'VERTEX', )
+
+  // makeBuffer(device, 3 * 20 * 2, 'INDEX', [
+  //   5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
+  //   9, 6, 7,  9, 2,  8, 10, 1, 4, 10,  4, 5,
+  //   11, 3, 7, 11, 1, 10,  4, 1, 0,  7,  3, 2,
+  //   8, 4, 0,  8, 5,  4,  9, 7, 2,  9,  8, 0,
+  //   10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
+  // ], Uint16Array);
+  
   const VERTS = new Float32Array(icoVerts.getMappedRange())
   for (let i = 0, v = 0; i < 3; ++i)
   for (let b = -1; b <=1; b += 2)

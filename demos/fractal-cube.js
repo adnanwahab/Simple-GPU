@@ -71,25 +71,25 @@ function getTransformationMatrix() {
   return modelViewProjectionMatrix
 }
 async function basic () {
-
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 let webgpu = await simpleWebgpuInit()
 
 const context = webgpu.context;
 
 let img = new Image();
-img.src = './data/webgpu.png'
+img.src = './data/late.png'
 document.body.appendChild(img)
 
 await img.decode();
-const cubeTexture = await webgpu.texture(img)
-//1/4, shader abstraction might get it to 1/10 or 1/5
-//goal: 10x easier than native w/ shader abstraction
-//15% way to full framework - last 2 months well spent 
+const cubeTexture = await webgpu.texture({
+    width: 500,
+    height: 500,
+    format: navigator.gpu.getPreferredCanvasFormat()
+})
 const drawCube = await webgpu.initDrawCall({
 frag: `
   @group(0) @binding(1) var mySampler: sampler;
-  @group(0) @binding(2) var myTexture: texture_2d<f32>;
+@group(0) @binding(2) var myTexture: texture_2d<f32>;
 @fragment
   fn main(
     @location(0) fragUV: vec2<f32>,
@@ -143,7 +143,7 @@ frag: `
 setInterval(
   function () {
     drawCube({
-      texture: webgpu.texture(img)
+      texture: cubeTexture
     })
   }, 50
 )
