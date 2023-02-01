@@ -70,9 +70,12 @@ const icoFaceData = [
   8, 4, 0,  8, 5,  4,  9, 7, 2,  9,  8, 0,
   10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
 ]
+
   const icoFaces = makeBuffer(device, 3 * 20 * 2, 'INDEX', icoFaceData, Uint16Array)
 
-  const shaderModule = device.createShaderModule({
+
+
+  const shader= {
     code: `
 struct Camera {
   model: mat4x4<f32>,
@@ -98,8 +101,27 @@ fn vertMain(
 fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
     return vec4(fragColor, 1.0);
 }`
+  }
+
+  const shaderModule = device.createShaderModule(shader)
+
+  const draw = await webgpu.initDrawCall({
+    label: 'postprocess-draw',
+    shader: { code: shader.code,
+              fragEntryPoint: "fragMain",
+              vertEntryPoint: "vertMain"
+    },
+    attributes: {
+      position: new webgpu.attribute(VERTS, 0, 3),
+    },
+
+    uniforms: {
+      projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
+      lookAt: () => mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
+      fromRotation: () => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
+    }
   })
-  
+    
   const pipeline = device.createRenderPipeline({
     layout: 'auto',
     vertex: {
