@@ -4,7 +4,8 @@
   "description": "simple-gpu is a fast functional WebGPU framework.",
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && rollup -c "
+    "build": "rm -rf dist && rollup -c ",
+    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
   },
   "files": [
     "dist/**/*.js",
@@ -19,14 +20,14 @@
   },
   "devDependencies": {
     "d3": "^7.1.1",
-    "regl": "^2.1.0",
     "typescript": "^4.4.4",
     "vite": "^2.6.13",
     "gl-matrix": "^3.4.3",
     "mocha": "9",
     "rollup": "3",
     "@rollup/plugin-json": "6",
-    "@rollup/plugin-node-resolve": "15"
+    "@rollup/plugin-node-resolve": "15",
+    
   },
   "dependencies": {},
   "keywords": [

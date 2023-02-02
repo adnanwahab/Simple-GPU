@@ -24,44 +24,44 @@ async function main () {
   }
 
   const VERTS = [
-    -1,
+    [-1,
     -1.6180340051651,
-    0,
+    0,],
+    [1,
+    -1.6180340051651,
+    0,],
+    [-1,
+    1.6180340051651,
+    0,],
+    [1,
+    1.6180340051651,
+    0,],
+    [0,
+    -1,
+    -1.6180340051651,],
+    [0,
     1,
-    -1.6180340051651,
-    0,
+    -1.6180340051651,],
+    [0,
     -1,
-    1.6180340051651,
-    0,
+    1.6180340051651,],
+    [0,
     1,
-    1.6180340051651,
+    1.6180340051651,],
+    [-1.6180340051651,
     0,
+    -1,],
+    [-1.6180340051651,
     0,
-    -1,
-    -1.6180340051651,
+    1,],
+    [1.6180340051651,
     0,
-    1,
-    -1.6180340051651,
+    -1,],
+    [1.6180340051651,
     0,
-    -1,
-    1.6180340051651,
-    0,
-    1,
-    1.6180340051651,
-    -1.6180340051651,
-    0,
-    -1,
-    -1.6180340051651,
-    0,
-    1,
-    1.6180340051651,
-    0,
-    -1,
-    1.6180340051651,
-    0,
-    1
+    1],
 ]
-const icoVerts = makeBuffer(device, 3 * 12 * 4, 'VERTEX', VERTS, Float32Array)
+const icoVerts = makeBuffer(device, 3 * 12 * 4, 'VERTEX', VERTS.flat(), Float32Array)
 
 const icoFaceData = [
   5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
@@ -73,6 +73,10 @@ const icoFaceData = [
 
   const icoFaces = makeBuffer(device, 3 * 20 * 2, 'INDEX', icoFaceData, Uint16Array)
 
+  const matrixBuffer = new Float32Array(3 * 16)
+  const model = matrixBuffer.subarray(0, 16)
+  const view = matrixBuffer.subarray(16, 32)
+  const projection = matrixBuffer.subarray(32, 48)
 
 
   const shader= {
@@ -111,14 +115,14 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
               fragEntryPoint: "fragMain",
               vertEntryPoint: "vertMain"
     },
-    attributes: {
-      position: new webgpu.attribute(VERTS, 0, 3),
-    },
+    // attributes: {
+    //   position: new webgpu.attribute(VERTS.flat(), 0, 3),
+    // },
 
     uniforms: {
       projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
       lookAt: () => mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
-      fromRotation: () => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
+      fromRotation: ({tick}) => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
     }
   })
     
@@ -174,11 +178,6 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
       }
     ]
   })
-
-  const matrixBuffer = new Float32Array(3 * 16)
-  const model = matrixBuffer.subarray(0, 16)
-  const view = matrixBuffer.subarray(16, 32)
-  const projection = matrixBuffer.subarray(32, 48)
 
   function frame (tick) {
     mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0)
