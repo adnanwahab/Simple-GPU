@@ -1,34 +1,14 @@
 import utils from '../lib/utils'
-
-import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
+//https://github.com/mikolalysenko/webgpu-experiments/blob/master/src/demos/icosahedron.ts
+import { mat4 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 import simpleWebgpuInit from '../lib/main';
 
 async function main () {
   const webgpu = await simpleWebgpuInit();
-  const device = webgpu.device
-  const context = webgpu.context
-
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
-
   const canvas = webgpu.canvas
 
-  function makeBuffer(device, size=4, usage, data, type) {
-    const buffer = device.createBuffer({
-      size,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage[usage],
-    });
-    new type(buffer.getMappedRange()).set(data)
-    buffer.unmap();
-    return buffer;
-  }
-
-  const VERTS = [
-    [-1,
-    -1.6180340051651,
-    0,],
-    [1,
-    -1.6180340051651,
+  const VERTS = [[-1, -1.6180340051651,0,],
+    [1, -1.6180340051651,
     0,],
     [-1,
     1.6180340051651,
@@ -61,8 +41,6 @@ async function main () {
     0,
     1],
 ]
-const icoVerts = makeBuffer(device, 3 * 12 * 4, 'VERTEX', VERTS.flat(), Float32Array)
-
 const icoFaceData = [
   5, 2, 3,  6, 0,  1,  8, 2, 5,  9,  0, 6,
   9, 6, 7,  9, 2,  8, 10, 1, 4, 10,  4, 5,
@@ -71,13 +49,10 @@ const icoFaceData = [
   10, 5, 3, 11, 6,  1, 11, 7, 6, 11, 10, 3
 ]
 
-  const icoFaces = makeBuffer(device, 3 * 20 * 2, 'INDEX', icoFaceData, Uint16Array)
-
   const matrixBuffer = new Float32Array(3 * 16)
   const model = matrixBuffer.subarray(0, 16)
   const view = matrixBuffer.subarray(16, 32)
   const projection = matrixBuffer.subarray(32, 48)
-
 
   const shader = {
     code: `
@@ -107,8 +82,6 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
 }`
   }
 
-  const shaderModule = device.createShaderModule(shader)
-
   const draw = await webgpu.initDrawCall({
     label: 'postprocess-draw',
     shader: { code: shader.code,
@@ -119,96 +92,19 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
       position: new webgpu.attribute(VERTS, 0, 3),
     },
 
+    indices: icoFaceData,
     uniforms: {
       projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
       lookAt: () => mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
-      fromRotation: ({tick}) => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
+      fromRotation: ({tick}) => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2]),
+      matrixBuffer: () => matrixBuffer
     }
   })
     
-  const pipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: shaderModule,
-      entryPoint: 'vertMain',
-      buffers: [{
-        arrayStride: 3 * 4,
-        attributes: [{
-          shaderLocation: 0,
-          offset: 0,
-          format: 'float32x3',
-        }]
-      }]
-    },
-    fragment: {
-      module: shaderModule,
-      entryPoint: 'fragMain',
-      targets: [{ format: presentationFormat }],
-    },
-    primitive: {
-      topology: 'triangle-list',
-      cullMode: 'back'
-    },
-    depthStencil: {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
-      format: 'depth24plus'
-    }
-  })
-
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT
-  })
-
-  const uniformBuffer = device.createBuffer({
-    size: 3 * 4 * 16,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-  })
-
-  const uniformBindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: uniformBuffer
-        }
-      }
-    ]
-  })
 
   function frame (tick) {
-    mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0)
-    mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0])
-    mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2])
-    device.queue.writeBuffer(uniformBuffer, 0, matrixBuffer.buffer, 0, 3 * 16 * 4)
+    draw()
 
-    const commandEncoder = device.createCommandEncoder()
-    const passEncoder = commandEncoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: context.getCurrentTexture().createView(),
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-          loadOp: 'clear',
-          storeOp: 'store',
-        }
-      ],
-      depthStencilAttachment: {
-        view: depthTexture.createView(),
-        depthClearValue: 1,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store'
-      }
-    })
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, uniformBindGroup)
-    passEncoder.setVertexBuffer(0, icoVerts)
-    passEncoder.setIndexBuffer(icoFaces, 'uint16')
-    passEncoder.drawIndexed(60)
-    passEncoder.end()
-    device.queue.submit([commandEncoder.finish()])
     requestAnimationFrame(frame)
   }
   requestAnimationFrame(frame)
