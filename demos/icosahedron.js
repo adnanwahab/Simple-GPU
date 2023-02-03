@@ -79,7 +79,7 @@ const icoFaceData = [
   const projection = matrixBuffer.subarray(32, 48)
 
 
-  const shader= {
+  const shader = {
     code: `
 struct Camera {
   model: mat4x4<f32>,
@@ -115,9 +115,9 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
               fragEntryPoint: "fragMain",
               vertEntryPoint: "vertMain"
     },
-    // attributes: {
-    //   position: new webgpu.attribute(VERTS.flat(), 0, 3),
-    // },
+    attributes: {
+      position: new webgpu.attribute(VERTS, 0, 3),
+    },
 
     uniforms: {
       projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),

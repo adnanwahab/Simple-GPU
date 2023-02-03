@@ -129,7 +129,7 @@ async function postProcessing() {
               vertEntryPoint: "vert_main"
     },
     bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, textures[0].createView()]]
+      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler,cubeTexture.texture]]
     }
   })
 
