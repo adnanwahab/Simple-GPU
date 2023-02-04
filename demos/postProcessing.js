@@ -106,7 +106,7 @@ fn vert_main(@builtin(vertex_index) VertexIndex : u32) -> VertexOutput {
 
 @fragment
 fn frag_main(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
-  return vec4<f32>(.5) + textureSample(myTexture, mySampler, fragUV);
+  return textureSample(myTexture, mySampler, fragUV);
 }
 `
 async function postProcessing() {
@@ -129,7 +129,7 @@ async function postProcessing() {
               vertEntryPoint: "vert_main"
     },
     bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, cubeTexture.texture.createView()]]
+      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, textures[1].createView()]]
     }
   })
 
@@ -143,8 +143,8 @@ async function postProcessing() {
       const device = state.device;
       const blurPipeline = computePipeline
 
-      const buffer0 = utils.makeBuffer(device)
-      const buffer1 = utils.makeBuffer(device)
+      const buffer0 = utils.createBuffer(device, 0)
+      const buffer1 = utils.createBuffer(device, 1)
       const computeConstants = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(0), [cubeTexture.sampler, blurParamsBuffer])
       const computeBindGroup0 = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(1), [cubeTexture.texture.createView(), textures[0].createView(), buffer0], 1)
       const computeBindGroup1 = utils.makeBindGroup(device, blurPipeline.getBindGroupLayout(1), [textures[0].createView(),  textures[1].createView(), buffer1,], 1)
@@ -168,7 +168,7 @@ async function postProcessing() {
     );
   };
 
-   updateSettings();
+  updateSettings();
 
   function frame() {
     //compute()
