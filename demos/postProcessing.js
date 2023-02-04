@@ -116,6 +116,7 @@ async function postProcessing() {
   let img = new Image();
   img.src = '../data/webgpu.png'
   let cubeTexture = await webgpu.texture(img)
+  console.log(cubeTexture.texture)
   const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
   const textures = [
     (await webgpu.texture([srcWidth, srcHeight])).texture,
@@ -129,7 +130,7 @@ async function postProcessing() {
               vertEntryPoint: "vert_main"
     },
     bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, textures[1].createView()]]
+    return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, cubeTexture.texture.createView()]]
     }
   })
 
