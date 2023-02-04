@@ -10,7 +10,7 @@ const context = canvas.getContext('webgpu');
 
 const presentationSize = [canvas.width, canvas.height]
 
-const presentationFormat = context.getPreferredFormat(adapter)
+const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
 
 context.configure({
     device: device,
@@ -38,6 +38,7 @@ fn main() -> @location(0) vec4<f32> {
 }`
 
 const pipeline = device.createRenderPipeline({
+    layout: 'auto',
     vertex: { module : device.createShaderModule({code: vertWGSL}),
      entryPoint: 'main'
     },

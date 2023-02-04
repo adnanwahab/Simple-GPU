@@ -280,61 +280,19 @@ to import simpleWebGpu from
   import webgpu from "../lib/main";
 ```
 
-process is
-make demo
-add scaffolding
-make demo
-take away scaffolding and grow engine upward
-build till handwriting, map and glass of water with duck 
-
-import Simple-sentiment-analysis from JScdn
-
-content = document.querySelector('gmail.body.messageContent').textContent
-
-//analyzed corpus
-output = simpleWebGpu.simpleSentimentAnalysis(content) 
-//returns array with markings and emotional valence 
-//[{text: 'hello how are you', style: 'orange', emotion:'question']
-output.map(d => {
-  return <span style="background-color:${orange}" />${d.text}</span>
-}) 
-
-
-//remove spans using regexp or textContent from all the gmail cells
-window.addEventListener('keydown', () => {
-})
-
-type in an observable-input then wrap it in a span depending on sentiment analysis
-
-//might want to use an actual js editor component instead of script injection into gmail do both to prototype in editor then do gmail. test technology in two github applications
-
 # TODO 
-- [] design shader abstraction for observableHQ
-- [] design more visualizations and put them in observablehq
-- [] fold-in Austin eng's demos and regl.party
-- [] original demos = glass of water, handwriting, sentiment analysis
+- [] glass of water
 - [] PBR demo
 - [] matrix multiply demo https://milhidaka.github.io/webgpu-blas/ https://gpu.rocks/#/
-- [] write docs on auto-create bindgroups - dont hide complexity but consistent mental model resources
-- [] always render to a renderTarget not canvas because more composable ???
-- [ ] figure out typescript with rollup for module
-+commands + passthrough bindgroups when necessary
-use observablehq for progressively adding interactivity using sliders
+- [] write docs on auto-create bindgroups
+- [] always render to a renderTarget not canvas because more composable 
+- [ ] mixins
+- [] https://github.com/mattatz/THREE.Watercolor
+- [] sentiment analysis
 
 # developing locally
 ```bash
 npm run dev
 ```
 
-# Why WebGPU and not WebGL?
-Most applications are CPU-bound so async draw calls are useful for unblocking IO
-3.5x better performance for matrix multiplications 
-RayTracing 
-Compute Shaders for GPGPU
-security  
-
-utopia: documenting the inevitability of success for 7 billion people in 4-7 years
-
-hand sketching itself as a collection of puzzle pieces that are drawn and redrawn live to larp-future-gapfinding-economy - warp in nexus/forge to create fusion
-
-visualize network turning rainbow from one creation + rainbow path
+https://www.youtube.com/watch?v=Jl06sOvMnvU

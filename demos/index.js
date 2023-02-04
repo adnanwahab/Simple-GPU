@@ -27,6 +27,8 @@ import icosahedron from "./icosahedron";
 import hexagon from "./h3-hexagon";
 
 import fractalCube from "./fractal-cube";
+import lines from "./lines";
+import points from "./points";
 
 
 let defaultDemo = 'physics';
@@ -48,11 +50,12 @@ let draw = await init(options);
 let demoTitles = [
   'basic' , 'hexagon', 'cube',
   'texturedCube', 'postProcessing', 'matrixMultiply',  
-  'icosahedron', 'fractalCube'
+  'icosahedron', 'fractalCube', 'points', 'lines'
 ]
 
 let demos = [
-basic, hexagon, cube, texturedCube, postProcessing,   matrixMultiply, icosahedron, fractalCube
+basic, hexagon, cube, texturedCube, postProcessing,   matrixMultiply, icosahedron, fractalCube,
+points, lines
 ]
 
   document.querySelectorAll('input').forEach(e => {
