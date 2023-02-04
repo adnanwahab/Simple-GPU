@@ -97,7 +97,6 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
       projection: () => mat4.perspective(c, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
       lookAt: () => mat4.lookAt(b, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
       fromRotation: ({tick}) => mat4.fromRotation(a, 0.001 * tick, [0.3, 0.5, -0.2]),
-      matrixBuffer: () => matrixBuffer
     }
   })
     
