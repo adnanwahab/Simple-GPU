@@ -50,9 +50,9 @@ const icoFaceData = [
 ]
 
   const matrixBuffer = new Float32Array(3 * 16)
-  const model = matrixBuffer.subarray(0, 16)
-  const view = matrixBuffer.subarray(16, 32)
-  const projection = matrixBuffer.subarray(32, 48)
+  const a = matrixBuffer.subarray(0, 16)
+  const b = matrixBuffer.subarray(16, 32)
+  const c = matrixBuffer.subarray(32, 48)
 
   const shader = {
     code: `
@@ -94,9 +94,9 @@ fn fragMain(@location(0) fragColor : vec3<f32>) -> @location(0) vec4<f32> {
 
     indices: icoFaceData,
     uniforms: {
-      projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
-      lookAt: () => mat4.lookAt(view, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
-      fromRotation: ({tick}) => mat4.fromRotation(model, 0.001 * tick, [0.3, 0.5, -0.2]),
+      projection: () => mat4.perspective(c, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
+      lookAt: () => mat4.lookAt(b, [0, 0, -5], [0, 0, 0], [0, 1, 0]),
+      fromRotation: ({tick}) => mat4.fromRotation(a, 0.001 * tick, [0.3, 0.5, -0.2]),
       matrixBuffer: () => matrixBuffer
     }
   })
