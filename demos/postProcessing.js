@@ -169,6 +169,13 @@ async function postProcessing() {
     await img.decode();  
 
     const cubeTexture = await webgpu.texture(img)
+    const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
+
+    const textures = [
+      (await webgpu.texture([srcWidth, srcHeight])).texture,
+      (await webgpu.texture([srcWidth, srcHeight])).texture,
+    ]
+  
 
     const draw = await webgpu.initDrawCall({
       label: 'postprocess-draw',
@@ -177,20 +184,14 @@ async function postProcessing() {
                 vertEntryPoint: "vert_main"
       },
       bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [cubeTexture.sampler, cubeTexture.texture.createView()]]
+      return [pipeline.getBindGroupLayout(0), [sampler, textures[1].createView()]]
       }
     })
 
   
-    const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
 
-    const textures = [
-      (await webgpu.texture([srcWidth, srcHeight])).texture,
-      (await webgpu.texture([srcWidth, srcHeight])).texture,
-    ]
-  
     const buffer0 = utils.createBuffer(device, 0)
-    const buffer1 =  utils.createBuffer(device, 1)
+    const buffer1 = utils.createBuffer(device, 1)
   
     const blurParamsBuffer = device.createBuffer({
       size: 8,
@@ -261,10 +262,7 @@ async function postProcessing() {
     })
   
     function frame() {
-      // compute()
-      // draw()
-
-
+       //compute()
       const commandEncoder = device.createCommandEncoder();
   
       const computePass = commandEncoder.beginComputePass();
@@ -299,22 +297,23 @@ async function postProcessing() {
   
       computePass.end();
   
-      const passEncoder = commandEncoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: context.getCurrentTexture().createView(),
-            clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-            loadOp: 'clear',
-            storeOp: 'store',
-          },
-        ],
-      });
+      // const passEncoder = commandEncoder.beginRenderPass({
+      //   colorAttachments: [
+      //     {
+      //       view: context.getCurrentTexture().createView(),
+      //       clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+      //       loadOp: 'clear',
+      //       storeOp: 'store',
+      //     },
+      //   ],
+      // });
   
-      passEncoder.setPipeline(fullscreenQuadPipeline);
-      passEncoder.setBindGroup(0, showResultBindGroup);
-      passEncoder.draw(6, 1, 0, 0);
-      passEncoder.end();
-      device.queue.submit([commandEncoder.finish()]);
+      draw({}, commandEncoder)
+      // passEncoder.setPipeline(fullscreenQuadPipeline);
+      // passEncoder.setBindGroup(0, showResultBindGroup);
+      // passEncoder.draw(6, 1, 0, 0);
+      // passEncoder.end();
+      // device.queue.submit([commandEncoder.finish()]);
 
       requestAnimationFrame(frame);
     }
