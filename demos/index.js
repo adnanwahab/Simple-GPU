@@ -30,6 +30,8 @@ import fractalCube from "./fractal-cube";
 import lines from "./lines";
 import points from "./points";
 
+import computeBoids from "./computeBoids";
+
 
 let defaultDemo = 'physics';
 let data = {}
@@ -51,11 +53,12 @@ let demoTitles = [
   'basic' , 'hexagon', 'cube',
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
+  'computeBoids'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
-points, lines
+points, lines, computeBoids
 ]
 
   document.querySelectorAll('input').forEach(e => {
