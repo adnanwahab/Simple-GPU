@@ -116,9 +116,6 @@ async function postProcessing() {
   let webgpu = await webgpuInit()
   let device = webgpu.device;
   let context = webgpu.context
-
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
   
     const blurPipeline = device.createComputePipeline({
       layout: 'auto',
@@ -129,32 +126,6 @@ async function postProcessing() {
         entryPoint: 'main',
       },
     });
-  
-    const fullscreenQuadPipeline = device.createRenderPipeline({
-      layout: 'auto',
-      vertex: {
-        module: device.createShaderModule({
-          code: fullscreenTexturedQuadWGSL,
-        }),
-        entryPoint: 'vert_main',
-      },
-      fragment: {
-        module: device.createShaderModule({
-          code: fullscreenTexturedQuadWGSL,
-        }),
-        entryPoint: 'frag_main',
-        targets: [
-          {
-            format: presentationFormat,
-          },
-        ],
-      },
-      primitive: {
-        topology: 'triangle-list',
-      },
-    });
- 
-
   
     const sampler = device.createSampler({
       magFilter: 'linear',
@@ -188,7 +159,6 @@ async function postProcessing() {
       }
     })
 
-  
 
     const buffer0 = utils.createBuffer(device, 0)
     const buffer1 = utils.createBuffer(device, 1)
@@ -222,13 +192,6 @@ async function postProcessing() {
       [textures[1].createView(),
       textures[0].createView(),
       buffer0], 1
-    )
-
-    const showResultBindGroup = utils.makeBindGroup(device, 
-      fullscreenQuadPipeline.getBindGroupLayout(0),
-      [sampler,
-      textures[1].createView(),
-      ]
     )
   
     const settings = {
@@ -297,23 +260,7 @@ async function postProcessing() {
   
       computePass.end();
   
-      // const passEncoder = commandEncoder.beginRenderPass({
-      //   colorAttachments: [
-      //     {
-      //       view: context.getCurrentTexture().createView(),
-      //       clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-      //       loadOp: 'clear',
-      //       storeOp: 'store',
-      //     },
-      //   ],
-      // });
-  
       draw({}, commandEncoder)
-      // passEncoder.setPipeline(fullscreenQuadPipeline);
-      // passEncoder.setBindGroup(0, showResultBindGroup);
-      // passEncoder.draw(6, 1, 0, 0);
-      // passEncoder.end();
-      // device.queue.submit([commandEncoder.finish()]);
 
       requestAnimationFrame(frame);
     }
