@@ -16,7 +16,7 @@ import texturedCube from "./texturedCube";
 import postProcessing from "./postProcessing";
 
 
-import matrixMultiply from "./matrix-multiply";
+import instancedCube from "./instanced-cube";
 
 //import lines from "./lines";
 
@@ -49,12 +49,12 @@ let draw = await init(options);
 
 let demoTitles = [
   'basic' , 'hexagon', 'cube',
-  'texturedCube', 'postProcessing', 'matrixMultiply',  
-  'icosahedron', 'fractalCube', 'points', 'lines'
+  'texturedCube', 'postProcessing', 'instancedCube',  
+  'icosahedron', 'fractalCube', 'points', 'lines',
 ]
 
 let demos = [
-basic, hexagon, cube, texturedCube, postProcessing,   matrixMultiply, icosahedron, fractalCube,
+basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines
 ]
 

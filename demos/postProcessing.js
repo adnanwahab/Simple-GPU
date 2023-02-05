@@ -109,26 +109,17 @@ fn frag_main(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
   return textureSample(myTexture, mySampler, fragUV);
 }
 `
-async function postProcessing() {
-  const tileDim = 128;
-  const batch = [4, 4];
-  
-    const adapter = await navigator.gpu.requestAdapter();
-    const device = await adapter.requestDevice();
 
-    const canvas = utils.createCanvas()
-    const context = canvas.getContext('webgpu');
-  
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = canvas.clientWidth * devicePixelRatio;
-    canvas.height = canvas.clientHeight * devicePixelRatio;
+const batch = [4, 4];
+
+async function postProcessing() {
+  let webgpu = await webgpuInit()
+  let device = webgpu.device;
+  let canvas = webgpu.canvas
+  let context = webgpu.context;
+
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  
-    context.configure({
-      device,
-      format: presentationFormat,
-      alphaMode: 'opaque',
-    });
+
   
     const blurPipeline = device.createComputePipeline({
       layout: 'auto',
@@ -174,59 +165,21 @@ async function postProcessing() {
       '../data/webgpu.png',
       import.meta.url
     ).toString();
-    await img.decode();
-    const imageBitmap = await createImageBitmap(img);
+    await img.decode();  
+
+    const cubeTexture = await webgpu.texture(img)
   
-    const [srcWidth, srcHeight] = [imageBitmap.width, imageBitmap.height];
-    const cubeTexture = device.createTexture({
-      size: [srcWidth, srcHeight, 1],
-      format: 'rgba8unorm',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-      { source: imageBitmap },
-      { texture: cubeTexture },
-      [imageBitmap.width, imageBitmap.height]
-    );
+    const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
+
+    const textures = [
+      (await webgpu.texture([srcWidth, srcHeight])).texture,
+      (await webgpu.texture([srcWidth, srcHeight])).texture,
+    ]
   
-    const textures = [0, 1].map(() => {
-      return device.createTexture({
-        size: {
-          width: srcWidth,
-          height: srcHeight,
-        },
-        format: 'rgba8unorm',
-        usage:
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.STORAGE_BINDING |
-          GPUTextureUsage.TEXTURE_BINDING,
-      });
-    });
+    const buffer0 = utils.createBuffer(device, 0)
+
   
-    const buffer0 = (() => {
-      const buffer = device.createBuffer({
-        size: 4,
-        mappedAtCreation: true,
-        usage: GPUBufferUsage.UNIFORM,
-      });
-      new Uint32Array(buffer.getMappedRange())[0] = 0;
-      buffer.unmap();
-      return buffer;
-    })();
-  
-    const buffer1 = (() => {
-      const buffer = device.createBuffer({
-        size: 4,
-        mappedAtCreation: true,
-        usage: GPUBufferUsage.UNIFORM,
-      });
-      new Uint32Array(buffer.getMappedRange())[0] = 1;
-      buffer.unmap();
-      return buffer;
-    })();
+    const buffer1 =  utils.createBuffer(device, 1)
   
     const blurParamsBuffer = device.createBuffer({
       size: 8,
@@ -249,85 +202,54 @@ async function postProcessing() {
       ],
     });
   
-    const computeBindGroup0 = device.createBindGroup({
-      layout: blurPipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 1,
-          resource: cubeTexture.createView(),
-        },
-        {
-          binding: 2,
-          resource: textures[0].createView(),
-        },
-        {
-          binding: 3,
-          resource: {
-            buffer: buffer0,
-          },
-        },
-      ],
-    });
+    const computeBindGroup0 = utils.makeBindGroup(device, [
+      blurPipeline.getBindGroupLayout(1),
+      [cubeTexture.texture.createView(),
+      textures[0].createView(),
+      buffer0], 1
+    ])
+
+    const computeBindGroup1 = utils.makeBindGroup(device, [
+      blurPipeline.getBindGroupLayout(1),
+      [textures[0].createView(),
+      textures[1].createView(),
+      buffer1], 1
+    ])
+
+    const computeBindGroup2 = utils.makeBindGroup(device, [
+      blurPipeline.getBindGroupLayout(1),
+      [textures[1].createView(),
+      textures[0].createView(),
+      buffer0], 1
+    ])
+
+    const showResultBindGroup = utils.makeBindGroup(device, [
+      fullscreenQuadPipeline.getBindGroupLayout(0),
+      [sampler,
+      textures[1].createView(),
+      ]
+    ])
   
-    const computeBindGroup1 = device.createBindGroup({
-      layout: blurPipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 1,
-          resource: textures[0].createView(),
-        },
-        {
-          binding: 2,
-          resource: textures[1].createView(),
-        },
-        {
-          binding: 3,
-          resource: {
-            buffer: buffer1,
-          },
-        },
-      ],
-    });
-  
-    const computeBindGroup2 = device.createBindGroup({
-      layout: blurPipeline.getBindGroupLayout(1),
-      entries: [
-        {
-          binding: 1,
-          resource: textures[1].createView(),
-        },
-        {
-          binding: 2,
-          resource: textures[0].createView(),
-        },
-        {
-          binding: 3,
-          resource: {
-            buffer: buffer0,
-          },
-        },
-      ],
-    });
-  
-    const showResultBindGroup = device.createBindGroup({
-      layout: fullscreenQuadPipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: sampler,
-        },
-        {
-          binding: 1,
-          resource: textures[1].createView(),
-        },
-      ],
-    });
+    // const showResultBindGroup = device.createBindGroup({
+    //   layout: fullscreenQuadPipeline.getBindGroupLayout(0),
+    //   entries: [
+    //     {
+    //       binding: 0,
+    //       resource: sampler,
+    //     },
+    //     {
+    //       binding: 1,
+    //       resource: textures[1].createView(),
+    //     },
+    //   ],
+    // });
   
     const settings = {
-      filterSize: 15,
-      iterations: 2,
+      filterSize: 35,
+      iterations: 10,
     };
   
+
     let blockDim;
     const updateSettings = () => {
       blockDim = tileDim - (settings.filterSize - 1);
@@ -342,7 +264,6 @@ async function postProcessing() {
     updateSettings();
   
     function frame() {
-  
       const commandEncoder = device.createCommandEncoder();
   
       const computePass = commandEncoder.beginComputePass();
@@ -393,7 +314,7 @@ async function postProcessing() {
       passEncoder.draw(6, 1, 0, 0);
       passEncoder.end();
       device.queue.submit([commandEncoder.finish()]);
-  
+
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
