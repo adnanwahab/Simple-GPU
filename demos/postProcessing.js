@@ -117,15 +117,15 @@ async function postProcessing() {
   let device = webgpu.device;
   let context = webgpu.context
   
-    const blurPipeline = device.createComputePipeline({
-      layout: 'auto',
-      compute: {
-        module: device.createShaderModule({
-          code: blurWGSL,
-        }),
-        entryPoint: 'main',
-      },
-    });
+    // const blurPipeline = device.createComputePipeline({
+    //   layout: 'auto',
+    //   compute: {
+    //     module: device.createShaderModule({
+    //       code: blurWGSL,
+    //     }),
+    //     entryPoint: 'main',
+    //   },
+    // });
   
     const sampler = device.createSampler({
       magFilter: 'linear',
@@ -162,37 +162,52 @@ async function postProcessing() {
 
     const buffer0 = utils.createBuffer(device, 0)
     const buffer1 = utils.createBuffer(device, 1)
+
+
   
     const blurParamsBuffer = device.createBuffer({
       size: 8,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
 
-    const computeConstants = utils.makeBindGroup(device, 
-      blurPipeline.getBindGroupLayout(0),
-      [sampler, blurParamsBuffer]
-    )
- 
-    const computeBindGroup0 = utils.makeBindGroup(device, 
-      blurPipeline.getBindGroupLayout(1),
-      [cubeTexture.texture.createView(),
-      textures[0].createView(),
-      buffer0], 1
-    )
 
-    const computeBindGroup1 = utils.makeBindGroup(device, 
-      blurPipeline.getBindGroupLayout(1),
-      [textures[0].createView(),
-      textures[1].createView(),
-      buffer1], 1
-    )
+    const compute = webgpu.initComputeCall({
+      code: blurWGSL,
+      uniforms: {
+        filterSize: 15
+      },
+      bindGroups: function (state, computePipeline) {
+        const computeConstants = utils.makeBindGroup(device, 
+          computePipeline.getBindGroupLayout(0),
+          [sampler, blurParamsBuffer]
+        )
+     
+        const computeBindGroup0 = utils.makeBindGroup(device, 
+          computePipeline.getBindGroupLayout(1),
+          [cubeTexture.texture.createView(),
+          textures[0].createView(),
+          buffer0], 1
+        )
+    
+        const computeBindGroup1 = utils.makeBindGroup(device, 
+          computePipeline.getBindGroupLayout(1),
+          [textures[0].createView(),
+          textures[1].createView(),
+          buffer1], 1
+        )
+    
+        const computeBindGroup2 = utils.makeBindGroup(device, 
+          computePipeline.getBindGroupLayout(1),
+          [textures[1].createView(),
+          textures[0].createView(),
+          buffer0], 1
+        )
+        return [computeConstants, computeBindGroup0, computeBindGroup1, computeBindGroup2]
+      },
+    })
 
-    const computeBindGroup2 = utils.makeBindGroup(device, 
-      blurPipeline.getBindGroupLayout(1),
-      [textures[1].createView(),
-      textures[0].createView(),
-      buffer0], 1
-    )
+
+
   
     const settings = {
       filterSize: 35,
@@ -212,55 +227,10 @@ async function postProcessing() {
  
   
     updateSettings();
-
-
-    const compute = webgpu.initComputeCall({
-      code: blurWGSL,
-      uniforms: {
-        filterSize: 15
-      },
-      bindGroups: function (state, computePipeline) {
-        return [computeConstants, computeBindGroup0, computeBindGroup1, computeBindGroup2]
-      },
-    })
-  
+    
     function frame() {
-      //compute()
-      const commandEncoder = device.createCommandEncoder();
-  
-      const computePass = commandEncoder.beginComputePass();
-      computePass.setPipeline(blurPipeline);
-      computePass.setBindGroup(0, computeConstants);
-  
-      computePass.setBindGroup(1, computeBindGroup0);
-      computePass.dispatchWorkgroups(
-        Math.ceil(srcWidth / blockDim),
-        Math.ceil(srcHeight / batch[1])
-      );
-  
-      computePass.setBindGroup(1, computeBindGroup1);
-      computePass.dispatchWorkgroups(
-        Math.ceil(srcHeight / blockDim),
-        Math.ceil(srcWidth / batch[1])
-      );
-  
-      for (let i = 0; i < settings.iterations - 1; ++i) {
-        computePass.setBindGroup(1, computeBindGroup2);
-        computePass.dispatchWorkgroups(
-          Math.ceil(srcWidth / blockDim),
-          Math.ceil(srcHeight / batch[1])
-        );
-  
-        computePass.setBindGroup(1, computeBindGroup1);
-        computePass.dispatchWorkgroups(
-          Math.ceil(srcHeight / blockDim),
-          Math.ceil(srcWidth / batch[1])
-        );
-      }
-  
-      computePass.end();
-  
-      draw({}, commandEncoder)
+      compute()  
+      draw()
 
       requestAnimationFrame(frame);
     }
