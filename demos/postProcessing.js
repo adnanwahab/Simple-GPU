@@ -225,7 +225,7 @@ async function postProcessing() {
     })
   
     function frame() {
-       //compute()
+      //compute()
       const commandEncoder = device.createCommandEncoder();
   
       const computePass = commandEncoder.beginComputePass();
