@@ -36,6 +36,9 @@ import shadowCasting from "./shadowCasting";
 
 import particles from "./particles";
 
+import deferredRendering from "./deferredRendering";
+
+
 
 let defaultDemo = 'physics';
 let data = {}
@@ -57,12 +60,15 @@ let demoTitles = [
   'basic' , 'hexagon', 'cube',
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
-  'computeBoids', 'shadowCasting', 'particles'
+  'computeBoids', 'shadowCasting', 'particles',
+  'deferredRendering'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
+
+deferredRendering
 ]
 
   document.querySelectorAll('input').forEach(e => {

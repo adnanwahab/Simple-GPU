@@ -2,9 +2,7 @@ import { mat4, vec3 } from 'gl-matrix';
 import initWebGPU from '../lib/main';
 import utils from '../lib/utils';
 
-
 const particleWGSL = `var<private> rand_seed : vec2<f32>;
-
 fn rand() -> f32 {
   rand_seed.x = fract(cos(dot(rand_seed, vec2<f32>(23.14077926, 232.61690225))) * 136.8168);
   rand_seed.y = fract(cos(dot(rand_seed, vec2<f32>(54.47856553, 345.84153136))) * 534.7645);
@@ -132,9 +130,6 @@ fn simulate(
   data.particles[idx] = particle;
 }
 `
-
-
-
 const probabilityMapWGSL = `
 struct UBO {
   width : u32,
@@ -190,8 +185,6 @@ fn export_level(@builtin(global_invocation_id) coord : vec3<u32>) {
     textureStore(tex_out, vec2<i32>(coord.xy), probabilities);
   }
 }
-
-
 `
 
 const numParticles = 100000;
@@ -210,8 +203,6 @@ const init = async () => {
   const canvas = webgpu.canvas;
 
   const device = webgpu.device;
-  const context = webgpu.context;
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
   const particlesBuffer = device.createBuffer({
     size: numParticles * particleInstanceByteSize,
@@ -266,46 +257,6 @@ const init = async () => {
     },
   }
 
- 
-
-  const renderPipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: device.createShaderModule({
-        code: particleWGSL,
-      }),
-      entryPoint: 'vs_main',
-      buffers,
-    },
-    fragment: {
-      module: device.createShaderModule({
-        code: particleWGSL,
-      }),
-      entryPoint: 'fs_main',
-      targets: [
-        {
-          format: presentationFormat,
-          blend: blend,
-        },
-      ],
-    },
-    primitive: {
-      topology: 'triangle-list',
-    },
-
-    depthStencil: {
-      depthWriteEnabled: false,
-      depthCompare: 'less',
-      format: 'depth24plus',
-    },
-  });
-
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  });
-
   const uniformBufferSize =
     4 * 4 * 4 + // modelViewProjectionMatrix : mat4x4<f32>
     3 * 4 + // right : vec3<f32>
@@ -317,36 +268,6 @@ const init = async () => {
     size: uniformBufferSize,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
-
-  const uniformBindGroup = device.createBindGroup({
-    layout: renderPipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: uniformBuffer,
-        },
-      },
-    ],
-  });
-
-  const renderPassDescriptor = {
-    colorAttachments: [
-      {
-        view: undefined, // Assigned later
-        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ],
-    depthStencilAttachment: {
-      view: depthTexture.createView(),
-
-      depthClearValue: 1.0,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store',
-    },
-  };
 
   //////////////////////////////////////////////////////////////////////////////
   // Quad vertex buffer
@@ -389,7 +310,6 @@ const init = async () => {
       numMipLevels++;
     }
     
-
     texture = device.createTexture({
       size: [imageBitmap.width, imageBitmap.height, 1],
       mipLevelCount: numMipLevels,
@@ -407,7 +327,6 @@ const init = async () => {
     );
   }
 
-
   //////////////////////////////////////////////////////////////////////////////
   // Probability map generation
   // The 0'th mip level of texture holds the color data and spawn-probability in
@@ -415,28 +334,6 @@ const init = async () => {
   // probabilities up to the top 1x1 mip level.
   //////////////////////////////////////////////////////////////////////////////
   {
-  
-
-    // const compute2 = webgpu.initComputeCall({
-    //     code: probabilityMapWGSL,
-    //     entryPoints: 'export_level'
-    // })
-
-    const probabilityMapImportLevelPipeline = device.createComputePipeline({
-      layout: 'auto',
-      compute: {
-        module: device.createShaderModule({ code: probabilityMapWGSL }),
-        entryPoint: 'import_level',
-      },
-    });
-    const probabilityMapExportLevelPipeline = device.createComputePipeline({
-      layout: 'auto',
-      compute: {
-        module: device.createShaderModule({ code: probabilityMapWGSL }),
-        entryPoint: 'export_level',
-      },
-    });
-
     const probabilityMapUBOBufferSize =
       1 * 4 + // stride
       3 * 4 + // padding
@@ -458,17 +355,10 @@ const init = async () => {
       0,
       new Int32Array([textureWidth])
     );
-    const commandEncoder = device.createCommandEncoder();
     let compute1
     for (let level = 0; level < 10; level++) {
       const levelWidth = textureWidth >> level;
       const levelHeight = textureHeight >> level;
- 
-      const pipeline =
-        level == 0
-          ? probabilityMapImportLevelPipeline.getBindGroupLayout(0)
-          : probabilityMapExportLevelPipeline.getBindGroupLayout(0);
-
           compute1 = webgpu.initComputeCall({
             code: probabilityMapWGSL,
             entryPoint: level == 0 ? 'import_level' : 'export_level',
@@ -487,8 +377,6 @@ const init = async () => {
                           }) 
                     ]
                   )
-    
-    
                 return [probabilityMapBindGroup]
             },
             exec: function (state) {
@@ -517,7 +405,7 @@ const init = async () => {
   //////////////////////////////////////////////////////////////////////////////
   const simulationParams = {
     simulate: true,
-    deltaTime: 0.04,
+    deltaTime: 0.02,
   };
 
   const simulationUBOBufferSize =
@@ -534,48 +422,22 @@ const init = async () => {
     code: particleWGSL,
     entryPoint: 'simulate',
     bindGroups: function (state, pipeline) {
-        
-
-        return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0),
-            [simulationUBOBuffer,
-            particlesBuffer, 
-            texture.createView()
-            ]
+        const computeBindGroup = utils.makeBindGroup(state.device, pipeline.getBindGroupLayout(0), 
+        [simulationUBOBuffer, particlesBuffer, texture.createView()]
         )
+        return [computeBindGroup]
+    },
+    exec: function (state) {
+    const device = state.device;
+    state.commandEncoder = device.createCommandEncoder()
+    const passEncoder = state.commandEncoder.beginComputePass();
+      passEncoder.setPipeline(state.computePass.pipeline);
+      passEncoder.setBindGroup(0, state.computePass.bindGroups[0]);
+      passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
+      passEncoder.end();
     }
   })
 
-  const computePipeline = device.createComputePipeline({
-    layout: 'auto',
-    compute: {
-      module: device.createShaderModule({
-        code: particleWGSL,
-      }),
-      entryPoint: 'simulate',
-    },
-  });
-  const computeBindGroup = device.createBindGroup({
-    layout: computePipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: simulationUBOBuffer,
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: particlesBuffer,
-          //size: numParticles * particleInstanceByteSize,
-        },
-      },
-      {
-        binding: 2,
-        resource: texture.createView(),
-      },
-    ],
-  });
 
   const aspect = canvas.width / canvas.height;
   const projection = mat4.create();
@@ -584,20 +446,23 @@ const init = async () => {
   mat4.perspective(projection, (2 * Math.PI) / 5, aspect, 1, 100.0);
 
 
-//   const draw = await webgpu.initDrawCall({
-//     shader: {
-//         code: particleWGSL,
-//         entryPoint: 'vs_main',
-//         entryPoint: 'fs_main',
-//     },
-//     attributeBuffers: buffers,
-//     blend,
-//     instances: numParticles,
-//     attributeBuffers: [
-//         particlesBuffer,
-//         quadVertexBuffer
-//     ]
-//   })
+  const draw = await webgpu.initDrawCall({
+    shader: {
+        code: particleWGSL,
+        vertEntryPoint: 'vs_main',
+        fragEntryPoint: 'fs_main',
+    },
+    attributeBuffers: buffers,
+    blend,
+    instances: numParticles,
+    attributeBufferData: [
+        particlesBuffer,
+        quadVertexBuffer
+    ],
+    bindGroup: (renderPipeline) => {
+        return utils.makeBindGroup(device, renderPipeline.getBindGroupLayout(0), [uniformBuffer])
+    }
+  })
   function frame() {
     // Sample is no longer the active page.
     device.queue.writeBuffer(
@@ -630,41 +495,15 @@ const init = async () => {
         mvp[4], mvp[5], mvp[6], mvp[7],
         mvp[8], mvp[9], mvp[10], mvp[11],
         mvp[12], mvp[13], mvp[14], mvp[15],
-
         view[0], view[4], view[8], // right
-
         0, // padding
-
         view[1], view[5], view[9], // up
-
         0, // padding
       ])
     );
-    const swapChainTexture = context.getCurrentTexture();
-    // prettier-ignore
-    renderPassDescriptor.colorAttachments[0].view = swapChainTexture.createView();
 
-    const commandEncoder = device.createCommandEncoder();
-    {
-      const passEncoder = commandEncoder.beginComputePass();
-      passEncoder.setPipeline(computePipeline);
-      passEncoder.setBindGroup(0, computeBindGroup);
-      passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
-      passEncoder.end();
-//    compute()
-    }
-    {
-      const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-      passEncoder.setPipeline(renderPipeline);
-      passEncoder.setBindGroup(0, uniformBindGroup);
-      passEncoder.setVertexBuffer(0, particlesBuffer);
-      passEncoder.setVertexBuffer(1, quadVertexBuffer);
-      passEncoder.draw(6, numParticles, 0, 0);
-      passEncoder.end();
-    }
-
-    device.queue.submit([commandEncoder.finish()]);
-
+    compute()
+    draw()
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

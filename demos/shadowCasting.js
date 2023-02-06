@@ -132,6 +132,7 @@ const init = async () => {
     usage: GPUBufferUsage.VERTEX,
     mappedAtCreation: true,
   });
+
   {
     const mapping = new Float32Array(vertexBuffer.getMappedRange());
     for (let i = 0; i < mesh.positions.length; ++i) {
@@ -202,6 +203,22 @@ const init = async () => {
       },
     ],
   });
+
+  // const shadowDraw = await webgpu.initDrawCall({
+  //   vert: vertexShadowWGSL,
+  //   buffers: vertexBuffers,
+  //   bindGroupLayouts: [
+  //     uniformBufferBindGroupLayout,
+  //     uniformBufferBindGroupLayout,
+  //   ],
+  //   depthStencil: {
+  //     depthWriteEnabled: true,
+  //     depthCompare: 'less',
+  //     format: 'depth32float'
+  //   },
+  //   primitive
+  // })
+
 
   const shadowPipeline = device.createRenderPipeline({
     layout: device.createPipelineLayout({
