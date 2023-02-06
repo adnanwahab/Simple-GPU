@@ -294,10 +294,10 @@ const init = async () => {
         vertEntryPoint: "vert_main"
     },
     attributeBuffers: buffers,
-    // attributeBufferData: {
-    //    stuff: initialParticleData,
-    //     vertexBufferData
-    // },
+    // attributeBufferData: [
+    //     particleBuffers[0],
+    //     spriteVertexBuffer
+    // ],
     attributes: {
         stuff: initialParticleData,
         vertexBufferData
