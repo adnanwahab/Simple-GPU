@@ -48,11 +48,11 @@ let webgpu = await simplegpu()
         [1, 1]
       ], 0, 2)
       
-      , color: [
-        [1,0,0],
-        [0,1,0],
-        [1,0,1],
-      ]
+      // , color: [
+      //   [1,0,0],
+      //   [0,1,0],
+      //   [1,0,1],
+      // ]
       // simpleWebgpu automatically infers sane defaults for the vertex attribute pointers
     },
   

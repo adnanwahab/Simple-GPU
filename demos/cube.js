@@ -197,9 +197,9 @@ frag:
     return output;
   }`,
   attributes: {
+    uv: new webgpu.attribute(uv, 0, 2),
     position: new webgpu.attribute(
-      cubeVertexArray, 0, 4),
-    uv: new webgpu.attribute(cubeVertexArray, 0, 2)
+      position, 0, 4),
   },
   uniforms: {
     modelViewProjectionMatrix: getTransformationMatrix,
