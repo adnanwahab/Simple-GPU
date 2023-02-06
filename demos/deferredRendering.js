@@ -325,6 +325,16 @@ const webgpu = await initwebgpu()
   };
 
 
+  const modelUniformBuffer = device.createBuffer({
+    size: 4 * 16 * 2, // two 4x4 matrix
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+
+  const cameraUniformBuffer = device.createBuffer({
+    size: 4 * 16, // 4x4 matrix
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+
   const writeGBuffers = await webgpu.initDrawCall({
     vert: vertexWriteGBuffers,
     frag: fragmentWriteGBuffers,
@@ -333,7 +343,16 @@ const webgpu = await initwebgpu()
         'rgba32float',
         'rgba32float',
         'bgra8unorm'
-    ]
+    ],
+    indices: mesh.triangles,
+    bindGroup: function ({pipeline}) {
+    return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0),
+        [modelUniformBuffer, cameraUniformBuffer]
+    )
+    },
+    renderPassDescriptor: function () {
+        return writeGBufferPassDescriptor
+    }
   })
 
   const writeGBuffersPipeline = device.createRenderPipeline({
@@ -540,33 +559,13 @@ const webgpu = await initwebgpu()
   })();
 
 
-  const modelUniformBuffer = device.createBuffer({
-    size: 4 * 16 * 2, // two 4x4 matrix
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
+  
 
-  const cameraUniformBuffer = device.createBuffer({
-    size: 4 * 16, // 4x4 matrix
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
+  const sceneUniformBindGroup = utils.makeBindGroup(device, writeGBuffersPipeline.getBindGroupLayout(0),
+  [modelUniformBuffer, cameraUniformBuffer]
+  )
+  
 
-  const sceneUniformBindGroup = device.createBindGroup({
-    layout: writeGBuffersPipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: modelUniformBuffer,
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: cameraUniformBuffer,
-        },
-      },
-    ],
-  });
 
   const gBufferTexturesBindGroup = device.createBindGroup({
     layout: gBufferTexturesBindGroupLayout,
@@ -593,6 +592,7 @@ const webgpu = await initwebgpu()
   const lightDataStride = 8;
   const bufferSizeInByte =
     Float32Array.BYTES_PER_ELEMENT * lightDataStride * kMaxNumLights;
+
   const lightsBuffer = device.createBuffer({
     size: bufferSizeInByte,
     usage: GPUBufferUsage.STORAGE,
@@ -763,6 +763,7 @@ const webgpu = await initwebgpu()
 
     const commandEncoder = device.createCommandEncoder();
     {
+//        writeGBuffers({submit: false})
       // Write position, normal, albedo etc. data to gBuffers
       const gBufferPass = commandEncoder.beginRenderPass(
         writeGBufferPassDescriptor

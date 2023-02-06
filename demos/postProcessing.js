@@ -155,7 +155,10 @@ async function postProcessing() {
                 vertEntryPoint: "vert_main"
       },
       bindGroup: ({pipeline}) => { 
-      return [pipeline.getBindGroupLayout(0), [sampler, textures[1].createView()]]
+      return utils.makeBindGroup(
+        device, 
+        pipeline.getBindGroupLayout(0), [sampler, textures[1].createView()]
+       )
       }
     })
 

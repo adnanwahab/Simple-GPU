@@ -309,22 +309,7 @@ const init = async () => {
       textureHeight *= 2;
       numMipLevels++;
     }
-    
-    texture = device.createTexture({
-      size: [imageBitmap.width, imageBitmap.height, 1],
-      mipLevelCount: numMipLevels,
-      format: 'rgba8unorm',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.STORAGE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-    device.queue.copyExternalImageToTexture(
-      { source: imageBitmap },
-      { texture: texture },
-      [imageBitmap.width, imageBitmap.height]
-    );
+    texture = await webgpu.texture(img, {mipLevelCount: numMipLevels})
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -342,6 +327,7 @@ const init = async () => {
       size: probabilityMapUBOBufferSize,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+
     const buffer_a = device.createBuffer({
       size: textureWidth * textureHeight * 4,
       usage: GPUBufferUsage.STORAGE,
@@ -369,7 +355,7 @@ const init = async () => {
                     [probabilityMapUBOBuffer, 
                         level & 1 ? buffer_a : buffer_b,
                         level & 1 ? buffer_b : buffer_a,
-                        texture.createView({
+                        texture.texture.createView({
                             format: 'rgba8unorm',
                             dimension: '2d',
                             baseMipLevel: level,
@@ -423,7 +409,7 @@ const init = async () => {
     entryPoint: 'simulate',
     bindGroups: function (state, pipeline) {
         const computeBindGroup = utils.makeBindGroup(state.device, pipeline.getBindGroupLayout(0), 
-        [simulationUBOBuffer, particlesBuffer, texture.createView()]
+        [simulationUBOBuffer, particlesBuffer, texture.texture.createView()]
         )
         return [computeBindGroup]
     },
@@ -445,7 +431,6 @@ const init = async () => {
   const mvp = mat4.create();
   mat4.perspective(projection, (2 * Math.PI) / 5, aspect, 1, 100.0);
 
-
   const draw = await webgpu.initDrawCall({
     shader: {
         code: particleWGSL,
@@ -459,8 +444,8 @@ const init = async () => {
         particlesBuffer,
         quadVertexBuffer
     ],
-    bindGroup: (renderPipeline) => {
-        return utils.makeBindGroup(device, renderPipeline.getBindGroupLayout(0), [uniformBuffer])
+    bindGroup: ({pipeline}) => {
+        return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0), [uniformBuffer])
     }
   })
   function frame() {
