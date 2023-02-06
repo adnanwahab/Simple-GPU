@@ -3,7 +3,97 @@ import simpleWebgpuInit from '../lib/main';
 import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 //import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
 
-// prettier-ignore
+const position = ([
+  //float4 position, float4 color, float2 uv,
+  [1, -1, 1, 1,   ],
+  [-1, -1, 1, 1,  ],
+  [-1, -1, -1, 1, ],
+  [1, -1, -1, 1,  ],
+  [1, -1, 1, 1,   ],
+  [-1, -1, -1, 1, ],
+
+  [1, 1, 1, 1,    ],
+  [1, -1, 1, 1,   ],
+  [1, -1, -1, 1,  ],
+  [1, 1, -1, 1,   ],
+  [1, 1, 1, 1,    ],
+  [1, -1, -1, 1,  ],
+
+  [-1, 1, 1, 1,   ],
+  [1, 1, 1, 1,    ],
+  [1, 1, -1, 1,   ],
+  [-1, 1, -1, 1,  ],
+  [-1, 1, 1, 1,   ],
+  [1, 1, -1, 1,   ],
+
+  [-1, -1, 1, 1,  ],
+  [-1, 1, 1, 1,   ],
+  [-1, 1, -1, 1,  ],
+  [-1, -1, -1, 1, ],
+  [-1, -1, 1, 1,  ],
+  [-1, 1, -1, 1,  ],
+
+  [1, 1, 1, 1,    ],
+  [-1, 1, 1, 1,   ],
+  [-1, -1, 1, 1, ],
+  [-1, -1, 1, 1,  ],
+  [1, -1, 1, 1,   ],
+  [1, 1, 1, 1,    ],
+
+  [1, -1, -1, 1,  ],
+  [-1, -1, -1, 1, ],
+  [-1, 1, -1, 1, ],
+  [1, 1, -1, 1,   ],
+  [1, -1, -1, 1,  ],
+  [-1, 1, -1, 1,  ],
+]);
+const uv = ([
+  //float4 position, float4 color, float2 uv,
+  [  1, 1],
+  [ 0, 1],
+  [ 0, 0],
+  [  1, 0],
+  [  1, 1],
+  [  0, 0],
+
+  [  1, 1],
+  [  0, 1],
+  [  0, 0],
+  [  1, 0],
+  [  1, 1],
+  [  0, 0],
+
+  [  1, 1],
+  [  0, 1],
+  [  0, 0],
+  [  1, 0],
+  [  1, 1],
+  [  0, 0],
+
+  [  1, 1],
+  [  0, 1],
+  [  0, 0],
+  [  1, 0],
+  [  1, 1],
+  [  0, 0],
+
+  [  1, 1],
+  [  0, 1],
+  [  0, 0],
+  [  0, 0],
+  [  1, 0],
+  [  1, 1],
+
+  [  1, 1],
+  [  0, 1],
+  [  0, 0],
+  [  1, 0],
+  [  1, 1],
+  [  0, 0],
+]);
+
+
+
 const cubeVertexArray = ([
   //float4 position, float4 color, float2 uv,
   [1, -1, 1, 1,   1, 0, 1, 1,  1, 1],
@@ -109,7 +199,7 @@ frag:
   attributes: {
     position: new webgpu.attribute(
       cubeVertexArray, 0, 4),
-    color: new webgpu.attribute(cubeVertexArray, 0, 2)
+    uv: new webgpu.attribute(cubeVertexArray, 0, 2)
   },
   uniforms: {
     modelViewProjectionMatrix: getTransformationMatrix,
