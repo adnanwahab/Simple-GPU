@@ -105,16 +105,9 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   particlesB.particles[index].vel = vVel;
 }
 `
-
 const init = async () => {  
   const webGPU = await initWebGPU()
   const device = webGPU.device;
-  const context = webGPU.context;
-  
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-
-  const spriteShaderModule = device.createShaderModule({ code: spriteWGSL });
-
   const buffers = [
     {
       // instanced particles buffer
@@ -150,60 +143,12 @@ const init = async () => {
     },
   ]
 
-  const renderPipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: spriteShaderModule,
-      entryPoint: 'vert_main',
-      buffers,
-    },
-    fragment: {
-      module: spriteShaderModule,
-      entryPoint: 'frag_main',
-      targets: [
-        {
-          format: presentationFormat,
-        },
-      ],
-    },
-    primitive: {
-      topology: 'triangle-list',
-    },
-  });
-
-  
-
-
-
-  const computePipeline = device.createComputePipeline({
-    layout: 'auto',
-    compute: {
-      module: device.createShaderModule({
-        code: updateSpritesWGSL,
-      }),
-      entryPoint: 'main',
-    },
-  });
-
-  const renderPassDescriptor = {
-    colorAttachments: [
-      {
-        view: undefined, // Assigned later
-        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ],
-  };
-
-  // prettier-ignore
   const vertexBufferData = new Float32Array([
     -0.01, -0.02, 0.01,
     -0.02, 0.0, 0.02,
   ]);
 
   const spriteVertexBuffer = utils.makeBuffer(device, vertexBufferData.length * 4, 'VERTEX', vertexBufferData, Float32Array)
-
 
   const simParams = {
     deltaT: 0.04,
@@ -262,27 +207,28 @@ const init = async () => {
     particleBuffers[i].unmap();
   }
 
-  
-
-  for (let i = 0; i < 2; ++i) {
-    particleBindGroups[i] = utils.makeBindGroup(
-        device,
-        computePipeline.getBindGroupLayout(0),
-        [simParamBuffer, particleBuffers[i], particleBuffers[(i + 1) % 2]]
-    )
-  }
-
+  let t = 0
   const compute = webGPU.initComputeCall({
     code: updateSpritesWGSL,
     bindGroups: function (state, computePipeline) {
+        for (let i = 0; i < 2; ++i) {
+            particleBindGroups[i] = utils.makeBindGroup(
+                device,
+                computePipeline.getBindGroupLayout(0),
+                [simParamBuffer, particleBuffers[i], particleBuffers[(i + 1) % 2]]
+            )
+          }
         return particleBindGroups
     },
     exec: function (state) {
+        const computePipeline = state.computePass.pipeline
+        t = t + 1
+        t = t % 2
         const device = state.device;
         state.commandEncoder = state.commandEncoder || device.createCommandEncoder();
         const passEncoder = state.commandEncoder.beginComputePass();
         passEncoder.setPipeline(computePipeline);
-        passEncoder.setBindGroup(0, particleBindGroups[t % 2]);
+        passEncoder.setBindGroup(0, particleBindGroups[t]);
         passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
         passEncoder.end();
     }
@@ -294,47 +240,21 @@ const init = async () => {
         vertEntryPoint: "vert_main"
     },
     attributeBuffers: buffers,
-    // attributeBufferData: [
-    //     particleBuffers[0],
-    //     spriteVertexBuffer
-    // ],
-    attributes: {
-        stuff: initialParticleData,
-        vertexBufferData
-    },
+    attributeBufferData: [
+        particleBuffers[0],
+        spriteVertexBuffer
+    ],
+    // attributes: {
+    //     stuff: initialParticleData,
+    //     vertexBufferData
+    // },
     instances: numParticles,
     count: 3
   });
 
-  let t = 0;
   function frame() {
-    // Sample is no longer the active page.
     compute()
     draw()
-
-    // renderPassDescriptor.colorAttachments[0].view = context
-    //   .getCurrentTexture()
-    //   .createView();
-
-    // const commandEncoder = device.createCommandEncoder();
-    // {
-    //   const passEncoder = commandEncoder.beginComputePass();
-    //   passEncoder.setPipeline(computePipeline);
-    //   passEncoder.setBindGroup(0, particleBindGroups[t % 2]);
-    //   passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
-    //   passEncoder.end();
-    // }
-    // {
-    //   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    //   passEncoder.setPipeline(renderPipeline);
-    //   passEncoder.setVertexBuffer(0, particleBuffers[0]);
-    //   passEncoder.setVertexBuffer(1, spriteVertexBuffer);
-    //   passEncoder.draw(3, numParticles, 0, 0);
-    //   passEncoder.end();
-    // }
-    // device.queue.submit([commandEncoder.finish()]);
-
-    ++t;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
