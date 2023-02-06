@@ -415,10 +415,7 @@ const init = async () => {
   // probabilities up to the top 1x1 mip level.
   //////////////////////////////////////////////////////////////////////////////
   {
-    // const compute1 = webgpu.initComputeCall({
-    //     code: probabilityMapWGSL,
-    //     entryPoints: 'import_level'
-    // })
+  
 
     // const compute2 = webgpu.initComputeCall({
     //     code: probabilityMapWGSL,
@@ -462,9 +459,59 @@ const init = async () => {
       new Int32Array([textureWidth])
     );
     const commandEncoder = device.createCommandEncoder();
-    for (let level = 0; level < numMipLevels; level++) {
+    let compute1
+    for (let level = 0; level < 10; level++) {
       const levelWidth = textureWidth >> level;
       const levelHeight = textureHeight >> level;
+     compute1 = webgpu.initComputeCall({
+        code: probabilityMapWGSL,
+        entryPoints: level == 0 ? 'import_level' : 'export_level',
+        bindGroups: function (state, pipeline) {
+            const device = state.device;
+            const probabilityMapBindGroup = device.createBindGroup({
+                layout: pipeline.getBindGroupLayout(0),
+                entries: [
+                  {
+                    // ubo
+                    binding: 0,
+                    resource: { buffer: probabilityMapUBOBuffer },
+                  },
+                  {
+                    // buf_in
+                    binding: 1,
+                    resource: { buffer: level & 1 ? buffer_a : buffer_b },
+                  },
+                  {
+                    // buf_out
+                    binding: 2,
+                    resource: { buffer: level & 1 ? buffer_b : buffer_a },
+                  },
+                  {
+                    // tex_in / tex_out
+                    binding: 3,
+                    resource: texture.createView({
+                      format: 'rgba8unorm',
+                      dimension: '2d',
+                      baseMipLevel: level,
+                      mipLevelCount: 1,
+                    }),
+                  },
+                ],
+              });
+
+
+            return [probabilityMapBindGroup]
+        },
+        exec: function (state) {
+            const computePipeline = state.computePass.pipeline
+            const device = state.device;
+            state.commandEncoder = state.commandEncoder || device.createCommandEncoder();
+            const passEncoder = state.commandEncoder.beginComputePass();
+            passEncoder.setPipeline(computePipeline);
+            passEncoder.setBindGroup(0, state.computePass.bindGroups[0]);
+            passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
+            passEncoder.end();        }
+    })
       const pipeline =
         level == 0
           ? probabilityMapImportLevelPipeline.getBindGroupLayout(0)
@@ -500,12 +547,14 @@ const init = async () => {
         ],
       });
       if (level == 0) {
+        //compute1()
         const passEncoder = commandEncoder.beginComputePass();
         passEncoder.setPipeline(probabilityMapImportLevelPipeline);
         passEncoder.setBindGroup(0, probabilityMapBindGroup);
         passEncoder.dispatchWorkgroups(Math.ceil(levelWidth / 64), levelHeight);
         passEncoder.end();
       } else {
+        //compute1()
         const passEncoder = commandEncoder.beginComputePass();
         passEncoder.setPipeline(probabilityMapExportLevelPipeline);
         passEncoder.setBindGroup(0, probabilityMapBindGroup);
@@ -513,6 +562,7 @@ const init = async () => {
         passEncoder.end();
       }
     }
+    //compute1.submit()
     device.queue.submit([commandEncoder.finish()]);
   }
 
@@ -556,7 +606,6 @@ const init = async () => {
         binding: 1,
         resource: {
           buffer: particlesBuffer,
-          offset: 0,
           size: numParticles * particleInstanceByteSize,
         },
       },
