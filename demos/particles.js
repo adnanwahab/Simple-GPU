@@ -533,7 +533,16 @@ const init = async () => {
   const compute = webgpu.initComputeCall({
     code: particleWGSL,
     entryPoint: 'simulate',
-    bindGroups: function () {}
+    bindGroups: function (state, pipeline) {
+        
+
+        return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0),
+            [simulationUBOBuffer,
+            particlesBuffer, 
+            texture.createView()
+            ]
+        )
+    }
   })
 
   const computePipeline = device.createComputePipeline({
@@ -558,7 +567,7 @@ const init = async () => {
         binding: 1,
         resource: {
           buffer: particlesBuffer,
-          size: numParticles * particleInstanceByteSize,
+          //size: numParticles * particleInstanceByteSize,
         },
       },
       {
@@ -642,6 +651,7 @@ const init = async () => {
       passEncoder.setBindGroup(0, computeBindGroup);
       passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
       passEncoder.end();
+//    compute()
     }
     {
       const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
