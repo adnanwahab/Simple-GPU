@@ -115,58 +115,47 @@ const init = async () => {
 
   const spriteShaderModule = device.createShaderModule({ code: spriteWGSL });
 
-//   const draw = await webGPU.initDrawCall({
-//     shader: { code: spriteShaderModule,
-//         fragEntryPoint: "frag_main",
-//         vertEntryPoint: "vert_main"
-//     },
-//     attributes: {
-//         position: {},
-//         velocity: {},
-        
-//     }
-//   });
-
+  const buffers = [
+    {
+      // instanced particles buffer
+      arrayStride: 4 * 4,
+      stepMode: 'instance',
+      attributes: [
+        {
+          // instance position
+          shaderLocation: 0,
+          offset: 0,
+          format: 'float32x2',
+        },
+        {
+          // instance velocity
+          shaderLocation: 1,
+          offset: 2 * 4,
+          format: 'float32x2',
+        },
+      ],
+    },
+    {
+      // vertex buffer
+      arrayStride: 2 * 4,
+      stepMode: 'vertex',
+      attributes: [
+        {
+          // vertex positions
+          shaderLocation: 2,
+          offset: 0,
+          format: 'float32x2',
+        },
+      ],
+    },
+  ]
 
   const renderPipeline = device.createRenderPipeline({
     layout: 'auto',
     vertex: {
       module: spriteShaderModule,
       entryPoint: 'vert_main',
-      buffers: [
-        {
-          // instanced particles buffer
-          arrayStride: 4 * 4,
-          stepMode: 'instance',
-          attributes: [
-            {
-              // instance position
-              shaderLocation: 0,
-              offset: 0,
-              format: 'float32x2',
-            },
-            {
-              // instance velocity
-              shaderLocation: 1,
-              offset: 2 * 4,
-              format: 'float32x2',
-            },
-          ],
-        },
-        {
-          // vertex buffer
-          arrayStride: 2 * 4,
-          stepMode: 'vertex',
-          attributes: [
-            {
-              // vertex positions
-              shaderLocation: 2,
-              offset: 0,
-              format: 'float32x2',
-            },
-          ],
-        },
-      ],
+      buffers,
     },
     fragment: {
       module: spriteShaderModule,
@@ -181,6 +170,8 @@ const init = async () => {
       topology: 'triangle-list',
     },
   });
+
+  
 
 
 
@@ -206,10 +197,10 @@ const init = async () => {
   };
 
   // prettier-ignore
-  const vertexBufferData = [
+  const vertexBufferData = new Float32Array([
     -0.01, -0.02, 0.01,
     -0.02, 0.0, 0.02,
-  ];
+  ]);
 
   const spriteVertexBuffer = utils.makeBuffer(device, vertexBufferData.length * 4, 'VERTEX', vertexBufferData, Float32Array)
 
@@ -284,36 +275,64 @@ const init = async () => {
   const compute = webGPU.initComputeCall({
     code: updateSpritesWGSL,
     bindGroups: function (state, computePipeline) {
-
         return particleBindGroups
-    } 
+    },
+    exec: function (state) {
+        const device = state.device;
+        state.commandEncoder = state.commandEncoder || device.createCommandEncoder();
+        const passEncoder = state.commandEncoder.beginComputePass();
+        passEncoder.setPipeline(computePipeline);
+        passEncoder.setBindGroup(0, particleBindGroups[t % 2]);
+        passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
+        passEncoder.end();
+    }
   })
+
+  const draw = await webGPU.initDrawCall({
+    shader: { code: spriteWGSL,
+        fragEntryPoint: "frag_main",
+        vertEntryPoint: "vert_main"
+    },
+    attributeBuffers: buffers,
+    // attributeBufferData: {
+    //    stuff: initialParticleData,
+    //     vertexBufferData
+    // },
+    attributes: {
+        stuff: initialParticleData,
+        vertexBufferData
+    },
+    instances: numParticles,
+    count: 3
+  });
 
   let t = 0;
   function frame() {
     // Sample is no longer the active page.
+    compute()
+    draw()
 
-    renderPassDescriptor.colorAttachments[0].view = context
-      .getCurrentTexture()
-      .createView();
+    // renderPassDescriptor.colorAttachments[0].view = context
+    //   .getCurrentTexture()
+    //   .createView();
 
-    const commandEncoder = device.createCommandEncoder();
-    {
-      const passEncoder = commandEncoder.beginComputePass();
-      passEncoder.setPipeline(computePipeline);
-      passEncoder.setBindGroup(0, particleBindGroups[t % 2]);
-      passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
-      passEncoder.end();
-    }
-    {
-      const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-      passEncoder.setPipeline(renderPipeline);
-      passEncoder.setVertexBuffer(0, particleBuffers[0]);
-      passEncoder.setVertexBuffer(1, spriteVertexBuffer);
-      passEncoder.draw(3, numParticles, 0, 0);
-      passEncoder.end();
-    }
-    device.queue.submit([commandEncoder.finish()]);
+    // const commandEncoder = device.createCommandEncoder();
+    // {
+    //   const passEncoder = commandEncoder.beginComputePass();
+    //   passEncoder.setPipeline(computePipeline);
+    //   passEncoder.setBindGroup(0, particleBindGroups[t % 2]);
+    //   passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
+    //   passEncoder.end();
+    // }
+    // {
+    //   const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    //   passEncoder.setPipeline(renderPipeline);
+    //   passEncoder.setVertexBuffer(0, particleBuffers[0]);
+    //   passEncoder.setVertexBuffer(1, spriteVertexBuffer);
+    //   passEncoder.draw(3, numParticles, 0, 0);
+    //   passEncoder.end();
+    // }
+    // device.queue.submit([commandEncoder.finish()]);
 
     ++t;
     requestAnimationFrame(frame);
