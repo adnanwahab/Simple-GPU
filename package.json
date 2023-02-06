@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "rm -rf dist && rollup -c ",
-    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
+    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test"
   },
   "files": [
     "dist/**/*.js",
@@ -27,7 +27,7 @@
     "rollup": "3",
     "@rollup/plugin-json": "6",
     "@rollup/plugin-node-resolve": "15",
-    
+    "stanford-dragon": "^1.1.1"
   },
   "dependencies": {},
   "keywords": [

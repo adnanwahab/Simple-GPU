@@ -32,6 +32,10 @@ import points from "./points";
 
 import computeBoids from "./computeBoids";
 
+import shadowCasting from "./shadowCasting";
+
+import particles from "./particles";
+
 
 let defaultDemo = 'physics';
 let data = {}
@@ -53,12 +57,12 @@ let demoTitles = [
   'basic' , 'hexagon', 'cube',
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
-  'computeBoids'
+  'computeBoids', 'shadowCasting', 'particles'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
-points, lines, computeBoids
+points, lines, computeBoids, shadowCasting, particles,
 ]
 
   document.querySelectorAll('input').forEach(e => {
