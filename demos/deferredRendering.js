@@ -335,24 +335,69 @@ const webgpu = await initwebgpu()
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
+  const depthTexture = device.createTexture({
+    size: [canvas.width, canvas.height],
+    format: 'depth24plus',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  });
+
+  const writeGBufferPassDescriptor = {
+    colorAttachments: [
+      {
+        view: gBufferTextureViews[0],
+
+        clearValue: {
+          r: Number.MAX_VALUE,
+          g: Number.MAX_VALUE,
+          b: Number.MAX_VALUE,
+          a: 1.0,
+        },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+      {
+        view: gBufferTextureViews[1],
+
+        clearValue: { r: 0.0, g: 0.0, b: 1.0, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+      {
+        view: gBufferTextureViews[2],
+
+        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
+    depthStencilAttachment: {
+      view: depthTexture.createView(),
+
+      depthClearValue: 1.0,
+      depthLoadOp: 'clear',
+      depthStoreOp: 'store',
+    },
+  };
+
   const writeGBuffers = await webgpu.initDrawCall({
     vert: vertexWriteGBuffers,
     frag: fragmentWriteGBuffers,
     attributeBuffers: vertexBuffers,
+    attributeBufferData: [vertexBuffer],
     targets: [
         'rgba32float',
         'rgba32float',
         'bgra8unorm'
     ],
-    indices: mesh.triangles,
+    indices: mesh.triangles.flat(),
+    indexCount,
+
     bindGroup: function ({pipeline}) {
     return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0),
         [modelUniformBuffer, cameraUniformBuffer]
     )
     },
-    renderPassDescriptor: function () {
-        return writeGBufferPassDescriptor
-    }
+    renderPassDescriptor: writeGBufferPassDescriptor
   })
 
   const writeGBuffersPipeline = device.createRenderPipeline({
@@ -459,6 +504,74 @@ const webgpu = await initwebgpu()
     primitive,
   });
 
+  const gBufferTexturesBindGroup = device.createBindGroup({
+    layout: gBufferTexturesBindGroupLayout,
+    entries: [
+      {
+        binding: 0,
+        resource: gBufferTextureViews[0],
+      },
+      {
+        binding: 1,
+        resource: gBufferTextureViews[1],
+      },
+      {
+        binding: 2,
+        resource: gBufferTextureViews[2],
+      },
+    ],
+  });
+
+  const lightDataStride = 8;
+
+  const bufferSizeInByte =
+    Float32Array.BYTES_PER_ELEMENT * lightDataStride * kMaxNumLights;
+
+
+  const lightsBuffer = device.createBuffer({
+    size: bufferSizeInByte,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: true,
+  });
+
+  const settings = {
+    mode: 'rendering',
+    numLights: 128,
+  };
+
+  const configUniformBuffer = (() => {
+    const buffer = device.createBuffer({
+      size: Uint32Array.BYTES_PER_ELEMENT,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    new Uint32Array(buffer.getMappedRange())[0] = settings.numLights;
+    buffer.unmap();
+    return buffer;
+  })();
+
+  const lightsBufferBindGroup = 
+  utils.makeBindGroup(device, lightsBufferBindGroupLayout, 
+    [lightsBuffer, configUniformBuffer]
+    )
+
+  const deferredRender = await webgpu.initDrawCall({
+    vert: vertexTextureQuad,
+    frag: fragmentDeferredRendering,
+    bindGroup: () => [
+    gBufferTexturesBindGroup,
+    lightsBufferBindGroup
+    ],
+    layout: device.createPipelineLayout({
+        bindGroupLayouts: [
+          gBufferTexturesBindGroupLayout,
+          lightsBufferBindGroupLayout,
+        ],
+      })
+  })
+
+  
+
   const deferredRenderPipeline = device.createRenderPipeline({
     layout: device.createPipelineLayout({
       bindGroupLayouts: [
@@ -486,49 +599,9 @@ const webgpu = await initwebgpu()
     primitive,
   });
 
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height],
-    format: 'depth24plus',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  });
+ 
 
-  const writeGBufferPassDescriptor = {
-    colorAttachments: [
-      {
-        view: gBufferTextureViews[0],
-
-        clearValue: {
-          r: Number.MAX_VALUE,
-          g: Number.MAX_VALUE,
-          b: Number.MAX_VALUE,
-          a: 1.0,
-        },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-      {
-        view: gBufferTextureViews[1],
-
-        clearValue: { r: 0.0, g: 0.0, b: 1.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-      {
-        view: gBufferTextureViews[2],
-
-        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ],
-    depthStencilAttachment: {
-      view: depthTexture.createView(),
-
-      depthClearValue: 1.0,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store',
-    },
-  };
+  
 
   const textureQuadPassDescriptor = {
     colorAttachments: [
@@ -542,62 +615,20 @@ const webgpu = await initwebgpu()
       },
     ],
   };
-
-  const settings = {
-    mode: 'rendering',
-    numLights: 128,
-  };
-  const configUniformBuffer = (() => {
-    const buffer = device.createBuffer({
-      size: Uint32Array.BYTES_PER_ELEMENT,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    new Uint32Array(buffer.getMappedRange())[0] = settings.numLights;
-    buffer.unmap();
-    return buffer;
-  })();
-
-
-  
+ 
 
   const sceneUniformBindGroup = utils.makeBindGroup(device, writeGBuffersPipeline.getBindGroupLayout(0),
   [modelUniformBuffer, cameraUniformBuffer]
   )
-  
 
 
-  const gBufferTexturesBindGroup = device.createBindGroup({
-    layout: gBufferTexturesBindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: gBufferTextureViews[0],
-      },
-      {
-        binding: 1,
-        resource: gBufferTextureViews[1],
-      },
-      {
-        binding: 2,
-        resource: gBufferTextureViews[2],
-      },
-    ],
-  });
 
   // Lights data are uploaded in a storage buffer
   // which could be updated/culled/etc. with a compute shader
   const extent = vec3.create();
   vec3.sub(extent, lightExtentMax, lightExtentMin);
-  const lightDataStride = 8;
-  const bufferSizeInByte =
-    Float32Array.BYTES_PER_ELEMENT * lightDataStride * kMaxNumLights;
 
-  const lightsBuffer = device.createBuffer({
-    size: bufferSizeInByte,
-    usage: GPUBufferUsage.STORAGE,
-    mappedAtCreation: true,
-  });
+
 
   // We randomaly populate lights randomly in a box range
   // And simply move them along y-axis per frame to show they are
@@ -647,46 +678,33 @@ const webgpu = await initwebgpu()
       entryPoint: 'main',
     },
   });
-  const lightsBufferBindGroup = device.createBindGroup({
-    layout: lightsBufferBindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: lightsBuffer,
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: configUniformBuffer,
-        },
-      },
-    ],
-  });
-  const lightsBufferComputeBindGroup = device.createBindGroup({
-    layout: lightUpdateComputePipeline.getBindGroupLayout(0),
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: lightsBuffer,
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: configUniformBuffer,
-        },
-      },
-      {
-        binding: 2,
-        resource: {
-          buffer: lightExtentBuffer,
-        },
-      },
-    ],
-  });
+
+  
+  const lightsBufferComputeBindGroup = utils.makeBindGroup(device, 
+    lightUpdateComputePipeline.getBindGroupLayout(0),
+    [lightsBuffer, configUniformBuffer, lightExtentBuffer]
+  )
+
+  let lightUpdateCompute = webgpu.initComputeCall({
+    code: lightUpdate,
+    bindGroups: function (state, pipline) {
+
+        return [lightsBufferComputeBindGroup]
+    },
+    exec: function (state, CE) {
+  
+    const lightPass = CE.beginComputePass();
+      lightPass.setPipeline(lightUpdateComputePipeline);
+      lightPass.setBindGroup(0, lightsBufferComputeBindGroup);
+      lightPass.dispatchWorkgroups(Math.ceil(kMaxNumLights / 64));
+      lightPass.end();
+    }
+  })
+
+
+  
+  
+  
   //--------------------
 
   // Scene matrices
@@ -763,56 +781,13 @@ const webgpu = await initwebgpu()
 
     const commandEncoder = device.createCommandEncoder();
     {
-//        writeGBuffers({submit: false})
-      // Write position, normal, albedo etc. data to gBuffers
-      const gBufferPass = commandEncoder.beginRenderPass(
-        writeGBufferPassDescriptor
-      );
-      gBufferPass.setPipeline(writeGBuffersPipeline);
-      gBufferPass.setBindGroup(0, sceneUniformBindGroup);
-      gBufferPass.setVertexBuffer(0, vertexBuffer);
-      gBufferPass.setIndexBuffer(indexBuffer, 'uint16');
-      gBufferPass.drawIndexed(indexCount);
-      gBufferPass.end();
+    writeGBuffers({noSubmit: true}, commandEncoder)
     }
     {
-      // Update lights position
-      const lightPass = commandEncoder.beginComputePass();
-      lightPass.setPipeline(lightUpdateComputePipeline);
-      lightPass.setBindGroup(0, lightsBufferComputeBindGroup);
-      lightPass.dispatchWorkgroups(Math.ceil(kMaxNumLights / 64));
-      lightPass.end();
+    lightUpdateCompute({}, commandEncoder)
     }
     {
-      if (settings.mode === 'gBuffers view') {
-        // GBuffers debug view
-        // Left: position
-        // Middle: normal
-        // Right: albedo (use uv to mimic a checkerboard texture)
-        textureQuadPassDescriptor.colorAttachments[0].view = context
-          .getCurrentTexture()
-          .createView();
-        const debugViewPass = commandEncoder.beginRenderPass(
-          textureQuadPassDescriptor
-        );
-        debugViewPass.setPipeline(gBuffersDebugViewPipeline);
-        debugViewPass.setBindGroup(0, gBufferTexturesBindGroup);
-        debugViewPass.draw(6);
-        debugViewPass.end();
-      } else {
-        // Deferred rendering
-        textureQuadPassDescriptor.colorAttachments[0].view = context
-          .getCurrentTexture()
-          .createView();
-        const deferredRenderingPass = commandEncoder.beginRenderPass(
-          textureQuadPassDescriptor
-        );
-        deferredRenderingPass.setPipeline(deferredRenderPipeline);
-        deferredRenderingPass.setBindGroup(0, gBufferTexturesBindGroup);
-        deferredRenderingPass.setBindGroup(1, lightsBufferBindGroup);
-        deferredRenderingPass.draw(6);
-        deferredRenderingPass.end();
-      }
+    deferredRender({noSubmit: true}, commandEncoder)
     }
     device.queue.submit([commandEncoder.finish()]);
 
