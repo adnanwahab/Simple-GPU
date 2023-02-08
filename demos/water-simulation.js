@@ -7,11 +7,6 @@ async function basic () {
   // Calling simplewebgpu.init() creates a new partially evaluated draw command
 let webgpu = await simplegpu()
 
-
-
-
-
-
  webgpu.initDrawCall({
     // Shaders in simplewebgpu. are just strings. 
     frag: `
@@ -36,7 +31,7 @@ let webgpu = await simplegpu()
   
     @vertex
     fn main(
-    @location(0) position : vec4<f32>,
+      @location(0) position : vec4<f32>,
       @location(1) uv : vec2<f32>
     ) -> VertexOutput {
       
@@ -55,13 +50,7 @@ let webgpu = await simplegpu()
         [0, -1],
         [1, 1]
       ], 0, 2)
-      
-      // , color: [
-      //   [1,0,0],
-      //   [0,1,0],
-      //   [1,0,1],
-      // ]
-      // simpleWebgpu automatically infers sane defaults for the vertex attribute pointers
+
     },
   
     // uniforms: {
@@ -91,5 +80,5 @@ let webgpu = await simplegpu()
     })
   })
 }
-//https://observablehq.com/d/51527d1654b706ab
+
 export default basic

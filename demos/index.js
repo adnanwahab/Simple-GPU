@@ -40,6 +40,7 @@ import deferredRendering from "./deferredRendering";
 
 import cubeOcean from "./cube-ocean";
 
+import waterSimulation from "./water-simulation";
 
 
 let defaultDemo = 'physics';
@@ -58,14 +59,14 @@ let demoTitles = [
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
-  'deferredRendering', 'cubeOcean'
+  'deferredRendering', 'cubeOcean', 'waterSimulation'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering, cubeOcean
+deferredRendering, cubeOcean, waterSimulation
 ]
 
   document.querySelectorAll('input').forEach(e => {

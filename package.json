@@ -27,7 +27,8 @@
     "rollup": "3",
     "@rollup/plugin-json": "6",
     "@rollup/plugin-node-resolve": "15",
-    "stanford-dragon": "^1.1.1"
+    "stanford-dragon": "^1.1.1",
+    "three": "0.149.0"
   },
   "dependencies": {},
   "keywords": [
