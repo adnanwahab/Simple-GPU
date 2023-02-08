@@ -225,7 +225,6 @@ const init = async () => {
         t = t + 1
         t = t % 2
         const device = state.device;
-        console.log(state)
         state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
         const passEncoder = state.ctx.commandEncoder.beginComputePass();
         passEncoder.setPipeline(computePipeline);

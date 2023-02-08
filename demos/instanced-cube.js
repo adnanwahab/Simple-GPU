@@ -2,21 +2,15 @@ import { mat4, vec3 } from 'gl-matrix';
 import utils from '../lib/utils'
 import initWebGPU from '../lib/main'
 
-const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
-const cubePositionOffset = 0;
-const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.
-const cubeUVOffset = 4 * 8;
 const cubeVertexCount = 36;
 
-const xCount = 4;
-const yCount = 4;
+const xCount = 20;
+const yCount = 30;
 const numInstances = xCount * yCount;
 const matrixFloatCount = 16; // 4x4 matrix
-const matrixSize = 4 * matrixFloatCount;
-const uniformBufferSize = numInstances * matrixSize;
 
 function updateTransformationMatrix() {
-    const now = Date.now() / 1000;
+    const now = Date.now() / 10000;
 
     let m = 0,
       i = 0;
@@ -73,14 +67,14 @@ const aspect = 1;
     }
   
     const viewMatrix = mat4.create();
-    mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -12));
+    mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -70));
   
     const tmpMat4 = mat4.create();
   
 
 
 const instancedVertWGSL = `struct Uniforms {
-    modelViewProjectionMatrix : array<mat4x4<f32>, 16>,
+    modelViewProjectionMatrix : array<mat4x4<f32>, 600>,
   }
   
   @binding(0) @group(0) var<uniform> uniforms : Uniforms;
@@ -112,10 +106,6 @@ fn main(
 ) -> @location(0) vec4<f32> {
   return fragPosition;
 }`
-
-
-
-
 
 // prettier-ignore
 const cubeVertexArrayData = [
@@ -163,17 +153,9 @@ const cubeVertexArrayData = [
   [-1, 1, -1, 1,  0, 1, 0, 1,  0, 0],
 ]
 
-const cubeVertexArray = new Float32Array(cubeVertexArrayData.flat())
-
-
 
 const instancedCube = async () => {
     const webGPU = await initWebGPU()
-    const canvas = webGPU.canvas
-    const device = webGPU.device
-    const context = webGPU.context
-  
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
   
     const draw = await webGPU.initDrawCall({
         frag: vertexPositionColorWGSL,

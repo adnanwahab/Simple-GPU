@@ -38,6 +38,8 @@ import particles from "./particles";
 
 import deferredRendering from "./deferredRendering";
 
+import cubeOcean from "./cube-ocean";
+
 
 
 let defaultDemo = 'physics';
@@ -49,11 +51,6 @@ async function start_loop_static(options) {
 let draw = await init(options);
   if (! draw) return alert('webgpu not defined - please install chrome canary, go to chrome://flags, search for WebGPU')
   draw(data)
-  
-  // requestAnimationFrame(function test() {
-  //   draw(data);
-  //   requestAnimationFrame(test)
-  // });
 }
 
 let demoTitles = [
@@ -61,14 +58,14 @@ let demoTitles = [
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
-  'deferredRendering'
+  'deferredRendering', 'cubeOcean'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering
+deferredRendering, cubeOcean
 ]
 
   document.querySelectorAll('input').forEach(e => {

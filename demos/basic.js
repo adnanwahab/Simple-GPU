@@ -7,6 +7,11 @@ async function basic () {
   // Calling simplewebgpu.init() creates a new partially evaluated draw command
 let webgpu = await simplegpu()
 
+
+
+
+
+
  webgpu.initDrawCall({
     // Shaders in simplewebgpu. are just strings. 
     frag: `
@@ -25,6 +30,9 @@ let webgpu = await simplegpu()
       @location(0) fragUV : vec2<f32>,
       @location(1) fragPosition: vec4<f32>,
     }  
+
+
+
   
     @vertex
     fn main(
