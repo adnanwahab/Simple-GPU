@@ -219,8 +219,8 @@ async function postProcessing() {
         const [srcWidth, srcHeight] = [512, 512];
         const blockDim = tileDim - settings.filterSize;
       
-        state.commandEncoder = state.commandEncoder || device.createCommandEncoder();
-        const commandEncoder = state.commandEncoder
+        state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+        const commandEncoder = state.ctx.commandEncoder
       
         const computePass = commandEncoder.beginComputePass();
         computePass.setPipeline(state.computePass.pipeline);

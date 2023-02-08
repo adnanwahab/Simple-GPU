@@ -691,9 +691,9 @@ const webgpu = await initwebgpu()
 
         return [lightsBufferComputeBindGroup]
     },
-    exec: function (state, CE) {
-  
-    const lightPass = CE.beginComputePass();
+    exec: function (state) {
+    const commandEncoder = state.ctx.commandEncoder
+    const lightPass = commandEncoder.beginComputePass();
       lightPass.setPipeline(lightUpdateComputePipeline);
       lightPass.setBindGroup(0, lightsBufferComputeBindGroup);
       lightPass.dispatchWorkgroups(Math.ceil(kMaxNumLights / 64));
@@ -781,15 +781,14 @@ const webgpu = await initwebgpu()
 
     const commandEncoder = device.createCommandEncoder();
     {
-    writeGBuffers({noSubmit: true}, commandEncoder)
+    writeGBuffers({noSubmit: true})
     }
     {
-    lightUpdateCompute({}, commandEncoder)
+    lightUpdateCompute({})
     }
     {
-    deferredRender({noSubmit: true}, commandEncoder)
+    deferredRender()
     }
-    device.queue.submit([commandEncoder.finish()]);
 
     requestAnimationFrame(frame);
   }

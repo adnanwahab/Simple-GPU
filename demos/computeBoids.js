@@ -225,8 +225,9 @@ const init = async () => {
         t = t + 1
         t = t % 2
         const device = state.device;
-        state.commandEncoder = state.commandEncoder || device.createCommandEncoder();
-        const passEncoder = state.commandEncoder.beginComputePass();
+        console.log(state)
+        state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+        const passEncoder = state.ctx.commandEncoder.beginComputePass();
         passEncoder.setPipeline(computePipeline);
         passEncoder.setBindGroup(0, particleBindGroups[t]);
         passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));
