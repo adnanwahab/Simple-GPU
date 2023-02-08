@@ -415,8 +415,8 @@ const init = async () => {
     },
     exec: function (state) {
     const device = state.device;
-    state.commandEncoder = device.createCommandEncoder()
-    const passEncoder = state.commandEncoder.beginComputePass();
+    state.ctx.commandEncoder = device.createCommandEncoder()
+    const passEncoder = state.ctx.commandEncoder.beginComputePass();
       passEncoder.setPipeline(state.computePass.pipeline);
       passEncoder.setBindGroup(0, state.computePass.bindGroups[0]);
       passEncoder.dispatchWorkgroups(Math.ceil(numParticles / 64));

@@ -226,10 +226,7 @@ const webgpu = await initwebgpu()
   
   const device = webgpu.device
 
-  const context = webgpu.context;
-
   const aspect = 1
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
   // Create the model vertex buffer.
   const kVertexStride = 8;
@@ -319,12 +316,6 @@ const webgpu = await initwebgpu()
     },
   ];
 
-  const primitive = {
-    topology: 'triangle-list',
-    cullMode: 'back',
-  };
-
-
   const modelUniformBuffer = device.createBuffer({
     size: 4 * 16 * 2, // two 4x4 matrix
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -400,37 +391,6 @@ const webgpu = await initwebgpu()
     renderPassDescriptor: writeGBufferPassDescriptor
   })
 
-  const writeGBuffersPipeline = device.createRenderPipeline({
-    layout: 'auto',
-    vertex: {
-      module: device.createShaderModule({
-        code: vertexWriteGBuffers,
-      }),
-      entryPoint: 'main',
-      buffers: vertexBuffers,
-    },
-    fragment: {
-      module: device.createShaderModule({
-        code: fragmentWriteGBuffers,
-      }),
-      entryPoint: 'main',
-      targets: [
-        // position
-        { format: 'rgba32float' },
-        // normal
-        { format: 'rgba32float' },
-        // albedo
-        { format: 'bgra8unorm' },
-      ],
-    },
-    depthStencil: {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
-      format: 'depth24plus',
-    },
-    primitive,
-  });
-
   const gBufferTexturesBindGroupLayout = device.createBindGroupLayout({
     entries: [
       {
@@ -474,34 +434,6 @@ const webgpu = await initwebgpu()
         },
       },
     ],
-  });
-
-  const gBuffersDebugViewPipeline = device.createRenderPipeline({
-    layout: device.createPipelineLayout({
-      bindGroupLayouts: [gBufferTexturesBindGroupLayout],
-    }),
-    vertex: {
-      module: device.createShaderModule({
-        code: vertexTextureQuad,
-      }),
-      entryPoint: 'main',
-    },
-    fragment: {
-      module: device.createShaderModule({
-        code: fragmentGBuffersDebugView,
-      }),
-      entryPoint: 'main',
-      targets: [
-        {
-          format: presentationFormat,
-        },
-      ],
-      constants: {
-        canvasSizeWidth: canvas.width,
-        canvasSizeHeight: canvas.height,
-      },
-    },
-    primitive,
   });
 
   const gBufferTexturesBindGroup = device.createBindGroup({
@@ -569,59 +501,6 @@ const webgpu = await initwebgpu()
         ],
       })
   })
-
-  
-
-  const deferredRenderPipeline = device.createRenderPipeline({
-    layout: device.createPipelineLayout({
-      bindGroupLayouts: [
-        gBufferTexturesBindGroupLayout,
-        lightsBufferBindGroupLayout,
-      ],
-    }),
-    vertex: {
-      module: device.createShaderModule({
-        code: vertexTextureQuad,
-      }),
-      entryPoint: 'main',
-    },
-    fragment: {
-      module: device.createShaderModule({
-        code: fragmentDeferredRendering,
-      }),
-      entryPoint: 'main',
-      targets: [
-        {
-          format: presentationFormat,
-        },
-      ],
-    },
-    primitive,
-  });
-
- 
-
-  
-
-  const textureQuadPassDescriptor = {
-    colorAttachments: [
-      {
-        // view is acquired and set in render loop.
-        view: undefined,
-
-        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      },
-    ],
-  };
- 
-
-  const sceneUniformBindGroup = utils.makeBindGroup(device, writeGBuffersPipeline.getBindGroupLayout(0),
-  [modelUniformBuffer, cameraUniformBuffer]
-  )
-
-
 
   // Lights data are uploaded in a storage buffer
   // which could be updated/culled/etc. with a compute shader
@@ -779,7 +658,6 @@ const webgpu = await initwebgpu()
       cameraViewProj.byteLength
     );
 
-    const commandEncoder = device.createCommandEncoder();
     {
     writeGBuffers({noSubmit: true})
     }
