@@ -28,7 +28,8 @@
     "@rollup/plugin-json": "6",
     "@rollup/plugin-node-resolve": "15",
     "stanford-dragon": "^1.1.1",
-    "three": "0.149.0"
+    "three": "0.149.0",
+    "getusermedia": "2.0.1"
   },
   "dependencies": {},
   "keywords": [

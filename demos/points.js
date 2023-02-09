@@ -92,8 +92,8 @@ function points () {
         points[i] = Math.random()
     }
 
-    const vbo = utils.makeBuffer(device, 4 *points.length, 'VERTEX', points, Float32Array)
-
+    const vbo = utils.makeBuffer(device, 4 * points.length, 'VERTEX', points, Float32Array)
+    console.log(vbo)
     passEncoder.setPipeline(pipeline)
     passEncoder.setVertexBuffer(0, vbo)
     passEncoder.draw(points.length, 1,0,0)

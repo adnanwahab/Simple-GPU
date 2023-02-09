@@ -48,6 +48,10 @@ fn vs_main(in : VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(in : VertexOutput) -> @location(0) vec4<f32> {
   var color = in.color;
+  // let distanceFromCenter: f32 = length(in.quad_pos);
+  // if (distanceFromCenter > 1.0) {
+  //     discard;
+  // }
   // Apply a circular particle alpha mask
   color.a = color.a * max(1.0 - length(in.quad_pos), 0.0);
   return color;
@@ -123,7 +127,7 @@ fn simulate(
     particle.velocity.x = (rand() - 0.5) * 0.1;
     particle.velocity.y = (rand() - 0.5) * 0.1;
     particle.velocity.z = rand() * 0.3;
-    particle.lifetime = 0.5 + rand() * 2.0;
+    particle.lifetime = .5 + rand() * 2.0;
   }
 
   // Store the new particle value

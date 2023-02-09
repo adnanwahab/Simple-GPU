@@ -7,6 +7,13 @@ async function basic () {
   // Calling simplewebgpu.init() creates a new partially evaluated draw command
 let webgpu = await simplegpu()
 
+const pos = []
+
+for (let i =0; i < 1e3; i++) {
+  pos.push([Math.random(), Math.random()])
+}
+
+
  webgpu.initDrawCall({
     // Shaders in simplewebgpu. are just strings. 
     frag: `
@@ -16,6 +23,7 @@ let webgpu = await simplegpu()
       //@location(1) color: vec4<f32>,
     ) -> @location(0) vec4<f32> {
       //return color;
+      
       return vec4(${Math.random()}, 0.0, 0, 1.0);
     }`,
   
@@ -45,11 +53,9 @@ let webgpu = await simplegpu()
     // Here we define the vertex attributes for the above shader
     attributes: {
       // simplewebgpu.buffer creates a new array buffer object
-      position: new webgpu.attribute([
-        [-1, 0],
-        [0, -1],
-        [1, 1]
-      ], 0, 2)
+      position: new webgpu.attribute(
+     pos
+      , 0, 2)
 
     },
   
@@ -59,7 +65,7 @@ let webgpu = await simplegpu()
     // },
   
     // This tells simpleWebgpu the number of vertices to draw in this command
-    count: 3
+    count: pos.length / 2
   }).then(draw => {
     draw({
       color: [
