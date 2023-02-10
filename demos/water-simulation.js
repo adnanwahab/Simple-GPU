@@ -1,11 +1,17 @@
-//import simpleWebgpu from "../lib/main";
 import simpleWebgpuInit from '../lib/main';
 import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
-//import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
+//faux lighting
+//collision detectiony
+//3d camera 
 
 // //take a cube and modulate vertices to audio
 // //take a cube fill it with particles and then modulate with water physics
+
 let webgpu = await simpleWebgpuInit()
+const cameraUniformBuffer = webgpu.device.createBuffer({
+  size: 4 * 16, // 4x4 matrix
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
 
 const attractors = []
   const attractor = {
@@ -15,8 +21,6 @@ const attractors = []
   attractor.position[0] = 0
   attractor.position[1] = 0
   attractors.push(attractor);
-
-
 
 function buildComputeUniforms(dt, aspectRatio, force, attractors) {
   const buffer = new ArrayBuffer(96);
@@ -40,7 +44,6 @@ function buildComputeUniforms(dt, aspectRatio, force, attractors) {
   return buffer;
 }
 
-
 const particlesCount = 1e5
 const particleSize = 16
 
@@ -59,19 +62,6 @@ for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
     particlesBuffer[4 * iParticle + 2] = 1
     particlesBuffer[4 * iParticle + 3] = -1
 }
-
-async function cool(CReadCopy, n) {
-  const C = new Float32Array(n * n)
-
-  // const CReadCopy = device.createBuffer({
-  //   size: m * n * 4, 
-  //   usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-  // })
-  await CReadCopy.mapAsync(GPUMapMode.READ);
-  c.set(new Float32Array(CReadCopy.getMappedRange()))
-  CReadCopy.unmap()
-  return c
-} 
 
 gpuBuffer.unmap();
 
@@ -97,95 +87,6 @@ setInterval(function () {
   const uniformsBufferData = buildComputeUniforms(elapsed, .1, [.5, .5], attractors)
   webgpu.device.queue.writeBuffer(computeUniformsBuffer, 0, uniformsBufferData);
 }, 100)
-
-
-// function reset(wantedParticlesCount) {
-//   let particleBatches = []
-//   for (const particlesBatch of particleBatches) {
-//       if (particlesBatch.gpuBuffer) {
-//           particlesBatch.gpuBuffer.destroy();
-//       }
-//       if (particlesBatch.colorsBuffer) {
-//           particlesBatch.colorsBuffer.destroy();
-//       }
-//   }
-//   particleBatches.length = 0;
-
-//   let totalGpuBufferSize = 0, totalColorBufferSize = 0;
-
-//   const particleSize = Float32Array.BYTES_PER_ELEMENT * (2 + 2);
-//   const maxDispatchSize = Math.floor(WebGPU.device.limits.maxStorageBufferBindingSize / particleSize / Engine.WORKGROUP_SIZE);
-
-//   let particlesLeftToAllocate = wantedParticlesCount;
-//   while (particlesLeftToAllocate > 0) {
-//       const idealDispatchSize = Math.ceil(particlesLeftToAllocate / Engine.WORKGROUP_SIZE);
-
-//       const dispatchSize = Math.min(idealDispatchSize, maxDispatchSize);
-//       const particlesCount = dispatchSize * Engine.WORKGROUP_SIZE;
-//       particlesLeftToAllocate -= particlesCount;
-
-//       const gpuBufferSize = particlesCount * particleSize;
-//       const gpuBuffer = WebGPU.device.createBuffer({
-//           size: gpuBufferSize,
-//           usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
-//           mappedAtCreation: true,
-//       });
-//       totalGpuBufferSize += gpuBufferSize;
-//       const colorsBufferSize = particlesCount * Uint32Array.BYTES_PER_ELEMENT;
-//       const colorsGpuBuffer = WebGPU.device.createBuffer({
-//           size: colorsBufferSize,
-//           usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
-//           mappedAtCreation: false,
-//       });
-//       totalColorBufferSize += colorsBufferSize;
-
-
-
-//       const computeBindgroup = webgpu.device.createBindGroup({
-//           layout: this.computePipeline.getBindGroupLayout(0),
-//           entries: [
-//               {
-//                   binding: 0,
-//                   resource: {
-//                       buffer: gpuBuffer
-//                   }
-//               },
-//               {
-//                   binding: 1,
-//                   resource: {
-//                       buffer: this.computeUniformsBuffer
-//                   }
-//               }
-//           ]
-//       });
-
-//       const initializeColorsComputeBindgroup = webgpu.device.createBindGroup({
-//           layout: this.initializeColorsComputePipeline.getBindGroupLayout(0),
-//           entries: [
-//               {
-//                   binding: 0,
-//                   resource: {
-//                       buffer: gpuBuffer
-//                   }
-//               },
-//               {
-//                   binding: 1,
-//                   resource: {
-//                       buffer: colorsGpuBuffer
-//                   }
-//               }
-//           ]
-//       });
-//       particleBatches.push({
-//           gpuBuffer,
-//           computeBindgroup,
-//           colorsBuffer: colorsGpuBuffer,
-//           initializeColorsComputeBindgroup,
-//           particlesCount,
-//           dispatchSize,
-//       });
-//   }
-// }
 
 const buffers = [
   {
@@ -312,18 +213,71 @@ exec: function (state){
               resource: {
                   buffer: computeUniformsBuffer
               }
-          }
+          },
+  
       ]
   });
 
   return [computeBindgroup]
   }
 })
+const device = webgpu.device
+const aspect = 1
+const eyePosition = vec3.fromValues(0, 50, -100);
+const upVector = vec3.fromValues(0, 1, 0);
+const origin = vec3.fromValues(0, 0, 0);
 
+const projectionMatrix = mat4.create();
+mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 2000.0);
+
+const viewMatrix = mat4.create();
+mat4.lookAt(viewMatrix, eyePosition, origin, upVector);
+
+const viewProjMatrix = mat4.create();
+mat4.multiply(viewProjMatrix, projectionMatrix, viewMatrix);
+
+// Move the model so it's centered.
+const modelMatrix = mat4.create();
+mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, -5, 0));
+mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, -40, 0));
+
+function getCameraViewProjMatrix() {
+  const eyePosition = vec3.fromValues(0, 50, -100);
+
+  const rad = Math.PI * (Date.now() / 5);
+  vec3.rotateY(eyePosition, eyePosition, origin, rad);
+
+  const viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix, eyePosition, origin, upVector);
+
+  mat4.multiply(viewProjMatrix, projectionMatrix, viewMatrix);
+  return viewProjMatrix;
+}
 
 
 async function basic () {
+  const cameraViewProj = getCameraViewProjMatrix();
+  device.queue.writeBuffer(
+    cameraUniformBuffer,
+    0,
+    cameraViewProj.buffer,
+    cameraViewProj.byteOffset,
+    cameraViewProj.byteLength
+  );
+
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
+const blend = {
+  color: {
+    srcFactor: 'src-alpha',
+    dstFactor: 'one',
+    operation: 'add',
+  },
+  alpha: {
+    srcFactor: 'zero',
+    dstFactor: 'one',
+    operation: 'add',
+  },
+}
 
 const drawCube = await webgpu.initDrawCall({
   shader: {
@@ -334,17 +288,25 @@ const drawCube = await webgpu.initDrawCall({
     spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
 };
 
+struct Camera {
+  viewProjectionMatrix : mat4x4<f32>,
+}
+
 struct VSOut {
     @builtin(position) position: vec4<f32>,
     @location(0) localPosition: vec2<f32>, // in {-1, +1}^2
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> camera : Camera;
+
 
 @vertex
 fn main_vertex(@location(0) inPosition: vec2<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
     var vsOut: VSOut;
-    vsOut.position = vec4<f32>(inPosition + (.004 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+    vsOut.position = vec4<f32>(inPosition + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+
+     //camera.viewProjectionMatrix * vec4<f32>(inPosition + (10. + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -356,18 +318,43 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
     if (distanceFromCenter > 1.0) {
         discard;
     }
+    var viewDir = vec3<f32>(0,0,0);
+    var lightSpecularColor = vec3<f32>(1);
+    var lightSpecularPower = 1.;
+    var lightPosition = vec3<f32>(-1,-1, 0);
+    var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
+		var distance = length(lightDir);
+		lightDir = lightDir / distance; // = normalize(lightDir);
+		distance = distance * distance; //This line may be optimised using Inverse square root
+    var normal = vec3(-1.,-1., 0.);
+		//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
+		var NdotL = dot(normal, lightDir);
+		var intensity = saturate(NdotL);
 
-    return vec4<f32>(0,0,1.,.1);
-}`},
-  // attributes: {
-  //   //uv: new webgpu.attribute(uv, 0, 2),
-  // },
+		// Calculate the diffuse light factoring in light color, power and the attenuation
+		//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
+
+		//Calculate the half vector between the light vector and the view vector.
+		//This is typically slower than calculating the actual reflection vector
+		// due to the normalize function's reciprocal square root
+		var H = normalize(lightDir + viewDir);
+
+		//Intensity of the specular light
+		var NdotH = dot(normal, H);
+		//intensity = pow(saturate(NdotH), specularHardness);
+
+		//Sum up the specular light factoring
+		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, 1.);
+
+    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,1);
+}
+`},
   attributeBuffers: buffers,
   attributeBufferData: [
     gpuBuffer, quadBuffer,
-    
   ],
   count: 6,
+  blend,
   instances: particlesCount ,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
@@ -382,7 +369,13 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
               resource: {
                   buffer: uniformsBuffer,
               }
-          }
+          },
+          // {
+          //   binding: 1,
+          //   resource: {
+          //     buffer: cameraUniformBuffer
+          //   }
+          // }
       ]
   });
   }
