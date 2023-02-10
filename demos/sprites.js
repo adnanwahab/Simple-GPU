@@ -90,17 +90,10 @@ const PALETTE = [
 async function main () {
   const webgpu = await initWebgpu()
 
-
 //  const adapter = await navigator.gpu.requestAdapter()
   const device = webgpu.device
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
 
   const canvas = webgpu.canvas
-
-
-  const shaderModule = device.createShaderModule({
-    code: code
-  })
 
   const spriteParamBuffer = device.createBuffer({
     size: NUM_SPRITES * 3 * 4 * 4,

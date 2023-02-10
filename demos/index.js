@@ -42,6 +42,8 @@ import cubeOcean from "./cube-ocean";
 
 import waterSimulation from "./water-simulation";
 
+import sprites from "./sprites";
+
 
 let defaultDemo = 'physics';
 let data = {}
@@ -59,14 +61,14 @@ let demoTitles = [
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
-  'deferredRendering', 'cubeOcean', 'waterSimulation'
+  'deferredRendering', 'cubeOcean', 'waterSimulation', 'sprites'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering, cubeOcean, waterSimulation
+deferredRendering, cubeOcean, waterSimulation, sprites
 ]
 
   document.querySelectorAll('input').forEach(e => {
