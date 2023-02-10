@@ -47,23 +47,30 @@ function buildComputeUniforms(dt, aspectRatio, force, attractors) {
 const particlesCount = 1e5
 const particleSize = 16
 
-const gpuBufferSize = particlesCount * particleSize;
 
-const gpuBuffer = webgpu.device.createBuffer({
-  size: gpuBufferSize,
-  usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
-  mappedAtCreation: true,
-});
+function makeBuffer () {
+  const gpuBufferSize = particlesCount * particleSize;
 
-const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-    particlesBuffer[4 * iParticle + 0] = Math.random() * 2 - 1;
-    particlesBuffer[4 * iParticle + 1] = Math.random() * 2 - 1;
-    particlesBuffer[4 * iParticle + 2] = 1
-    particlesBuffer[4 * iParticle + 3] = -1
+  const gpuBuffer = webgpu.device.createBuffer({
+    size: gpuBufferSize,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
+    mappedAtCreation: true,
+  });
+  
+  const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
+  for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
+      particlesBuffer[4 * iParticle + 0] = Math.random() * 2 - 1;
+      particlesBuffer[4 * iParticle + 1] = Math.random() * 2 - 1;
+      particlesBuffer[4 * iParticle + 2] = 1
+      particlesBuffer[4 * iParticle + 3] = -1
+  }
+  
+  gpuBuffer.unmap();
+  return gpuBuffer
 }
+const posBuffer = makeBuffer()
+const velocityBuffer = makeBuffer()
 
-gpuBuffer.unmap();
 
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
@@ -94,7 +101,7 @@ const buffers = [
           {
               shaderLocation: 0,
               offset: 0,
-              format: "float32x2",
+              format: "float32x4",
           }
       ],
       arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
@@ -115,14 +122,21 @@ const buffers = [
 
 
 const compute = webgpu.initComputeCall({
-  code: `struct Particle {
-    position: vec2<f32>,
-    velocity: vec2<f32>
-};
+  code: `
+  struct Velocity {
+    velocity: vec4<f32>,
+  }
+  struct Particle {
+      position: vec4<f32>,
+  };
 
-struct ParticlesBuffer {
-    particles: array<Particle>,
-};
+  struct PositionBuffer {
+      particles: array<Particle>,
+  };
+
+  struct VelocityBuffer {
+    velocities: array<Velocity>,
+  };
 
 struct Attractor {                                 //             align(8)  size(16)
     position: vec2<f32>,                           // offset(0)   align(8)  size(8)
@@ -142,49 +156,57 @@ struct Uniforms {                                  //             align(8)  size
     @align(16) attractors: array<Attractor, 1>,    // offset(32)  align(16) size(16) stride(16)
 };
 
-@group(0) @binding(0) var<storage,read_write> particlesStorage: ParticlesBuffer;
-@group(0) @binding(1) var<uniform> uniforms: Uniforms;
+@group(0) @binding(0) var<storage,read_write> particlesStorage: PositionBuffer;
+@group(0) @binding(1) var<storage,read_write> velocityStorage: VelocityBuffer;
+
+@group(0) @binding(2) var<uniform> uniforms: Uniforms;
 
 @compute @workgroup_size(256)
 fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
 
     var particle = particlesStorage.particles[index];
+    var velocity = velocityStorage.velocities[index];
+    var aspectRatioStuff = uniforms.aspectRatio;
 
-    let applyAspectRatio = vec2<f32>(uniforms.aspectRatio, 1.0);
+    //let applyAspectRatio = vec4<f32>(uniforms.aspectRatio);
 
-    var force: vec2<f32> = uniforms.force * applyAspectRatio;
-    for (var i = 0u; i < uniforms.attractorsCount; i = i + 1u) {
-        var toAttractor: vec2<f32> = (uniforms.attractors[i].position - particle.position) * applyAspectRatio;
-        let squaredDistance: f32 = dot(toAttractor, toAttractor);
-        force = force + uniforms.attractors[i].force * toAttractor / (squaredDistance + 0.01);
-    }
+    // var force: vec2<f32> = uniforms.force * applyAspectRatio;
+    // for (var i = 0u; i < uniforms.attractorsCount; i = i + 1u) {
+    //     var toAttractor: vec2<f32> = (uniforms.attractors[i].position - particle.position) * applyAspectRatio;
+    //     let squaredDistance: f32 = dot(toAttractor, toAttractor);
+    //     force = force + uniforms.attractors[i].force * toAttractor / (squaredDistance + 0.01);
+    // }
 
-    particle.velocity = uniforms.friction * (particle.velocity + uniforms.dt * force);
-    particle.velocity.y = -.001;
-    particle.position = particle.position + particle.velocity * applyAspectRatio;
+    // particle.velocity = uniforms.friction * (particle.velocity + uniforms.dt * force);
+    velocity.velocity.y = -.001;
+    particle.position = particle.position + velocity.velocity;
 
-    if (uniforms.bounce != 0u) {
-        if (particle.position.x < -1.0) {
-            particle.position.x = -2.0 - particle.position.x;
-            particle.velocity.x = -particle.velocity.x;
-        }
-        if (particle.position.y < -1.0) {
-            particle.position.y = -2.0 - particle.position.y;
-            particle.velocity.y = -particle.velocity.y;
-        }
+    // if (uniforms.bounce != 0u) {
+    //     if (particle.position.x < -1.0) {
+    //         particle.position.x = -2.0 - particle.position.x;
+    //         particle.velocity.x = -particle.velocity.x;
+    //     }
+    //     if (particle.position.y < -1.0) {
+    //         particle.position.y = -2.0 - particle.position.y;
+    //         particle.velocity.y = -particle.velocity.y;
+    //     }
 
-        if (particle.position.x > 1.0) {
-            particle.position.x = 2.0 - particle.position.x;
-            particle.velocity.x = -particle.velocity.x;
-        }
-        if (particle.position.y > 1.0) {
-            particle.position.y = 2.0 - particle.position.y;
-            particle.velocity.y = -particle.velocity.y;
-        }
-    }
+    //     if (particle.position.x > 1.0) {
+    //         particle.position.x = 2.0 - particle.position.x;
+    //         particle.velocity.x = -particle.velocity.x;
+    //     }
+    //     if (particle.position.y > 1.0) {
+    //         particle.position.y = 2.0 - particle.position.y;
+    //         particle.velocity.y = -particle.velocity.y;
+    //     }
+    // }
+
+    
 
     particlesStorage.particles[index] = particle;
+    velocityStorage.velocities[index] = velocity;
+
 }`,
 exec: function (state){
   const device =  state.device
@@ -205,11 +227,17 @@ exec: function (state){
           {
               binding: 0,
               resource: {
-                  buffer: gpuBuffer
+                  buffer: posBuffer
               }
           },
           {
-              binding: 1,
+            binding: 1,
+            resource: {
+              buffer: velocityBuffer
+            }
+          },
+          {
+              binding: 2,
               resource: {
                   buffer: computeUniformsBuffer
               }
@@ -302,11 +330,12 @@ struct VSOut {
 
 
 @vertex
-fn main_vertex(@location(0) inPosition: vec2<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
     var vsOut: VSOut;
-    vsOut.position = vec4<f32>(inPosition + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+    vsOut.position = vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
 
-     //camera.viewProjectionMatrix * vec4<f32>(inPosition + (10. + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+     //camera.viewProjectionMatrix * 
+//     vec4<f32>(inPosition.xy + (10. + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -351,7 +380,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    gpuBuffer, quadBuffer,
+    posBuffer, quadBuffer,
   ],
   count: 6,
   blend,
@@ -391,3 +420,6 @@ setInterval(
 }
 
 export default basic
+
+
+// camera technique https://github.com/jrprice/NBody-WebGPU/blob/main/src/shaders.wgsl
