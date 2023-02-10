@@ -179,8 +179,8 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     // }
 
     // particle.velocity = uniforms.friction * (particle.velocity + uniforms.dt * force);
-    velocity.velocity.y = -.001;
-    particle.position = particle.position + velocity.velocity;
+    velocity.velocity.y = -.01;
+    particle.position.y = particle.position.y + velocity.velocity.y;
 
     // if (uniforms.bounce != 0u) {
     //     if (particle.position.x < -1.0) {
@@ -332,9 +332,9 @@ struct VSOut {
 @vertex
 fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
     var vsOut: VSOut;
-    vsOut.position = vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
-
-     //camera.viewProjectionMatrix * 
+    vsOut.position =  vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+    
+//    camera.viewProjectionMatrix *      
 //     vec4<f32>(inPosition.xy + (10. + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
