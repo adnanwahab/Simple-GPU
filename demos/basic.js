@@ -59,10 +59,10 @@ let webgpu = await simplegpu()
       // simpleWebgpu automatically infers sane defaults for the vertex attribute pointers
     },
   
-    uniforms: {
-      // This defines the color of the triangle to be a dynamic variable
-      color: webgpu.prop('color')
-    },
+    // uniforms: {
+    //   // This defines the color of the triangle to be a dynamic variable
+    //   color: webgpu.prop('color')
+    // },
   
     // This tells simpleWebgpu the number of vertices to draw in this command
     count: 3
