@@ -143,13 +143,13 @@ async function main () {
   const fog = uniformData.subarray(48, 52)
 
   const draw = await webgpu.initDrawCall({
-    uniforms: {
-      model: ({tick}) => mat4.fromRotation(model, 0.0005 * tick, [0, 1, 0]),
-      view: () => mat4.lookAt(view, [0, 1, -3], [0, 0, 0], [0, 1, 0]),
-      projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
-      fog: () => vec4.copy(fog, PALETTE[0]),
-      time: () => .001 * performance.now()
-    },
+    // uniforms: {
+    //   model: ({tick}) => mat4.fromRotation(model, 0.0005 * tick, [0, 1, 0]),
+    //   view: () => mat4.lookAt(view, [0, 1, -3], [0, 0, 0], [0, 1, 0]),
+    //   projection: () => mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0),
+    //   fog: () => vec4.copy(fog, PALETTE[0]),
+    //   time: () => .001 * performance.now()
+    // },
     shader: {
       code, 
       vertEntryPoint:'vertMain',
@@ -191,13 +191,7 @@ async function main () {
   }
   })
 
-
-
-
-
   function frame (tick) {
-
-  
     mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.01, 50.0)
     mat4.lookAt(view, [0, 1, -3], [0, 0, 0], [0, 1, 0])
     mat4.fromRotation(model, 0.0005 * tick, [0, 1, 0])
