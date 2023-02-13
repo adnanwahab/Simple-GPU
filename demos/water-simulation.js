@@ -13,10 +13,10 @@ struct Uniforms {
 };
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
-const GRID_CELL_SIZE = vec3<f32>(500.,500.,500.);
-const GRID_RES = 10000;
+const GRID_CELL_SIZE = vec3<f32>(50.,50.,50.);
+const GRID_RES = 100;
 
-const effectRadius = 0.3f;
+const effectRadius = 1.3f;
 const restDensity = 450.0f;
 const relaxCFM = 600.0f;
 const timeStep = 0.010f;
@@ -91,7 +91,6 @@ var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
 @group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
 @group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
-
 fn ID(x : f32, y : f32) -> u32 { return u32(x + y * uniforms.w); }
 
 @compute @workgroup_size(256)
@@ -110,7 +109,7 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   var startEndN = 0;
   var constraint = constFactor[index];
 
-  var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
+  var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
   velocityStorage[index] = velocity;
   particlesStorage[index] = pos;
 
@@ -214,7 +213,6 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         }
         var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
         vec = pos - predPos[e];
-        //fixme - change Index to simplified grid index
         corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
       }
     } 
@@ -459,7 +457,7 @@ function makeCompute(code=computeCode) {
     const computePass = commandEncoder.beginComputePass();
     computePass.setPipeline(state.computePass.pipeline);
     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(1000);
+    computePass.dispatchWorkgroups(10000);
     computePass.end();
   } ,
     bindGroups: function (state, computePipeline) {
@@ -764,8 +762,6 @@ export default basic
 
 
 // camera technique https://github.com/jrprice/NBody-WebGPU/blob/main/src/shaders.wgsl
-
-
 //make a buffer of 1 million particles (position + velocity )
 //Grid - make a buffer of 250,000 "grid" = record velocity, density or ID's of particles
 //for each particle - write the location into grid
@@ -781,3 +777,5 @@ export default basic
 //https://www.youtube.com/watch?v=MhzFbCqoTxw
 
 ///https://github.com/regl-project/regl-camera/blob/master/regl-camera.js
+
+//https://mmacklin.com/pbf_sig_preprint.pdf
