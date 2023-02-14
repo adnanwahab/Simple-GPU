@@ -3,8 +3,13 @@
   "version": "0.41.0",
   "description": "simple-gpu is a fast functional WebGPU framework.",
   "scripts": {
+    "build:html": "ts-node ./src/build-html.mjs",
+    "build:js": "esbuild --bundle ./src/demos/* --outdir=dist/",
+    "build": "npm run build:html && npm run build:js",
     "dev": "vite",
-    "build": "rm -rf dist && rollup -c ",
+    "build-module": "rm -rf dist && rollup -c ",
+    "watch:js": "esbuild --sourcemap --bundle ./src/demos/* --outdir=dist/ --watch --servedir=dist",
+    "watch": "npm run build:html && npm run watch:js",
     "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test"
   },
   "files": [
@@ -19,6 +24,10 @@
     "default": "./src/index.js"
   },
   "devDependencies": {
+    "@types/node": "^18.11.18",
+    "@webgpu/types": "^0.1.24",
+    "esbuild": "^0.17.0",
+    "ts-node": "^10.9.1",
     "d3": "^7.1.1",
     "typescript": "^4.4.4",
     "vite": "^2.6.13",
