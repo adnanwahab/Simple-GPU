@@ -93,6 +93,10 @@ var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
 @group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
 @group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
+@group(0) @binding(8) var<storage,read_write> gridStorage: array<vec4<f32>>;
+//@group(0) @binding(9) var<storage,read_write> gridIndicesStorage: array<vec4<f32>>;
+
+
 fn ID(x : f32, y : f32) -> u32 { return u32(x + y * uniforms.w); }
 
 @compute @workgroup_size(256)
@@ -104,6 +108,9 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
   var density = densityStorage[index];
   var correctPar = correctParticle[index];
   // var predPos = predPos[index];
+  var gridStorage = gridStorage[index];
+//  var gridIndices = gridIndicesStorage[index];
+
 
   var aspectRatioStuff = uniforms.aspectRatio;
   var startEndCell = vec2<u32>(GlobalInvocationID.x,GlobalInvocationID.y);
@@ -335,65 +342,65 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
 //8. apply XsphViscosityCorrection
 //9. apply bounding walls
 //10. update position
-// const computeCode = `  
+const computeCode = `  
 
-// struct Uniforms {                                  
-//   force: vec2<f32>,                              
-//   dt: f32,                                       
-//   bounce: u32,                                   
-//   friction: f32,                                 
-//   aspectRatio: f32,                              
-//   w: f32,
-//   h: f32,
-// };
-
-
-// var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-// @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-// @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-// @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
-// @group(0) @binding(3) var<storage,read_write> prediction: array<vec4<f32>>;
-// @group(0) @binding(4) var<storage,read_write> densityStorage: array<vec4<f32>>;
-// @group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
-// @group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+struct Uniforms {                                  
+  force: vec2<f32>,                              
+  dt: f32,                                       
+  bounce: u32,                                   
+  friction: f32,                                 
+  aspectRatio: f32,                              
+  w: f32,
+  h: f32,
+};
 
 
-// fn ID(x : f32, y : f32) -> u32 { return u32(x + y * uniforms.w); }
-
-// @compute @workgroup_size(256)
-// fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-//   let index: u32 = GlobalInvocationID.x;
-
-//   var particle = particlesStorage[index];
-//   var velocity = velocityStorage[index];
-//   var vort = vorticity[index];
-//   var predPos = prediction[index];
-//   var density = densityStorage[index];
-//   var constraint = constFactor[index];
+var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+@group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
+@group(0) @binding(3) var<storage,read_write> prediction: array<vec4<f32>>;
+@group(0) @binding(4) var<storage,read_write> densityStorage: array<vec4<f32>>;
+@group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
+@group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
 
 
-//   var aspectRatioStuff = uniforms.aspectRatio;
+fn ID(x : f32, y : f32) -> u32 { return u32(x + y * uniforms.w); }
 
-//   if (particle.y < -.9) { velocity.y = .01; }
-//   else {
-//     velocity.y += -.0001;
-//   }
+@compute @workgroup_size(256)
+fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+  let index: u32 = GlobalInvocationID.x;
 
-//   particle.y = particle.y + velocity.y;
+  var particle = particlesStorage[index];
+  var velocity = velocityStorage[index];
+  var vort = vorticity[index];
+  var predPos = prediction[index];
+  var density = densityStorage[index];
+  var constraint = constFactor[index];
 
-//   //prediction[index] = particle + vec4<f32>(0, -.01, 0, 0);
-//   for (var ix = -1; ix <= 1; ix+=1) {
-//     for (var iy = -1; iy <= 1; iy+=1) {
-//       //for (var iz = -1; iz <= 1; iz+=1) {
-//         // var cellNIndex3D = convert_int3(cellIndex3D) + (int3)(iX, iY, iZ);
-//         // var cellIndex = ID(particle.x, particle.y);
-//       //}
-//     }
-//   }
 
-//   particlesStorage[index] = particle;
-//   velocityStorage[index] = velocity;
-// }`;
+  var aspectRatioStuff = uniforms.aspectRatio;
+
+  if (particle.y < -.9) { velocity.y = .01; }
+  else {
+    velocity.y += -.0001;
+  }
+
+  particle.y = particle.y + velocity.y;
+
+  //prediction[index] = particle + vec4<f32>(0, -.01, 0, 0);
+  for (var ix = -1; ix <= 1; ix+=1) {
+    for (var iy = -1; iy <= 1; iy+=1) {
+      //for (var iz = -1; iz <= 1; iz+=1) {
+        // var cellNIndex3D = convert_int3(cellIndex3D) + (int3)(iX, iY, iZ);
+        // var cellIndex = ID(particle.x, particle.y);
+      //}
+    }
+  }
+
+  particlesStorage[index] = particle;
+  velocityStorage[index] = velocity;
+}`;
 
 
 //faux lighting
@@ -447,10 +454,13 @@ const densityBuffer = makeBuffer()
 const constBuffer = makeBuffer()
 const correctParticle = makeBuffer()
 
+const grid = makeBuffer()
+const gridIndices = makeBuffer(particlesCount * 3)
+
+
 
 function makeCompute(code=computeCode) {
   const compute = webgpu.initComputeCall({
-//    canvasSize: innerWidth,
     code,
   exec: function (state){
     const device = state.device
@@ -514,6 +524,18 @@ function makeCompute(code=computeCode) {
                   buffer: correctParticle
               }
           },
+          {
+            binding: 8,
+            resource: {
+                buffer: grid
+            }
+        },
+      //   {
+      //     binding: 9,
+      //     resource: {
+      //         buffer: gridIndices
+      //     }
+      // },
         ]
     });
   
@@ -546,8 +568,82 @@ function buildComputeUniforms(dt, aspectRatio, force, attractors) {
 
   return buffer;
 }
-//const compute = makeCompute()
+
+
+
+
 const makeIncompressible = makeCompute(IncompressionShader)
+const compute = webgpu.initComputeCall({
+  code:computeCode,
+exec: function (state){
+  const device = state.device
+  const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+
+  const computePass = commandEncoder.beginComputePass();
+  computePass.setPipeline(state.computePass.pipeline);
+  computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+  computePass.dispatchWorkgroups(10000);
+  computePass.end();
+} ,
+  bindGroups: function (state, computePipeline) {
+    const computeBindgroup = webgpu.device.createBindGroup({
+      layout: computePipeline.getBindGroupLayout(0),
+      entries: [
+          {
+              binding: 0,
+              resource: {
+                  buffer: computeUniformsBuffer
+              }
+          },
+          {
+            binding: 1,
+            resource: {
+              buffer: velocityBuffer
+            }
+          },
+          {
+            binding: 2,
+            resource: {
+              buffer: vorticityBuffer
+            }
+          },
+          {
+            binding: 3,
+            resource: {
+              buffer: predictionBuffer
+            }
+          },
+          {
+            binding: 4,
+            resource: {
+              buffer: densityBuffer
+            }
+          },
+          {
+            binding: 5,
+            resource: {
+              buffer: constBuffer
+            }
+          },
+          {
+              binding: 6,
+              resource: {
+                  buffer: posBuffer
+              }
+          },
+
+    //   {
+    //     binding: 9,
+    //     resource: {
+    //         buffer: gridIndices
+    //     }
+    // },
+      ]
+  });
+
+  return [computeBindgroup]
+  }
+})
 
 
 const quadBuffer = webgpu.device.createBuffer({
@@ -753,6 +849,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 setInterval(
   function () {
     makeIncompressible()
+    //compute()
     drawCube({})
   }, 50
 )
