@@ -1,6 +1,6 @@
 //import simpleWebgpu from "../lib/main";
 import simpleWebgpuInit from '../../lib/main';
-import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
+import { mat4, vec3 } from 'gl-matrix';
 //import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
 
 

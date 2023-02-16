@@ -1,3 +1,208 @@
+import mouseChange from 'mouse-change'
+import mouseWheel from 'mouse-wheel'
+// import identity from 'gl-mat4/identity'
+// import perspective from 'gl-mat4/perspective'
+// import lookAt from 'gl-mat4/lookAt'
+
+var isBrowser = typeof window !== 'undefined'
+const particlesCount = 1e5
+
+function createCamera (props_) {
+  var props = props_ || {}
+
+  // Preserve backward-compatibilty while renaming preventDefault -> noScroll
+  if (typeof props.noScroll === 'undefined') {
+    props.noScroll = props.preventDefault;
+  }
+
+  var cameraState = {
+    view: mat4.identity(new Float32Array(16)),
+    projection: mat4.identity(new Float32Array(16)),
+    center: new Float32Array(props.center || 3),
+    theta: props.theta || 0,
+    phi: props.phi || 0,
+    distance: Math.log(props.distance || 10.0),
+    eye: new Float32Array(3),
+    up: new Float32Array(props.up || [0, 1, 0]),
+    fovy: props.fovy || Math.PI / 4.0,
+    near: typeof props.near !== 'undefined' ? props.near : 0.01,
+    far: typeof props.far !== 'undefined' ? props.far : 1000.0,
+    noScroll: typeof props.noScroll !== 'undefined' ? props.noScroll : false,
+    flipY: !!props.flipY,
+    dtheta: 0,
+    dphi: 0,
+    rotationSpeed: typeof props.rotationSpeed !== 'undefined' ? props.rotationSpeed : 1,
+    zoomSpeed: typeof props.zoomSpeed !== 'undefined' ? props.zoomSpeed : 1,
+    renderOnDirty: typeof props.renderOnDirty !== undefined ? !!props.renderOnDirty : false
+  }
+
+  var element = props.element
+  var damping = typeof props.damping !== 'undefined' ? props.damping : 0.9
+
+  var right = new Float32Array([1, 0, 0])
+  var front = new Float32Array([0, 0, 1])
+
+  var minDistance = Math.log('minDistance' in props ? props.minDistance : 0.1)
+  var maxDistance = Math.log('maxDistance' in props ? props.maxDistance : 1000)
+
+  var ddistance = 0
+
+  var prevX = 0
+  var prevY = 0
+
+  if (isBrowser && props.mouse !== false) {
+    var source = element
+
+    function getWidth () {
+      return element ? element.offsetWidth : window.innerWidth
+    }
+
+    function getHeight () {
+      return element ? element.offsetHeight : window.innerHeight
+    }
+
+    mouseChange(source, function (buttons, x, y) {
+      if (buttons & 1) {
+        var dx = (x - prevX) / getWidth()
+        var dy = (y - prevY) / getHeight()
+
+        cameraState.dtheta += cameraState.rotationSpeed * 4.0 * dx
+        cameraState.dphi += cameraState.rotationSpeed * 4.0 * dy
+        cameraState.dirty = true;
+      }
+      prevX = x
+      prevY = y
+ 
+    })
+
+    mouseWheel(source, function (dx, dy) {
+      ddistance += dy / getHeight() * cameraState.zoomSpeed
+      cameraState.dirty = true;
+    }, props.noScroll)
+  }
+
+  function damp (x) {
+    var xd = x * damping
+    if (Math.abs(xd) < 0.1) {
+      return 0
+    }
+    cameraState.dirty = true;
+    return xd
+  }
+
+  function clamp (x, lo, hi) {
+    return Math.min(Math.max(x, lo), hi)
+  }
+
+  function updateCamera (props) {
+    Object.keys(props).forEach(function (prop) {
+      cameraState[prop] = props[prop]
+    })
+
+    var center = cameraState.center
+    var eye = cameraState.eye
+    var up = cameraState.up
+    var dtheta = cameraState.dtheta
+    var dphi = cameraState.dphi
+
+    cameraState.theta += dtheta
+    cameraState.phi = clamp(
+      cameraState.phi + dphi,
+      -Math.PI / 2.0,
+      Math.PI / 2.0)
+    cameraState.distance = clamp(
+      cameraState.distance + ddistance,
+      minDistance,
+      maxDistance)
+
+    cameraState.dtheta = damp(dtheta)
+    cameraState.dphi = damp(dphi)
+    ddistance = damp(ddistance)
+
+    var theta = cameraState.theta
+    var phi = cameraState.phi
+    var r = Math.exp(cameraState.distance)
+
+    var vf = r * Math.sin(theta) * Math.cos(phi)
+    var vr = r * Math.cos(theta) * Math.cos(phi)
+    var vu = r * Math.sin(phi)
+
+    for (var i = 0; i < 3; ++i) {
+      eye[i] = center[i] + vf * front[i] + vr * right[i] + vu * up[i]
+    }
+
+    mat4.lookAt(cameraState.view, eye, center, up)
+  }
+
+  cameraState.dirty = true;
+
+  // var injectContext = regl({
+  //   context: Object.assign({}, cameraState, {
+  //     dirty: function () {
+  //       return cameraState.dirty;
+  //     },
+  //     projection: function (context) {
+  //       mat4.perspective(cameraState.projection,
+  //         cameraState.fovy,
+  //         context.viewportWidth / context.viewportHeight,
+  //         cameraState.near,
+  //         cameraState.far)
+  //       if (cameraState.flipY) { cameraState.projection[5] *= -1 }
+  //       return cameraState.projection
+  //     }
+  //   }),
+  //   uniforms: Object.keys(cameraState).reduce(function (uniforms, name) {
+  //     uniforms[name] = regl.context(name)
+  //     return uniforms
+  //   }, {})
+  // })
+
+  function setupCamera () {
+
+      updateCamera(props)
+      cameraState.perspective = mat4.perspective(cameraState.projection,
+        cameraState.fovy,
+        1,
+        cameraState.near,
+        cameraState.far)
+
+//        console.log(cameraState.view)
+    // if (typeof setupCamera.dirty !== 'undefined') {
+    //   cameraState.dirty = setupCamera.dirty || cameraState.dirty
+    //   setupCamera.dirty = undefined;
+    // }
+
+    // if (props && block) {
+    //   cameraState.dirty = true;
+    // }
+
+    // if (cameraState.renderOnDirty && !cameraState.dirty) return;
+
+    // if (!block) {
+    //   block = props
+    //   props = {}
+    // }
+
+    // updateCamera(props)
+    // injectContext(block)
+    // cameraState.dirty = false;
+    return {
+      projection: cameraState.projection,
+      view: cameraState.view
+    }
+  }
+
+  // Object.keys(cameraState).forEach(function (name) {
+  //   setupCamera[name] = cameraState[name]
+  // })
+
+  return setupCamera
+}
+
+
+
+
+
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 
@@ -14,8 +219,8 @@ const predefines = `struct Uniforms {
 };
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
-const GRID_CELL_SIZE = vec3<f32>(50.,50.,50.);
-const GRID_RES = 100;
+const GRID_CELL_SIZE = vec3<f32>(5.,5.,5.);
+const GRID_RES = 500;
 
 const effectRadius = 1.3f;
 const restDensity = 450.0f;
@@ -85,7 +290,6 @@ async function basic () {
 
 const IncompressionShader = `
 ${predefines}
-
 var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
@@ -101,6 +305,7 @@ var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
 
 @compute @workgroup_size(256)
 fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+  const particlesCount = ${particlesCount};
   let index: u32 = GlobalInvocationID.x;
   var pos = particlesStorage[index];
   var velocity = velocityStorage[index];
@@ -141,8 +346,10 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         ) {
           continue;
         }
+
         let e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
         fluidDensity += poly6(pos - predPos[e], effectRadius);
+        
       }
     }
   }
@@ -330,11 +537,10 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
 
 let webgpu = await simpleWebgpuInit()
 const cameraUniformBuffer = webgpu.device.createBuffer({
-  size: 4 * 16, // 4x4 matrix
+  size: 2 * 4 * 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-const particlesCount = 1e5
 const particleSize = 16
 
 const computeUniformsBuffer = webgpu.device.createBuffer({
@@ -355,7 +561,7 @@ function makeBuffer (size=particlesCount, flag=1) {
   for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
       particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
       particlesBuffer[4 * iParticle + 1] = flag &&(Math.random() * 2 - 1);
-      particlesBuffer[4 * iParticle + 2] = 0
+      particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() * 2 - 1);
       particlesBuffer[4 * iParticle + 3] = 0
   }
   
@@ -408,7 +614,6 @@ const predictedPosition = webgpu.initComputeCall({
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
     predPos[index] = particlesStorage[index] + newVel;
 
-    var id = getCell3DIndexFromPos(predPos[index]);
     var oneId = getCell1DIndexFromPos(predPos[index]);
     grid[oneId] = grid[oneId] + 1;
     gridIndices[grid[oneId]] = index;
@@ -616,8 +821,6 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var aspectRatioStuff = uniforms.aspectRatio;
     var constraint = constFactor[index];
     var fluidDensity = densityStorage[index];
-
-   
    
     //3. compute constraint factor
   {
@@ -892,9 +1095,12 @@ function getCameraViewProjMatrix() {
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
   mat4.perspectiveZO(projectionMatrix,
-    1, 500 / 500, .1, 50.0);
-  mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
+    1, 500 / 500, .1, 500.0);
+  //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+
+  //mat4.lookAt(viewProjectionMatrix, eyePosition, origin, upVector);
+
 
   // Write the render parameters to the uniform buffer.
   let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
@@ -905,13 +1111,7 @@ function getCameraViewProjMatrix() {
 
 
   const cameraViewProj = getCameraViewProjMatrix();
-  device.queue.writeBuffer(
-    cameraUniformBuffer,
-    0,
-    cameraViewProj.buffer,
-    cameraViewProj.byteOffset,
-    cameraViewProj.byteLength
-  );
+
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
@@ -937,7 +1137,8 @@ const drawCube = await webgpu.initDrawCall({
 };
 
 struct Camera {
-  viewProjectionMatrix : mat4x4<f32>,
+  projectionMatrix : mat4x4<f32>,
+  viewMatrix : mat4x4<f32>,
 }
 
 struct VSOut {
@@ -954,8 +1155,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     
-    camera.viewProjectionMatrix *      
-   vec4<f32>(inPosition.xy + (.005 + uniforms.spriteSize) * quadCorner, 0., 1.);
+     camera.projectionMatrix * camera.viewMatrix *  
+   vec4<f32>(inPosition.xy + (.005 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -1033,9 +1234,53 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
   });
   }
 })
+let camera = createCamera({
+  center: [0., 0.5, 2 ],
+  damping: 0,
+  noScroll: true,
+  renderOnDirty: true,
+  element: webgpu.canvas
+});
+let stuff = camera();
+
+const identity = mat4.identity([])
+const v = new Float32Array([0.9951236248016357,-0.03326542302966118,0.09285693615674973,0,0,0.941413164138794,0.33725544810295105,0,-0.09863568842411041,-0.33561086654663086,0.9368224740028381,0,0.19727137684822083,0.20051512122154236,-3.9743294715881348,1])
 
 setInterval(
   async function () {
+    let {projection, view} = camera()
+    cameraViewProj
+
+    device.queue.writeBuffer(
+      cameraUniformBuffer,
+      0,
+      cameraViewProj.buffer,
+      cameraViewProj.byteOffset,
+      cameraViewProj.byteLength
+    );
+
+    device.queue.writeBuffer(
+      cameraUniformBuffer,
+      0,
+      projection.buffer,
+      projection.byteOffset,
+      projection.byteLength
+    );
+
+    device.queue.writeBuffer(
+      cameraUniformBuffer,
+      64,
+      view.buffer,
+      view.byteOffset,
+      view.byteLength
+    );
+    //  device.queue.writeBuffer(
+    //   cameraUniformBuffer,
+    //   64,
+    //   identity.buffer,
+    //   identity.byteOffset,
+    //   identity.byteLength
+    // );
     //makeIncompressible()
     //compute()
     predictedPosition()
@@ -1049,7 +1294,6 @@ setInterval(
     window.x = await utils.readBuffer(webgpu.state, grid)
     window.y = await utils.readBuffer(webgpu.state, gridIndices)
     window.z = await utils.readBuffer(webgpu.state, posBuffer)
-
   }, 50
 )
   
@@ -1076,3 +1320,6 @@ basic()
 ///https://github.com/regl-project/regl-camera/blob/master/regl-camera.js
 
 //https://mmacklin.com/pbf_sig_preprint.pdf
+
+
+//Attribution https://github.com/axoloto/RealTimeParticles/blob/master/physics/Fluids.cpp
