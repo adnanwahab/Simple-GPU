@@ -1951,9 +1951,6 @@
     };
     state2.computePass = mainComputePass;
   }
-  function execComputePass(state2, CE) {
-    state2.compute.exec(state2, CE);
-  }
 
   // lib/main.js
   function isFunction(fn) {
@@ -2259,12 +2256,15 @@
       attribute,
       canvas
     };
-    function compute(options2, CE) {
-      execComputePass(state2, CE);
-    }
     function initComputeCall(options2) {
-      state2.compute = options2;
-      createComputePass(options2, state2);
+      let localState = {
+        ...state2
+      };
+      localState.compute = options2;
+      createComputePass(options2, localState);
+      function compute(options3, CE) {
+        localState.compute.exec(localState, CE);
+      }
       compute.submit = function() {
         state2.device.queue.submit([state2.commandEncoder.finish()]);
         delete state2.commandEncoder;
