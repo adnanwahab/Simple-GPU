@@ -1,6 +1,6 @@
 import utils from '../../lib/utils'
 //https://github.com/mikolalysenko/webgpu-experiments/blob/master/src/demos/icosahedron.ts
-import { mat4 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
+import { mat4 } from 'gl-matrix';
 import simpleWebgpuInit from '../../lib/main';
 
 async function main () {

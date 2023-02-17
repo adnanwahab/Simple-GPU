@@ -5,7 +5,7 @@ import mouseWheel from 'mouse-wheel'
 // import lookAt from 'gl-mat4/lookAt'
 
 var isBrowser = typeof window !== 'undefined'
-const particlesCount = 1e5
+const particlesCount = 1e6
 
 function createCamera (props_) {
   var props = props_ || {}
@@ -254,7 +254,7 @@ fn gradSpiky(vec:vec4<f32>,  effectRadius:f32) -> vec4<f32> {
 
   if(vecLength <= FLOAT_EPS) {
     return vec4<f32>(0.0f);
-  }
+}
 
   return vec * (1.0f - step(effectRadius, vecLength)) * SPIKY_COEFF * -3 * pow((effectRadius - vecLength), 2) / vecLength;
 }
@@ -270,274 +270,36 @@ fn getCell3DIndexFromPos(pos:vec4<f32>) -> vec3<i32> {
   // Moving particles in [0 - 2 * ABS_WALL_POS] to have coords matching with cellIndices
   let posXYZ = clamp(pos.xyz, -ABS_WALL_POS, ABS_WALL_POS) + (ABS_WALL_POS);
 
-  let cell3DIndex = (floor(posXYZ / GRID_CELL_SIZE));
+  let cell3DIndex = posXYZ;
 
-  return vec3<i32>(i32(cell3DIndex.x), i32(cell3DIndex.y), i32(cell3DIndex.z));
+  return vec3<i32>(i32(cell3DIndex.x * GRID_RES), i32(cell3DIndex.y * GRID_RES), i32(cell3DIndex.z * GRID_RES));
 }
 
 fn getCell1DIndexFromPos(pos:vec4<f32>) -> i32 {
   var cell3DIndex = getCell3DIndexFromPos(pos);
 
-  var cell1DIndex = cell3DIndex.x * GRID_RES * GRID_RES
+ var cell1DIndex = cell3DIndex.x * GRID_RES * GRID_RES
                          + cell3DIndex.y * GRID_RES
                          + cell3DIndex.z;
 
   return cell1DIndex;
 }
+
+// fn getNeighbors (pos:vec4<f32>) -> vec4<i32> {
+//   var oneId = getCell1DIndexFromPos(predPos[index]);
+//     grid[oneId] = 1;
+//     gridIndices[grid[oneId]] = index;
+//   return vec4<i32>(0);
+// }
+
 `
 
 async function basic () {
 
-const IncompressionShader = `
-${predefines}
-var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-@group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
-@group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
-@group(0) @binding(4) var<storage,read_write> densityStorage: array<f32>;
-@group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
-@group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-@group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
-
-@group(0) @binding(8) var<storage,read_write> gridStorage: array<vec4<f32>>;
-//@group(0) @binding(9) var<storage,read_write> gridIndicesStorage: array<vec4<f32>>;
-
-@compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-  const particlesCount = ${particlesCount};
-  let index: u32 = GlobalInvocationID.x;
-  var pos = particlesStorage[index];
-  var velocity = velocityStorage[index];
-  var vort = vorticity[index];
-  var density = densityStorage[index];
-  var correctPar = correctParticle[index];
-  var gridStorage = gridStorage[index];
-
-  var aspectRatioStuff = uniforms.aspectRatio;
-  var startEndCell = vec2<u32>(GlobalInvocationID.x,GlobalInvocationID.y);
-  var fluidDensity = 0.0;
-  var startEndN = 0;
-  var constraint = constFactor[index];
-
-  var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
-  velocityStorage[index] = velocity;
-  particlesStorage[index] = pos;
-
-  //1. predicted Position
-  var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
-  predPos[index] = particlesStorage[index] + newVel;
-
- //2. Fluid Density
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-
-        // Removing out of range cells
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-
-        let e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        fluidDensity += poly6(pos - predPos[e], effectRadius);
-        
-      }
-    }
-  }
-  densityStorage[index] = fluidDensity;
- 
-  //3. compute constraint factor
-{
-  var cellNIndex3D = getCell3DIndexFromPos(pos);
-  var vec = vec4<f32>(0);
-  var grad = vec4<f32>(0);
-  var sumGradCi = vec4<f32>(0);
-  var sumSqGradC = 0.;
-  var pos = predPos[index];
-  let densityC = fluidDensity / restDensity - 1.0;
-
-
-  var cellNIndex1D = 0;
-  var cellNIndex3d = vec3<i32>(0);
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-
-        // Removing out of range cells
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        let e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-
-        vec = pos - predPos[e];
- 
-        grad = gradSpiky(vec, effectRadius);
-
-        sumGradCi += grad;
-
-        sumSqGradC += dot(grad, grad);
-      }
-    }
-  }
-  sumSqGradC += dot(sumGradCi, sumGradCi);
-  sumSqGradC /= restDensity * restDensity;
-
-  constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
-}
-//4. compute constraint correction
-{
-  var pos = predPos[index];
-  var lambdaI = constFactor[index];
-  var cellNIndex3D = getCell3DIndexFromPos(pos);
-  var corr = vec4<f32>(0.0);
-  var vec = vec4<f32>(0.0);
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        vec = pos - predPos[e];
-        corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-      }
-    } 
-
-    correctParticle[index] = corr / restDensity;
-  }
-
-  predPos[index] = predPos[index] + correctParticle[index];
-
-  velocityStorage[index] = predPos[index] - particlesStorage[index];
-}
-  const MAX_VEL = vec4<f32>(30.);
-  velocityStorage[index] = clamp((predPos[index] - pos[index]) / (timeStep + FLOAT_EPS), -MAX_VEL, MAX_VEL);
-{
-  var pos = predPos[index];
-  //var vorticity = vorticity[index];
-  var cellIndex3D = getCell3DIndexFromPos(pos);
-  var vel = velocityStorage[index];
-
-  var n = vec4<f32>(0);
-
-  var cellNIndex1D = 0;
-  var cellNIndex3D = vec3<u32>(0);
-  var vort = vec4<f32>(0);
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        //fixme - change Index to simplified grid index
-        vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
-      }
-    }
-  }
-  vorticity[index] = vort;
-
-}
-
-//7 vorticity confinement
-  {
-    var n = vec4<f32>(0.0f);
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          //fixme - change Index to simplified grid index
-          n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
-        }
-      }
-    }
-    velocityStorage[index] = vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * timeStep, 1.);
-  }
-
-  //8 apply XsphViscosityCorrection
-{
-  var pos = predPos[index];
-  var velocity = velocityStorage[index];
-  var viscosity = vec4<f32>(0.);
-
-  var lambdaI = constFactor[index];
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
-      }
-    }
-  }
-  velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
-}
-
-particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-//9 apply Bounding Wall
-}`;
 
 let webgpu = await simpleWebgpuInit()
 const cameraUniformBuffer = webgpu.device.createBuffer({
-  size: 2 * 4 * 16, // 4x4 matrix
+  size: 3 * 4 * 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
@@ -548,7 +310,7 @@ const computeUniformsBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-function makeBuffer (size=particlesCount, flag=1) {
+function makeBuffer (size=particlesCount, flag=1, log) {
   const gpuBufferSize = particlesCount * particleSize;
 
   const gpuBuffer = webgpu.device.createBuffer({
@@ -560,11 +322,11 @@ function makeBuffer (size=particlesCount, flag=1) {
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
   for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
       particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
-      particlesBuffer[4 * iParticle + 1] = flag &&(Math.random() * 2 - 1);
+      particlesBuffer[4 * iParticle + 1] = flag &&(Math.random()  );
       particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() * 2 - 1);
       particlesBuffer[4 * iParticle + 3] = 0
   }
-  
+  if (log) console.log(particlesBuffer)
   gpuBuffer.unmap();
   return gpuBuffer
 } 
@@ -577,8 +339,63 @@ const densityBuffer = makeBuffer()
 const constBuffer = makeBuffer()
 const correctParticle = makeBuffer()
 
-const grid = makeBuffer(particlesCount, 0)
-const gridIndices = makeBuffer(particlesCount * 3)
+const grid = makeBuffer(particlesCount, 0, false)
+const gridIndices = makeBuffer(particlesCount * 3, 0, false)
+
+
+// gridIndices[index] = 
+// 
+//
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+
+const resetPass = webgpu.initComputeCall({
+  code:`
+  ${predefines}
+  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
+  // @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+  @group(0) @binding(0) var<storage,read_write> grid: array<i32>;
+  @group(0) @binding(1) var<storage,read_write> gridIndices: array<u32>;
+//  @group(0) @binding(3) var<storage,read_write> predictedPosition: array<u32>;
+
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;
+    grid[index] = 0;
+    //var oneId = getCell1DIndexFromPos(predPos[index]);
+
+    gridIndices[index] = 0;
+  }`,
+
+  exec: function (state){
+    const device = state.device
+    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+
+    const computePass = commandEncoder.beginComputePass();
+    computePass.setPipeline(state.computePass.pipeline);
+    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+    computePass.dispatchWorkgroups(10000);
+    computePass.end();
+  },
+  bindGroups: function (state, computePipeline) {
+    const computeBindGroup =
+      utils.makeBindGroup(state.device,
+        computePipeline.getBindGroupLayout(0),
+      [grid,
+        gridIndices,
+        //predictedPosition
+      ])
+    return [computeBindGroup]
+  }
+})
+
+
 
 const predictedPosition = webgpu.initComputeCall({
   code:`
@@ -589,7 +406,7 @@ const predictedPosition = webgpu.initComputeCall({
   @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(3) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   @group(0) @binding(4) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(5) var<storage,read_write> grid: array<u32>;
+  @group(0) @binding(5) var<storage,read_write> grid: array<i32>;
   @group(0) @binding(6) var<storage,read_write> gridIndices: array<u32>;
 
   @compute @workgroup_size(256)
@@ -606,7 +423,7 @@ const predictedPosition = webgpu.initComputeCall({
     var fluidDensity = 0.0;
     var startEndN = 0;
   
-    var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
     velocityStorage[index] = velocity;
     particlesStorage[index] = pos;
   
@@ -615,7 +432,7 @@ const predictedPosition = webgpu.initComputeCall({
     predPos[index] = particlesStorage[index] + newVel;
 
     var oneId = getCell1DIndexFromPos(predPos[index]);
-    grid[oneId] = grid[oneId] + 1;
+    grid[oneId] = max(grid[oneId], 3);
     gridIndices[grid[oneId]] = index;
   }`,
 
@@ -655,11 +472,12 @@ const applyVorticityCompute = webgpu.initComputeCall({
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
   @group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(4) var<storage,read_write> densityStorage: array<f32>;
-  @group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
-  @group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;  
-  @group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(8) var<storage,read_write> gridStorage: array<vec4<f32>>;
+  @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
+  @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;  
+  @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
+  @group(0) @binding(7) var<storage,read_write> gridStorage: array<i32>;
+  @group(0) @binding(8) var<storage,read_write> gridIndices: array<i32>;
+
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -668,9 +486,7 @@ const applyVorticityCompute = webgpu.initComputeCall({
     var pos = particlesStorage[index];
     var velocity = velocityStorage[index];
     var vort = vorticity[index];
-    var density = densityStorage[index];
     var correctPar = correctParticle[index];
-    var gridStorage = gridStorage[index];
   
     {
       var pos = predPos[index];
@@ -698,9 +514,13 @@ const applyVorticityCompute = webgpu.initComputeCall({
             ) {
               continue;
             }
-            var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            //fixme - change Index to simplified grid index
-            vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
+            var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+            var startEnd = gridStorage[cellNIndex1D];
+
+            for (var i = 0; i < startEnd; i++) {
+              var e = gridIndices[i];
+              vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
+            }
           }
         }
       }
@@ -725,9 +545,13 @@ const applyVorticityCompute = webgpu.initComputeCall({
             ) {
               continue;
             }
-            var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            //fixme - change Index to simplified grid index
-            n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
+            var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+            var startEnd = gridStorage[cellNIndex1D];
+
+            for (var i = 0; i < startEnd; i++) {
+              var e = gridIndices[i];
+              n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
+            }
           }
         }
       }
@@ -757,8 +581,13 @@ const applyVorticityCompute = webgpu.initComputeCall({
           ) {
             continue;
           }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
+          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+          var startEnd = gridStorage[cellNIndex1D];
+
+          for (var i = 0; i < startEnd; i++) {
+            var e = gridIndices[i];
+            viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
+          }
         }
       }
     }
@@ -786,11 +615,11 @@ const applyVorticityCompute = webgpu.initComputeCall({
         velocityBuffer,
         vorticityBuffer,
         predictionBuffer,
-        densityBuffer,
         constBuffer,
         posBuffer,
         correctParticle,
-        grid
+        grid,
+        gridIndices
       ])
     return [computeBindGroup]
   }
@@ -852,11 +681,12 @@ const applyConstraintCompute = webgpu.initComputeCall({
           ) {
             continue;
           }
-          var startEnd = gridStorage[index];
+          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+          
+          var startEnd = gridStorage[cellNIndex1D];
 
-          var startEndCell = gridIndicesStorage[index];
-
-          for (var e = 0; e < 4; e++) {
+          for (var i = 0; i < startEnd; i++) {
+            var e = gridIndicesStorage[i];
             vec = pos - predPos[e];
    
             grad = gradSpiky(vec, effectRadius);
@@ -895,9 +725,15 @@ const applyConstraintCompute = webgpu.initComputeCall({
           ) {
             continue;
           }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          vec = pos - predPos[e];
-          corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+          
+          var startEnd = gridStorage[cellNIndex1D];
+
+          for (var i = 0; i < startEnd; i++) {
+            var e = gridIndicesStorage[i];
+            vec = pos - predPos[e];
+            corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+          }
         }
       } 
   
@@ -1015,28 +851,6 @@ function buildComputeUniforms(dt, aspectRatio, force, attractors) {
 
   return buffer;
 }
-
-const makeIncompressible =  webgpu.initComputeCall({
-  code: IncompressionShader,
-  exec,
-  bindGroups: function (state, computePipeline) {
-    const computeBindGroup =
-    utils.makeBindGroup(state.device,
-      computePipeline.getBindGroupLayout(0),
-    [computeUniformsBuffer,
-      velocityBuffer,
-      vorticityBuffer,
-      predictionBuffer,
-      densityBuffer,
-      constBuffer,
-      posBuffer,
-      correctParticle,
-      grid
-    ])
-  return [computeBindGroup]
-  }
-})
-
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
   usage: GPUBufferUsage.VERTEX,
@@ -1082,6 +896,7 @@ const buffers = [
 ]
 
 const device = webgpu.device
+const model = mat4.identity(new Float32Array(16))
 
 function getCameraViewProjMatrix() {
   const eyePosition = vec3.fromValues(.0, 0.0, -1.5);
@@ -1089,7 +904,16 @@ function getCameraViewProjMatrix() {
   const origin = vec3.fromValues(0, 0, 0);
   const rad = Math.PI * (Date.now() / 5);
   //mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, -5, 0));
-
+  mat4.rotate(
+    model,
+    model,
+    1,
+    vec3.fromValues(
+      Math.sin(0),
+      Math.cos(1),
+      0
+    )
+  );
   //vec3.rotateY(eyePosition, eyePosition, origin, rad);
 
   let projectionMatrix = mat4.create();
@@ -1139,6 +963,7 @@ const drawCube = await webgpu.initDrawCall({
 struct Camera {
   projectionMatrix : mat4x4<f32>,
   viewMatrix : mat4x4<f32>,
+  modelMatrix: mat4x4<f32>
 }
 
 struct VSOut {
@@ -1155,8 +980,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     
-     camera.projectionMatrix * camera.viewMatrix *  
-   vec4<f32>(inPosition.xy + (.005 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+     camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
+   vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -1200,7 +1025,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,1.);
+    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,.1);
 }
 `},
   attributeBuffers: buffers,
@@ -1235,7 +1060,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
   }
 })
 let camera = createCamera({
-  center: [0., 0.5, 2 ],
+  center: [-7., -0.0, -0],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -1244,6 +1069,7 @@ let camera = createCamera({
 let stuff = camera();
 
 const identity = mat4.identity([])
+
 const v = new Float32Array([0.9951236248016357,-0.03326542302966118,0.09285693615674973,0,0,0.941413164138794,0.33725544810295105,0,-0.09863568842411041,-0.33561086654663086,0.9368224740028381,0,0.19727137684822083,0.20051512122154236,-3.9743294715881348,1])
 
 setInterval(
@@ -1274,13 +1100,14 @@ setInterval(
       view.byteOffset,
       view.byteLength
     );
-    //  device.queue.writeBuffer(
-    //   cameraUniformBuffer,
-    //   64,
-    //   identity.buffer,
-    //   identity.byteOffset,
-    //   identity.byteLength
-    // );
+     device.queue.writeBuffer(
+      cameraUniformBuffer,
+      128,
+      model.buffer,
+      model.byteOffset,
+      model.byteLength
+    );
+    resetPass()
     //makeIncompressible()
     //compute()
     predictedPosition()
@@ -1294,13 +1121,14 @@ setInterval(
     window.x = await utils.readBuffer(webgpu.state, grid)
     window.y = await utils.readBuffer(webgpu.state, gridIndices)
     window.z = await utils.readBuffer(webgpu.state, posBuffer)
+    window.w = await utils.readBuffer(webgpu.state, predictionBuffer)
+
   }, 50
 )
   
 }
 
 basic()
-
 
 // camera technique https://github.com/jrprice/NBody-WebGPU/blob/main/src/shaders.wgsl
 //make a buffer of 1 million particles (position + velocity )
@@ -1323,3 +1151,4 @@ basic()
 
 
 //Attribution https://github.com/axoloto/RealTimeParticles/blob/master/physics/Fluids.cpp
+//http://www.perceptualedge.com/articles/visual_business_intelligence/time_on_the_horizon.pdf
