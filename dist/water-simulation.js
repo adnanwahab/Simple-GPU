@@ -2224,7 +2224,7 @@
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
 const GRID_CELL_SIZE = vec3<f32>(50.,50.,50.);
-const GRID_RES = 100;
+const GRID_RES = 500;
 
 const effectRadius = 1.3f;
 const restDensity = 450.0f;
