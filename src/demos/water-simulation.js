@@ -8,7 +8,7 @@ import mouseWheel from 'mouse-wheel'
   //look up velocity[id] and integrate them across neighbors
 
 import { WebGPUScan } from './scan'
-const NUM_PARTICLES = 256 * 4;
+const NUM_PARTICLES = 256 * 4 * 128;
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
@@ -224,9 +224,6 @@ function createCamera (props_) {
 }
 
 
-
-
-
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 
@@ -243,7 +240,7 @@ const predefines = `struct Uniforms {
 };
 
 struct BucketContents {
-  ids : array<i32, ${MAX_BUCKET_SIZE}>,
+  indices : array<i32, ${MAX_BUCKET_SIZE}>,
   xyz : array<vec3<f32>, ${MAX_BUCKET_SIZE}>,
   count : u32,
 }
@@ -265,10 +262,10 @@ fn particleHash (p:vec3<f32>) -> u32 {
 } 
 
 fn getNeighbors (centerId: u32) -> BucketContents {
-  var result : array<array<array<BucketContents, 2>, 2>, 2>;
-    for (var i = 0; i < 2; i = i + 1) {
-        for (var j = 0; j < 2; j = j + 1) {
-          for (var k = 0; k < 2; k = k + 1) {
+  var result : array<array<array<BucketContents, 1>, 1>, 1>;
+    for (var i = -1; i < 2; i = i + 1) {
+        for (var j = -1; j < 2; j = j + 1) {
+          for (var k = -1; k < 2; k = k + 1) {
             var bucketId = (centerId + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
             var bucketStart = hashCounts[bucketId];
             var bucketEnd = ${NUM_PARTICLES}u;
@@ -279,9 +276,9 @@ fn getNeighbors (centerId: u32) -> BucketContents {
             for (var n = 0u; n < ${MAX_BUCKET_SIZE}u; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
-                result[i][j][k].ids[n] = -1;
+                result[i][j][k].indices[n] = -1;
               } else {
-                result[i][j][k].ids[n] = i32(particleIds[p]);
+                result[i][j][k].indices[n] = i32(particleIds[p]);
               }
             }
           //   for (var n = 0u; n < ${MAX_BUCKET_SIZE}u; n = n + 1u) {
@@ -290,9 +287,10 @@ fn getNeighbors (centerId: u32) -> BucketContents {
           //     }
           //     result[i][j][k].xyz[n] = positions[result[i][j][k].ids[n]].xyz;
           //   }
-          // }
+           }
         }
       }
+      return result[0][0][0];
     }
 
 
@@ -303,7 +301,6 @@ const GRID_RES = 500;
 const effectRadius = 0.3f;
 const restDensity = 250.0f;
 const relaxCFM = 400.0f;
-const timeStep = 0.010f;
 const dim = 10;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
@@ -313,6 +310,8 @@ const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
 const PI = 3.14156932;
+const timeStep = 0.010f;
+
 
 const POLY6_COEFF = 315. / (64. * PI * pow(effectRadius, 9));
 const SPIKY_COEFF = 15 / PI * pow(effectRadius, 6);
@@ -405,17 +404,17 @@ const densityBuffer = makeBuffer(particlesCount, 0)
 const constBuffer = makeBuffer(particlesCount, 0)
 const correctParticle = makeBuffer(particlesCount, 0)
 
+window.z = await utils.readBuffer(webgpu.state, predictionBuffer)
 
 const hashCounts = makeBuffer(particlesCount * 4, 0, false)
 const particleIds = makeBuffer(particlesCount * 4, 0, false)
 
 const resetPass = webgpu.initComputeCall({
+  label: `resetPass`,
   code:`
-  ${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   
-@binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
-@binding(1) @group(0) var<storage, read_write> hashCounts : array<u32>;
+  @binding(0) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -438,8 +437,8 @@ const resetPass = webgpu.initComputeCall({
       utils.makeBindGroup(state.device,
         computePipeline.getBindGroupLayout(0),
       [
-        hashCounts,
-        particleIds
+        //particleIds, 
+        hashCounts
       ])
     return [computeBindGroup]
   }
@@ -464,41 +463,30 @@ fn particleHash (p:vec3<f32>) -> u32 {
 }
 `
 
-
-// @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-// @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
-
 const predictedPosition = webgpu.initComputeCall({
+  label: `predictedPosition`,
   code:`
-  ${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  @group(0) @binding(4) var<storage,read_write> correctParticle: array<vec4<f32>>;
+@group(0) @binding(0) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+   @group(0) @binding(1) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(2) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  //@group(0) @binding(1) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
-    var pos = particlesStorage[index];
     var velocity = velocityStorage[index];
-    var correctPar = correctParticle[index];
-    var g = grid[index];
-    var gridI = gridIndices[index];
-  
-    var aspectRatioStuff = uniforms.aspectRatio;
-    var startEndCell = vec2<u32>(GlobalInvocationID.x,GlobalInvocationID.y);
-    var fluidDensity = 0.0;
-    var startEndN = 0;
+    // var correctPar = correctParticle[index];
   
     var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
     velocityStorage[index] = velocity;
-    particlesStorage[index] = pos;
-  
+
     //1. predicted Position
+    const timeStep = 0.00010f;
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
+
+    predPos[index] = particlesStorage[index] + newVel * timeStep;
   }`,
 
   exec: function (state){
@@ -506,6 +494,8 @@ const predictedPosition = webgpu.initComputeCall({
     const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
 
     const computePass = commandEncoder.beginComputePass();
+    state.computePass.computePass = computePass;
+
     computePass.setPipeline(state.computePass.pipeline);
     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
     computePass.dispatchWorkgroups(10000);
@@ -515,11 +505,11 @@ const predictedPosition = webgpu.initComputeCall({
     const computeBindGroup =
       utils.makeBindGroup(state.device,
         computePipeline.getBindGroupLayout(0),
-      [computeUniformsBuffer,
+      [
         velocityBuffer,
         predictionBuffer,
         posBuffer,
-        correctParticle
+        //correctParticle
       ])
     return [computeBindGroup]
   }
@@ -527,11 +517,13 @@ const predictedPosition = webgpu.initComputeCall({
 
 
 const gridCountPipeline = webgpu.initComputeCall({
+  label: `gridCountPipeline`,
   code:`
   ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn countParticles (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  
+  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
     var id = globalVec.x;
     var bucket = particleHash(positions[id].xyz);
     atomicAdd(&hashCounts[bucket], 1u);
@@ -543,7 +535,7 @@ exec: function (state){
   const computePass = commandEncoder.beginComputePass();
   computePass.setPipeline(state.computePass.pipeline);
   computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-  computePass.dispatchWorkgroups(10000);
+  computePass.dispatchWorkgroups(100);
   computePass.end();
 } ,
   bindGroups: function (state, computePipeline) {
@@ -558,17 +550,18 @@ exec: function (state){
 
 
 const gridCopyParticlePipeline = webgpu.initComputeCall({
+  label: `gridCopyParticlePipeline`,
   code:`
-  ${COMMON_SHADER_FUNCS}
+${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
   @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn copyParticleIds (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
   particleIds[offset] = id;
-  }`,
+}`,
 exec: function (state){
   const device = state.device
   const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
@@ -576,7 +569,7 @@ exec: function (state){
   const computePass = commandEncoder.beginComputePass();
   computePass.setPipeline(state.computePass.pipeline);
   computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-  computePass.dispatchWorkgroups(10000);
+  computePass.dispatchWorkgroups(100);
   computePass.end();
 } ,
   bindGroups: function (state, computePipeline) {
@@ -590,12 +583,8 @@ exec: function (state){
 })
 
 
-
-
-
-
-
 const applyVorticityCompute = webgpu.initComputeCall({
+  label: `applyVorticityCompute`,
   code: `
   ${predefines}
   
@@ -607,11 +596,9 @@ const applyVorticityCompute = webgpu.initComputeCall({
   @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
   @group(0) @binding(5) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
-
   @binding(6) @group(0) var<storage, read_write> particleIds : array<u32>;
-  @binding(7) @group(0) var<storage, read> positions : array<vec4<f32>>;
-  @binding(8) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-
+  @binding(7) @group(0) var<storage, read_write> hashCounts : array<u32>;
+  @binding(8) @group(0) var<storage, read_write> particlesStorage : array<vec4<f32>>;
 
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -625,68 +612,29 @@ const applyVorticityCompute = webgpu.initComputeCall({
       var pos = predPos[index];
       //var vorticity = vorticity[index];
       var cellIndex3D = getCell3DIndexFromPos(pos);
-      var vel = velocityStorage[index];
     
       var n = vec4<f32>(0);
-    
-      var cellNIndex1D = 0;
-      var cellNIndex3D = vec3<u32>(0);
-      var vort = vec4<f32>(0);
-    
-      for (var iX = -1; iX <= 1; iX++) {
-        for (var iY = -1; iY <= 1; iY++) {
-          for (var iZ = -1; iZ <= 1; iZ++) {
-            var cellNIndex3D = getCell3DIndexFromPos(pos);
-            cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-            if(cellNIndex3D.x < 0 || 
-              cellNIndex3D.y < 0 ||
-              cellNIndex3D.z < 0 ||
-              cellNIndex3D.x >= (GRID_RES) ||
-              cellNIndex3D.y >= (GRID_RES) ||
-              cellNIndex3D.z >= (GRID_RES)   
-            ) {
-              continue;
-            }
-            var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            var startEnd = particleIds[cellNIndex1D];
 
-            for (var i = 0; i < startEnd; i++) {
-              var e = gridIndices[i];
-              vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
-            }
-          }
-        }
+      var vort = vec4<f32>(0);
+      var startEnd = getNeighbors(index);
+
+      
+      for (var i = 0u; i < startEnd.count; i++) {
+        var e = startEnd.indices[i];
+        vort = vec4<f32>(cross((velocityStorage[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
       }
       vorticity[index] = vort;
-    
     }
   
     //7 vorticity confinement
     {
+      let pos = particlesStorage[index];
       var n = vec4<f32>(0.0f);
-      for (var iX = -1; iX <= 1; iX++) {
-        for (var iY = -1; iY <= 1; iY++) {
-          for (var iZ = -1; iZ <= 1; iZ++) {
-            var cellNIndex3D = getCell3DIndexFromPos(pos);
-            cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-            if(cellNIndex3D.x < 0 || 
-              cellNIndex3D.y < 0 ||
-              cellNIndex3D.z < 0 ||
-              cellNIndex3D.x >= (GRID_RES) ||
-              cellNIndex3D.y >= (GRID_RES) ||
-              cellNIndex3D.z >= (GRID_RES)   
-            ) {
-              continue;
-            }
-            var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            var startEnd = particleIds[cellNIndex1D];
+      var startEnd = getNeighbors(index);
 
-            for (var i = 0; i < startEnd; i++) {
-              var e = gridIndices[i];
-              n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
-            }
-          }
-        }
+      for (var i = 0u; i < startEnd.count; i++) {
+        var e = startEnd.indices[i];
+        n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
       }
       velocityStorage[index] = vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * timeStep, 1.);
     }
@@ -699,30 +647,12 @@ const applyVorticityCompute = webgpu.initComputeCall({
     var viscosity = vec4<f32>(0.);
   
     var lambdaI = constFactor[index];
-  
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          var startEnd = gridStorage[cellNIndex1D];
 
-          for (var i = 0; i < startEnd; i++) {
-            var e = gridIndices[i];
-            viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
-          }
-        }
-      }
+    var startEnd = getNeighbors(index);
+
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      //viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
     }
     velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
   }
@@ -737,7 +667,7 @@ const applyVorticityCompute = webgpu.initComputeCall({
     const computePass = commandEncoder.beginComputePass();
     computePass.setPipeline(state.computePass.pipeline);
     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(10000);
+    computePass.dispatchWorkgroups(1000);
     computePass.end();
   },
   bindGroups: function (state, computePipeline) {
@@ -749,11 +679,12 @@ const applyVorticityCompute = webgpu.initComputeCall({
         vorticityBuffer,
         predictionBuffer,
         constBuffer,
-        posBuffer,
+   
         correctParticle,
 
         hashCounts,
-        particleIds
+        particleIds,
+        posBuffer
       ])
     return [computeBindGroup]
   }
@@ -762,6 +693,24 @@ const applyVorticityCompute = webgpu.initComputeCall({
 
 
 const applyConstraintCompute = webgpu.initComputeCall({
+  label: `applyConstraintCompute`,
+  bindGroups: function (state, computePipeline) {
+    const computeBindGroup =
+      utils.makeBindGroup(state.device,
+        computePipeline.getBindGroupLayout(0),
+      [computeUniformsBuffer,
+        velocityBuffer,
+        predictionBuffer,
+        densityBuffer,
+        constBuffer,
+        posBuffer,
+        correctParticle,
+
+        hashCounts,
+        particleIds,
+      ])
+    return [computeBindGroup]
+  },
   code:`
   ${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
@@ -772,8 +721,11 @@ const applyConstraintCompute = webgpu.initComputeCall({
   @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
   @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(7) var<storage,read_write> gridStorage: array<i32>;
-  @group(0) @binding(8) var<storage,read_write> gridIndicesStorage: array<i32>;
+
+
+  @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
+
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -794,44 +746,20 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var sumSqGradC = 0.;
     var pos = predPos[index];
     let densityC = fluidDensity / restDensity - 1.0;
-
-  
-    var cellNIndex1D = 0;
-    var cellNIndex3d = vec3<i32>(0);
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-  
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-  
-          // Removing out of range cells
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          
-          var startEnd = gridStorage[cellNIndex1D];
-
-          for (var i = 0; i < startEnd; i++) {
-            var e = gridIndicesStorage[i];
-            vec = pos - predPos[e];
-   
-            grad = gradSpiky(vec, effectRadius);
     
-            sumGradCi += grad;
-    
-            sumSqGradC += dot(grad, grad);
-          }
-        }
-      }
+    var startEnd = getNeighbors(index);
+
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      vec = pos - predPos[e];
+
+      grad = gradSpiky(vec, effectRadius);
+
+      sumGradCi += grad;
+
+      sumSqGradC += dot(grad, grad);
     }
+    
     sumSqGradC += dot(sumGradCi, sumGradCi);
     sumSqGradC /= restDensity * restDensity;
   
@@ -844,36 +772,18 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var cellNIndex3D = getCell3DIndexFromPos(pos);
     var corr = vec4<f32>(0.0);
     var vec = vec4<f32>(0.0);
-  
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          
-          var startEnd = gridStorage[cellNIndex1D];
+ 
+    var cellNIndex1D = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
+    
+    var startEnd = getNeighbors(index);
 
-          for (var i = 0; i < startEnd; i++) {
-            var e = gridIndicesStorage[i];
-            vec = pos - predPos[e];
-            corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-          }
-        }
-      } 
-  
-      correctParticle[index] = corr / restDensity;
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      vec = pos - predPos[e];
+      corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
     }
-  
+    correctParticle[index] = corr / restDensity;
+
     predPos[index] = predPos[index] + correctParticle[index];
   
     velocityStorage[index] = predPos[index] - particlesStorage[index];
@@ -882,6 +792,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = clamp((predPos[index] - pos[index]) / (timeStep + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+
   //9 apply Bounding Wall
   }`,
 exec: function (state){
@@ -893,32 +804,13 @@ exec: function (state){
   computePass.setBindGroup(0, state.computePass.bindGroups[0]);
   computePass.dispatchWorkgroups(10000);
   computePass.end();
-} ,
-  bindGroups: function (state, computePipeline) {
-    const computeBindGroup =
-      utils.makeBindGroup(state.device,
-        computePipeline.getBindGroupLayout(0),
-      [computeUniformsBuffer,
-        velocityBuffer,
-        predictionBuffer,
-        densityBuffer,
-        constBuffer,
-        posBuffer,
-        correctParticle,
-
-        hashCounts,
-        particleIds
-      ])
-    return [computeBindGroup]
-  }
+} 
 })
 
 const updatePositionCompute = webgpu.initComputeCall({
-  code:`
-  ${predefines}
-  
+  label: `updatePositionCompute`,
+  code:`  
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  //@group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   
@@ -927,9 +819,11 @@ const updatePositionCompute = webgpu.initComputeCall({
     let index: u32 = GlobalInvocationID.x;
     let predPos = predPos[index];
   
+  const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
-  }`,
+}`,
 exec: function (state){
   const device = state.device
   const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
@@ -950,19 +844,6 @@ exec: function (state){
   return [computeBindGroup]
   }
 })
-
-
-
-const exec = function (state){
-  const device = state.device
-  const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
-
-  const computePass = commandEncoder.beginComputePass();
-  computePass.setPipeline(state.computePass.pipeline);
-  computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-  computePass.dispatchWorkgroups(10000);
-  computePass.end();
-} 
 
 const attractors = []
   const attractor = {
@@ -1220,6 +1101,8 @@ const gridCountScan = new WebGPUScan({
 
 const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts)
 
+window.x = await utils.readBuffer(webgpu.state, predictionBuffer)
+
 setInterval(
   async function () {
     let {projection, view} = camera()
@@ -1255,25 +1138,31 @@ setInterval(
       model.byteOffset,
       model.byteLength
     );
-    resetPass()
-    //makeIncompressible()
-    //compute()
+    let localState = resetPass()
+    let commandEncoder = device.createCommandEncoder()
+
+
     predictedPosition()
 
     gridCountPipeline()
+    const computePass = commandEncoder.beginComputePass();
 
-    //gridCountScanPass.run(computePass)
+    gridCountScanPass.run(computePass)
+    computePass.end();
 
     gridCopyParticlePipeline()
 
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
-
-
-    applyVorticityCompute()
-    updatePositionCompute()
+    
+    //  applyVorticityCompute()
+    //updatePositionCompute()
 
     drawCube({})
+    
+
+    window.w = await utils.readBuffer(webgpu.state, predictionBuffer)
+
   }, 50
 )
   
@@ -1285,10 +1174,6 @@ basic()
 //make a buffer of 1 million particles (position + velocity )
 //Grid - make a buffer of 250,000 "grid" = record velocity, density or ID's of particles
 //for each particle - write the location into grid
-
-
-
-
 //constraint solver = update prediction 
 
 //for each particle, integrate velocity of nearest neighbors 
