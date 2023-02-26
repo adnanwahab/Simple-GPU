@@ -134,7 +134,7 @@ async function postProcessing() {
   
     const img = document.createElement('img');
     img.src = new URL(
-      '../data/webgpu.png',
+      '../../../data/webgpu.png',
       import.meta.url
     ).toString();
     await img.decode();  

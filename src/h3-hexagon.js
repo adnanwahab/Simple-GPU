@@ -1,4 +1,6 @@
- function mustHave<T>(x:T|null|undefined) : T {
+//https://observablehq.com/@douglyuckling/rainbow-phyllotaxis
+
+function mustHave<T>(x:T|null|undefined) : T {
   if (!x) {
     document.body.innerHTML = `Your browser does not support WebGPU`	
     throw new Error('WebGPU not supported')

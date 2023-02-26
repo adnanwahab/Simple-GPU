@@ -262,6 +262,7 @@ fn particleHash (p:vec3<f32>) -> u32 {
 } 
 
 fn getNeighbors (centerId: u32) -> BucketContents {
+  //for 27 neighboring bucketHashes, append particleId onto list 
   var result : array<array<array<BucketContents, 1>, 1>, 1>;
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
@@ -310,7 +311,7 @@ const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
 const PI = 3.14156932;
-const timeStep = 0.010f;
+const timeStep = 0.0000000000010f;
 
 
 const POLY6_COEFF = 315. / (64. * PI * pow(effectRadius, 9));
@@ -470,7 +471,6 @@ const predictedPosition = webgpu.initComputeCall({
 @group(0) @binding(0) var<storage,read_write> velocityStorage: array<vec4<f32>>;
    @group(0) @binding(1) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  //@group(0) @binding(1) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
   
   @compute @workgroup_size(256)
@@ -483,7 +483,7 @@ const predictedPosition = webgpu.initComputeCall({
     velocityStorage[index] = velocity;
 
     //1. predicted Position
-    const timeStep = 0.00010f;
+    const timeStep = 0.10f;
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
 
     predPos[index] = particlesStorage[index] + newVel * timeStep;
@@ -610,7 +610,6 @@ const applyVorticityCompute = webgpu.initComputeCall({
   
     {
       var pos = predPos[index];
-      //var vorticity = vorticity[index];
       var cellIndex3D = getCell3DIndexFromPos(pos);
     
       var n = vec4<f32>(0);
@@ -634,9 +633,12 @@ const applyVorticityCompute = webgpu.initComputeCall({
 
       for (var i = 0u; i < startEnd.count; i++) {
         var e = startEnd.indices[i];
-        n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
+        //n += 1.;//(vorticity[e]);
+        //* gradSpiky(pos - predPos[e], effectRadius);
       }
-      velocityStorage[index] = vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * timeStep, 1.);
+      velocityStorage[index] += 
+      
+      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .0000000000000000000000000001, 0.);
     }
   
   
@@ -652,7 +654,7 @@ const applyVorticityCompute = webgpu.initComputeCall({
 
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
-      //viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
+      viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
     }
     velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
   }
@@ -789,9 +791,9 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = predPos[index] - particlesStorage[index];
   }
     const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (timeStep + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+//    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (.000000000000000000000000000000000000000000000000000000000000001 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
-  particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -1155,8 +1157,8 @@ setInterval(
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
     
-    //  applyVorticityCompute()
-    //updatePositionCompute()
+    applyVorticityCompute()
+    updatePositionCompute()
 
     drawCube({})
     
