@@ -4,6 +4,7 @@ import utils from '../../lib/utils';
 import { mat4, vec3 } from 'gl-matrix'
 
 //have to finish this by today
+import {nodes, edges} from './edges'
 
 
 const blend = {
@@ -45,7 +46,7 @@ const blend = {
   ]
   
 
-const particlesCount = 1e6;
+const particlesCount = nodes.length;
 const particleSize = 100;
 
 async function main() {
@@ -62,7 +63,11 @@ async function main() {
       ]);
       quadBuffer.unmap();
       
-    
+
+    function canvasToClipSpace(x, y) {
+        return [(x / 500) * 2 - 1, y / 500 * 2 - 1]
+    }
+
     function makeBuffer (size=particlesCount, flag=1, log) {
         const gpuBufferSize = particlesCount * particleSize;
       
@@ -74,8 +79,9 @@ async function main() {
         
         const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
         for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-            particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
-            particlesBuffer[4 * iParticle + 1] = flag &&(Math.random()  );
+            const [x, y] = canvasToClipSpace(nodes[iParticle].x, nodes[iParticle].y);
+            particlesBuffer[4 * iParticle + 0] = x
+            particlesBuffer[4 * iParticle + 1] = y
             particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() * 2 - 1);
             particlesBuffer[4 * iParticle + 3] = 0
         }
@@ -85,6 +91,38 @@ async function main() {
       } 
       
       const posBuffer = makeBuffer(particlesCount, 1)
+      const pos = new Array(edges.length * 4)
+      edges.forEach(function (d, i) {
+        pos[i] = [d.source.x,
+                  d.source.y]
+        pos[i+1] = [d.target.x,
+                    d.target.y]
+      })
+
+        for (let i = 0; i < 1e4; i++) {
+            pos[i] = [-Math.random(), Math.random()]
+        }
+
+      console.log(pos)
+      let position = new webgpu.attribute(pos, 0, 2)
+
+      let draw = await webgpu.initDrawCall({
+        vert: `@vertex
+        fn main(@location(0) position : vec2<f32>)
+            -> @builtin(position) vec4<f32>{
+                    return vec4<f32>(position, 0.0, 1.0);
+            }
+        `,
+        frag: `@fragment
+        fn main() -> @location(0) vec4<f32> {
+            return vec4<f32>(1.0, 0.0, 1.0, 1.0);
+        }`,
+        count: pos.length,
+        attributes: {
+            position: position
+        },
+        primitive: 'line-list'
+    })
 
     const drawCube = await webgpu.initDrawCall({
         shader: {
@@ -181,8 +219,8 @@ async function main() {
         }
       })
 
-
-      drawCube()
+      draw()
+      //drawCube()
 }
 
 main()

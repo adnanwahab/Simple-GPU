@@ -73,7 +73,7 @@ const pos = [[-.9, .9],
     [.9, -.9]
 ]
 
-for (let i = 0; i < 1e2; i++) {
+for (let i = 0; i < 1e4; i++) {
     pos[i] = [-Math.random(), Math.random()]
 }
 
@@ -96,22 +96,7 @@ let draw = await webgpu.initDrawCall({
     },
     primitive: 'line-list'
 })
-    //console.log(4445555)
-    document.body.appendChild(webgpu.canvas)
-
     draw()
-    // renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
-
-    // const commandEncoder = device.createCommandEncoder()
-
-    // const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor)
-
-    // passEncoder.setPipeline(pipeline)
-    // passEncoder.draw(4,1,0,0)
-    // passEncoder.end();
-    // device.queue.submit([commandEncoder.finish()])
-
-
     requestAnimationFrame(lines);
 }
 
