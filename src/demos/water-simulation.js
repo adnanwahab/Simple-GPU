@@ -791,7 +791,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = predPos[index] - particlesStorage[index];
   }
     const MAX_VEL = vec4<f32>(30.);
-//    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (.000000000000000000000000000000000000000000000000000000000000001 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
    particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 

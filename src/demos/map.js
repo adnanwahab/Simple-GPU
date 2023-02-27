@@ -3,8 +3,26 @@ import utils from '../../lib/utils';
 
 import { mat4, vec3 } from 'gl-matrix'
 
-//have to finish this by today
+import * as d3 from "d3";
 
+import {geoMercator} from "d3-geo";
+
+import csv from './311'
+const data = d3.csvParse(csv.split('\n').join('')).columns
+console.log(data)
+const coordinates = [
+
+]
+for (let i = 0; i < data.length; i+=39) {
+    coordinates.push({long: data[i+38], lat: data[i+39]})
+}
+
+const width = 500, height = 500
+console.log(coordinates)
+const projection = d3.geoMercator()
+.center([-73.9375, 40.7324])
+.scale((550000) / (2 * Math.PI))
+.translate([width / 2, height / 2])
 
 const blend = {
     color: {
