@@ -7,9 +7,12 @@ import * as d3 from "d3";
 
 import {geoMercator} from "d3-geo";
 
-import csv from './311'
-const data = d3.csvParse(csv.split('\n').join('')).columns
-console.log(data)
+
+const data = d3.csv(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/311.csv`).then(d => {
+    console.log(d)
+})
+
+//console.log(data)
 const coordinates = [
 
 ]
