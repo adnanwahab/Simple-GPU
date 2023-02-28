@@ -8,24 +8,41 @@ import * as d3 from "d3";
 import {geoMercator} from "d3-geo";
 
 
-const data = d3.csv(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/311.csv`).then(d => {
-    console.log(d)
-})
-
-//console.log(data)
 const coordinates = [
 
 ]
-for (let i = 0; i < data.length; i+=39) {
-    coordinates.push({long: data[i+38], lat: data[i+39]})
-}
-
-const width = 500, height = 500
-console.log(coordinates)
 const projection = d3.geoMercator()
 .center([-73.9375, 40.7324])
-.scale((550000) / (2 * Math.PI))
-.translate([width / 2, height / 2])
+.scale((1090000) / (10 * Math.PI))
+.translate([500 / 2, 500 / 2])
+
+
+function canvasToClipSpace(stuff) {
+    let [x, y] = stuff
+    return [(x / 500) * 2 -1 , (1- y / 500) ]
+}
+
+
+const data = d3.csv(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/data/311.csv`).then(d => {
+    d.forEach(d => {
+        // console.log(canvasToClipSpace(projection([
+        //     + d.Longitude,
+        //     + d.Latitude
+        //  ])));
+        coordinates.push(
+            canvasToClipSpace(projection([
+            + d.Longitude,
+            + d.Latitude
+         ]))
+      )
+    })
+    main()
+})
+
+
+
+
+
 
 const blend = {
     color: {
@@ -86,7 +103,7 @@ async function main() {
     
     function makeBuffer (size=particlesCount, flag=1, log) {
         const gpuBufferSize = particlesCount * particleSize;
-      
+    
         const gpuBuffer = webgpu.device.createBuffer({
           size: gpuBufferSize,
           usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
@@ -94,17 +111,22 @@ async function main() {
         });
         
         const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-        for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-            particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
-            particlesBuffer[4 * iParticle + 1] = flag &&(Math.random()  );
-            particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() * 2 - 1);
+        for (let iParticle = 0; iParticle < coordinates.length / 2; iParticle++) {
+
+            particlesBuffer[4 * iParticle + 0] = coordinates[iParticle][0]
+            particlesBuffer[4 * iParticle + 1] = coordinates[iParticle][1]
+
+//   particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
+//   particlesBuffer[4 * iParticle + 1] = flag && (Math.random() * 2 - 1);
+
+
+            particlesBuffer[4 * iParticle + 2] = 0;
             particlesBuffer[4 * iParticle + 3] = 0
         }
-        if (log) console.log(particlesBuffer)
         gpuBuffer.unmap();
         return gpuBuffer
       } 
-      
+
       const posBuffer = makeBuffer(particlesCount, 1)
 
     const drawCube = await webgpu.initDrawCall({
@@ -129,7 +151,7 @@ async function main() {
           var vsOut: VSOut;
           vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
           
-         vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+         vec4<f32>(inPosition.xy + (.006 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
           vsOut.position.y = vsOut.position.y;
           vsOut.localPosition = quadCorner;
           return vsOut;
@@ -206,7 +228,7 @@ async function main() {
       drawCube()
 }
 
-main()
+
 
 
 // map vertex points to longitude latitude 

@@ -240,8 +240,7 @@ const predefines = `struct Uniforms {
 };
 
 struct BucketContents {
-  indices : array<i32, ${MAX_BUCKET_SIZE}>,
-  xyz : array<vec3<f32>, ${MAX_BUCKET_SIZE}>,
+  indices : array<i32, 8 >,
   count : u32,
 }
 
@@ -263,7 +262,9 @@ fn particleHash (p:vec3<f32>) -> u32 {
 
 fn getNeighbors (centerId: u32) -> BucketContents {
   //for 27 neighboring bucketHashes, append particleId onto list 
-  var result : array<array<array<BucketContents, 1>, 1>, 1>;
+  var stuff : array<i32, 10>;
+
+  //var result : array<array<array<BucketContents, 1>, 1>, 1>;
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
@@ -514,6 +515,64 @@ const predictedPosition = webgpu.initComputeCall({
     return [computeBindGroup]
   }
 })
+
+const computeDensity = webgpu.initComputeCall({
+  label: `computeDensity`,
+  code:`
+  ${predefines}
+  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
+   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(1) var<storage,read_write> density: array<f32>;
+
+  @group(0) @binding(2) var<storage,read_write> hashCounts: array<u32>;
+  @group(0) @binding(3) var<storage,read_write> particleIds: array<u32>;
+
+  
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;  
+
+    let pos = predPos[index];
+    var fluidDensity = 0.;
+
+    
+    var startEnd = getNeighbors(index);
+
+      
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      fluidDensity += poly6(pos - predPos[e], effectRadius);
+    }
+
+    density[index] = fluidDensity;
+  }`,
+
+  exec: function (state){
+    const device = state.device
+    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+
+    const computePass = commandEncoder.beginComputePass();
+    state.computePass.computePass = computePass;
+
+    computePass.setPipeline(state.computePass.pipeline);
+    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+    computePass.dispatchWorkgroups(10000);
+    computePass.end();
+  },
+  bindGroups: function (state, computePipeline) {
+    const computeBindGroup =
+      utils.makeBindGroup(state.device,
+        computePipeline.getBindGroupLayout(0),
+      [
+        predictionBuffer,
+        densityBuffer,
+        hashCounts,
+        particleIds
+      ])
+    return [computeBindGroup]
+  }
+})
+
 
 
 const gridCountPipeline = webgpu.initComputeCall({
@@ -791,7 +850,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = predPos[index] - particlesStorage[index];
   }
     const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+    //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
    particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
@@ -1153,6 +1212,7 @@ setInterval(
     computePass.end();
 
     gridCopyParticlePipeline()
+    computeDensity()
 
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
@@ -1190,3 +1250,6 @@ basic()
 
 //Attribution https://github.com/axoloto/RealTimeParticles/blob/master/physics/Fluids.cpp
 //http://www.perceptualedge.com/articles/visual_business_intelligence/time_on_the_horizon.pdf
+
+//https://www.youtube.com/watch?v=irDNJNKAjps&ab_channel=SPH-DVHCNR-INM
+//https://github.com/dli/fluid
