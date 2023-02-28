@@ -270,7 +270,7 @@ void main() {
   var renderer;
   var mesh;
   var clock = new THREE.Clock();
-  function stuff2() {
+  function stuff() {
     init();
     animate();
   }
@@ -286,5 +286,5 @@ void main() {
     uniforms.amplitude.value += 2 * delta;
     renderer.render(scene, camera);
   }
-  var cube_ocean_default = stuff2;
+  var cube_ocean_default = stuff;
 })();

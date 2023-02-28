@@ -35,6 +35,26 @@
       })
     };
   }
+  async function readBuffer(state, buffer) {
+    const device = state.device;
+    const commandEncoder = device.createCommandEncoder();
+    const C = new Float32Array(buffer.size);
+    const CReadCopy = device.createBuffer({
+      size: buffer.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const texture = device.createTexture({
+      size: [500, 500, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
+    });
+    commandEncoder.copyBufferToBuffer(buffer, 0, CReadCopy, 0, buffer.size);
+    device.queue.submit([commandEncoder.finish()]);
+    await CReadCopy.mapAsync(GPUMapMode.READ);
+    C.set(new Float32Array(CReadCopy.getMappedRange()));
+    CReadCopy.unmap();
+    return C;
+  }
   function createBuffer(device, stuff) {
     const buffer = device.createBuffer({
       size: 4,
@@ -71,7 +91,8 @@
     createCanvas,
     addMouseEvents,
     makeBindGroupDescriptor,
-    makeBindGroup
+    makeBindGroup,
+    readBuffer
   };
 
   // src/demos/points.js

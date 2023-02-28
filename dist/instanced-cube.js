@@ -1691,13 +1691,33 @@
       })
     };
   }
-  function createBuffer(device, stuff2) {
+  async function readBuffer(state2, buffer2) {
+    const device = state2.device;
+    const commandEncoder = device.createCommandEncoder();
+    const C = new Float32Array(buffer2.size);
+    const CReadCopy = device.createBuffer({
+      size: buffer2.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const texture = device.createTexture({
+      size: [500, 500, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
+    });
+    commandEncoder.copyBufferToBuffer(buffer2, 0, CReadCopy, 0, buffer2.size);
+    device.queue.submit([commandEncoder.finish()]);
+    await CReadCopy.mapAsync(GPUMapMode.READ);
+    C.set(new Float32Array(CReadCopy.getMappedRange()));
+    CReadCopy.unmap();
+    return C;
+  }
+  function createBuffer(device, stuff) {
     const buffer2 = device.createBuffer({
       size: 4,
       mappedAtCreation: true,
       usage: GPUBufferUsage.UNIFORM
     });
-    new Uint32Array(buffer2.getMappedRange())[0] = stuff2;
+    new Uint32Array(buffer2.getMappedRange())[0] = stuff;
     buffer2.unmap();
     return buffer2;
   }
@@ -1727,7 +1747,8 @@
     createCanvas,
     addMouseEvents,
     makeBindGroupDescriptor,
-    makeBindGroup
+    makeBindGroup,
+    readBuffer
   };
 
   // lib/Texture.js
@@ -1806,6 +1827,7 @@
     let device = state2.device;
     const pipeline = device.createComputePipeline({
       layout: "auto",
+      label: options.label,
       compute: {
         module: device.createShaderModule({
           code: options.code
@@ -1841,12 +1863,11 @@
     for (let key in options.uniforms) {
       if (!isFunction(options.uniforms[key]))
         continue;
-      console.log(options.uniforms[key]);
       if (options.uniforms[key].isProp)
         continue;
       let result = options.uniforms[key](context);
       size += result.byteLength || 4;
-      stuff[key] = function(a) {
+      uniforms[key] = function(a) {
         device.queue.writeBuffer(state2.uniformBuffer, size, a.buffer, a.byteOffset, a.byteLength);
       };
     }
@@ -2132,7 +2153,8 @@
       context,
       texture,
       attribute,
-      canvas
+      canvas,
+      state: state2
     };
     function initComputeCall(options2) {
       let localState = {
@@ -2142,11 +2164,13 @@
       createComputePass(options2, localState);
       function compute(options3, CE) {
         localState.compute.exec(localState, CE);
+        return localState;
       }
       compute.submit = function() {
         state2.device.queue.submit([state2.commandEncoder.finish()]);
         delete state2.commandEncoder;
       };
+      compute.state = state2;
       return compute;
     }
     function frame(cb) {

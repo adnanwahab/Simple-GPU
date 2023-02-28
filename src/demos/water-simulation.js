@@ -23,8 +23,6 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ]
-console.log(HASH_VEC)
-
 
 const MAX_BUCKET_SIZE = 16
 const PARTICLE_RADIUS = .05;
@@ -380,18 +378,14 @@ const predictionBuffer = makeBuffer(particlesCount, 0)
 const densityBuffer = makeBuffer(particlesCount / 4, 0)
 const constBuffer = makeBuffer(particlesCount, 0)
 const correctParticle = makeBuffer(particlesCount, 0)
-const hashCounts = makeBuffer(particlesCount * 4, 0, false)
-const particleIds = makeBuffer(particlesCount * 4, 0, false)
+const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
+const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 
 window.z = await utils.readBuffer(webgpu.state, predictionBuffer)
 
-
-
 const resetPass = webgpu.initComputeCall({
   label: `resetPass`,
-  code:`
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  
+  code:`  
   @binding(0) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
   @compute @workgroup_size(256)
@@ -444,11 +438,9 @@ fn particleHash (p:vec3<f32>) -> u32 {
 const predictedPosition = webgpu.initComputeCall({
   label: `predictedPosition`,
   code:`
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-@group(0) @binding(0) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+  @group(0) @binding(0) var<storage,read_write> velocityStorage: array<vec4<f32>>;
    @group(0) @binding(1) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -496,14 +488,12 @@ const computeDensity = webgpu.initComputeCall({
   label: `computeDensity`,
   code:`
   ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
    @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> density: array<f32>;
 
   @group(0) @binding(2) var<storage,read_write> hashCounts: array<u32>;
   @group(0) @binding(3) var<storage,read_write> particleIds: array<u32>;
 
-  
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;  
@@ -1119,7 +1109,6 @@ const identity = mat4.identity([])
 
 const v = new Float32Array([0.9951236248016357,-0.03326542302966118,0.09285693615674973,0,0,0.941413164138794,0.33725544810295105,0,-0.09863568842411041,-0.33561086654663086,0.9368224740028381,0,0.19727137684822083,0.20051512122154236,-3.9743294715881348,1])
 
-
 const gridCountScan = new WebGPUScan({
   device,
   threadsPerGroup: SCAN_THREADS,
@@ -1170,20 +1159,20 @@ setInterval(
     let localState = resetPass()
     let commandEncoder = device.createCommandEncoder()
 
-
     predictedPosition()
 
     gridCountPipeline()
   
     const computePass = commandEncoder.beginComputePass();
-    window.x = await utils.readBuffer(webgpu.state, hashCounts)
+    
+    window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
 
     gridCountScanPass.run(computePass)
     computePass.end();
 
-    //gridCopyParticlePipeline()
-    window.y = await utils.readBuffer(webgpu.state, particleIds)
+    gridCopyParticlePipeline()
 
+    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
     computeDensity()
 
@@ -1194,24 +1183,19 @@ setInterval(
     updatePositionCompute()
 
     drawCube({})
-    
-    
-
 
     window.density = await utils.readBuffer(webgpu.state, densityBuffer)
-    window.countY = function countY() {
-      let stuff = window.w
-      let result = []
-      for (let i = 0; i < stuff.length; i += 4) {
-        result.push(stuff[i+1])
+
+      window.countY = function countY() {
+        let stuff = window.w
+        let result = []
+        for (let i = 0; i < stuff.length; i += 4) {
+          result.push(stuff[i+1])
+        }
+        console.log(result)
       }
-      console.log(result)
-    }
 
-
-  }, 50
-)
-  
+    }, 50) 
 }
 
 basic()

@@ -1,9 +1,752 @@
 "use strict";
 (() => {
+  var __create = Object.create;
   var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
+
+  // node_modules/mouse-event/mouse.js
+  var require_mouse = __commonJS({
+    "node_modules/mouse-event/mouse.js"(exports) {
+      "use strict";
+      function mouseButtons(ev) {
+        if (typeof ev === "object") {
+          if ("buttons" in ev) {
+            return ev.buttons;
+          } else if ("which" in ev) {
+            var b = ev.which;
+            if (b === 2) {
+              return 4;
+            } else if (b === 3) {
+              return 2;
+            } else if (b > 0) {
+              return 1 << b - 1;
+            }
+          } else if ("button" in ev) {
+            var b = ev.button;
+            if (b === 1) {
+              return 4;
+            } else if (b === 2) {
+              return 2;
+            } else if (b >= 0) {
+              return 1 << b;
+            }
+          }
+        }
+        return 0;
+      }
+      exports.buttons = mouseButtons;
+      function mouseElement(ev) {
+        return ev.target || ev.srcElement || window;
+      }
+      exports.element = mouseElement;
+      function mouseRelativeX(ev) {
+        if (typeof ev === "object") {
+          if ("offsetX" in ev) {
+            return ev.offsetX;
+          }
+          var target = mouseElement(ev);
+          var bounds = target.getBoundingClientRect();
+          return ev.clientX - bounds.left;
+        }
+        return 0;
+      }
+      exports.x = mouseRelativeX;
+      function mouseRelativeY(ev) {
+        if (typeof ev === "object") {
+          if ("offsetY" in ev) {
+            return ev.offsetY;
+          }
+          var target = mouseElement(ev);
+          var bounds = target.getBoundingClientRect();
+          return ev.clientY - bounds.top;
+        }
+        return 0;
+      }
+      exports.y = mouseRelativeY;
+    }
+  });
+
+  // node_modules/mouse-change/mouse-listen.js
+  var require_mouse_listen = __commonJS({
+    "node_modules/mouse-change/mouse-listen.js"(exports, module) {
+      "use strict";
+      module.exports = mouseListen;
+      var mouse = require_mouse();
+      function mouseListen(element, callback) {
+        if (!callback) {
+          callback = element;
+          element = window;
+        }
+        var buttonState = 0;
+        var x = 0;
+        var y = 0;
+        var mods = {
+          shift: false,
+          alt: false,
+          control: false,
+          meta: false
+        };
+        var attached = false;
+        function updateMods(ev) {
+          var changed = false;
+          if ("altKey" in ev) {
+            changed = changed || ev.altKey !== mods.alt;
+            mods.alt = !!ev.altKey;
+          }
+          if ("shiftKey" in ev) {
+            changed = changed || ev.shiftKey !== mods.shift;
+            mods.shift = !!ev.shiftKey;
+          }
+          if ("ctrlKey" in ev) {
+            changed = changed || ev.ctrlKey !== mods.control;
+            mods.control = !!ev.ctrlKey;
+          }
+          if ("metaKey" in ev) {
+            changed = changed || ev.metaKey !== mods.meta;
+            mods.meta = !!ev.metaKey;
+          }
+          return changed;
+        }
+        function handleEvent(nextButtons, ev) {
+          var nextX = mouse.x(ev);
+          var nextY = mouse.y(ev);
+          if ("buttons" in ev) {
+            nextButtons = ev.buttons | 0;
+          }
+          if (nextButtons !== buttonState || nextX !== x || nextY !== y || updateMods(ev)) {
+            buttonState = nextButtons | 0;
+            x = nextX || 0;
+            y = nextY || 0;
+            callback && callback(buttonState, x, y, mods);
+          }
+        }
+        function clearState(ev) {
+          handleEvent(0, ev);
+        }
+        function handleBlur() {
+          if (buttonState || x || y || mods.shift || mods.alt || mods.meta || mods.control) {
+            x = y = 0;
+            buttonState = 0;
+            mods.shift = mods.alt = mods.control = mods.meta = false;
+            callback && callback(0, 0, 0, mods);
+          }
+        }
+        function handleMods(ev) {
+          if (updateMods(ev)) {
+            callback && callback(buttonState, x, y, mods);
+          }
+        }
+        function handleMouseMove(ev) {
+          if (mouse.buttons(ev) === 0) {
+            handleEvent(0, ev);
+          } else {
+            handleEvent(buttonState, ev);
+          }
+        }
+        function handleMouseDown(ev) {
+          handleEvent(buttonState | mouse.buttons(ev), ev);
+        }
+        function handleMouseUp(ev) {
+          handleEvent(buttonState & ~mouse.buttons(ev), ev);
+        }
+        function attachListeners() {
+          if (attached) {
+            return;
+          }
+          attached = true;
+          element.addEventListener("mousemove", handleMouseMove);
+          element.addEventListener("mousedown", handleMouseDown);
+          element.addEventListener("mouseup", handleMouseUp);
+          element.addEventListener("mouseleave", clearState);
+          element.addEventListener("mouseenter", clearState);
+          element.addEventListener("mouseout", clearState);
+          element.addEventListener("mouseover", clearState);
+          element.addEventListener("blur", handleBlur);
+          element.addEventListener("keyup", handleMods);
+          element.addEventListener("keydown", handleMods);
+          element.addEventListener("keypress", handleMods);
+          if (element !== window) {
+            window.addEventListener("blur", handleBlur);
+            window.addEventListener("keyup", handleMods);
+            window.addEventListener("keydown", handleMods);
+            window.addEventListener("keypress", handleMods);
+          }
+        }
+        function detachListeners() {
+          if (!attached) {
+            return;
+          }
+          attached = false;
+          element.removeEventListener("mousemove", handleMouseMove);
+          element.removeEventListener("mousedown", handleMouseDown);
+          element.removeEventListener("mouseup", handleMouseUp);
+          element.removeEventListener("mouseleave", clearState);
+          element.removeEventListener("mouseenter", clearState);
+          element.removeEventListener("mouseout", clearState);
+          element.removeEventListener("mouseover", clearState);
+          element.removeEventListener("blur", handleBlur);
+          element.removeEventListener("keyup", handleMods);
+          element.removeEventListener("keydown", handleMods);
+          element.removeEventListener("keypress", handleMods);
+          if (element !== window) {
+            window.removeEventListener("blur", handleBlur);
+            window.removeEventListener("keyup", handleMods);
+            window.removeEventListener("keydown", handleMods);
+            window.removeEventListener("keypress", handleMods);
+          }
+        }
+        attachListeners();
+        var result = {
+          element
+        };
+        Object.defineProperties(result, {
+          enabled: {
+            get: function() {
+              return attached;
+            },
+            set: function(f) {
+              if (f) {
+                attachListeners();
+              } else {
+                detachListeners();
+              }
+            },
+            enumerable: true
+          },
+          buttons: {
+            get: function() {
+              return buttonState;
+            },
+            enumerable: true
+          },
+          x: {
+            get: function() {
+              return x;
+            },
+            enumerable: true
+          },
+          y: {
+            get: function() {
+              return y;
+            },
+            enumerable: true
+          },
+          mods: {
+            get: function() {
+              return mods;
+            },
+            enumerable: true
+          }
+        });
+        return result;
+      }
+    }
+  });
+
+  // node_modules/parse-unit/index.js
+  var require_parse_unit = __commonJS({
+    "node_modules/parse-unit/index.js"(exports, module) {
+      module.exports = function parseUnit(str3, out) {
+        if (!out)
+          out = [0, ""];
+        str3 = String(str3);
+        var num = parseFloat(str3, 10);
+        out[0] = num;
+        out[1] = str3.match(/[\d.\-\+]*\s*(.*)/)[1] || "";
+        return out;
+      };
+    }
+  });
+
+  // node_modules/to-px/browser.js
+  var require_browser = __commonJS({
+    "node_modules/to-px/browser.js"(exports, module) {
+      "use strict";
+      var parseUnit = require_parse_unit();
+      module.exports = toPX;
+      var PIXELS_PER_INCH = getSizeBrutal("in", document.body);
+      function getPropertyInPX(element, prop2) {
+        var parts = parseUnit(getComputedStyle(element).getPropertyValue(prop2));
+        return parts[0] * toPX(parts[1], element);
+      }
+      function getSizeBrutal(unit, element) {
+        var testDIV = document.createElement("div");
+        testDIV.style["height"] = "128" + unit;
+        element.appendChild(testDIV);
+        var size = getPropertyInPX(testDIV, "height") / 128;
+        element.removeChild(testDIV);
+        return size;
+      }
+      function toPX(str3, element) {
+        if (!str3)
+          return null;
+        element = element || document.body;
+        str3 = (str3 + "" || "px").trim().toLowerCase();
+        if (element === window || element === document) {
+          element = document.body;
+        }
+        switch (str3) {
+          case "%":
+            return element.clientHeight / 100;
+          case "ch":
+          case "ex":
+            return getSizeBrutal(str3, element);
+          case "em":
+            return getPropertyInPX(element, "font-size");
+          case "rem":
+            return getPropertyInPX(document.body, "font-size");
+          case "vw":
+            return window.innerWidth / 100;
+          case "vh":
+            return window.innerHeight / 100;
+          case "vmin":
+            return Math.min(window.innerWidth, window.innerHeight) / 100;
+          case "vmax":
+            return Math.max(window.innerWidth, window.innerHeight) / 100;
+          case "in":
+            return PIXELS_PER_INCH;
+          case "cm":
+            return PIXELS_PER_INCH / 2.54;
+          case "mm":
+            return PIXELS_PER_INCH / 25.4;
+          case "pt":
+            return PIXELS_PER_INCH / 72;
+          case "pc":
+            return PIXELS_PER_INCH / 6;
+          case "px":
+            return 1;
+        }
+        var parts = parseUnit(str3);
+        if (!isNaN(parts[0]) && parts[1]) {
+          var px = toPX(parts[1], element);
+          return typeof px === "number" ? parts[0] * px : null;
+        }
+        return null;
+      }
+    }
+  });
+
+  // node_modules/mouse-wheel/wheel.js
+  var require_wheel = __commonJS({
+    "node_modules/mouse-wheel/wheel.js"(exports, module) {
+      "use strict";
+      var toPX = require_browser();
+      module.exports = mouseWheelListen;
+      function mouseWheelListen(element, callback, noScroll) {
+        if (typeof element === "function") {
+          noScroll = !!callback;
+          callback = element;
+          element = window;
+        }
+        var lineHeight = toPX("ex", element);
+        var listener = function(ev) {
+          if (noScroll) {
+            ev.preventDefault();
+          }
+          var dx = ev.deltaX || 0;
+          var dy = ev.deltaY || 0;
+          var dz = ev.deltaZ || 0;
+          var mode = ev.deltaMode;
+          var scale3 = 1;
+          switch (mode) {
+            case 1:
+              scale3 = lineHeight;
+              break;
+            case 2:
+              scale3 = window.innerHeight;
+              break;
+          }
+          dx *= scale3;
+          dy *= scale3;
+          dz *= scale3;
+          if (dx || dy || dz) {
+            return callback(dx, dy, dz, ev);
+          }
+        };
+        element.addEventListener("wheel", listener);
+        return listener;
+      }
+    }
+  });
+
+  // src/demos/water-simulation.js
+  var import_mouse_change = __toESM(require_mouse_listen());
+  var import_mouse_wheel = __toESM(require_wheel());
+
+  // src/demos/scan.ts
+  var MAX_BUFFER_SIZE = 134217728;
+  var DEFAULT_DATA_TYPE = "f32";
+  var DEFAULT_DATA_SIZE = 4;
+  var DEFAULT_DATA_FUNC = "A + B";
+  var DEFAULT_DATA_UNIT = "0.";
+  var WebGPUScan = class {
+    logNumBanks = 5;
+    threadsPerGroup = 256;
+    itemsPerThread = 256;
+    itemsPerGroup = 65536;
+    itemSize = 4;
+    device;
+    prefixSumShader;
+    postBindGroupLayout;
+    dataBindGroupLayout;
+    postBuffer;
+    postBindGroup;
+    prefixSumIn;
+    prefixSumPost;
+    prefixSumOut;
+    minItems() {
+      return this.itemsPerGroup;
+    }
+    minSize() {
+      return this.minItems() * this.itemSize;
+    }
+    maxItems() {
+      return Math.min(this.itemsPerGroup * this.itemsPerGroup, Math.floor(MAX_BUFFER_SIZE / (this.itemSize * this.itemsPerGroup)) * this.itemsPerGroup);
+    }
+    maxSize() {
+      return this.itemSize;
+    }
+    constructor(config) {
+      this.device = config.device;
+      if (config["threadsPerGroup"]) {
+        this.threadsPerGroup = config["threadsPerGroup"] >>> 0;
+        if (this.threadsPerGroup < 1 || this.threadsPerGroup > 256) {
+          throw new Error("Threads per group must be between 1 and 256");
+        }
+      }
+      if (config["itemsPerThread"]) {
+        this.itemsPerThread = config["itemsPerThread"] >>> 0;
+        if (this.itemsPerThread < 1) {
+          throw new Error("Items per thread must be > 1");
+        }
+      }
+      this.itemsPerGroup = this.threadsPerGroup * this.itemsPerThread;
+      const dataType = config.dataType || DEFAULT_DATA_TYPE;
+      const dataSize = config.dataSize || DEFAULT_DATA_SIZE;
+      const dataFunc = config.dataFunc || DEFAULT_DATA_FUNC;
+      const dataUnit = config.dataUnit || DEFAULT_DATA_UNIT;
+      this.itemSize = dataSize;
+      this.prefixSumShader = this.device.createShaderModule({
+        code: `
+${config.header || ""}
+
+@binding(0) @group(0) var<storage, read_write> post : array<${dataType}>;
+@binding(0) @group(1) var<storage, read_write> data : array<${dataType}>;
+@binding(1) @group(1) var<storage, read_write> work : array<${dataType}>;
+
+fn conflictFreeOffset (offset:u32) -> u32 {
+  return offset + (offset >> ${this.logNumBanks});
+}
+  
+var<workgroup> workerSums : array<${dataType}, ${2 * this.threadsPerGroup}>;
+fn partialSum (localId : u32) -> ${dataType} {
+  var offset = 1u;
+  for (var d = ${this.threadsPerGroup >> 1}u; d > 0u; d = d >> 1u) {
+    if (localId < d) {
+      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
+      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
+      var A = workerSums[ai];
+      var B = workerSums[bi];
+      workerSums[bi] = ${dataFunc};
+    }
+    offset *= 2u;
+    workgroupBarrier();
+  }
+  if (localId == 0u) {
+    workerSums[conflictFreeOffset(${this.threadsPerGroup - 1}u)] = ${dataUnit};
+  }
+  for (var d = 1u; d < ${this.threadsPerGroup}u; d = d * 2u) {
+    offset = offset >> 1u;
+    if (localId < d) {
+      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
+      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
+      var A = workerSums[ai];
+      var B = workerSums[bi];
+      workerSums[ai] = B;
+      workerSums[bi] = ${dataFunc};
+    }
+    workgroupBarrier();
+  }
+
+  return workerSums[conflictFreeOffset(localId)];
+}
+  
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumIn(
+  @builtin(workgroup_id) groupId : vec3<u32>,
+  @builtin(local_invocation_id) localVec : vec3<u32>,
+  @builtin(global_invocation_id) globalVec : vec3<u32>) {
+  var localId = localVec.x;
+  var globalId = globalVec.x;
+  var offset = ${this.itemsPerThread}u * globalId;
+
+  var A = ${dataUnit};
+  var localVals = array<${dataType}, ${this.itemsPerThread}>();
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = data[offset + i];
+    A = ${dataFunc};
+    localVals[i] = A;
+  }
+  workerSums[conflictFreeOffset(localId)] = A;
+  workgroupBarrier();
+
+  A = partialSum(localId);
+
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = localVals[i];
+    var C = ${dataFunc};
+    work[offset + i] = C;
+    if (i == ${this.itemsPerThread - 1}u && localId == ${this.threadsPerGroup - 1}u) {
+      post[groupId.x] = C;
+    }
+  }
+}
+
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumPost(@builtin(local_invocation_id) localVec : vec3<u32>) {
+  var localId = localVec.x;
+  var offset = localId * ${this.itemsPerThread}u;
+
+  var A = ${dataUnit};
+  var localVals = array<${dataType}, ${this.itemsPerThread}>();
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = post[offset + i];
+    A = ${dataFunc};
+    localVals[i] = A;
+  }
+  workerSums[conflictFreeOffset(localId)] = A;
+  workgroupBarrier();
+
+  A = partialSum(localId);
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = localVals[i];
+    post[offset + i] = ${dataFunc};
+  }
+}
+
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumOut(
+  @builtin(workgroup_id) groupId : vec3<u32>,
+  @builtin(global_invocation_id) globalVec : vec3<u32>) {
+  var globalId = globalVec.x;
+  var offset = ${this.itemsPerThread}u * globalId;
+  if (groupId.x > 0u) {
+    var s = post[groupId.x - 1u];
+    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+      data[offset + i] = s + work[offset + i];
+    }
+  } else {
+    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+      data[offset + i] = work[offset + i];
+    }
+  }
+}
+`
+      });
+      this.postBuffer = this.device.createBuffer({
+        label: "postBuffer",
+        size: this.itemsPerGroup * this.itemSize,
+        usage: GPUBufferUsage.STORAGE
+      });
+      this.postBindGroupLayout = this.device.createBindGroupLayout({
+        label: "postBindGroupLayout",
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }]
+      });
+      this.postBindGroup = this.device.createBindGroup({
+        label: "postBindGroup",
+        layout: this.postBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.postBuffer
+          }
+        }]
+      });
+      this.dataBindGroupLayout = this.device.createBindGroupLayout({
+        label: "dataBindGroupLayout",
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }]
+      });
+      const layout = this.device.createPipelineLayout({
+        label: "commonScanLayout",
+        bindGroupLayouts: [
+          this.postBindGroupLayout,
+          this.dataBindGroupLayout
+        ]
+      });
+      this.prefixSumIn = this.device.createComputePipelineAsync({
+        label: "prefixSumIn",
+        layout,
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumIn"
+        }
+      });
+      this.prefixSumPost = this.device.createComputePipelineAsync({
+        label: "prefixSumPost",
+        layout: this.device.createPipelineLayout({
+          label: "postScanLayout",
+          bindGroupLayouts: [this.postBindGroupLayout]
+        }),
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumPost"
+        }
+      });
+      this.prefixSumOut = this.device.createComputePipelineAsync({
+        label: "prefixSumOut",
+        layout,
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumOut"
+        }
+      });
+    }
+    async createPass(n, data, work) {
+      if (n < this.minItems() || n > this.maxItems() || n % this.itemsPerGroup !== 0) {
+        throw new Error("Invalid item count");
+      }
+      let ownsWorkBuffer = false;
+      let workBuffer = null;
+      if (n > this.minItems()) {
+        if (work) {
+          workBuffer = work;
+        } else {
+          workBuffer = this.device.createBuffer(
+            {
+              label: "workBuffer",
+              size: n * this.itemSize,
+              usage: GPUBufferUsage.STORAGE
+            }
+          );
+          ownsWorkBuffer = true;
+        }
+      }
+      let dataBindGroup;
+      if (workBuffer) {
+        dataBindGroup = this.device.createBindGroup({
+          label: "dataBindGroup",
+          layout: this.dataBindGroupLayout,
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: data
+            }
+          }, {
+            binding: 1,
+            resource: {
+              buffer: workBuffer
+            }
+          }]
+        });
+      } else {
+        dataBindGroup = this.device.createBindGroup({
+          label: "dataBindGroupSmall",
+          layout: this.postBindGroupLayout,
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: data
+            }
+          }]
+        });
+      }
+      return new WebGPUScanPass(
+        n / this.itemsPerGroup >>> 0,
+        dataBindGroup,
+        this.postBindGroup,
+        workBuffer,
+        ownsWorkBuffer,
+        await this.prefixSumIn,
+        await this.prefixSumPost,
+        await this.prefixSumOut
+      );
+    }
+    destroy() {
+      this.postBuffer.destroy();
+    }
+  };
+  var WebGPUScanPass = class {
+    constructor(numGroups, dataBindGroup, postBindGroup, work, ownsWorkBuffer, prefixSumIn, prefixSumPost, prefixSumOut) {
+      this.numGroups = numGroups;
+      this.dataBindGroup = dataBindGroup;
+      this.postBindGroup = postBindGroup;
+      this.work = work;
+      this.ownsWorkBuffer = ownsWorkBuffer;
+      this.prefixSumIn = prefixSumIn;
+      this.prefixSumPost = prefixSumPost;
+      this.prefixSumOut = prefixSumOut;
+    }
+    run(passEncoder) {
+      if (this.work) {
+        passEncoder.setBindGroup(0, this.postBindGroup);
+        passEncoder.setBindGroup(1, this.dataBindGroup);
+        passEncoder.setPipeline(this.prefixSumIn);
+        passEncoder.dispatchWorkgroups(this.numGroups);
+        passEncoder.setPipeline(this.prefixSumPost);
+        passEncoder.dispatchWorkgroups(1);
+        passEncoder.setPipeline(this.prefixSumOut);
+        passEncoder.dispatchWorkgroups(this.numGroups);
+      } else {
+        passEncoder.setBindGroup(0, this.dataBindGroup);
+        passEncoder.setPipeline(this.prefixSumPost);
+        passEncoder.dispatchWorkgroups(1);
+      }
+    }
+    destroy() {
+      if (this.ownsWorkBuffer && this.work) {
+        this.work.destroy();
+      }
+    }
   };
 
   // lib/utils.js
@@ -41,13 +784,33 @@
       })
     };
   }
-  function createBuffer(device, stuff2) {
+  async function readBuffer(state2, buffer2) {
+    const device = state2.device;
+    const commandEncoder = device.createCommandEncoder();
+    const C = new Float32Array(buffer2.size);
+    const CReadCopy = device.createBuffer({
+      size: buffer2.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const texture = device.createTexture({
+      size: [500, 500, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
+    });
+    commandEncoder.copyBufferToBuffer(buffer2, 0, CReadCopy, 0, buffer2.size);
+    device.queue.submit([commandEncoder.finish()]);
+    await CReadCopy.mapAsync(GPUMapMode.READ);
+    C.set(new Float32Array(CReadCopy.getMappedRange()));
+    CReadCopy.unmap();
+    return C;
+  }
+  function createBuffer(device, stuff) {
     const buffer2 = device.createBuffer({
       size: 4,
       mappedAtCreation: true,
       usage: GPUBufferUsage.UNIFORM
     });
-    new Uint32Array(buffer2.getMappedRange())[0] = stuff2;
+    new Uint32Array(buffer2.getMappedRange())[0] = stuff;
     buffer2.unmap();
     return buffer2;
   }
@@ -77,7 +840,8 @@
     createCanvas,
     addMouseEvents,
     makeBindGroupDescriptor,
-    makeBindGroup
+    makeBindGroup,
+    readBuffer
   };
 
   // lib/Texture.js
@@ -156,6 +920,7 @@
     let device = state2.device;
     const pipeline = device.createComputePipeline({
       layout: "auto",
+      label: options.label,
       compute: {
         module: device.createShaderModule({
           code: options.code
@@ -191,12 +956,11 @@
     for (let key in options.uniforms) {
       if (!isFunction(options.uniforms[key]))
         continue;
-      console.log(options.uniforms[key]);
       if (options.uniforms[key].isProp)
         continue;
       let result = options.uniforms[key](context);
       size += result.byteLength || 4;
-      stuff[key] = function(a) {
+      uniforms[key] = function(a) {
         device.queue.writeBuffer(state2.uniformBuffer, size, a.buffer, a.byteOffset, a.byteLength);
       };
     }
@@ -482,7 +1246,8 @@
       context,
       texture,
       attribute,
-      canvas
+      canvas,
+      state: state2
     };
     function initComputeCall(options2) {
       let localState = {
@@ -492,11 +1257,13 @@
       createComputePass(options2, localState);
       function compute(options3, CE) {
         localState.compute.exec(localState, CE);
+        return localState;
       }
       compute.submit = function() {
         state2.device.queue.submit([state2.commandEncoder.finish()]);
         delete state2.commandEncoder;
       };
+      compute.state = state2;
       return compute;
     }
     function frame(cb) {
@@ -2212,6 +2979,141 @@
   }();
 
   // src/demos/water-simulation.js
+  var NUM_PARTICLES = 256 * 4 * 128;
+  var particlesCount = NUM_PARTICLES;
+  var SCAN_THREADS = 256;
+  var PARTICLE_WORKGROUP_SIZE = SCAN_THREADS;
+  var NGROUPS = NUM_PARTICLES / 256;
+  var isBrowser = typeof window !== "undefined";
+  var COLLISION_TABLE_SIZE = particlesCount;
+  var HASH_VEC = [
+    1,
+    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
+    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
+  ];
+  var MAX_BUCKET_SIZE = 16;
+  var PARTICLE_RADIUS = 0.05;
+  var GRID_SPACING = 2 * PARTICLE_RADIUS;
+  function createCamera(props_) {
+    var props = props_ || {};
+    if (typeof props.noScroll === "undefined") {
+      props.noScroll = props.preventDefault;
+    }
+    var cameraState = {
+      view: mat4_exports.identity(new Float32Array(16)),
+      projection: mat4_exports.identity(new Float32Array(16)),
+      center: new Float32Array(props.center || 3),
+      theta: props.theta || 0,
+      phi: props.phi || 0,
+      distance: Math.log(props.distance || 10),
+      eye: new Float32Array(3),
+      up: new Float32Array(props.up || [0, 1, 0]),
+      fovy: props.fovy || Math.PI / 4,
+      near: typeof props.near !== "undefined" ? props.near : 0.01,
+      far: typeof props.far !== "undefined" ? props.far : 1e3,
+      noScroll: typeof props.noScroll !== "undefined" ? props.noScroll : false,
+      flipY: !!props.flipY,
+      dtheta: 0,
+      dphi: 0,
+      rotationSpeed: typeof props.rotationSpeed !== "undefined" ? props.rotationSpeed : 1,
+      zoomSpeed: typeof props.zoomSpeed !== "undefined" ? props.zoomSpeed : 1,
+      renderOnDirty: typeof props.renderOnDirty !== void 0 ? !!props.renderOnDirty : false
+    };
+    var element = props.element;
+    var damping = typeof props.damping !== "undefined" ? props.damping : 0.9;
+    var right = new Float32Array([1, 0, 0]);
+    var front = new Float32Array([0, 0, 1]);
+    var minDistance = Math.log("minDistance" in props ? props.minDistance : 0.1);
+    var maxDistance = Math.log("maxDistance" in props ? props.maxDistance : 1e3);
+    var ddistance = 0;
+    var prevX = 0;
+    var prevY = 0;
+    if (isBrowser && props.mouse !== false) {
+      let getWidth2 = function() {
+        return element ? element.offsetWidth : window.innerWidth;
+      }, getHeight2 = function() {
+        return element ? element.offsetHeight : window.innerHeight;
+      };
+      var getWidth = getWidth2, getHeight = getHeight2;
+      var source = element;
+      (0, import_mouse_change.default)(source, function(buttons, x, y) {
+        if (buttons & 1) {
+          var dx = (x - prevX) / getWidth2();
+          var dy = (y - prevY) / getHeight2();
+          cameraState.dtheta += cameraState.rotationSpeed * 4 * dx;
+          cameraState.dphi += cameraState.rotationSpeed * 4 * dy;
+          cameraState.dirty = true;
+        }
+        prevX = x;
+        prevY = y;
+      });
+      (0, import_mouse_wheel.default)(source, function(dx, dy) {
+        ddistance += dy / getHeight2() * cameraState.zoomSpeed;
+        cameraState.dirty = true;
+      }, props.noScroll);
+    }
+    function damp(x) {
+      var xd = x * damping;
+      if (Math.abs(xd) < 0.1) {
+        return 0;
+      }
+      cameraState.dirty = true;
+      return xd;
+    }
+    function clamp(x, lo, hi) {
+      return Math.min(Math.max(x, lo), hi);
+    }
+    function updateCamera(props2) {
+      Object.keys(props2).forEach(function(prop2) {
+        cameraState[prop2] = props2[prop2];
+      });
+      var center = cameraState.center;
+      var eye = cameraState.eye;
+      var up = cameraState.up;
+      var dtheta = cameraState.dtheta;
+      var dphi = cameraState.dphi;
+      cameraState.theta += dtheta;
+      cameraState.phi = clamp(
+        cameraState.phi + dphi,
+        -Math.PI / 2,
+        Math.PI / 2
+      );
+      cameraState.distance = clamp(
+        cameraState.distance + ddistance,
+        minDistance,
+        maxDistance
+      );
+      cameraState.dtheta = damp(dtheta);
+      cameraState.dphi = damp(dphi);
+      ddistance = damp(ddistance);
+      var theta = cameraState.theta;
+      var phi = cameraState.phi;
+      var r = Math.exp(cameraState.distance);
+      var vf = r * Math.sin(theta) * Math.cos(phi);
+      var vr = r * Math.cos(theta) * Math.cos(phi);
+      var vu = r * Math.sin(phi);
+      for (var i = 0; i < 3; ++i) {
+        eye[i] = center[i] + vf * front[i] + vr * right[i] + vu * up[i];
+      }
+      mat4_exports.lookAt(cameraState.view, eye, center, up);
+    }
+    cameraState.dirty = true;
+    function setupCamera() {
+      updateCamera(props);
+      cameraState.perspective = mat4_exports.perspective(
+        cameraState.projection,
+        cameraState.fovy,
+        1,
+        cameraState.near,
+        cameraState.far
+      );
+      return {
+        projection: cameraState.projection,
+        view: cameraState.view
+      };
+    }
+    return setupCamera;
+  }
   var predefines = `struct Uniforms {                                  
   force: vec2<f32>,                              
   dt: f32,                                       
@@ -2222,15 +3124,64 @@
   h: f32,
 };
 
-const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
-const GRID_CELL_SIZE = vec3<f32>(50.,50.,50.);
-const GRID_RES = 500;
+struct BucketContents {
+  indices : array<i32, 50>,
+  count : u32,
+}
 
-const effectRadius = 1.3f;
-const restDensity = 450.0f;
-const relaxCFM = 600.0f;
-const timeStep = 0.010f;
-const dim = 3;
+fn bucketHash (p:vec3<i32>) -> u32 {
+  var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
+  if h < 0 {
+    return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
+  } else {
+    return u32(h) % ${COLLISION_TABLE_SIZE}u;
+  }
+}
+
+fn particleBucket (p:vec3<f32>) -> vec3<i32> {
+  return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
+}
+fn particleHash (p:vec3<f32>) -> u32 {
+  return bucketHash(particleBucket(p));
+} 
+
+fn getNeighbors (centerId: u32) -> BucketContents {
+  //for 27 neighboring bucketHashes, append particleId onto list 
+  var result : BucketContents;
+
+    for (var i = -1; i < 2; i = i + 1) {
+        for (var j = -1; j < 2; j = j + 1) {
+          for (var k = -1; k < 2; k = k + 1) {
+            var bucketId = (centerId + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
+            var bucketStart = hashCounts[bucketId];
+            var bucketEnd = ${NUM_PARTICLES}u;
+            if bucketId < ${COLLISION_TABLE_SIZE - 1} {
+              bucketEnd = hashCounts[bucketId + 1];
+            }
+            //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
+            for (var n = 0u; n < ${MAX_BUCKET_SIZE}u; n = n + 1u) {
+              var p = bucketStart + n;
+              if p >= bucketEnd {
+                //result[i][j][k].indices[n] = -1;
+              } else {
+                result.indices[result.count] = i32(particleIds[p]);
+                result.count += 1u;
+              }
+            }
+           }
+        }
+      }
+      return result;
+    }
+
+
+const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+const GRID_CELL_SIZE = vec3<f32>(5.,5.,5.);
+
+const effectRadius = 0.3f;
+const restDensity = 250.0f;
+const relaxCFM = 400.0f;
+const dim = 10;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 const artPressureCoeff = 0.001f;
@@ -2239,6 +3190,7 @@ const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
 const PI = 3.14156932;
+const timeStep = 0.0000000000010f;
 
 const POLY6_COEFF = 315. / (64. * PI * pow(effectRadius, 9));
 const SPIKY_COEFF = 15 / PI * pow(effectRadius, 6);
@@ -2258,11 +3210,10 @@ fn gradSpiky(vec:vec4<f32>,  effectRadius:f32) -> vec4<f32> {
 
   if(vecLength <= FLOAT_EPS) {
     return vec4<f32>(0.0f);
-  }
+}
 
   return vec * (1.0f - step(effectRadius, vecLength)) * SPIKY_COEFF * -3 * pow((effectRadius - vecLength), 2) / vecLength;
 }
-
 
 fn artPressure( vec:vec4<f32>) -> f32 {
   if(isArtPressureEnabled == 0) {
@@ -2270,353 +3221,57 @@ fn artPressure( vec:vec4<f32>) -> f32 {
   }
   return - artPressureCoeff * pow((poly6(vec, effectRadius) / poly6L(artPressureRadius * effectRadius, effectRadius)), artPressureExp);
 }
-
-fn getCell3DIndexFromPos(pos:vec4<f32>) -> vec3<i32> {
-  // Moving particles in [0 - 2 * ABS_WALL_POS] to have coords matching with cellIndices
-  let posXYZ = clamp(pos.xyz, -ABS_WALL_POS, ABS_WALL_POS) + (ABS_WALL_POS);
-
-  let cell3DIndex = (floor(posXYZ / GRID_CELL_SIZE));
-
-  return vec3<i32>(i32(cell3DIndex.x), i32(cell3DIndex.y), i32(cell3DIndex.z));
-}
-
-fn getCell1DIndexFromPos(pos:vec4<f32>) -> i32 {
-  var cell3DIndex = getCell3DIndexFromPos(pos);
-
-  var cell1DIndex = cell3DIndex.x * GRID_RES * GRID_RES
-                         + cell3DIndex.y * GRID_RES
-                         + cell3DIndex.z;
-
-  return cell1DIndex;
-}
 `;
   async function basic() {
-    const IncompressionShader = `
-${predefines}
-
-var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-@group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
-@group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
-@group(0) @binding(4) var<storage,read_write> densityStorage: array<f32>;
-@group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
-@group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-@group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
-
-@group(0) @binding(8) var<storage,read_write> gridStorage: array<vec4<f32>>;
-//@group(0) @binding(9) var<storage,read_write> gridIndicesStorage: array<vec4<f32>>;
-
-@compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-  let index: u32 = GlobalInvocationID.x;
-  var pos = particlesStorage[index];
-  var velocity = velocityStorage[index];
-  var vort = vorticity[index];
-  var density = densityStorage[index];
-  var correctPar = correctParticle[index];
-  // var predPos = predPos[index];
-  var gridStorage = gridStorage[index];
-//  var gridIndices = gridIndicesStorage[index];
-
-
-  var aspectRatioStuff = uniforms.aspectRatio;
-  var startEndCell = vec2<u32>(GlobalInvocationID.x,GlobalInvocationID.y);
-  var fluidDensity = 0.0;
-  var startEndN = 0;
-  var constraint = constFactor[index];
-
-  var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
-  velocityStorage[index] = velocity;
-  particlesStorage[index] = pos;
-
-  //1. predicted Position
-  var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
-  predPos[index] = particlesStorage[index] + newVel;
-
- //2. Fluid Density
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-
-        // Removing out of range cells
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        let e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        fluidDensity += poly6(pos - predPos[e], effectRadius);
-      }
-    }
-  }
-  densityStorage[index] = fluidDensity;
- 
-  //3. compute constraint factor
-{
-  var cellNIndex3D = getCell3DIndexFromPos(pos);
-  var vec = vec4<f32>(0);
-  var grad = vec4<f32>(0);
-  var sumGradCi = vec4<f32>(0);
-  var sumSqGradC = 0.;
-  var pos = predPos[index];
-  let densityC = fluidDensity / restDensity - 1.0;
-
-
-  var cellNIndex1D = 0;
-  var cellNIndex3d = vec3<i32>(0);
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-
-        // Removing out of range cells
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        let e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-
-        vec = pos - predPos[e];
- 
-        grad = gradSpiky(vec, effectRadius);
-
-        sumGradCi += grad;
-
-        sumSqGradC += dot(grad, grad);
-      }
-    }
-  }
-  sumSqGradC += dot(sumGradCi, sumGradCi);
-  sumSqGradC /= restDensity * restDensity;
-
-  constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
-}
-//4. compute constraint correction
-{
-  var pos = predPos[index];
-  var lambdaI = constFactor[index];
-  var cellNIndex3D = getCell3DIndexFromPos(pos);
-  var corr = vec4<f32>(0.0);
-  var vec = vec4<f32>(0.0);
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        vec = pos - predPos[e];
-        corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-      }
-    } 
-
-    correctParticle[index] = corr / restDensity;
-  }
-
-  predPos[index] = predPos[index] + correctParticle[index];
-
-  velocityStorage[index] = predPos[index] - particlesStorage[index];
-}
-  const MAX_VEL = vec4<f32>(30.);
-  velocityStorage[index] = clamp((predPos[index] - pos[index]) / (timeStep + FLOAT_EPS), -MAX_VEL, MAX_VEL);
-{
-  var pos = predPos[index];
-  //var vorticity = vorticity[index];
-  var cellIndex3D = getCell3DIndexFromPos(pos);
-  var vel = velocityStorage[index];
-
-  var n = vec4<f32>(0);
-
-  var cellNIndex1D = 0;
-  var cellNIndex3D = vec3<u32>(0);
-  var vort = vec4<f32>(0);
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        //fixme - change Index to simplified grid index
-        vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
-      }
-    }
-  }
-  vorticity[index] = vort;
-
-}
-
-//7 vorticity confinement
-  {
-    var n = vec4<f32>(0.0f);
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          //fixme - change Index to simplified grid index
-          n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
-        }
-      }
-    }
-    velocityStorage[index] = vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * timeStep, 1.);
-  }
-
-  //8 apply XsphViscosityCorrection
-{
-  var pos = predPos[index];
-  var velocity = velocityStorage[index];
-  var viscosity = vec4<f32>(0.);
-
-  var lambdaI = constFactor[index];
-
-
-  for (var iX = -1; iX <= 1; iX++) {
-    for (var iY = -1; iY <= 1; iY++) {
-      for (var iZ = -1; iZ <= 1; iZ++) {
-        var cellNIndex3D = getCell3DIndexFromPos(pos);
-        cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-        if(cellNIndex3D.x < 0 || 
-          cellNIndex3D.y < 0 ||
-          cellNIndex3D.z < 0 ||
-          cellNIndex3D.x >= (GRID_RES) ||
-          cellNIndex3D.y >= (GRID_RES) ||
-          cellNIndex3D.z >= (GRID_RES)   
-        ) {
-          continue;
-        }
-        var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-        viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
-      }
-    }
-  }
-  velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
-}
-
-particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-//9 apply Bounding Wall
-}`;
     let webgpu = await main_default();
     const cameraUniformBuffer = webgpu.device.createBuffer({
-      size: 4 * 16,
+      size: 3 * 4 * 16,
       // 4x4 matrix
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const particlesCount = 1e5;
     const particleSize = 16;
     const computeUniformsBuffer = webgpu.device.createBuffer({
       size: 96,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
     });
-    function makeBuffer2(size = particlesCount, flag = 1) {
+    function makeBuffer2(size = particlesCount, flag = 1, log) {
       const gpuBufferSize = particlesCount * particleSize;
       const gpuBuffer = webgpu.device.createBuffer({
         size: gpuBufferSize,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         mappedAtCreation: true
       });
       const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
       for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
         particlesBuffer[4 * iParticle + 0] = flag && Math.random() * 2 - 1;
-        particlesBuffer[4 * iParticle + 1] = flag && Math.random() * 2 - 1;
-        particlesBuffer[4 * iParticle + 2] = 0;
-        particlesBuffer[4 * iParticle + 3] = 1;
+        particlesBuffer[4 * iParticle + 1] = flag && Math.random();
+        particlesBuffer[4 * iParticle + 2] = flag && Math.random() * 2 - 1;
+        particlesBuffer[4 * iParticle + 3] = 0;
       }
+      if (log)
+        console.log(particlesBuffer);
       gpuBuffer.unmap();
       return gpuBuffer;
     }
-    const posBuffer = makeBuffer2();
+    const posBuffer = makeBuffer2(particlesCount, 1);
     const velocityBuffer = makeBuffer2(particlesCount, 0);
-    const vorticityBuffer = makeBuffer2();
-    const predictionBuffer = makeBuffer2();
-    const densityBuffer = makeBuffer2();
-    const constBuffer = makeBuffer2();
-    const correctParticle = makeBuffer2();
-    const grid = makeBuffer2();
-    const gridIndices = makeBuffer2(particlesCount * 3);
-    const predictedPosition = webgpu.initComputeCall({
-      code: `
-  ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  @group(0) @binding(4) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(5) var<storage,read_write> grid: array<u32>;
-  @group(0) @binding(6) var<storage,read_write> gridIndices: array<u32>;
-
-
+    const vorticityBuffer = makeBuffer2(particlesCount, 0);
+    const predictionBuffer = makeBuffer2(particlesCount, 0);
+    const densityBuffer = makeBuffer2(particlesCount / 4, 0);
+    const constBuffer = makeBuffer2(particlesCount, 0);
+    const correctParticle = makeBuffer2(particlesCount, 0);
+    const hashCounts = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
+    const particleIds = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
+    window.z = await utils_default.readBuffer(webgpu.state, predictionBuffer);
+    const resetPass = webgpu.initComputeCall({
+      label: `resetPass`,
+      code: `  
+  @binding(0) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
-    var pos = particlesStorage[index];
-    var velocity = velocityStorage[index];
-    var correctPar = correctParticle[index];
-    var g = grid[index];
-    var gridI = gridIndices[index];
-  
-    var aspectRatioStuff = uniforms.aspectRatio;
-    var startEndCell = vec2<u32>(GlobalInvocationID.x,GlobalInvocationID.y);
-    var fluidDensity = 0.0;
-    var startEndN = 0;
-  
-    var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
-    velocityStorage[index] = velocity;
-    particlesStorage[index] = pos;
-  
-    //1. predicted Position
-    var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
-    predPos[index] = particlesStorage[index] + newVel;
-
-    var id = getCell3DIndexFromPos(predPos[index]);
-    var oneId = getCell1DIndexFromPos(predPos[index]);
-    grid[oneId] = grid[oneId] + 1;
-    gridIndices[grid[oneId]] = index;
+    hashCounts[index] = 0;
   }`,
       exec: function(state2) {
         const device2 = state2.device;
@@ -2624,7 +3279,7 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
         const computePass = commandEncoder.beginComputePass();
         computePass.setPipeline(state2.computePass.pipeline);
         computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-        computePass.dispatchWorkgroups(1e4);
+        computePass.dispatchWorkgroups(NGROUPS);
         computePass.end();
       },
       bindGroups: function(state2, computePipeline) {
@@ -2632,19 +3287,199 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
           state2.device,
           computePipeline.getBindGroupLayout(0),
           [
-            computeUniformsBuffer,
+            //particleIds, 
+            hashCounts
+          ]
+        );
+        return [computeBindGroup];
+      }
+    });
+    const COMMON_SHADER_FUNCS = `
+fn bucketHash (p:vec3<i32>) -> u32 {
+  var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
+  if h < 0 {
+    return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
+  } else {
+    return u32(h) % ${COLLISION_TABLE_SIZE}u;
+  }
+}
+
+fn particleBucket (p:vec3<f32>) -> vec3<i32> {
+  return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
+}
+
+fn particleHash (p:vec3<f32>) -> u32 {
+  return bucketHash(particleBucket(p));
+}
+`;
+    const predictedPosition = webgpu.initComputeCall({
+      label: `predictedPosition`,
+      code: `
+  @group(0) @binding(0) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+   @group(0) @binding(1) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(2) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;
+    var velocity = velocityStorage[index];
+    // var correctPar = correctParticle[index];
+  
+    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
+    velocityStorage[index] = velocity;
+
+    //1. predicted Position
+    const timeStep = 0.10f;
+    var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
+
+    predPos[index] = particlesStorage[index] + newVel * timeStep;
+  }`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        state2.computePass.computePass = computePass;
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      },
+      bindGroups: function(state2, computePipeline) {
+        const computeBindGroup = utils_default.makeBindGroup(
+          state2.device,
+          computePipeline.getBindGroupLayout(0),
+          [
             velocityBuffer,
             predictionBuffer,
+            posBuffer
+            //correctParticle
+          ]
+        );
+        return [computeBindGroup];
+      }
+    });
+    const computeDensity = webgpu.initComputeCall({
+      label: `computeDensity`,
+      code: `
+  ${predefines}
+   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(1) var<storage,read_write> density: array<f32>;
+
+  @group(0) @binding(2) var<storage,read_write> hashCounts: array<u32>;
+  @group(0) @binding(3) var<storage,read_write> particleIds: array<u32>;
+
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;  
+
+    let pos = predPos[index];
+    var fluidDensity = 0.;
+
+    
+    var startEnd = getNeighbors(index);
+
+      
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      fluidDensity += poly6(pos - predPos[e], effectRadius);
+    }
+
+    density[index] = fluidDensity;
+  }`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        state2.computePass.computePass = computePass;
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      },
+      bindGroups: function(state2, computePipeline) {
+        const computeBindGroup = utils_default.makeBindGroup(
+          state2.device,
+          computePipeline.getBindGroupLayout(0),
+          [
+            predictionBuffer,
+            densityBuffer,
+            hashCounts,
+            particleIds
+          ]
+        );
+        return [computeBindGroup];
+      }
+    });
+    const gridCountPipeline = webgpu.initComputeCall({
+      label: `gridCountPipeline`,
+      code: `
+  ${COMMON_SHADER_FUNCS}
+  @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
+  @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
+  
+  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+    var id = globalVec.x;
+    var bucket = particleHash(positions[id].xyz);
+    atomicAdd(&hashCounts[bucket], 1u);
+  }`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      },
+      bindGroups: function(state2, computePipeline) {
+        const computeBindGroup = utils_default.makeBindGroup(
+          state2.device,
+          computePipeline.getBindGroupLayout(0),
+          [
             posBuffer,
-            correctParticle,
-            grid,
-            gridIndices
+            hashCounts
+          ]
+        );
+        return [computeBindGroup];
+      }
+    });
+    const gridCopyParticlePipeline = webgpu.initComputeCall({
+      label: `gridCopyParticlePipeline`,
+      code: `
+${COMMON_SHADER_FUNCS}
+  @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
+  @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
+  @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  var id = globalVec.x;
+  var bucket = particleHash(positions[id].xyz);
+  var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
+  particleIds[offset] = id;
+}`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      },
+      bindGroups: function(state2, computePipeline) {
+        const computeBindGroup = utils_default.makeBindGroup(
+          state2.device,
+          computePipeline.getBindGroupLayout(0),
+          [
+            posBuffer,
+            hashCounts,
+            particleIds
           ]
         );
         return [computeBindGroup];
       }
     });
     const applyVorticityCompute = webgpu.initComputeCall({
+      label: `applyVorticityCompute`,
       code: `
   ${predefines}
   
@@ -2653,83 +3488,50 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
   @group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(4) var<storage,read_write> densityStorage: array<f32>;
-  @group(0) @binding(5) var<storage,read_write> constFactor: array<f32>;
-  @group(0) @binding(6) var<storage,read_write> particlesStorage: array<vec4<f32>>;  
-  @group(0) @binding(7) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(8) var<storage,read_write> gridStorage: array<vec4<f32>>;
-  
+  @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
+  @group(0) @binding(5) var<storage,read_write> correctParticle: array<vec4<f32>>;
+
+  @binding(6) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(7) @group(0) var<storage, read_write> hashCounts : array<u32>;
+  @binding(8) @group(0) var<storage, read_write> particlesStorage : array<vec4<f32>>;
+
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     var f = uniforms.friction;
     let index: u32 = GlobalInvocationID.x;
-    var pos = particlesStorage[index];
     var velocity = velocityStorage[index];
     var vort = vorticity[index];
-    var density = densityStorage[index];
     var correctPar = correctParticle[index];
-    var gridStorage = gridStorage[index];
   
     {
-      var pos = predPos[index];
-      //var vorticity = vorticity[index];
-      var cellIndex3D = getCell3DIndexFromPos(pos);
-      var vel = velocityStorage[index];
-    
+      var pos = predPos[index];    
       var n = vec4<f32>(0);
-    
-      var cellNIndex1D = 0;
-      var cellNIndex3D = vec3<u32>(0);
+
       var vort = vec4<f32>(0);
-    
-      for (var iX = -1; iX <= 1; iX++) {
-        for (var iY = -1; iY <= 1; iY++) {
-          for (var iZ = -1; iZ <= 1; iZ++) {
-            var cellNIndex3D = getCell3DIndexFromPos(pos);
-            cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-            if(cellNIndex3D.x < 0 || 
-              cellNIndex3D.y < 0 ||
-              cellNIndex3D.z < 0 ||
-              cellNIndex3D.x >= (GRID_RES) ||
-              cellNIndex3D.y >= (GRID_RES) ||
-              cellNIndex3D.z >= (GRID_RES)   
-            ) {
-              continue;
-            }
-            var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            //fixme - change Index to simplified grid index
-            vort = vec4<f32>(cross((vel[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
-          }
-        }
+      var startEnd = getNeighbors(index);
+
+      
+      for (var i = 0u; i < startEnd.count; i++) {
+        var e = startEnd.indices[i];
+        vort = vec4<f32>(cross((velocityStorage[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
       }
       vorticity[index] = vort;
-    
     }
   
     //7 vorticity confinement
     {
+      let pos = particlesStorage[index];
       var n = vec4<f32>(0.0f);
-      for (var iX = -1; iX <= 1; iX++) {
-        for (var iY = -1; iY <= 1; iY++) {
-          for (var iZ = -1; iZ <= 1; iZ++) {
-            var cellNIndex3D = getCell3DIndexFromPos(pos);
-            cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-            if(cellNIndex3D.x < 0 || 
-              cellNIndex3D.y < 0 ||
-              cellNIndex3D.z < 0 ||
-              cellNIndex3D.x >= (GRID_RES) ||
-              cellNIndex3D.y >= (GRID_RES) ||
-              cellNIndex3D.z >= (GRID_RES)   
-            ) {
-              continue;
-            }
-            var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-            //fixme - change Index to simplified grid index
-            n += length(vort[e]) * gradSpiky(pos - predPos[e], effectRadius);
-          }
-        }
+      var startEnd = getNeighbors(index);
+
+      for (var i = 0u; i < startEnd.count; i++) {
+        var e = startEnd.indices[i];
+        //n += 1.;//(vorticity[e]);
+        //* gradSpiky(pos - predPos[e], effectRadius);
       }
-      velocityStorage[index] = vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * timeStep, 1.);
+      velocityStorage[index] += 
+      
+      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .0000000000000000000000000001, 0.);
     }
   
   
@@ -2740,25 +3542,12 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
     var viscosity = vec4<f32>(0.);
   
     var lambdaI = constFactor[index];
-  
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
-        }
-      }
+
+    var startEnd = getNeighbors(index);
+
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
     }
     velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
   }
@@ -2771,7 +3560,7 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
         const computePass = commandEncoder.beginComputePass();
         computePass.setPipeline(state2.computePass.pipeline);
         computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-        computePass.dispatchWorkgroups(1e4);
+        computePass.dispatchWorkgroups(NGROUPS);
         computePass.end();
       },
       bindGroups: function(state2, computePipeline) {
@@ -2783,143 +3572,18 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
             velocityBuffer,
             vorticityBuffer,
             predictionBuffer,
-            densityBuffer,
             constBuffer,
-            posBuffer,
             correctParticle,
-            grid
+            hashCounts,
+            particleIds,
+            posBuffer
           ]
         );
         return [computeBindGroup];
       }
     });
     const applyConstraintCompute = webgpu.initComputeCall({
-      code: `
-  ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> densityStorage: array<f32>;
-  @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
-  @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
-  @group(0) @binding(7) var<storage,read_write> gridStorage: array<i32>;
-  @group(0) @binding(8) var<storage,read_write> gridIndicesStorage: array<i32>;
-  
-  @compute @workgroup_size(256)
-  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-    let index: u32 = GlobalInvocationID.x;
-    var pos = particlesStorage[index];
-    var velocity = velocityStorage[index];
-    var correctPar = correctParticle[index];
-    var aspectRatioStuff = uniforms.aspectRatio;
-    var constraint = constFactor[index];
-    var fluidDensity = densityStorage[index];
-
-   
-   
-    //3. compute constraint factor
-  {
-    var cellNIndex3D = getCell3DIndexFromPos(pos);
-    var vec = vec4<f32>(0);
-    var grad = vec4<f32>(0);
-    var sumGradCi = vec4<f32>(0);
-    var sumSqGradC = 0.;
-    var pos = predPos[index];
-    let densityC = fluidDensity / restDensity - 1.0;
-
-  
-    var cellNIndex1D = 0;
-    var cellNIndex3d = vec3<i32>(0);
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-  
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-  
-          // Removing out of range cells
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var startEnd = gridStorage[index];
-
-          var startEndCell = gridIndicesStorage[index];
-
-          for (var e = 0; e < 4; e++) {
-            vec = pos - predPos[e];
-   
-            grad = gradSpiky(vec, effectRadius);
-    
-            sumGradCi += grad;
-    
-            sumSqGradC += dot(grad, grad);
-          }
-        }
-      }
-    }
-    sumSqGradC += dot(sumGradCi, sumGradCi);
-    sumSqGradC /= restDensity * restDensity;
-  
-    constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
-  }
-  //4. compute constraint correction
-  {
-    var pos = predPos[index];
-    var lambdaI = constFactor[index];
-    var cellNIndex3D = getCell3DIndexFromPos(pos);
-    var corr = vec4<f32>(0.0);
-    var vec = vec4<f32>(0.0);
-  
-    for (var iX = -1; iX <= 1; iX++) {
-      for (var iY = -1; iY <= 1; iY++) {
-        for (var iZ = -1; iZ <= 1; iZ++) {
-          var cellNIndex3D = getCell3DIndexFromPos(pos);
-          cellNIndex3D = (cellNIndex3D) + vec3<i32>(iX, iY, iZ);
-          if(cellNIndex3D.x < 0 || 
-            cellNIndex3D.y < 0 ||
-            cellNIndex3D.z < 0 ||
-            cellNIndex3D.x >= (GRID_RES) ||
-            cellNIndex3D.y >= (GRID_RES) ||
-            cellNIndex3D.z >= (GRID_RES)   
-          ) {
-            continue;
-          }
-          var e = (cellNIndex3D.x * GRID_RES + cellNIndex3D.y) * GRID_RES + cellNIndex3D.z;
-          vec = pos - predPos[e];
-          corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-        }
-      } 
-  
-      correctParticle[index] = corr / restDensity;
-    }
-  
-    predPos[index] = predPos[index] + correctParticle[index];
-  
-    velocityStorage[index] = predPos[index] - particlesStorage[index];
-  }
-    const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (timeStep + FLOAT_EPS), -MAX_VEL, MAX_VEL);
-  
-  particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-  //9 apply Bounding Wall
-  }`,
-      exec: function(state2) {
-        const device2 = state2.device;
-        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
-        const computePass = commandEncoder.beginComputePass();
-        computePass.setPipeline(state2.computePass.pipeline);
-        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-        computePass.dispatchWorkgroups(1e4);
-        computePass.end();
-      },
+      label: `applyConstraintCompute`,
       bindGroups: function(state2, computePipeline) {
         const computeBindGroup = utils_default.makeBindGroup(
           state2.device,
@@ -2932,28 +3596,90 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
             constBuffer,
             posBuffer,
             correctParticle,
-            grid,
-            gridIndices
+            hashCounts,
+            particleIds
           ]
         );
         return [computeBindGroup];
-      }
-    });
-    const updatePositionCompute = webgpu.initComputeCall({
+      },
       code: `
   ${predefines}
-  
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
-  //@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+  @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(3) var<storage,read_write> densityStorage: array<f32>;
+  @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
+  @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
+
+
+  @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
+
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
-    let predPos = predPos[index];
+    var pos = particlesStorage[index];
+    var velocity = velocityStorage[index];
+    var correctPar = correctParticle[index];
+    var aspectRatioStuff = uniforms.aspectRatio;
+    var constraint = constFactor[index];
+    var fluidDensity = densityStorage[index];
+   
+    //3. compute constraint factor
+  {
+    var vec = vec4<f32>(0);
+    var grad = vec4<f32>(0);
+    var sumGradCi = vec4<f32>(0);
+    var sumSqGradC = 0.;
+    var pos = predPos[index];
+    let densityC = fluidDensity / restDensity - 1.0;
+    
+    var startEnd = getNeighbors(index);
+
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      vec = pos - predPos[e];
+
+      grad = gradSpiky(vec, effectRadius);
+
+      sumGradCi += grad;
+
+      sumSqGradC += dot(grad, grad);
+    }
+    
+    sumSqGradC += dot(sumGradCi, sumGradCi);
+    sumSqGradC /= restDensity * restDensity;
   
-  particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+    constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
+  }
+  //4. compute constraint correction
+  {
+    var pos = predPos[index];
+    var lambdaI = constFactor[index];
+    var corr = vec4<f32>(0.0);
+    var vec = vec4<f32>(0.0);
+     
+    var startEnd = getNeighbors(index);
+
+    for (var i = 0u; i < startEnd.count; i++) {
+      var e = startEnd.indices[i];
+      vec = pos - predPos[e];
+      corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+    }
+    correctParticle[index] = corr / restDensity;
+
+    predPos[index] = predPos[index] + correctParticle[index];
+  
+    velocityStorage[index] = predPos[index] - particlesStorage[index];
+  }
+    const MAX_VEL = vec4<f32>(30.);
+    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (100. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+  
+   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+
   //9 apply Bounding Wall
   }`,
       exec: function(state2) {
@@ -2962,7 +3688,34 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
         const computePass = commandEncoder.beginComputePass();
         computePass.setPipeline(state2.computePass.pipeline);
         computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-        computePass.dispatchWorkgroups(1e4);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      }
+    });
+    const updatePositionCompute = webgpu.initComputeCall({
+      label: `updatePositionCompute`,
+      code: `  
+  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
+  @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;
+    let predPos = predPos[index];
+  
+  const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+
+  particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+  //9 apply Bounding Wall
+}`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
         computePass.end();
       },
       bindGroups: function(state2, computePipeline) {
@@ -2977,15 +3730,6 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
         return [computeBindGroup];
       }
     });
-    const exec = function(state2) {
-      const device2 = state2.device;
-      const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
-      const computePass = commandEncoder.beginComputePass();
-      computePass.setPipeline(state2.computePass.pipeline);
-      computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-      computePass.dispatchWorkgroups(1e4);
-      computePass.end();
-    };
     const attractors = [];
     const attractor = {
       position: [0, 0],
@@ -3005,28 +3749,6 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
       new Uint32Array(buffer2, 28, 1).set([500]);
       return buffer2;
     }
-    const makeIncompressible = webgpu.initComputeCall({
-      code: IncompressionShader,
-      exec,
-      bindGroups: function(state2, computePipeline) {
-        const computeBindGroup = utils_default.makeBindGroup(
-          state2.device,
-          computePipeline.getBindGroupLayout(0),
-          [
-            computeUniformsBuffer,
-            velocityBuffer,
-            vorticityBuffer,
-            predictionBuffer,
-            densityBuffer,
-            constBuffer,
-            posBuffer,
-            correctParticle,
-            grid
-          ]
-        );
-        return [computeBindGroup];
-      }
-    });
     const quadBuffer = webgpu.device.createBuffer({
       size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
       usage: GPUBufferUsage.VERTEX,
@@ -3078,11 +3800,22 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
       }
     ];
     const device = webgpu.device;
+    const model = mat4_exports.identity(new Float32Array(16));
     function getCameraViewProjMatrix() {
       const eyePosition = vec3_exports.fromValues(0, 0, -1.5);
       const upVector = vec3_exports.fromValues(0, 1, 0);
       const origin = vec3_exports.fromValues(0, 0, 0);
       const rad = Math.PI * (Date.now() / 5);
+      mat4_exports.rotate(
+        model,
+        model,
+        1,
+        vec3_exports.fromValues(
+          Math.sin(0),
+          Math.cos(1),
+          0
+        )
+      );
       let projectionMatrix = mat4_exports.create();
       let viewProjectionMatrix = mat4_exports.create();
       mat4_exports.perspectiveZO(
@@ -3090,9 +3823,8 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
         1,
         500 / 500,
         0.1,
-        50
+        500
       );
-      mat4_exports.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
       mat4_exports.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
       let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
       let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
@@ -3100,13 +3832,6 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
       return viewProjectionMatrixHost;
     }
     const cameraViewProj = getCameraViewProjMatrix();
-    device.queue.writeBuffer(
-      cameraUniformBuffer,
-      0,
-      cameraViewProj.buffer,
-      cameraViewProj.byteOffset,
-      cameraViewProj.byteLength
-    );
     const blend = {
       color: {
         srcFactor: "src-alpha",
@@ -3129,7 +3854,9 @@ particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS
 };
 
 struct Camera {
-  viewProjectionMatrix : mat4x4<f32>,
+  projectionMatrix : mat4x4<f32>,
+  viewMatrix : mat4x4<f32>,
+  modelMatrix: mat4x4<f32>
 }
 
 struct VSOut {
@@ -3146,8 +3873,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     
-    camera.viewProjectionMatrix *      
-   vec4<f32>(inPosition.xy + (.005 + uniforms.spriteSize) * quadCorner, 0., 1.);
+     camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
+   vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -3191,7 +3918,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,1.);
+    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,.1);
 }
 `
       },
@@ -3227,13 +3954,83 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
         });
       }
     });
+    let camera = createCamera({
+      center: [-7, -0, -0],
+      damping: 0,
+      noScroll: true,
+      renderOnDirty: true,
+      element: webgpu.canvas
+    });
+    let stuff = camera();
+    const identity2 = mat4_exports.identity([]);
+    const v = new Float32Array([0.9951236248016357, -0.03326542302966118, 0.09285693615674973, 0, 0, 0.941413164138794, 0.33725544810295105, 0, -0.09863568842411041, -0.33561086654663086, 0.9368224740028381, 0, 0.19727137684822083, 0.20051512122154236, -3.9743294715881348, 1]);
+    const gridCountScan = new WebGPUScan({
+      device,
+      threadsPerGroup: SCAN_THREADS,
+      itemsPerThread: 4,
+      dataType: "u32",
+      dataSize: 4,
+      dataFunc: "A + B",
+      dataUnit: "0u"
+    });
+    const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts);
     setInterval(
-      function() {
+      async function() {
+        let { projection, view } = camera();
+        cameraViewProj;
+        device.queue.writeBuffer(
+          cameraUniformBuffer,
+          0,
+          cameraViewProj.buffer,
+          cameraViewProj.byteOffset,
+          cameraViewProj.byteLength
+        );
+        device.queue.writeBuffer(
+          cameraUniformBuffer,
+          0,
+          projection.buffer,
+          projection.byteOffset,
+          projection.byteLength
+        );
+        device.queue.writeBuffer(
+          cameraUniformBuffer,
+          64,
+          view.buffer,
+          view.byteOffset,
+          view.byteLength
+        );
+        device.queue.writeBuffer(
+          cameraUniformBuffer,
+          128,
+          model.buffer,
+          model.byteOffset,
+          model.byteLength
+        );
+        let localState = resetPass();
+        let commandEncoder = device.createCommandEncoder();
         predictedPosition();
-        applyConstraintCompute();
+        gridCountPipeline();
+        const computePass = commandEncoder.beginComputePass();
+        window.hashCounts = await utils_default.readBuffer(webgpu.state, hashCounts);
+        gridCountScanPass.run(computePass);
+        computePass.end();
+        gridCopyParticlePipeline();
+        window.particleIds = await utils_default.readBuffer(webgpu.state, particleIds);
+        computeDensity();
+        for (var i = 0; i < 2; i++)
+          applyConstraintCompute();
         applyVorticityCompute();
         updatePositionCompute();
         drawCube({});
+        window.density = await utils_default.readBuffer(webgpu.state, densityBuffer);
+        window.countY = function countY() {
+          let stuff2 = window.w;
+          let result = [];
+          for (let i2 = 0; i2 < stuff2.length; i2 += 4) {
+            result.push(stuff2[i2 + 1]);
+          }
+          console.log(result);
+        };
       },
       50
     );
