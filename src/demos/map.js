@@ -8,6 +8,10 @@ import * as d3 from "d3";
 import {geoMercator} from "d3-geo";
 
 
+//2gb 30 million rows csv
+//binary 
+
+
 const coordinates = [
 
 ]
@@ -235,4 +239,6 @@ async function main() {
 // 20 million points
 
 //compute shader - parralell query processing
-//when i solve this, it'll be a good story
+//complaints - date time stamp 
+//catgeorical
+//16 million complaints - 100 million in person nyc data office 

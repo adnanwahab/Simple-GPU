@@ -6,9 +6,10 @@ import mouseWheel from 'mouse-wheel'
   //when particles move -> record ID location in bucket neighborhood in 
   //loop through IDs in neighborhood
   //look up velocity[id] and integrate them across neighbors
+  //figure out particle IDs
 
 import { WebGPUScan } from './scan'
-const NUM_PARTICLES = 256 * 4 * 128;
+const NUM_PARTICLES = 256 * 4 * 100
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
@@ -16,7 +17,7 @@ const NGROUPS = NUM_PARTICLES / 256
 
 var isBrowser = typeof window !== 'undefined'
 
-const COLLISION_TABLE_SIZE = particlesCount 
+const COLLISION_TABLE_SIZE = particlesCount / 100
 
 const HASH_VEC = [
   1,
@@ -25,7 +26,7 @@ const HASH_VEC = [
 ]
 
 const MAX_BUCKET_SIZE = 16
-const PARTICLE_RADIUS = .05;
+const PARTICLE_RADIUS = .20;
 
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
@@ -98,10 +99,10 @@ function createCamera (props_) {
  
     })
 
-    mouseWheel(source, function (dx, dy) {
-      ddistance += dy / getHeight() * cameraState.zoomSpeed
-      cameraState.dirty = true;
-    }, props.noScroll)
+    // mouseWheel(source, function (dx, dy) {
+    //   ddistance += dy / getHeight() * cameraState.zoomSpeed
+    //   cameraState.dirty = true;
+    // }, props.noScroll)
   }
 
   function damp (x) {
@@ -157,28 +158,7 @@ function createCamera (props_) {
     mat4.lookAt(cameraState.view, eye, center, up)
   }
 
-  cameraState.dirty = true;
-
-  // var injectContext = regl({
-  //   context: Object.assign({}, cameraState, {
-  //     dirty: function () {
-  //       return cameraState.dirty;
-  //     },
-  //     projection: function (context) {
-  //       mat4.perspective(cameraState.projection,
-  //         cameraState.fovy,
-  //         context.viewportWidth / context.viewportHeight,
-  //         cameraState.near,
-  //         cameraState.far)
-  //       if (cameraState.flipY) { cameraState.projection[5] *= -1 }
-  //       return cameraState.projection
-  //     }
-  //   }),
-  //   uniforms: Object.keys(cameraState).reduce(function (uniforms, name) {
-  //     uniforms[name] = regl.context(name)
-  //     return uniforms
-  //   }, {})
-  // })
+  cameraState.dirty = true
 
   function setupCamera () {
 
@@ -189,36 +169,11 @@ function createCamera (props_) {
         cameraState.near,
         cameraState.far)
 
-//        console.log(cameraState.view)
-    // if (typeof setupCamera.dirty !== 'undefined') {
-    //   cameraState.dirty = setupCamera.dirty || cameraState.dirty
-    //   setupCamera.dirty = undefined;
-    // }
-
-    // if (props && block) {
-    //   cameraState.dirty = true;
-    // }
-
-    // if (cameraState.renderOnDirty && !cameraState.dirty) return;
-
-    // if (!block) {
-    //   block = props
-    //   props = {}
-    // }
-
-    // updateCamera(props)
-    // injectContext(block)
-    // cameraState.dirty = false;
     return {
       projection: cameraState.projection,
       view: cameraState.view
     }
   }
-
-  // Object.keys(cameraState).forEach(function (name) {
-  //   setupCamera[name] = cameraState[name]
-  // })
-
   return setupCamera
 }
 
@@ -273,7 +228,7 @@ fn getNeighbors (centerId: u32) -> BucketContents {
               bucketEnd = hashCounts[bucketId + 1];
             }
             //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = 0u; n < ${MAX_BUCKET_SIZE}u; n = n + 1u) {
+            for (var n = result.count; n < 50u; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
                 //result[i][j][k].indices[n] = -1;
@@ -288,14 +243,14 @@ fn getNeighbors (centerId: u32) -> BucketContents {
       return result;
     }
 
+//particle Ids keeps getting bigger 
+
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
-const GRID_CELL_SIZE = vec3<f32>(5.,5.,5.);
 
 const effectRadius = 0.3f;
-const restDensity = 250.0f;
-const relaxCFM = 400.0f;
-const dim = 10;
+const restDensity = 450.0f;
+const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 const artPressureCoeff = 0.001f;
@@ -381,8 +336,6 @@ const correctParticle = makeBuffer(particlesCount, 0)
 const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 
-window.z = await utils.readBuffer(webgpu.state, predictionBuffer)
-
 const resetPass = webgpu.initComputeCall({
   label: `resetPass`,
   code:`  
@@ -409,7 +362,6 @@ const resetPass = webgpu.initComputeCall({
       utils.makeBindGroup(state.device,
         computePipeline.getBindGroupLayout(0),
       [
-        //particleIds, 
         hashCounts
       ])
     return [computeBindGroup]
@@ -587,7 +539,7 @@ ${COMMON_SHADER_FUNCS}
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
   particleIds[offset] = id;
 }`,
-exec: function (state){
+exec: function (state) {
   const device = state.device
   const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
 
@@ -1105,10 +1057,6 @@ let camera = createCamera({
 });
 let stuff = camera();
 
-const identity = mat4.identity([])
-
-const v = new Float32Array([0.9951236248016357,-0.03326542302966118,0.09285693615674973,0,0,0.941413164138794,0.33725544810295105,0,-0.09863568842411041,-0.33561086654663086,0.9368224740028381,0,0.19727137684822083,0.20051512122154236,-3.9743294715881348,1])
-
 const gridCountScan = new WebGPUScan({
   device,
   threadsPerGroup: SCAN_THREADS,
@@ -1162,12 +1110,15 @@ setInterval(
     predictedPosition()
 
     gridCountPipeline()
-  
+
     const computePass = commandEncoder.beginComputePass();
-    
+
     window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
+    
+    if (window.hashCounts.filter(d => d > 0).length > 0) console.log(window.hashCounts.filter(d => d > 0).length)
 
     gridCountScanPass.run(computePass)
+
     computePass.end();
 
     gridCopyParticlePipeline()
@@ -1179,21 +1130,29 @@ setInterval(
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
     
-    applyVorticityCompute()
+    //applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
 
     window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
-      window.countY = function countY() {
-        let stuff = window.w
-        let result = []
-        for (let i = 0; i < stuff.length; i += 4) {
-          result.push(stuff[i+1])
-        }
-        console.log(result)
-      }
+    window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
+
+    window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer)
+
+
+    window.correctParticle = await utils.readBuffer(webgpu.state, correctParticle)
+
+    window.velocityBuffer = await utils.readBuffer(webgpu.state, velocityBuffer)
+      // window.countY = function countY() {
+      //   let stuff = window.w
+      //   let result = []
+      //   for (let i = 0; i < stuff.length; i += 4) {
+      //     result.push(stuff[i+1])
+      //   }
+      //   console.log(result)
+      // }
 
     }, 50) 
 }
