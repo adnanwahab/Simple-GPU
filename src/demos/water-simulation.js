@@ -9,7 +9,7 @@ import mouseWheel from 'mouse-wheel'
   //figure out particle IDs
 
 import { WebGPUScan } from './scan'
-const NUM_PARTICLES = 256 * 4 * 100
+const NUM_PARTICLES = 256 * 4 * 50
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
@@ -17,7 +17,7 @@ const NGROUPS = NUM_PARTICLES / 256
 
 var isBrowser = typeof window !== 'undefined'
 
-const COLLISION_TABLE_SIZE = particlesCount / 100
+const COLLISION_TABLE_SIZE = particlesCount 
 
 const HASH_VEC = [
   1,
@@ -228,12 +228,12 @@ fn getNeighbors (centerId: u32) -> BucketContents {
               bucketEnd = hashCounts[bucketId + 1];
             }
             //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = result.count; n < 50u; n = n + 1u) {
+            for (var n = 0u; n < 50u; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
                 //result[i][j][k].indices[n] = -1;
               } else {
-                result.indices[result.count] = i32(particleIds[p]);
+                result.indices[n+result.count] = i32(particleIds[p]);
                 result.count += 1u;
               }
             }
@@ -762,7 +762,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = predPos[index] - particlesStorage[index];
   }
     const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (100. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
    particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
@@ -1115,7 +1115,7 @@ setInterval(
 
     window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
     
-    if (window.hashCounts.filter(d => d > 0).length > 0) console.log(window.hashCounts.filter(d => d > 0).length)
+    // if (window.hashCounts.filter(d => d > 0).length > 0) console.log(window.hashCounts.filter(d => d > 0).length)
 
     gridCountScanPass.run(computePass)
 
@@ -1130,7 +1130,7 @@ setInterval(
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
     
-    //applyVorticityCompute()
+    applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
