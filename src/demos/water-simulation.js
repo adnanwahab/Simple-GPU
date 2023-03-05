@@ -17,7 +17,8 @@ const NGROUPS = NUM_PARTICLES / 256
 
 var isBrowser = typeof window !== 'undefined'
 
-const COLLISION_TABLE_SIZE = particlesCount 
+const COLLISION_TABLE_SIZE = particlesCount / 50
+
 
 const HASH_VEC = [
   1,
@@ -194,7 +195,7 @@ const predefines = `struct Uniforms {
 };
 
 struct BucketContents {
-  indices : array<i32, 50>,
+  indices : array<i32, 100>,
   count : u32,
 }
 
@@ -228,7 +229,7 @@ fn getNeighbors (centerId: u32) -> BucketContents {
               bucketEnd = hashCounts[bucketId + 1];
             }
             //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = 0u; n < 8u; n = n + 1u) {
+            for (var n = 0u; n < 16u; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
                 //result[i][j][k].indices[n] = -1;
@@ -305,8 +306,9 @@ const computeUniformsBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-function makeBuffer (size=particlesCount, flag=1, log) {
+function makeBuffer (size=particlesCount, flag, log) {
   const gpuBufferSize = particlesCount * particleSize
+  //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
 
   const gpuBuffer = webgpu.device.createBuffer({
     size: gpuBufferSize,
@@ -400,14 +402,14 @@ const predictedPosition = webgpu.initComputeCall({
     var velocity = velocityStorage[index];
     // var correctPar = correctParticle[index];
   
-    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
     const timeStep = 0.10f;
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
 
-    predPos[index] = particlesStorage[index] + newVel * timeStep;
+    predPos[index] = particlesStorage[index] + newVel * .01;
   }`,
 
   exec: function (state){
@@ -613,7 +615,7 @@ const applyVorticityCompute = webgpu.initComputeCall({
       }
       velocityStorage[index] += 
       
-      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .0000000000000000000000000001, 0.);
+      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .1, 0.);
     }
   
   
@@ -741,6 +743,9 @@ const applyConstraintCompute = webgpu.initComputeCall({
   
     constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
   }
+
+
+
   //4. compute constraint correction
   {
     var pos = predPos[index];
@@ -755,6 +760,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
       vec = pos - predPos[e];
       corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
     }
+
     correctParticle[index] = corr / restDensity;
 
     predPos[index] = predPos[index] + correctParticle[index];
@@ -762,9 +768,9 @@ const applyConstraintCompute = webgpu.initComputeCall({
     velocityStorage[index] = predPos[index] - particlesStorage[index];
   }
     const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+     velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
-   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -1023,7 +1029,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
   ],
   count: 6,
   blend,
-  instances: particlesCount ,
+  instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
       size: 32, 
@@ -1113,7 +1119,7 @@ setInterval(
 
     const computePass = commandEncoder.beginComputePass();
 
-    window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
+    // window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
     
     // if (window.hashCounts.filter(d => d > 0).length > 0) console.log(window.hashCounts.filter(d => d > 0).length)
 
@@ -1128,7 +1134,7 @@ setInterval(
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
     
-    applyVorticityCompute()
+    //applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
@@ -1144,16 +1150,16 @@ setInterval(
     window.correctParticle = await utils.readBuffer(webgpu.state, correctParticle)
 
     window.velocityBuffer = await utils.readBuffer(webgpu.state, velocityBuffer)
-      // window.countY = function countY() {
-      //   let stuff = window.w
-      //   let result = []
-      //   for (let i = 0; i < stuff.length; i += 4) {
-      //     result.push(stuff[i+1])
-      //   }
-      //   console.log(result)
-      // }
+      window.countY = function countY() {
+        let stuff = window.w
+        let result = []
+        for (let i = 0; i < stuff.length; i += 4) {
+          result.push(stuff[i+1])
+        }
+        console.log(result)
+      }
 
-    }, 50) 
+    }, 16) 
 }
 
 basic()
@@ -1183,3 +1189,6 @@ basic()
 
 // take a bucket and write the contents to screen
 // write bucket contents to texture -> green dot = 0,1 - 8 max particles per cell
+
+
+//file:///Users/adnanwahab/Downloads/CAVW_27.pdf
