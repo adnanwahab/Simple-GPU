@@ -228,7 +228,7 @@ fn getNeighbors (centerId: u32) -> BucketContents {
               bucketEnd = hashCounts[bucketId + 1];
             }
             //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = 0u; n < 50u; n = n + 1u) {
+            for (var n = 0u; n < 8u; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
                 //result[i][j][k].indices[n] = -1;
@@ -316,9 +316,9 @@ function makeBuffer (size=particlesCount, flag=1, log) {
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
   for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-      particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
-      particlesBuffer[4 * iParticle + 1] = flag &&(Math.random()  );
-      particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() * 2 - 1);
+      particlesBuffer[4 * iParticle + 0] = flag && (Math.random());
+      particlesBuffer[4 * iParticle + 1] = flag &&(Math.random() );
+      particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() );
       particlesBuffer[4 * iParticle + 3] = 0
   }
   if (log) console.log(particlesBuffer)
@@ -764,7 +764,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     const MAX_VEL = vec4<f32>(30.);
     velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
   
-   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -1123,8 +1123,6 @@ setInterval(
 
     gridCopyParticlePipeline()
 
-    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
-
     computeDensity()
 
     for (var i = 0; i < 2; i++)
@@ -1135,12 +1133,13 @@ setInterval(
 
     drawCube({})
 
+    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
+
     window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
     window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
 
     window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer)
-
 
     window.correctParticle = await utils.readBuffer(webgpu.state, correctParticle)
 
