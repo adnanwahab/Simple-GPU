@@ -26,6 +26,7 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ]
 
+
 const MAX_BUCKET_SIZE = 16
 const PARTICLE_RADIUS = .20;
 
@@ -254,6 +255,7 @@ const restDensity = 450.0f;
 const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
+
 const artPressureCoeff = 0.001f;
 const artPressureExp = 4;
 const isVorticityConfEnabled = 1;
@@ -765,12 +767,14 @@ const applyConstraintCompute = webgpu.initComputeCall({
 
     predPos[index] = predPos[index] + correctParticle[index];
   
-    velocityStorage[index] = predPos[index] - particlesStorage[index];
-  }
+    //velocityStorage[index] = predPos[index] - particlesStorage[index];
     const MAX_VEL = vec4<f32>(30.);
-     velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+
+    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10.1 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+  }
+    
   
-   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -1111,6 +1115,8 @@ setInterval(
       model.byteLength
     );
     let localState = resetPass()
+
+///    console.log(localState)
     let commandEncoder = device.createCommandEncoder()
 
     predictedPosition()
@@ -1134,7 +1140,7 @@ setInterval(
     for (var i = 0; i < 2; i++)
       applyConstraintCompute()
     
-    //applyVorticityCompute()
+    applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
