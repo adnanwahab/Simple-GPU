@@ -7,8 +7,9 @@ import mouseWheel from 'mouse-wheel'
   //loop through IDs in neighborhood
   //look up velocity[id] and integrate them across neighbors
   //figure out particle IDs
-
 import { WebGPUScan } from './scan'
+
+
 const NUM_PARTICLES = 256 * 4 * 50
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
@@ -100,6 +101,40 @@ function createCamera (props_) {
       prevY = y
  
     })
+
+    //scan to figure out relative offset for each position
+    //underlying idea 
+    //sparse array and compacting it  into a single contiguous flat array 
+    //accumulator s
+    //read element out of s 
+    //integral from 0 to i
+    //prefix sum = how many particles are in that bucket
+    //from bucket[i] - list of particle IDs inside there
+    //n particles = id 
+    //array of pointers - grid cell = start of array in that bucket
+    //7-15
+    //take the particle and put it in the right spot
+
+    //query = list of all particles 
+    //hashCounts store start of bucket
+
+    //cant know location of particleID - bucket 2 until all have been counted
+
+    //numerical instability
+
+
+    //resolved intersections
+    //tag each particle with chemical species 
+    //these particles are all - hydrogen+oxygen = burn - different rules for combine
+    //reaction diffusion equation - rate and tag them - underlying particle model for advenction fluid
+
+    //neural graphics - webGPU - nerf studio
+
+
+
+    //separate pass to generate all pairs of particles that are colliding 
+
+    //count number of collisions with lower number of particles in that grid or neighboring
 
     // mouseWheel(source, function (dx, dy) {
     //   ddistance += dy / getHeight() * cameraState.zoomSpeed
@@ -251,7 +286,7 @@ fn getNeighbors (centerId: u32) -> BucketContents {
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
 
 const effectRadius = 0.3f;
-const restDensity = 450.0f;
+const restDensity = 4.0f;
 const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
@@ -339,6 +374,8 @@ const constBuffer = makeBuffer(particlesCount, 0)
 const correctParticle = makeBuffer(particlesCount, 0)
 const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
+const debugGetNeighbors = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
+
 
 const resetPass = webgpu.initComputeCall({
   label: `resetPass`,
@@ -489,7 +526,8 @@ const computeDensity = webgpu.initComputeCall({
         predictionBuffer,
         densityBuffer,
         hashCounts,
-        particleIds
+        particleIds,
+        
       ])
     return [computeBindGroup]
   }
@@ -533,10 +571,11 @@ exec: function (state){
 const gridCopyParticlePipeline = webgpu.initComputeCall({
   label: `gridCopyParticlePipeline`,
   code:`
-${COMMON_SHADER_FUNCS}
+  ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
   @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
+
   @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
@@ -557,7 +596,8 @@ exec: function (state) {
     const computeBindGroup =
     utils.makeBindGroup(state.device,
       computePipeline.getBindGroupLayout(0),
-    [posBuffer, hashCounts, particleIds
+    [posBuffer, hashCounts, particleIds,
+
     ])
   return [computeBindGroup]
   }
@@ -719,6 +759,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var fluidDensity = densityStorage[index];
    
     //3. compute constraint factor
+
   {
     var vec = vec4<f32>(0);
     var grad = vec4<f32>(0);
@@ -793,9 +834,15 @@ exec: function (state){
 const updatePositionCompute = webgpu.initComputeCall({
   label: `updatePositionCompute`,
   code:`  
+${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<u32>;
+
+  @binding(3) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(4) @group(0) var<storage, read_write> hashCounts : array<u32>;
+
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -803,6 +850,8 @@ const updatePositionCompute = webgpu.initComputeCall({
     let predPos = predPos[index];
   
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+
+  debugGetNeighbors[index]=  getNeighbors(index).count;
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -815,6 +864,7 @@ exec: function (state){
   computePass.setPipeline(state.computePass.pipeline);
   computePass.setBindGroup(0, state.computePass.bindGroups[0]);
   computePass.dispatchWorkgroups(NGROUPS);
+  //workItems = 256 
   computePass.end();
 } ,
   bindGroups: function (state, computePipeline) {
@@ -823,6 +873,9 @@ exec: function (state){
       computePipeline.getBindGroupLayout(0),
     [predictionBuffer,
       posBuffer,
+      debugGetNeighbors,
+      hashCounts,
+      particleIds,
     ])
   return [computeBindGroup]
   }
@@ -891,7 +944,18 @@ const buffers = [
       ],
       arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
       stepMode: "vertex",
-  }
+  },
+  {
+    attributes: [
+        {
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32",
+        }
+    ],
+    arrayStride: 0,
+    stepMode: "vertex",
+}
 ]
 
 const device = webgpu.device
@@ -967,7 +1031,9 @@ struct Camera {
 
 struct VSOut {
     @builtin(position) position: vec4<f32>,
-    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2
+    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+    @location(2) density: f32
+
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -975,7 +1041,9 @@ struct VSOut {
 
 
 @vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+@location(2) density: f32
+) -> VSOut {
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     
@@ -983,11 +1051,13 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
    vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
+    vsOut.density = density;
     return vsOut;
 }
 
 @fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32> {
+fn main_fragment(@location(0) localPosition: vec2<f32>,
+@location(2) density: f32) -> @location(0) vec4<f32> {
     let distanceFromCenter: f32 = length(localPosition);
     if (distanceFromCenter > 1.0) {
         discard;
@@ -1024,12 +1094,12 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,.1);
+    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 500,1.,.1);
 }
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    posBuffer, quadBuffer,
+    posBuffer, quadBuffer, densityBuffer
   ],
   count: 6,
   blend,
@@ -1116,7 +1186,6 @@ setInterval(
     );
     let localState = resetPass()
 
-///    console.log(localState)
     let commandEncoder = device.createCommandEncoder()
 
     predictedPosition()
@@ -1125,9 +1194,7 @@ setInterval(
 
     const computePass = commandEncoder.beginComputePass();
 
-    // window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
-    
-    // if (window.hashCounts.filter(d => d > 0).length > 0) console.log(window.hashCounts.filter(d => d > 0).length)
+    window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
 
     gridCountScanPass.run(computePass)
 
@@ -1144,6 +1211,21 @@ setInterval(
     updatePositionCompute()
 
     drawCube({})
+
+    //may call command encoder from previous pass
+    //make it all totally sync
+    //cant debug it by reading buffers
+    //mutex lock 
+
+    //exact same command encoder 
+    //run once
+
+    //pause drawing 
+    //dont run any updates or any code
+    //pause draw loop till reads have completed 
+
+    window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
+
 
     window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 

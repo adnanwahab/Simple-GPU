@@ -11,6 +11,12 @@ import {geoMercator} from "d3-geo";
 //2gb 30 million rows csv
 //binary 
 
+fetch('./data.bin').then((response) => {
+    return response.arrayBuffer();
+}).then(data => {
+    //const vertices = new Float64Array(data)
+    console.log(data)
+})
 
 const coordinates = [
 
@@ -42,11 +48,6 @@ const data = d3.csv(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/
     })
     main()
 })
-
-
-
-
-
 
 const blend = {
     color: {
@@ -119,10 +120,6 @@ async function main() {
 
             particlesBuffer[4 * iParticle + 0] = coordinates[iParticle][0]
             particlesBuffer[4 * iParticle + 1] = coordinates[iParticle][1]
-
-//   particlesBuffer[4 * iParticle + 0] = flag && (Math.random() * 2 - 1);
-//   particlesBuffer[4 * iParticle + 1] = flag && (Math.random() * 2 - 1);
-
 
             particlesBuffer[4 * iParticle + 2] = 0;
             particlesBuffer[4 * iParticle + 3] = 0
@@ -242,3 +239,6 @@ async function main() {
 //complaints - date time stamp 
 //catgeorical
 //16 million complaints - 100 million in person nyc data office 
+
+//http://vis.stanford.edu/files/2013-imMens-EuroVis.pdf
+//http://vis.stanford.edu/projects/immens/demo/brightkite/
