@@ -9,7 +9,7 @@ import mouseWheel from 'mouse-wheel'
   //figure out particle IDs
 import { WebGPUScan } from './scan'
 
-
+console.log(123)
 const NUM_PARTICLES = 256 * 4 * 50
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
