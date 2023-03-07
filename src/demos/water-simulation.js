@@ -286,13 +286,13 @@ fn getNeighbors (centerId: u32) -> BucketContents {
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
 
 const effectRadius = 0.3f;
-const restDensity = 4.0f;
+const restDensity = 4.f;
 const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 
-const artPressureCoeff = 0.001f;
-const artPressureExp = 4;
+const artPressureCoeff = 0.0001f;
+const artPressureExp = 40;
 const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
@@ -441,7 +441,7 @@ const predictedPosition = webgpu.initComputeCall({
     var velocity = velocityStorage[index];
     // var correctPar = correctParticle[index];
   
-    var GRAVITY_ACC = vec4<f32>(0,-.1, 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
@@ -743,11 +743,10 @@ const applyConstraintCompute = webgpu.initComputeCall({
   @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
-
   @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
-  
+
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
@@ -769,6 +768,9 @@ const applyConstraintCompute = webgpu.initComputeCall({
     let densityC = fluidDensity / restDensity - 1.0;
     
     var startEnd = getNeighbors(index);
+
+
+    //var startEnd = getNeighbors(particleHash(pos.xyz));
 
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
@@ -796,7 +798,21 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var corr = vec4<f32>(0.0);
     var vec = vec4<f32>(0.0);
      
+    //var startEnd:array<i32, 100>;
+    
+    //(0,1,2,3,4,5,6,7,8,9)
+    // for (var i = 0u; i < 1000; i++) {
+    //   startEnd[i] = i32(i);
+    // }
+
     var startEnd = getNeighbors(index);
+
+    // for (var i = 0u; i < 1000; i++) {
+    //   var e = startEnd[i];
+    //   vec = pos - predPos[e];
+    //   corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+    // }
+
 
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
@@ -811,7 +827,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     //velocityStorage[index] = predPos[index] - particlesStorage[index];
     const MAX_VEL = vec4<f32>(30.);
 
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (10.1 + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+    //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (5.), -MAX_VEL, MAX_VEL);
   }
     
   
@@ -1204,10 +1220,10 @@ setInterval(
 
     computeDensity()
 
-    for (var i = 0; i < 2; i++)
+    for (var i = 0; i < 1; i++)
       applyConstraintCompute()
     
-    applyVorticityCompute()
+    //applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
@@ -1247,7 +1263,7 @@ setInterval(
         console.log(result)
       }
 
-    }, 16) 
+    }, 8) 
 }
 
 basic()
