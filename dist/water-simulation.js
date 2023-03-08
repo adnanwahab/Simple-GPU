@@ -785,9 +785,10 @@ fn prefixSumOut(
     };
   }
   async function readBuffer(state2, buffer2) {
+    const constructor = Float32Array;
     const device = state2.device;
     const commandEncoder = device.createCommandEncoder();
-    const C = new Float32Array(buffer2.size);
+    const C = new constructor(buffer2.size);
     const CReadCopy = device.createBuffer({
       size: buffer2.size,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
@@ -2979,20 +2980,19 @@ fn prefixSumOut(
   }();
 
   // src/demos/water-simulation.js
-  var NUM_PARTICLES = 256 * 4 * 128;
+  var NUM_PARTICLES = 256 * 4 * 20;
   var particlesCount = NUM_PARTICLES;
   var SCAN_THREADS = 256;
   var PARTICLE_WORKGROUP_SIZE = SCAN_THREADS;
   var NGROUPS = NUM_PARTICLES / 256;
   var isBrowser = typeof window !== "undefined";
-  var COLLISION_TABLE_SIZE = particlesCount;
+  var COLLISION_TABLE_SIZE = particlesCount / 20;
   var HASH_VEC = [
     1,
     Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
     Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
   ];
-  var MAX_BUCKET_SIZE = 16;
-  var PARTICLE_RADIUS = 0.05;
+  var PARTICLE_RADIUS = 1.15;
   var GRID_SPACING = 2 * PARTICLE_RADIUS;
   function createCamera(props_) {
     var props = props_ || {};
@@ -3047,10 +3047,6 @@ fn prefixSumOut(
         prevX = x;
         prevY = y;
       });
-      (0, import_mouse_wheel.default)(source, function(dx, dy) {
-        ddistance += dy / getHeight2() * cameraState.zoomSpeed;
-        cameraState.dirty = true;
-      }, props.noScroll);
     }
     function damp(x) {
       var xd = x * damping;
@@ -3125,7 +3121,7 @@ fn prefixSumOut(
 };
 
 struct BucketContents {
-  indices : array<i32, 50>,
+  indices : array<i32, 100>,
   count : u32,
 }
 
@@ -3158,13 +3154,13 @@ fn getNeighbors (centerId: u32) -> BucketContents {
             if bucketId < ${COLLISION_TABLE_SIZE - 1} {
               bucketEnd = hashCounts[bucketId + 1];
             }
-            //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = 0u; n < ${MAX_BUCKET_SIZE}u; n = n + 1u) {
+            for (var n = 0u; n < 20; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
-                //result[i][j][k].indices[n] = -1;
+                break;
               } else {
-                result.indices[result.count] = i32(particleIds[p]);
+                var m = particleIds[p];
+                result.indices[n+ result.count] = i32(m);
                 result.count += 1u;
               }
             }
@@ -3174,18 +3170,19 @@ fn getNeighbors (centerId: u32) -> BucketContents {
       return result;
     }
 
+//particle Ids keeps getting bigger 
+
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
-const GRID_CELL_SIZE = vec3<f32>(5.,5.,5.);
 
 const effectRadius = 0.3f;
-const restDensity = 250.0f;
+const restDensity = 4.f;
 const relaxCFM = 400.0f;
-const dim = 10;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
-const artPressureCoeff = 0.001f;
-const artPressureExp = 4;
+
+const artPressureCoeff = 0.0001f;
+const artPressureExp = 40;
 const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
@@ -3234,7 +3231,7 @@ fn artPressure( vec:vec4<f32>) -> f32 {
       size: 96,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
     });
-    function makeBuffer2(size = particlesCount, flag = 1, log) {
+    function makeBuffer2(size = particlesCount, flag, log) {
       const gpuBufferSize = particlesCount * particleSize;
       const gpuBuffer = webgpu.device.createBuffer({
         size: gpuBufferSize,
@@ -3243,13 +3240,14 @@ fn artPressure( vec:vec4<f32>) -> f32 {
       });
       const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
       for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-        particlesBuffer[4 * iParticle + 0] = flag && Math.random() * 2 - 1;
+        particlesBuffer[4 * iParticle + 0] = flag && Math.random();
         particlesBuffer[4 * iParticle + 1] = flag && Math.random();
-        particlesBuffer[4 * iParticle + 2] = flag && Math.random() * 2 - 1;
+        particlesBuffer[4 * iParticle + 2] = flag && Math.random();
         particlesBuffer[4 * iParticle + 3] = 0;
       }
-      if (log)
-        console.log(particlesBuffer);
+      particlesBuffer[0] = 0.2;
+      particlesBuffer[1] = 1;
+      particlesBuffer[2] = 1;
       gpuBuffer.unmap();
       return gpuBuffer;
     }
@@ -3262,7 +3260,7 @@ fn artPressure( vec:vec4<f32>) -> f32 {
     const correctParticle = makeBuffer2(particlesCount, 0);
     const hashCounts = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
     const particleIds = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
-    window.z = await utils_default.readBuffer(webgpu.state, predictionBuffer);
+    const debugGetNeighbors = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
     const resetPass = webgpu.initComputeCall({
       label: `resetPass`,
       code: `  
@@ -3287,7 +3285,6 @@ fn artPressure( vec:vec4<f32>) -> f32 {
           state2.device,
           computePipeline.getBindGroupLayout(0),
           [
-            //particleIds, 
             hashCounts
           ]
         );
@@ -3323,16 +3320,15 @@ fn particleHash (p:vec3<f32>) -> u32 {
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
     var velocity = velocityStorage[index];
-    // var correctPar = correctParticle[index];
   
-    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0,1., 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
     const timeStep = 0.10f;
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
 
-    predPos[index] = particlesStorage[index] + newVel * timeStep;
+    predPos[index] = particlesStorage[index] + newVel * .01;
   }`,
       exec: function(state2) {
         const device2 = state2.device;
@@ -3446,10 +3442,11 @@ fn particleHash (p:vec3<f32>) -> u32 {
     const gridCopyParticlePipeline = webgpu.initComputeCall({
       label: `gridCopyParticlePipeline`,
       code: `
-${COMMON_SHADER_FUNCS}
+  ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
   @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
+
   @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
@@ -3531,7 +3528,7 @@ ${COMMON_SHADER_FUNCS}
       }
       velocityStorage[index] += 
       
-      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .0000000000000000000000000001, 0.);
+      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .1, 0.);
     }
   
   
@@ -3613,11 +3610,10 @@ ${COMMON_SHADER_FUNCS}
   @group(0) @binding(5) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   @group(0) @binding(6) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
-
   @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
-  
+
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
@@ -3627,7 +3623,6 @@ ${COMMON_SHADER_FUNCS}
     var aspectRatioStuff = uniforms.aspectRatio;
     var constraint = constFactor[index];
     var fluidDensity = densityStorage[index];
-   
     //3. compute constraint factor
   {
     var vec = vec4<f32>(0);
@@ -3655,30 +3650,40 @@ ${COMMON_SHADER_FUNCS}
   
     constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
   }
+
   //4. compute constraint correction
   {
-    var pos = predPos[index];
+    var pos = particlesStorage[index];
     var lambdaI = constFactor[index];
     var corr = vec4<f32>(0.0);
     var vec = vec4<f32>(0.0);
-     
+
     var startEnd = getNeighbors(index);
 
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
       vec = pos - predPos[e];
+      if (u32(e) == index) { 
+        continue; 
+      };
+
       corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
     }
+
+    //particles are only getting neighbors for 1st index
+
     correctParticle[index] = corr / restDensity;
 
     predPos[index] = predPos[index] + correctParticle[index];
   
-    velocityStorage[index] = predPos[index] - particlesStorage[index];
-  }
+    //velocityStorage[index] = predPos[index] - particlesStorage[index];
     const MAX_VEL = vec4<f32>(30.);
-    velocityStorage[index] = clamp((predPos[index] - pos[index]) / (100. + FLOAT_EPS), -MAX_VEL, MAX_VEL);
+
+    //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (5.), -MAX_VEL, MAX_VEL);
+  }
+    
   
-   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -3695,9 +3700,15 @@ ${COMMON_SHADER_FUNCS}
     const updatePositionCompute = webgpu.initComputeCall({
       label: `updatePositionCompute`,
       code: `  
+${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<f32>;
+
+  @binding(3) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(4) @group(0) var<storage, read_write> hashCounts : array<u32>;
+
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -3705,6 +3716,8 @@ ${COMMON_SHADER_FUNCS}
     let predPos = predPos[index];
   
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+
+  debugGetNeighbors[index]=  f32(getNeighbors(index).count);
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -3724,7 +3737,10 @@ ${COMMON_SHADER_FUNCS}
           computePipeline.getBindGroupLayout(0),
           [
             predictionBuffer,
-            posBuffer
+            posBuffer,
+            debugGetNeighbors,
+            hashCounts,
+            particleIds
           ]
         );
         return [computeBindGroup];
@@ -3797,6 +3813,17 @@ ${COMMON_SHADER_FUNCS}
         ],
         arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
         stepMode: "vertex"
+      },
+      {
+        attributes: [
+          {
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32"
+          }
+        ],
+        arrayStride: 0,
+        stepMode: "vertex"
       }
     ];
     const device = webgpu.device;
@@ -3861,7 +3888,9 @@ struct Camera {
 
 struct VSOut {
     @builtin(position) position: vec4<f32>,
-    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2
+    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+    @location(2) density: f32
+
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -3869,7 +3898,9 @@ struct VSOut {
 
 
 @vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+@location(2) density: f32
+) -> VSOut {
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
     
@@ -3877,11 +3908,13 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
    vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
+    vsOut.density = density;
     return vsOut;
 }
 
 @fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32> {
+fn main_fragment(@location(0) localPosition: vec2<f32>,
+@location(2) density: f32) -> @location(0) vec4<f32> {
     let distanceFromCenter: f32 = length(localPosition);
     if (distanceFromCenter > 1.0) {
         discard;
@@ -3918,14 +3951,15 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,.1);
+    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 500,1.,.1);
 }
 `
       },
       attributeBuffers: buffers,
       attributeBufferData: [
         posBuffer,
-        quadBuffer
+        quadBuffer,
+        densityBuffer
       ],
       count: 6,
       blend,
@@ -3962,8 +3996,6 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
       element: webgpu.canvas
     });
     let stuff = camera();
-    const identity2 = mat4_exports.identity([]);
-    const v = new Float32Array([0.9951236248016357, -0.03326542302966118, 0.09285693615674973, 0, 0, 0.941413164138794, 0.33725544810295105, 0, -0.09863568842411041, -0.33561086654663086, 0.9368224740028381, 0, 0.19727137684822083, 0.20051512122154236, -3.9743294715881348, 1]);
     const gridCountScan = new WebGPUScan({
       device,
       threadsPerGroup: SCAN_THREADS,
@@ -4015,14 +4047,18 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
         gridCountScanPass.run(computePass);
         computePass.end();
         gridCopyParticlePipeline();
-        window.particleIds = await utils_default.readBuffer(webgpu.state, particleIds);
         computeDensity();
-        for (var i = 0; i < 2; i++)
+        for (var i = 0; i < 1; i++)
           applyConstraintCompute();
-        applyVorticityCompute();
         updatePositionCompute();
         drawCube({});
+        window.debugGetNeighbors = await utils_default.readBuffer(webgpu.state, debugGetNeighbors);
+        window.particleIds = await utils_default.readBuffer(webgpu.state, particleIds);
         window.density = await utils_default.readBuffer(webgpu.state, densityBuffer);
+        window.constBuffer = await utils_default.readBuffer(webgpu.state, constBuffer);
+        window.predictionBuffer = await utils_default.readBuffer(webgpu.state, predictionBuffer);
+        window.correctParticle = await utils_default.readBuffer(webgpu.state, correctParticle);
+        window.velocityBuffer = await utils_default.readBuffer(webgpu.state, velocityBuffer);
         window.countY = function countY() {
           let stuff2 = window.w;
           let result = [];
@@ -4032,7 +4068,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
           console.log(result);
         };
       },
-      50
+      8
     );
   }
   basic();

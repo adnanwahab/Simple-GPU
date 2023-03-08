@@ -36,9 +36,10 @@
     };
   }
   async function readBuffer(state, buffer) {
+    const constructor = Float32Array;
     const device = state.device;
     const commandEncoder = device.createCommandEncoder();
-    const C = new Float32Array(buffer.size);
+    const C = new constructor(buffer.size);
     const CReadCopy = device.createBuffer({
       size: buffer.size,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
