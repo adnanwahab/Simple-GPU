@@ -9,8 +9,7 @@ import mouseWheel from 'mouse-wheel'
   //figure out particle IDs
 import { WebGPUScan } from './scan'
 
-console.log(123)
-const NUM_PARTICLES = 256 * 4 * 50
+const NUM_PARTICLES = 256 * 4 * 20
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
@@ -18,7 +17,7 @@ const NGROUPS = NUM_PARTICLES / 256
 
 var isBrowser = typeof window !== 'undefined'
 
-const COLLISION_TABLE_SIZE = particlesCount / 50
+const COLLISION_TABLE_SIZE = particlesCount / 20
 
 
 const HASH_VEC = [
@@ -27,9 +26,7 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ]
 
-
-const MAX_BUCKET_SIZE = 16
-const PARTICLE_RADIUS = .20;
+const PARTICLE_RADIUS = 1.15
 
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
@@ -264,13 +261,13 @@ fn getNeighbors (centerId: u32) -> BucketContents {
             if bucketId < ${COLLISION_TABLE_SIZE - 1} {
               bucketEnd = hashCounts[bucketId + 1];
             }
-            //result.count += min(bucketEnd - bucketStart, ${MAX_BUCKET_SIZE}u);
-            for (var n = 0u; n < 16u; n = n + 1u) {
+            for (var n = 0u; n < 20; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
-                //result[i][j][k].indices[n] = -1;
+                break;
               } else {
-                result.indices[n+result.count] = i32(particleIds[p]);
+                var m = particleIds[p];
+                result.indices[n+ result.count] = i32(m);
                 result.count += 1u;
               }
             }
@@ -287,7 +284,7 @@ const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
 
 const effectRadius = 0.3f;
 const restDensity = 4.f;
-const relaxCFM = 600.0f;
+const relaxCFM = 400.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 
@@ -360,7 +357,12 @@ function makeBuffer (size=particlesCount, flag, log) {
       particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() );
       particlesBuffer[4 * iParticle + 3] = 0
   }
-  if (log) console.log(particlesBuffer)
+
+
+  particlesBuffer[0] = .2
+  particlesBuffer[1] = 1
+  particlesBuffer[2] = 1
+
   gpuBuffer.unmap();
   return gpuBuffer
 } 
@@ -439,9 +441,8 @@ const predictedPosition = webgpu.initComputeCall({
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
     var velocity = velocityStorage[index];
-    // var correctPar = correctParticle[index];
   
-    var GRAVITY_ACC = vec4<f32>(0,-1., 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0,1., 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
@@ -711,7 +712,7 @@ const applyVorticityCompute = webgpu.initComputeCall({
   }
 })
 
-
+//particle is stuck because its corrected Position is itself 
 
 const applyConstraintCompute = webgpu.initComputeCall({
   label: `applyConstraintCompute`,
@@ -769,9 +770,6 @@ const applyConstraintCompute = webgpu.initComputeCall({
     
     var startEnd = getNeighbors(index);
 
-
-    //var startEnd = getNeighbors(particleHash(pos.xyz));
-
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
       vec = pos - predPos[e];
@@ -793,32 +791,24 @@ const applyConstraintCompute = webgpu.initComputeCall({
 
   //4. compute constraint correction
   {
-    var pos = predPos[index];
+    var pos = particlesStorage[index];
     var lambdaI = constFactor[index];
     var corr = vec4<f32>(0.0);
     var vec = vec4<f32>(0.0);
-     
-    //var startEnd:array<i32, 100>;
-    
-    //(0,1,2,3,4,5,6,7,8,9)
-    // for (var i = 0u; i < 1000; i++) {
-    //   startEnd[i] = i32(i);
-    // }
 
     var startEnd = getNeighbors(index);
-
-    // for (var i = 0u; i < 1000; i++) {
-    //   var e = startEnd[i];
-    //   vec = pos - predPos[e];
-    //   corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-    // }
-
 
     for (var i = 0u; i < startEnd.count; i++) {
       var e = startEnd.indices[i];
       vec = pos - predPos[e];
+      if (u32(e) == index) { 
+        continue; 
+      };
+
       corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
     }
+
+    //particles are only getting neighbors for 1st index
 
     correctParticle[index] = corr / restDensity;
 
