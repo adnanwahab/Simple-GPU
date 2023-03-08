@@ -757,9 +757,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var aspectRatioStuff = uniforms.aspectRatio;
     var constraint = constFactor[index];
     var fluidDensity = densityStorage[index];
-   
     //3. compute constraint factor
-
   {
     var vec = vec4<f32>(0);
     var grad = vec4<f32>(0);
@@ -786,8 +784,6 @@ const applyConstraintCompute = webgpu.initComputeCall({
   
     constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
   }
-
-
 
   //4. compute constraint correction
   {
@@ -844,7 +840,7 @@ ${predefines}
   var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<u32>;
+  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<f32>;
 
   @binding(3) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(4) @group(0) var<storage, read_write> hashCounts : array<u32>;
@@ -857,7 +853,7 @@ ${predefines}
   
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
 
-  debugGetNeighbors[index]=  getNeighbors(index).count;
+  debugGetNeighbors[index]=  f32(getNeighbors(index).count);
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
