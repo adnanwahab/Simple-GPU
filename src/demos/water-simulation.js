@@ -9,15 +9,14 @@ import mouseWheel from 'mouse-wheel'
   //figure out particle IDs
 import { WebGPUScan } from './scan'
 
-const stuff = 100
+const stuff = 10
 
 const NUM_PARTICLES = 256 * 4 * stuff
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
 const NGROUPS = NUM_PARTICLES / 256 
-console.log(NUM_PARTICLES, NGROUPS)
-
+console.log(NGROUPS)
 var isBrowser = typeof window !== 'undefined'
 
 const COLLISION_TABLE_SIZE = particlesCount / stuff
@@ -27,10 +26,10 @@ const HASH_VEC = [
   1,
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
-]
-console.log(HASH_VEC)
-const PARTICLE_RADIUS = 1.15
+] 
+//const PARTICLE_RADIUS = 1.18
 
+const PARTICLE_RADIUS = 1.18
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
 
@@ -220,6 +219,17 @@ import utils from '../../lib/utils';
 
 import { mat4, vec3 } from 'gl-matrix'
 
+const bucketHash = `fn bucketHash (p:vec3<i32>) -> u32 {
+  return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) % ${COLLISION_TABLE_SIZE};
+
+  // var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
+  // if h < 0 {
+  //   return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
+  // } else {
+  //   return u32(h) % ${COLLISION_TABLE_SIZE}u;
+  // }
+}`
+
 const predefines = `struct Uniforms {                                  
   force: vec2<f32>,                              
   dt: f32,                                       
@@ -235,14 +245,7 @@ struct BucketContents {
   count : u32,
 }
 
-fn bucketHash (p:vec3<i32>) -> u32 {
-  var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
-  if h < 0 {
-    return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
-  } else {
-    return u32(h) % ${COLLISION_TABLE_SIZE}u;
-  }
-}
+${bucketHash}
 
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
   return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
@@ -429,14 +432,7 @@ const resetPass = webgpu.initComputeCall({
 })
 
 const COMMON_SHADER_FUNCS = `
-fn bucketHash (p:vec3<i32>) -> u32 {
-  var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
-  if h < 0 {
-    return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
-  } else {
-    return u32(h) % ${COLLISION_TABLE_SIZE}u;
-  }
-}
+${bucketHash}
 
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
   return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
@@ -514,8 +510,6 @@ const computeDensity = webgpu.initComputeCall({
     let pos = predPos[index];
     var fluidDensity = 0.;
 
-    
-    var p = particlesStorage[index];
 
     var startEnd = getNeighbors(index);
 
@@ -992,7 +986,7 @@ ${predefines}
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
  var stuff = f32(getNeighbors(index).count);
 
-  debugGetNeighbors[index] = f32(index);
+  debugGetNeighbors[index] = stuff;//f32(index);
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -1378,7 +1372,7 @@ setInterval(
     window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
 
 
-    // window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
+    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
     // window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
