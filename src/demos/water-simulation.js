@@ -9,14 +9,15 @@ import mouseWheel from 'mouse-wheel'
   //figure out particle IDs
 import { WebGPUScan } from './scan'
 
-const stuff = 10
+const stuff = 100
 
 const NUM_PARTICLES = 256 * 4 * stuff
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
 const NGROUPS = NUM_PARTICLES / 256 
-console.log(NGROUPS)
+console.log(NUM_PARTICLES, NGROUPS)
+
 var isBrowser = typeof window !== 'undefined'
 
 const COLLISION_TABLE_SIZE = particlesCount / stuff
@@ -27,7 +28,7 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ]
-
+console.log(HASH_VEC)
 const PARTICLE_RADIUS = 1.15
 
 const GRID_SPACING = 2 * PARTICLE_RADIUS
@@ -237,7 +238,6 @@ struct BucketContents {
 fn bucketHash (p:vec3<i32>) -> u32 {
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
   if h < 0 {
-    //return 0u;  
     return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
   } else {
     return u32(h) % ${COLLISION_TABLE_SIZE}u;
@@ -259,18 +259,20 @@ fn getNeighbors (centerId: u32) -> BucketContents {
   var result : BucketContents;
 
   //var stuff: array<i32, 100>;
-  // if (centerId == 2u) {
-  //   // for (var i = 0; i < 100; i = i + 1) {
-  //   //   result.indices[i] = i;
-  //   // }
-  //   return result;
-  // }
+  if (centerId == 2u) {
+    // for (var i = 0; i < 100; i = i + 1) {
+    //   result.indices[i] = i;
+    // }
+    return result;
+  }
   //if (centerId < 1000u) { return result;}
   //for 27 neighboring bucketHashes, append particleId onto list 
+  var p = particlesStorage[centerId].xyz;
+  var pos = bucketHash(vec3(i32(p.x), i32(p.y), i32(p.z)));
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
-            var bucketId = (centerId + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
+            var bucketId = (pos + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
             var bucketStart = hashCounts[bucketId];
             var bucketEnd = ${NUM_PARTICLES}u;
             if bucketId < ${COLLISION_TABLE_SIZE - 1} {
@@ -295,10 +297,10 @@ fn getNeighbors (centerId: u32) -> BucketContents {
 //particle Ids keeps getting bigger 
 
 
-const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+const ABS_WALL_POS = vec3<f32>(.7,.7,.7);
 
 const effectRadius = 0.3f;
-const restDensity = 8f;
+const restDensity = 4f;
 const relaxCFM = 400.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
@@ -375,7 +377,7 @@ function makeBuffer (size=particlesCount, flag, log) {
 
 
   particlesBuffer[0] = .2
-  particlesBuffer[1] = 1
+  particlesBuffer[1] = -1
   particlesBuffer[2] = 1
 
   gpuBuffer.unmap();
@@ -457,7 +459,7 @@ const predictedPosition = webgpu.initComputeCall({
     let index: u32 = GlobalInvocationID.x;
     var velocity = velocityStorage[index];
   
-    var GRAVITY_ACC = vec4<f32>(0, 1., 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0, -1., 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
@@ -503,7 +505,7 @@ const computeDensity = webgpu.initComputeCall({
   @group(0) @binding(2) var<storage,read_write> hashCounts: array<u32>;
   @group(0) @binding(3) var<storage,read_write> particleIds: array<u32>;
 
-  @group(0) @binding(4) var<storage,read_write> positionStorage: array<vec4<f32>>;
+  @group(0) @binding(4) var<storage,read_write> particlesStorage: array<vec4<f32>>;
 
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -513,9 +515,9 @@ const computeDensity = webgpu.initComputeCall({
     var fluidDensity = 0.;
 
     
-    var p = positionStorage[index];
+    var p = particlesStorage[index];
 
-    var startEnd = getNeighbors(particleHash(p.xyz));
+    var startEnd = getNeighbors(index);
 
       
     for (var i = 0u; i < startEnd.count; i++) {
@@ -630,7 +632,6 @@ const applyVorticityCompute = webgpu.initComputeCall({
   code: `
   ${predefines}
   
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
@@ -755,7 +756,6 @@ const applyConstraintCompute = webgpu.initComputeCall({
   },
   code:`
   ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
@@ -875,7 +875,6 @@ const applyConstraintCorrection = webgpu.initComputeCall({
   },
   code:`
   ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
@@ -977,7 +976,6 @@ const updatePositionCompute = webgpu.initComputeCall({
   label: `updatePositionCompute`,
   code:`  
 ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
   @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<f32>;
@@ -992,8 +990,9 @@ ${predefines}
     let predPos = predPos[index];
   
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+ var stuff = f32(getNeighbors(index).count);
 
-  debugGetNeighbors[index]=  f32(getNeighbors(index).count);
+  debugGetNeighbors[index] = f32(index);
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -1290,7 +1289,7 @@ const gridCountScan = new WebGPUScan({
 })
 
 const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts)
-
+let hasRun = 0;
 setInterval(
   async function () {
     let {projection, view} = camera()
@@ -1334,9 +1333,15 @@ setInterval(
 
     gridCountPipeline()
 
+     if (hasRun < 10) utils.readBuffer(webgpu.state, hashCounts).then(d =>{ 
+      
+    //  console.log(d)
+    window.hashCounts = d
+    })
+     hasRun += 1;
+
     const computePass = commandEncoder.beginComputePass();
 
-    //window.hashCounts = await utils.readBuffer(webgpu.state, hashCounts)
 
     gridCountScanPass.run(computePass)
 
