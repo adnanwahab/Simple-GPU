@@ -16,22 +16,19 @@ const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
 const NGROUPS = NUM_PARTICLES / 256 
-console.log(NGROUPS)
+
 var isBrowser = typeof window !== 'undefined'
 
 const COLLISION_TABLE_SIZE = particlesCount / stuff
-
 
 const HASH_VEC = [
   1,
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ] 
-//const PARTICLE_RADIUS = 1.18
 
 const PARTICLE_RADIUS = 1.18
 const GRID_SPACING = 2 * PARTICLE_RADIUS
-
 
 function createCamera (props_) {
   var props = props_ || {}
@@ -250,6 +247,7 @@ ${bucketHash}
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
   return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
 }
+
 fn particleHash (p:vec3<f32>) -> u32 {
   return bucketHash(particleBucket(p));
 } 
@@ -257,8 +255,7 @@ fn particleHash (p:vec3<f32>) -> u32 {
 //getNeighbors only works for first particle
 //particle0 returns all neighbors and then pushes them apart 
 
-
-fn getNeighbors (centerId: u32) -> BucketContents {
+fn getNeighbors (centerId:  u32) -> BucketContents {
   var result : BucketContents;
 
   //var stuff: array<i32, 100>;
@@ -269,13 +266,17 @@ fn getNeighbors (centerId: u32) -> BucketContents {
     return result;
   }
   //if (centerId < 1000u) { return result;}
-  //for 27 neighboring bucketHashes, append particleId onto list 
+  
+  //getNeighbors is not being offset by the centerID
+  //hashCounts only works for the first 1024 particles
+
+
   var p = particlesStorage[centerId].xyz;
   var pos = bucketHash(vec3(i32(p.x), i32(p.y), i32(p.z)));
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
-            var bucketId = (pos + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
+            var bucketId = ( bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
             var bucketStart = hashCounts[bucketId];
             var bucketEnd = ${NUM_PARTICLES}u;
             if bucketId < ${COLLISION_TABLE_SIZE - 1} {
@@ -298,7 +299,6 @@ fn getNeighbors (centerId: u32) -> BucketContents {
     }
 
 //particle Ids keeps getting bigger 
-
 
 const ABS_WALL_POS = vec3<f32>(.7,.7,.7);
 
@@ -360,7 +360,7 @@ const computeUniformsBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-function makeBuffer (size=particlesCount, flag, log) {
+function makeBuffer (size=particlesCount, flag) {
   const gpuBufferSize = particlesCount * particleSize
   //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
 
@@ -372,9 +372,9 @@ function makeBuffer (size=particlesCount, flag, log) {
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
   for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-      particlesBuffer[4 * iParticle + 0] = flag && (Math.random());
-      particlesBuffer[4 * iParticle + 1] = flag &&(Math.random() );
-      particlesBuffer[4 * iParticle + 2] = flag &&(Math.random() );
+      particlesBuffer[4 * iParticle + 0] = flag && (Math.random() );
+      particlesBuffer[4 * iParticle + 1] = flag && (Math.random() );
+      particlesBuffer[4 * iParticle + 2] = flag && (Math.random());
       particlesBuffer[4 * iParticle + 3] = 0
   }
 
@@ -558,11 +558,12 @@ const gridCountPipeline = webgpu.initComputeCall({
   ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-  
+
   @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
     var id = globalVec.x;
     var bucket = particleHash(positions[id].xyz);
     atomicAdd(&hashCounts[bucket], 1u);
+    //atomics can only be done in small batches
   }`,
 exec: function (state){
   const device = state.device
@@ -607,6 +608,7 @@ exec: function (state) {
   computePass.setPipeline(state.computePass.pipeline);
   computePass.setBindGroup(0, state.computePass.bindGroups[0]);
   computePass.dispatchWorkgroups(NGROUPS);
+  //changing NGROUPS to 10 makes density turn to 0 after a couple of frames
   computePass.end();
 } ,
   bindGroups: function (state, computePipeline) {
@@ -621,111 +623,110 @@ exec: function (state) {
 })
 
 
-const applyVorticityCompute = webgpu.initComputeCall({
-  label: `applyVorticityCompute`,
-  code: `
-  ${predefines}
+// const applyVorticityCompute = webgpu.initComputeCall({
+//   label: `applyVorticityCompute`,
+//   code: `
+//   ${predefines}
   
-  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
-  @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
-  @group(0) @binding(5) var<storage,read_write> correctParticle: array<vec4<f32>>;
+//   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+//   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+//   @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
+//   @group(0) @binding(3) var<storage,read_write> predPos: array<vec4<f32>>;
+//   @group(0) @binding(4) var<storage,read_write> constFactor: array<f32>;
+//   @group(0) @binding(5) var<storage,read_write> correctParticle: array<vec4<f32>>;
 
-  @binding(6) @group(0) var<storage, read_write> particleIds : array<u32>;
-  @binding(7) @group(0) var<storage, read_write> hashCounts : array<u32>;
-  @binding(8) @group(0) var<storage, read_write> particlesStorage : array<vec4<f32>>;
+//   @binding(6) @group(0) var<storage, read_write> particleIds : array<u32>;
+//   @binding(7) @group(0) var<storage, read_write> hashCounts : array<u32>;
+//   @binding(8) @group(0) var<storage, read_write> particlesStorage : array<vec4<f32>>;
 
-  @compute @workgroup_size(256)
-  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-    var f = uniforms.friction;
-    let index: u32 = GlobalInvocationID.x;
-    var velocity = velocityStorage[index];
-    var vort = vorticity[index];
-    var correctPar = correctParticle[index];
+//   @compute @workgroup_size(256)
+//   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+//     var f = uniforms.friction;
+//     let index: u32 = GlobalInvocationID.x;
+//     var velocity = velocityStorage[index];
+//     var vort = vorticity[index];
+//     var correctPar = correctParticle[index];
   
-    {
-      var pos = predPos[index];    
-      var n = vec4<f32>(0);
+//     {
+//       var pos = predPos[index];    
+//       var n = vec4<f32>(0);
 
-      var vort = vec4<f32>(0);
-      var startEnd = getNeighbors(index);
+//       var vort = vec4<f32>(0);
+//       var startEnd = getNeighbors(index);
 
       
-      for (var i = 0u; i < startEnd.count; i++) {
-        var e = startEnd.indices[i];
-        vort = vec4<f32>(cross((velocityStorage[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
-      }
-      vorticity[index] = vort;
-    }
+//       for (var i = 0u; i < startEnd.count; i++) {
+//         var e = startEnd.indices[i];
+//         vort = vec4<f32>(cross((velocityStorage[e] - velocity).xyz, gradSpiky(pos - predPos[index], effectRadius).xyz), 1.);
+//       }
+//       vorticity[index] = vort;
+//     }
   
-    //7 vorticity confinement
-    {
-      let pos = particlesStorage[index];
-      var n = vec4<f32>(0.0f);
-      var startEnd = getNeighbors(index);
+//     //7 vorticity confinement
+//     {
+//       let pos = particlesStorage[index];
+//       var n = vec4<f32>(0.0f);
+//       var startEnd = getNeighbors(index);
 
-      for (var i = 0u; i < startEnd.count; i++) {
-        var e = startEnd.indices[i];
-        //n += 1.;//(vorticity[e]);
-        //* gradSpiky(pos - predPos[e], effectRadius);
-      }
-      velocityStorage[index] += 
+//       for (var i = 0u; i < startEnd.count; i++) {
+//         var e = startEnd.indices[i];
+// //        n += length(vorticity[e])* gradSpiky(pos - predPos[e], effectRadius);
+//       }
+//       velocityStorage[index] += 
       
-      vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .1, 0.);
-    }
+//       vec4<f32>(vorticityConfCoeff * cross(normalize(n).xyz, vorticity[index].xyz) * .1, 0.);
+//     }
   
   
-    //8 apply XsphViscosityCorrection
-  {
-    var pos = predPos[index];
-    var velocity = velocityStorage[index];
-    var viscosity = vec4<f32>(0.);
+//     //8 apply XsphViscosityCorrection
+//   {
+//     var pos = predPos[index];
+//     var velocity = velocityStorage[index];
+//     var viscosity = vec4<f32>(0.);
   
-    var lambdaI = constFactor[index];
+//     var lambdaI = constFactor[index];
 
-    var startEnd = getNeighbors(index);
+//     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
-      viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
-    }
-    velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
-  }
+//     for (var i = 0u; i < startEnd.count; i++) {
+//       var e = startEnd.indices[i];
+//       viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
+//     }
+//     velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
+//   }
   
-  //9 apply Bounding Wall
-  }`,
+//   //9 apply Bounding Wall
+//   }`,
 
-  exec: function (state){
-    const device = state.device
-    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+//   exec: function (state){
+//     const device = state.device
+//     const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
 
-    const computePass = commandEncoder.beginComputePass();
-    computePass.setPipeline(state.computePass.pipeline);
-    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(NGROUPS);
-    computePass.end();
-  },
-  bindGroups: function (state, computePipeline) {
-    const computeBindGroup =
-      utils.makeBindGroup(state.device,
-        computePipeline.getBindGroupLayout(0),
-      [computeUniformsBuffer,
-        velocityBuffer,
-        vorticityBuffer,
-        predictionBuffer,
-        constBuffer,
+//     const computePass = commandEncoder.beginComputePass();
+//     computePass.setPipeline(state.computePass.pipeline);
+//     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+//     computePass.dispatchWorkgroups(NGROUPS);
+//     computePass.end();
+//   },
+//   bindGroups: function (state, computePipeline) {
+//     const computeBindGroup =
+//       utils.makeBindGroup(state.device,
+//         computePipeline.getBindGroupLayout(0),
+//       [computeUniformsBuffer,
+//         velocityBuffer,
+//         vorticityBuffer,
+//         predictionBuffer,
+//         constBuffer,
    
-        correctParticle,
+//         correctParticle,
 
-        hashCounts,
-        particleIds,
-        posBuffer
-      ])
-    return [computeBindGroup]
-  }
-})
+//         hashCounts,
+//         particleIds,
+//         posBuffer
+//       ])
+//     return [computeBindGroup]
+//   }
+// })
 
 //particle is stuck because its corrected Position is itself 
 
@@ -799,40 +800,6 @@ const applyConstraintCompute = webgpu.initComputeCall({
     constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
   }
 
-  // //4. compute constraint correction
-  // {
-  //   var pos = particlesStorage[index];
-  //   var lambdaI = constFactor[index];
-  //   var corr = vec4<f32>(0.0);
-  //   var vec = vec4<f32>(0.0);
-
-  //   var startEnd = getNeighbors(index);
-
-  //   for (var i = 0u; i < startEnd.count; i++) {
-  //     var e = startEnd.indices[i];
-  //     vec = pos - predPos[e];
-  //     if (u32(e) == index) { 
-  //       continue; 
-  //     };
-
-  //     corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
-  //   }
-
-  //   //particles are only getting neighbors for 1st index
-
-  //   correctParticle[index] = corr / restDensity;
-
-  //   predPos[index] = predPos[index] + correctParticle[index];
-  
-  //   //velocityStorage[index] = predPos[index] - particlesStorage[index];
-  //   const MAX_VEL = vec4<f32>(30.);
-
-  //   //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (5.), -MAX_VEL, MAX_VEL);
-  // }
-    
-  
-   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-
   //9 apply Bounding Wall
   }`,
 exec: function (state){
@@ -890,33 +857,6 @@ const applyConstraintCorrection = webgpu.initComputeCall({
     var aspectRatioStuff = uniforms.aspectRatio;
     var constraint = constFactor[index];
     var fluidDensity = densityStorage[index];
-    //3. compute constraint factor
-  // {
-  //   var vec = vec4<f32>(0);
-  //   var grad = vec4<f32>(0);
-  //   var sumGradCi = vec4<f32>(0);
-  //   var sumSqGradC = 0.;
-  //   var pos = predPos[index];
-  //   let densityC = fluidDensity / restDensity - 1.0;
-    
-  //   var startEnd = getNeighbors(index);
-
-  //   for (var i = 0u; i < startEnd.count; i++) {
-  //     var e = startEnd.indices[i];
-  //     vec = pos - predPos[e];
-
-  //     grad = gradSpiky(vec, effectRadius);
-
-  //     sumGradCi += grad;
-
-  //     sumSqGradC += dot(grad, grad);
-  //   }
-    
-  //   sumSqGradC += dot(sumGradCi, sumGradCi);
-  //   sumSqGradC /= restDensity * restDensity;
-  
-  //   constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
-  // }
 
   //4. compute constraint correction
   {
@@ -984,7 +924,7 @@ ${predefines}
     let predPos = predPos[index];
   
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
- var stuff = f32(getNeighbors(index).count);
+  var stuff = f32(getNeighbors(index).count);
 
   debugGetNeighbors[index] = stuff;//f32(index);
 
@@ -1097,10 +1037,6 @@ const device = webgpu.device
 const model = mat4.identity(new Float32Array(16))
 
 function getCameraViewProjMatrix() {
-  const eyePosition = vec3.fromValues(.0, 0.0, -1.5);
-  const upVector = vec3.fromValues(0, 1, 0);
-  const origin = vec3.fromValues(0, 0, 0);
-  const rad = Math.PI * (Date.now() / 5);
   //mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, -5, 0));
   mat4.rotate(
     model,
@@ -1168,7 +1104,6 @@ struct VSOut {
     @builtin(position) position: vec4<f32>,
     @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
     @location(2) density: f32
-
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -1264,7 +1199,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
   }
 })
 let camera = createCamera({
-  center: [-7., -0.0, -0],
+  center: [-6., -0.0, -0],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -1328,9 +1263,7 @@ setInterval(
     gridCountPipeline()
 
      if (hasRun < 10) utils.readBuffer(webgpu.state, hashCounts).then(d =>{ 
-      
-    //  console.log(d)
-    window.hashCounts = d
+       window.hashCounts = d
     })
      hasRun += 1;
 
@@ -1347,8 +1280,6 @@ setInterval(
 
     for (var i = 0; i < 1; i++) {
       applyConstraintCompute()
-      //await sleep(5000)
-
       applyConstraintCorrection()
     }
     
@@ -1374,9 +1305,9 @@ setInterval(
 
     window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
-    // window.density = await utils.readBuffer(webgpu.state, densityBuffer)
+    window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
-    // window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
+    window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
 
     // window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer)
 
@@ -1396,10 +1327,6 @@ setInterval(
 }
 
 basic()
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 // camera technique https://github.com/jrprice/NBody-WebGPU/blob/main/src/shaders.wgsl
 //make a buffer of 1 million particles (position + velocity )
