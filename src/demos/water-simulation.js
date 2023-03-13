@@ -222,6 +222,8 @@ const bucketHash = `fn bucketHash (p:vec3<i32>) -> u32 {
   //return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791));
 
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
+
+
   if h < 0 {
     return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
   } else {
@@ -348,7 +350,7 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-const particleSize = 16
+
 
 const computeUniformsBuffer = webgpu.device.createBuffer({
   size: 96,
@@ -356,6 +358,7 @@ const computeUniformsBuffer = webgpu.device.createBuffer({
 });
 
 function makeBuffer (size=particlesCount, flag) {
+  const particleSize = 16
   const gpuBufferSize = particlesCount * particleSize
   //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
 
@@ -917,19 +920,26 @@ ${predefines}
   const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
   var stuff = f32(getNeighbors(index).count);
 
-  var abc = particlesStorage[index].xyz;
+  var p = particlesStorage[index].xyz;
 
   //problem statement use bucketHash for all known particles and associate them with correct particle neighborhood
 
+
+
   //910
   //debugGetNeighbors[index] = f32(bucketHash(vec3(-1, -1, -1))); 
+  debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
 
 
-  debugGetNeighbors[index] = f32(particleHash(abc)); //14, 15, 16, 17, 18, 19, 20 
+//get neighbors for each particle - write to buffer
+//
 
+  //1023 hashCounts
+  ///1021 particle buckets
+//hfpt
 //f32(particleHash(abc.xyz));
 ////bucketHash(vec3<i32>(i, j, k));
-//particleHash(vec3<f32>(p.x+f32(i)*.08, p.y+f32(j)*.08, p.z+f32(k)*.08));
+//
 //f32(particleHash(abc));
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
@@ -1304,12 +1314,23 @@ setInterval(
 
     window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
 
+    window.dbg = function() {
+      let a = {}
+
+      window.debugGetNeighbors.forEach(function (d) {
+        a[d] = 1 +(a[d] || 0)
+      })
+      return a
+    }
 
     window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
     window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
     window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
+
+
+    window.posBuffer = await utils.readBuffer(webgpu.state, posBuffer)
 
     // window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer)
 
