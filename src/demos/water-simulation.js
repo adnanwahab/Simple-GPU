@@ -49,8 +49,8 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ] 
-console.log(HASH_VEC)
-const PARTICLE_RADIUS = 0.08
+
+const PARTICLE_RADIUS = 0.1
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
 function createCamera (props_) {
@@ -132,28 +132,17 @@ function createCamera (props_) {
     //array of pointers - grid cell = start of array in that bucket
     //7-15
     //take the particle and put it in the right spot
-
     //query = list of all particles 
     //hashCounts store start of bucket
-
     //cant know location of particleID - bucket 2 until all have been counted
-
     //numerical instability
-
-
     //resolved intersections
     //tag each particle with chemical species 
     //these particles are all - hydrogen+oxygen = burn - different rules for combine
     //reaction diffusion equation - rate and tag them - underlying particle model for advenction fluid
-
     //neural graphics - webGPU - nerf studio
-
-
-
     //separate pass to generate all pairs of particles that are colliding 
-
     //count number of collisions with lower number of particles in that grid or neighboring
-
     // mouseWheel(source, function (dx, dy) {
     //   ddistance += dy / getHeight() * cameraState.zoomSpeed
     //   cameraState.dirty = true;
@@ -231,9 +220,6 @@ function createCamera (props_) {
   }
   return setupCamera
 }
-//hardcode all particles into a continuous cube instead of random assignment
-
-
 
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
@@ -242,7 +228,6 @@ import { mat4, vec3 } from 'gl-matrix'
 
 const bucketHash = `fn bucketHash (p:vec3<i32>) -> u32 {
   //return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791));
-
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
   if h < 0 {
     return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
@@ -269,7 +254,7 @@ struct BucketContents {
 ${bucketHash}
 
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
-  return vec3<i32>((p * ${(1 / .08).toFixed(10)}));
+  return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(10)}));
 }
 
 fn particleHash (p:vec3<f32>) -> u32 {
@@ -460,7 +445,7 @@ const COMMON_SHADER_FUNCS = `
 ${bucketHash}
 
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
-  return vec3<i32>(floor(p * ${(1 / .08).toFixed(3)}));
+  return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
 }
 
 fn particleHash (p:vec3<f32>) -> u32 {
@@ -583,10 +568,7 @@ const gridCountPipeline = webgpu.initComputeCall({
   @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
     var id = globalVec.x;
     var bucket = particleHash(positions[id].xyz);
-    if (id == 0) { atomicAdd(&hashCounts[bucket], 1u); }
-    else {
-      atomicAdd(&hashCounts[bucket], 1u);
-    }
+    atomicAdd(&hashCounts[bucket], 1u);
   }`,
 exec: function (state){
   const device = state.device
@@ -621,7 +603,7 @@ const gridCopyParticlePipeline = webgpu.initComputeCall({
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
-  particleIds[id] = f32(id);
+  particleIds[offset] = f32(id);
 }`,
 exec: function (state) {
   const device = state.device
@@ -870,18 +852,18 @@ const applyConstraintCorrection  = webgpu.initComputeCall({
   @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
-  const kDelta = 0.000025;
-  const kSoftening = 20.2;
+//   const kDelta = 0.000025;
+//   const kSoftening = 20.2;
 
-  fn computeForce(ipos : vec4<f32>,
-    jpos : vec4<f32>,
-    ) -> vec4<f32> {
-let d = vec4((jpos - ipos).xyz, 0);
-let distSq = d.x*d.x + d.y*d.y + d.z*d.z + kSoftening*kSoftening;
-let dist   = inverseSqrt(distSq);
-let coeff  = jpos.w * (dist*dist*dist);
-return coeff * d;
-}
+//   fn computeForce(ipos : vec4<f32>,
+//     jpos : vec4<f32>,
+//     ) -> vec4<f32> {
+// let d = vec4((jpos - ipos).xyz, 0);
+// let distSq = d.x*d.x + d.y*d.y + d.z*d.z + kSoftening*kSoftening;
+// let dist   = inverseSqrt(distSq);
+// let coeff  = jpos.w * (dist*dist*dist);
+// return coeff * d;
+// }
 
 
   @compute @workgroup_size(256)
@@ -930,7 +912,6 @@ return coeff * d;
  
   // let p = particlesStorage[index];
   // var force = vec4(0.0);
-
   // for (var i = 0; i < ${NUM_PARTICLES}; i++) {
   //   force = force + computeForce(p, particlesStorage[i]);
   // }
@@ -938,9 +919,7 @@ return coeff * d;
   // velocity = vel + force * kDelta;
   // velocityStorage[index] = vel;
   // particlesStorage[index] = p + velocity * kDelta;
-
-//   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-
+  // particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
   }`,
 exec: function (state){
@@ -980,14 +959,12 @@ ${predefines}
 
   //910
   //debugGetNeighbors[index] = f32(bucketHash(vec3(-1, -1, -1))); 
-  //debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
-  let g = getNeighbors(15);
+  debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
+  let g = getNeighbors(100);
 
-  for (var i = 0u; i < g.count; i++) {
-    debugGetNeighbors[i] = f32(g.indices[i]);
-  }
-
-
+  //for (var i = 0u; i < g.count; i++) {
+    //debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
+  //}
 
   //g.count is always 270 = BAD
   //g.indices is always 0 = BAD
@@ -996,14 +973,7 @@ ${predefines}
   //but some of the hashCounts are below 1024 
   //investigate further
 
-//get neighbors for each particle - write to buffer
-
-  //1023 hashCounts
-  ///1021 particle buckets
-//hfpt
-//f32(particleHash(abc.xyz));
-////bucketHash(vec3<i32>(i, j, k));
-//f32(particleHash(abc));
+  //get neighbors for each particle - write to buffer
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -1274,7 +1244,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
   }
 })
 let camera = createCamera({
-  center: [-5., 1.0, 0],
+  center: [-5., 1.5, .3],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -1380,16 +1350,17 @@ setInterval(
 
     window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
 
+    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
+
     window.dbg = function() {
       let a = {}
 
-      window.debugGetNeighbors.forEach(function (d) {
+      window.particleIds.forEach(function (d) {
         a[d] = 1 +(a[d] || 0)
       })
       return a
     }
 
-    window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
     window.density = await utils.readBuffer(webgpu.state, densityBuffer)
 
