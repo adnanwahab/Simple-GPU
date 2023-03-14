@@ -7,10 +7,33 @@ import mouseWheel from 'mouse-wheel'
   //loop through IDs in neighborhood
   //look up velocity[id] and integrate them across neighbors
   //figure out particle IDs
+
+//buffer layout problem
+//I learned if you read and write to the same buffer then it has undefined flickering behavior
+//this could be causing undefined issues in the simulation code especially with sensitive stuff like constraint and velocity computation
+//The solution would be to split up the buffers more and lay them out in a way that the memory stays coherent 
+//i'm not sure but simplifying each shader would be a good first step
+
+//revert it back to water code
+//try to use a naive getNeighbors function 
+
+//try to make it work for a small cuboid of particles 
+//like 1000 droplets 
+//try to space them out linearly and then manually assign the nearest neighbors in CPU land
+
+//once it is working for the simple case
+//can move to gpu based accelerated GPU collision detection
+
+//Estimate 1-2 weeks 
+//no over promise and under delivering
+
+//quit everything and put health first 
+//1 hour of cardio, no caffiene, cold turkey
+
+
 import { WebGPUScan } from './scan'
 
-const stuff = 10
-
+const stuff = 4
 const NUM_PARTICLES = 256 * 4 * stuff
 const particlesCount = NUM_PARTICLES
 const SCAN_THREADS = 256
@@ -19,7 +42,7 @@ const NGROUPS = NUM_PARTICLES / 256
 
 var isBrowser = typeof window !== 'undefined'
 
-const COLLISION_TABLE_SIZE = particlesCount / stuff
+const COLLISION_TABLE_SIZE = particlesCount
 
 const HASH_VEC = [
   1,
@@ -27,7 +50,7 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ] 
 console.log(HASH_VEC)
-const PARTICLE_RADIUS = 1.18
+const PARTICLE_RADIUS = 0.08
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
 function createCamera (props_) {
@@ -95,7 +118,6 @@ function createCamera (props_) {
       }
       prevX = x
       prevY = y
- 
     })
 
     //scan to figure out relative offset for each position
@@ -222,8 +244,6 @@ const bucketHash = `fn bucketHash (p:vec3<i32>) -> u32 {
   //return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791));
 
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
-
-
   if h < 0 {
     return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
   } else {
@@ -263,31 +283,40 @@ fn getNeighbors (centerId:  u32) -> BucketContents {
   //hashCounts only works for the first 1024 particles
   //what if hashCounts is always 0
 
+  // for (var i = 0; i < ${NUM_PARTICLES}; i += 1) {
+  //   result.indices[i] = i32(particleIds[i]);
+  //   result.count += 1u;
+  // }
+  // return result;
+
   var p = particlesStorage[centerId].xyz;
   var pos = bucketHash(vec3(i32(p.x), i32(p.y), i32(p.z)));
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
             
-            var bucketId = //bucketHash(vec3<i32>(i, j, k));
+            var bucketId = bucketHash(vec3<i32>(i, j, k));
             //particleHash(p.xyz);
+            //particleHash(vec3<f32>(p.x, p.y, p.z));
+            //particleHash(vec3<f32>(0,0,0));
 
-            particleHash(vec3<f32>(p.x+f32(i)*.08, p.y+f32(j)*.08, p.z+f32(k)*.08));
+            //particleHash(vec3<f32>(p.x+f32(i)*0.18, p.y+f32(j)*0.18, p.z+f32(k)*0.18));
+            
              // % ${COLLISION_TABLE_SIZE}u;
             var bucketStart = hashCounts[bucketId];
             var bucketEnd = ${NUM_PARTICLES}u;
             //if bucketId < ${COLLISION_TABLE_SIZE - 1} {
               bucketEnd = hashCounts[bucketId + 1];
             //}
-            for (var n = 0u; n < 20; n = n + 1u) {
+            for (var n = 0u; n < 10; n = n + 1u) {
               var p = bucketStart + n;
-              if p >= bucketEnd {
-                break;
-              } else {
+              // if p >= bucketEnd {
+              //   break;
+              // } else {
                 var m = particleIds[p];
                 result.indices[n+ result.count] = i32(m);
                 result.count += 1u;
-              }
+              // }
             }
            }
         }
@@ -301,12 +330,12 @@ const ABS_WALL_POS = vec3<f32>(.7,.7,.7);
 
 const effectRadius = .3f;
 const restDensity = 4f;
-const relaxCFM = 400.0f;
+const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 
 const artPressureCoeff = .0001f;
-const artPressureExp = 40;
+const artPressureExp = 4;
 const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
@@ -349,8 +378,6 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
-
-
 
 const computeUniformsBuffer = webgpu.device.createBuffer({
   size: 96,
@@ -544,6 +571,7 @@ const computeDensity = webgpu.initComputeCall({
     return [computeBindGroup]
   }
 })
+//particleIds all at unique offsets
 
 const gridCountPipeline = webgpu.initComputeCall({
   label: `gridCountPipeline`,
@@ -552,10 +580,13 @@ const gridCountPipeline = webgpu.initComputeCall({
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
 
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
     var id = globalVec.x;
     var bucket = particleHash(positions[id].xyz);
-    atomicAdd(&hashCounts[bucket], 1u);
+    if (id == 0) { atomicAdd(&hashCounts[bucket], 1u); }
+    else {
+      atomicAdd(&hashCounts[bucket], 1u);
+    }
   }`,
 exec: function (state){
   const device = state.device
@@ -586,11 +617,11 @@ const gridCopyParticlePipeline = webgpu.initComputeCall({
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
   @binding(2) @group(0) var<storage, read_write> particleIds : array<f32>;
 
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
-  particleIds[offset] =   f32(id);
+  particleIds[id] = f32(id);
 }`,
 exec: function (state) {
   const device = state.device
@@ -807,8 +838,8 @@ exec: function (state){
 })
 
 
-const applyConstraintCorrection = webgpu.initComputeCall({
-  label: `applyConstraintCompute`,
+const applyConstraintCorrection  = webgpu.initComputeCall({
+  label: `applyConstraintCorrection`,
   bindGroups: function (state, computePipeline) {
     const computeBindGroup =
       utils.makeBindGroup(state.device,
@@ -838,6 +869,19 @@ const applyConstraintCorrection = webgpu.initComputeCall({
 
   @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
+
+  const kDelta = 0.000025;
+  const kSoftening = 20.2;
+
+  fn computeForce(ipos : vec4<f32>,
+    jpos : vec4<f32>,
+    ) -> vec4<f32> {
+let d = vec4((jpos - ipos).xyz, 0);
+let distSq = d.x*d.x + d.y*d.y + d.z*d.z + kSoftening*kSoftening;
+let dist   = inverseSqrt(distSq);
+let coeff  = jpos.w * (dist*dist*dist);
+return coeff * d;
+}
 
 
   @compute @workgroup_size(256)
@@ -883,9 +927,19 @@ const applyConstraintCorrection = webgpu.initComputeCall({
 
     //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (5.), -MAX_VEL, MAX_VEL);
   }
-    
-  
-   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
+ 
+  // let p = particlesStorage[index];
+  // var force = vec4(0.0);
+
+  // for (var i = 0; i < ${NUM_PARTICLES}; i++) {
+  //   force = force + computeForce(p, particlesStorage[i]);
+  // }
+  // var vel = velocityStorage[index];
+  // velocity = vel + force * kDelta;
+  // velocityStorage[index] = vel;
+  // particlesStorage[index] = p + velocity * kDelta;
+
+//   particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
 
   //9 apply Bounding Wall
   }`,
@@ -924,22 +978,31 @@ ${predefines}
 
   //problem statement use bucketHash for all known particles and associate them with correct particle neighborhood
 
-
-
   //910
   //debugGetNeighbors[index] = f32(bucketHash(vec3(-1, -1, -1))); 
-  debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
+  //debugGetNeighbors[index] = f32(particleHash(vec3<f32>(p.x+f32(0)*.08, p.y+f32(0)*.08, p.z+f32(0)*.08))); 
+  let g = getNeighbors(15);
 
+  for (var i = 0u; i < g.count; i++) {
+    debugGetNeighbors[i] = f32(g.indices[i]);
+  }
+
+
+
+  //g.count is always 270 = BAD
+  //g.indices is always 0 = BAD
+  //ParticleHash always returns a list of 0 because the particle Hash is indexing a range that is outside of the hashCounts sequence 
+  //HashCounts is always set to 0 beyond 1024
+  //but some of the hashCounts are below 1024 
+  //investigate further
 
 //get neighbors for each particle - write to buffer
-//
 
   //1023 hashCounts
   ///1021 particle buckets
 //hfpt
 //f32(particleHash(abc.xyz));
 ////bucketHash(vec3<i32>(i, j, k));
-//
 //f32(particleHash(abc));
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
@@ -1050,7 +1113,7 @@ const device = webgpu.device
 const model = mat4.identity(new Float32Array(16))
 
 function getCameraViewProjMatrix() {
-  //mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, -5, 0));
+  mat4.translate(model, model, vec3.fromValues(2, 2, 0));
   mat4.rotate(
     model,
     model,
@@ -1066,7 +1129,7 @@ function getCameraViewProjMatrix() {
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
   mat4.perspectiveZO(projectionMatrix,
-    1, 500 / 500, .1, 500.0);
+    100, 500 / 500, .9, 100.0);
   //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
 
@@ -1211,7 +1274,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
   }
 })
 let camera = createCamera({
-  center: [-6., -0.0, -0],
+  center: [-5., 1.0, 0],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -1274,10 +1337,7 @@ setInterval(
 
     gridCountPipeline()
 
-     if (hasRun < 10) utils.readBuffer(webgpu.state, hashCounts).then(d =>{ 
-       window.hashCounts = d
-    })
-     hasRun += 1;
+  
 
     const computePass = commandEncoder.beginComputePass();
 
@@ -1285,6 +1345,12 @@ setInterval(
     gridCountScanPass.run(computePass)
 
     computePass.end();
+
+    if (hasRun < 10) utils.readBuffer(webgpu.state, hashCounts).then(d =>{ 
+      window.hashCounts = d
+   })
+     hasRun += 1;
+
 
     gridCopyParticlePipeline()
 
@@ -1295,7 +1361,7 @@ setInterval(
       applyConstraintCorrection()
     }
     
-    //applyVorticityCompute()
+    // applyVorticityCompute()
     updatePositionCompute()
 
     drawCube({})
