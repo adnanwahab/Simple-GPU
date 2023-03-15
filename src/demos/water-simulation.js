@@ -54,7 +54,7 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ] 
-console.log(HASH_VEC)
+console.log(NUM_PARTICLES, 1231231)
 const PARTICLE_RADIUS = 0.1
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
@@ -164,9 +164,9 @@ fn getNeighbors (centerId:  u32) -> BucketContents {
 //particle Ids keeps getting bigger 
 //particleIds only references 0
 
-const ABS_WALL_POS = vec3<f32>(.7,.7,.7);
+const ABS_WALL_POS = vec3<f32>(.9,.9,.9);
 
-const effectRadius = .3f;
+const effectRadius = 0.3f;
 const restDensity = 450f;
 const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
@@ -343,6 +343,10 @@ const predictedPosition = webgpu.initComputeCall({
   }
 })
 
+//i have discovered 
+//when i do a search through all particles
+//only the first particle has repulsions
+
 const computeDensity = webgpu.initComputeCall({
   label: `computeDensity`,
   code:`
@@ -364,8 +368,8 @@ const computeDensity = webgpu.initComputeCall({
 
     var startEnd = getNeighbors(index);
       
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
+    for (var i = 0u; i < 10000; i++) {
+      var e = particleIds[i];
       fluidDensity += poly6(pos - predPos[e], effectRadius);
     }
 
@@ -440,13 +444,13 @@ const gridCopyParticlePipeline = webgpu.initComputeCall({
   ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-  @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(2) @group(0) var<storage, read_write> particleIds : array<i32>;
 
   @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
-  particleIds[id] = id;
+  particleIds[id] = i32(id);
 }`,
 exec: function (state) {
   const device = state.device
@@ -630,8 +634,8 @@ const applyConstraintCompute = webgpu.initComputeCall({
     
     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
+    for (var i = 0u; i < 10000; i++) {
+      var e = particleIds[i];
       vec = pos - predPos[e];
 
       grad = gradSpiky(vec, effectRadius);
@@ -713,9 +717,8 @@ const applyConstraintCorrection  = webgpu.initComputeCall({
 
     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-   
-      var e = startEnd.indices[i];
+    for (var i = 0u; i < 10000; i++) {
+      var e = particleIds[i];
 
       if (u32(e) == index) { 
         continue; 
@@ -764,7 +767,7 @@ ${predefines}
     let index: u32 = GlobalInvocationID.x;
     let predPos = predPos[index];
   
-  const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+  const ABS_WALL_POS = vec3<f32>(.9,.9,.9);
   var stuff = f32(getNeighbors(index).count);
 
   var p = particlesStorage[index].xyz;
