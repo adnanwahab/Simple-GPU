@@ -255,7 +255,7 @@ const velocityBuffer = makeBuffer(particlesCount, 0)
 const vorticityBuffer = makeBuffer(particlesCount, 0)
 const predictionBuffer = makeBuffer(particlesCount, 0)
 const densityBuffer = makeBuffer(particlesCount / 4, 0)
-const constBuffer = makeBuffer(particlesCount, 0)
+const constBuffer = makeBuffer(particlesCount, 1)
 const correctParticle = makeBuffer(particlesCount, 0)
 const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
@@ -520,7 +520,7 @@ exec: function (state) {
 //       var n = vec4<f32>(0.0f);
 //       var startEnd = getNeighbors(index);
 
-//       for (var i = 0u; i < startEnd.count; i++) {
+//       for (var i = 0u; i < 10000; i++) {
 //         var e = startEnd.indices[i];
 // //        n += length(vorticity[e])* gradSpiky(pos - predPos[e], effectRadius);
 //       }
@@ -621,7 +621,7 @@ const applyConstraintCompute = webgpu.initComputeCall({
     var velocity = velocityStorage[index];
     var correctPar = correctParticle[index];
     var aspectRatioStuff = uniforms.aspectRatio;
-    var constraint = constFactor[index];
+    //var constraint = constFactor[index];
     var fluidDensity = densityStorage[index];
     //3. compute constraint factor
   {
@@ -1166,6 +1166,9 @@ setInterval(
 
     window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
 
+
+    window.debugGetNeighbors = await utils.readBuffer(webgpu.state, debugGetNeighbors)
+
     window.particleIds = await utils.readBuffer(webgpu.state, particleIds)
 
     window.dbg = function(bufferName) {
@@ -1178,14 +1181,14 @@ setInterval(
     }
 
 
-    window.density = await utils.readBuffer(webgpu.state, densityBuffer)
+    window.density = await utils.readBuffer(webgpu.state, densityBuffer, true)
 
-    window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer)
+    window.constBuffer = await utils.readBuffer(webgpu.state, constBuffer, true)
 
 
     window.posBuffer = await utils.readBuffer(webgpu.state, posBuffer)
 
-    // window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer)
+    window.predictionBuffer = await utils.readBuffer(webgpu.state, predictionBuffer, true)
 
     // window.correctParticle = await utils.readBuffer(webgpu.state, correctParticle)
 
