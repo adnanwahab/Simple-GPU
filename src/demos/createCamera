@@ -1,0 +1,174 @@
+import { mat4, vec3 } from 'gl-matrix'
+import mouseChange from 'mouse-change'
+import mouseWheel from 'mouse-wheel'
+var isBrowser = typeof window !== 'undefined'
+
+function createCamera (props_) {
+  var props = props_ || {}
+
+  // Preserve backward-compatibilty while renaming preventDefault -> noScroll
+  if (typeof props.noScroll === 'undefined') {
+    props.noScroll = props.preventDefault;
+  }
+
+  var cameraState = {
+    view: mat4.identity(new Float32Array(16)),
+    projection: mat4.identity(new Float32Array(16)),
+    center: new Float32Array(props.center || 3),
+    theta: props.theta || 0,
+    phi: props.phi || 0,
+    distance: Math.log(props.distance || 10.0),
+    eye: new Float32Array(3),
+    up: new Float32Array(props.up || [0, 1, 0]),
+    fovy: props.fovy || Math.PI / 4.0,
+    near: typeof props.near !== 'undefined' ? props.near : 0.01,
+    far: typeof props.far !== 'undefined' ? props.far : 1000.0,
+    noScroll: typeof props.noScroll !== 'undefined' ? props.noScroll : false,
+    flipY: !!props.flipY,
+    dtheta: 0,
+    dphi: 0,
+    rotationSpeed: typeof props.rotationSpeed !== 'undefined' ? props.rotationSpeed : 1,
+    zoomSpeed: typeof props.zoomSpeed !== 'undefined' ? props.zoomSpeed : 1,
+    renderOnDirty: typeof props.renderOnDirty !== undefined ? !!props.renderOnDirty : false
+  }
+
+  var element = props.element
+  var damping = typeof props.damping !== 'undefined' ? props.damping : 0.9
+
+  var right = new Float32Array([1, 0, 0])
+  var front = new Float32Array([0, 0, 1])
+
+  var minDistance = Math.log('minDistance' in props ? props.minDistance : 0.1)
+  var maxDistance = Math.log('maxDistance' in props ? props.maxDistance : 1000)
+
+  var ddistance = 0
+
+  var prevX = 0
+  var prevY = 0
+
+  if (isBrowser && props.mouse !== false) {
+    var source = element
+
+    function getWidth () {
+      return element ? element.offsetWidth : window.innerWidth
+    }
+
+    function getHeight () {
+      return element ? element.offsetHeight : window.innerHeight
+    }
+
+    mouseChange(source, function (buttons, x, y) {
+      if (buttons & 1) {
+        var dx = (x - prevX) / getWidth()
+        var dy = (y - prevY) / getHeight()
+
+        cameraState.dtheta += cameraState.rotationSpeed * 4.0 * dx
+        cameraState.dphi += cameraState.rotationSpeed * 4.0 * dy
+        cameraState.dirty = true;
+      }
+      prevX = x
+      prevY = y
+    })
+
+    //scan to figure out relative offset for each position
+    //underlying idea 
+    //sparse array and compacting it  into a single contiguous flat array 
+    //accumulator s
+    //read element out of s 
+    //integral from 0 to i
+    //prefix sum = how many particles are in that bucket
+    //from bucket[i] - list of particle IDs inside there
+    //n particles = id 
+    //array of pointers - grid cell = start of array in that bucket
+    //7-15
+    //take the particle and put it in the right spot
+    //query = list of all particles 
+    //hashCounts store start of bucket
+    //cant know location of particleID - bucket 2 until all have been counted
+    //numerical instability
+    //resolved intersections
+    //tag each particle with chemical species 
+    //these particles are all - hydrogen+oxygen = burn - different rules for combine
+    //reaction diffusion equation - rate and tag them - underlying particle model for advenction fluid
+    //neural graphics - webGPU - nerf studio
+    //separate pass to generate all pairs of particles that are colliding 
+    //count number of collisions with lower number of particles in that grid or neighboring
+    // mouseWheel(source, function (dx, dy) {
+    //   ddistance += dy / getHeight() * cameraState.zoomSpeed
+    //   cameraState.dirty = true;
+    // }, props.noScroll)
+  }
+
+  function damp (x) {
+    var xd = x * damping
+    if (Math.abs(xd) < 0.1) {
+      return 0
+    }
+    cameraState.dirty = true;
+    return xd
+  }
+
+  function clamp (x, lo, hi) {
+    return Math.min(Math.max(x, lo), hi)
+  }
+
+  function updateCamera (props) {
+    Object.keys(props).forEach(function (prop) {
+      cameraState[prop] = props[prop]
+    })
+
+    var center = cameraState.center
+    var eye = cameraState.eye
+    var up = cameraState.up
+    var dtheta = cameraState.dtheta
+    var dphi = cameraState.dphi
+
+    cameraState.theta += dtheta
+    cameraState.phi = clamp(
+      cameraState.phi + dphi,
+      -Math.PI / 2.0,
+      Math.PI / 2.0)
+    cameraState.distance = clamp(
+      cameraState.distance + ddistance,
+      minDistance,
+      maxDistance)
+
+    cameraState.dtheta = damp(dtheta)
+    cameraState.dphi = damp(dphi)
+    ddistance = damp(ddistance)
+
+    var theta = cameraState.theta
+    var phi = cameraState.phi
+    var r = Math.exp(cameraState.distance)
+
+    var vf = r * Math.sin(theta) * Math.cos(phi)
+    var vr = r * Math.cos(theta) * Math.cos(phi)
+    var vu = r * Math.sin(phi)
+
+    for (var i = 0; i < 3; ++i) {
+      eye[i] = center[i] + vf * front[i] + vr * right[i] + vu * up[i]
+    }
+
+    mat4.lookAt(cameraState.view, eye, center, up)
+  }
+
+  cameraState.dirty = true
+
+  function setupCamera () {
+
+      updateCamera(props)
+      cameraState.perspective = mat4.perspective(cameraState.projection,
+        cameraState.fovy,
+        1,
+        cameraState.near,
+        cameraState.far)
+
+    return {
+      projection: cameraState.projection,
+      view: cameraState.view
+    }
+  }
+  return setupCamera
+}
+
+export default createCamera
