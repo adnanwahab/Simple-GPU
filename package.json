@@ -46,7 +46,9 @@
   "dependencies": {
     "bunny": "^1.0.1",
     "regltf": "^1.0.0",
-    "three-fbx-loader": "^1.0.3"
+    "three-collada-loader": "^0.0.1",
+    "three-fbx-loader": "^1.0.3",
+    "three-gltf-loader": "^1.111.0"
   },
   "keywords": [
     "webgpu",

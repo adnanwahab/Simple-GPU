@@ -1188,6 +1188,11 @@ supports-preserve-symlinks-flag@^1.0.0:
   resolved "https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz"
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
+three-collada-loader@^0.0.1:
+  version "0.0.1"
+  resolved "https://registry.npmjs.org/three-collada-loader/-/three-collada-loader-0.0.1.tgz"
+  integrity sha512-Ge4UDR5ciUHQIGJolvwXWJKE0pYBWRKR/uefEAMBGnqXpvE0Jd87vEmu8UvwNtTKYoFTxpcvj4SLvewHuy3SpA==
+
 three-fbx-loader@^1.0.3:
   version "1.0.3"
   resolved "https://registry.npmjs.org/three-fbx-loader/-/three-fbx-loader-1.0.3.tgz"
@@ -1196,12 +1201,17 @@ three-fbx-loader@^1.0.3:
     pako "^1.0.6"
     three "^0.89.0"
 
+three-gltf-loader@^1.111.0:
+  version "1.111.0"
+  resolved "https://registry.npmjs.org/three-gltf-loader/-/three-gltf-loader-1.111.0.tgz"
+  integrity sha512-f2d6J5sMEC+dvRcpRjE8g9vqtvpNfnR7bgd+R7Y0dj2mmHwKN5luKe/WYA0Z9+j7mhjla/AC5DGxdXsu8wFhug==
+
 three@^0.89.0:
   version "0.89.0"
   resolved "https://registry.npmjs.org/three/-/three-0.89.0.tgz"
   integrity sha512-Evv3JolLQtag/lCWu1o3cgz2E5UYCSZHbh9lfBjeLz7nlK8DMmASID680Odl++ZPYk63rrZjPAMq88IrMP3GCA==
 
-three@0.149.0:
+three@>=0.111.0, three@>=0.73.2, three@0.149.0:
   version "0.149.0"
   resolved "https://registry.npmjs.org/three/-/three-0.149.0.tgz"
   integrity sha512-tohpUxPDht0qExRLDTM8sjRLc5d9STURNrdnK3w9A+V4pxaTBfKWWT/IqtiLfg23Vfc3Z+ImNfvRw1/0CtxrkQ==
