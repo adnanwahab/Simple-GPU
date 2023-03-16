@@ -3,7 +3,7 @@
   "version": "0.41.0",
   "description": "simple-gpu is a fast functional WebGPU framework.",
   "scripts": {
-    "build:html": "ts-node ./src/build-html.mjs",
+    "build:html": "node ./src/build-html.mjs",
     "build:js": "esbuild --bundle ./src/demos/* --outdir=dist/",
     "build": "npm run build:html && npm run build:js",
     "dev": "vite",
@@ -48,7 +48,8 @@
     "regltf": "^1.0.0",
     "three-collada-loader": "^0.0.1",
     "three-fbx-loader": "^1.0.3",
-    "three-gltf-loader": "^1.111.0"
+    "three-gltf-loader": "^1.111.0",
+    "web-audio-beat-detector": "^8.1.43"
   },
   "keywords": [
     "webgpu",

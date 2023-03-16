@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"@babel/runtime@^7.21.0":
+  version "7.21.0"
+  resolved "https://registry.npmjs.org/@babel/runtime/-/runtime-7.21.0.tgz"
+  integrity sha512-xwII0//EObnq89Ji5AKYQaRYiW/nZ3llSv29d49IuxPhKbtJoLP+9QUUZ4nVragQVtaVGeZrpB+ZtG/Pdy/POw==
+  dependencies:
+    regenerator-runtime "^0.13.11"
+
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
   resolved "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz"
@@ -154,6 +161,14 @@ argparse@^2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz"
   integrity sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==
+
+automation-events@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.npmjs.org/automation-events/-/automation-events-5.0.2.tgz"
+  integrity sha512-8mfgjeI22tlKeaGY8y0bDt93IIUJhQKR/ISTsnhhFkpAzCirPdQ/Rmfp3xakCTmIihLgDuIWcWygHWozYKVGyQ==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    tslib "^2.5.0"
 
 balanced-match@^1.0.0:
   version "1.0.2"
@@ -618,6 +633,14 @@ estree-walker@^2.0.2:
   resolved "https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz"
   integrity sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==
 
+fast-unique-numbers@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.npmjs.org/fast-unique-numbers/-/fast-unique-numbers-7.0.2.tgz"
+  integrity sha512-xnqpsnu889bHbq5cbDMwCJ2BPf6kjFPMu+RHfqKvisRxeEbTOVxY5aW/ZNsZ/r8OlwatxmjdFEVQog2xAhLkvg==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    tslib "^2.5.0"
+
 fill-range@^7.0.1:
   version "7.0.1"
   resolved "https://registry.npmjs.org/fill-range/-/fill-range-7.0.1.tgz"
@@ -1043,6 +1066,11 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
+regenerator-runtime@^0.13.11:
+  version "0.13.11"
+  resolved "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.11.tgz"
+  integrity sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==
+
 regltf@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/regltf/-/regltf-1.0.0.tgz"
@@ -1138,6 +1166,15 @@ source-map-js@^0.6.2:
   version "0.6.2"
   resolved "https://registry.npmjs.org/source-map-js/-/source-map-js-0.6.2.tgz"
   integrity sha512-/3GptzWzu0+0MBQFrDKzw/DvvMTUORvgY6k6jd/VS6iCR4RDTKWH6v6WPwQoUO8667uQEf9Oe38DxAYWY5F/Ug==
+
+standardized-audio-context@^25.3.41:
+  version "25.3.41"
+  resolved "https://registry.npmjs.org/standardized-audio-context/-/standardized-audio-context-25.3.41.tgz"
+  integrity sha512-NCKY1kLCGN37dnCCIG4NX1LHWRgONvIU6u6GS3nzhMM9CV/M+GR48uIeojjeJBSICfWXfQ+t2N1MTdsgJz3wlA==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    automation-events "^5.0.2"
+    tslib "^2.5.0"
 
 stanford-dragon@^1.1.1:
   version "1.1.1"
@@ -1254,6 +1291,11 @@ ts-node@^10.9.1:
     v8-compile-cache-lib "^3.0.1"
     yn "3.1.1"
 
+tslib@^2.5.0:
+  version "2.5.0"
+  resolved "https://registry.npmjs.org/tslib/-/tslib-2.5.0.tgz"
+  integrity sha512-336iVw3rtn2BUK7ORdIAHTyxHGRIHVReokCR3XjbckJMK7ms8FysBfhLR8IXnAgy7T0PTPNBWKiH514FOW/WSg==
+
 typescript@^4.4.4, typescript@>=2.7:
   version "4.5.2"
   resolved "https://registry.npmjs.org/typescript/-/typescript-4.5.2.tgz"
@@ -1280,6 +1322,35 @@ vmath@^1.2.0, vmath@^1.4.5:
   version "1.4.8"
   resolved "https://registry.npmjs.org/vmath/-/vmath-1.4.8.tgz"
   integrity sha512-Kswa/EtKY3JtwaQZSiaNfJUr0yRYvSWJIe9/bn3yldZNG3iWtQVYN2l3pZbqnHTJ2CkJsodOCcfEO2iWEjcfIg==
+
+web-audio-beat-detector-broker@^4.0.80:
+  version "4.0.80"
+  resolved "https://registry.npmjs.org/web-audio-beat-detector-broker/-/web-audio-beat-detector-broker-4.0.80.tgz"
+  integrity sha512-3iYF3iDpo+hqsxihfMjclKNj+huqDTeVZuox9gjVtTrfDbkINjcp/8zUqSkjx5U3hIQjvxmVOCyn8rJb1ewmBg==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    fast-unique-numbers "^7.0.2"
+    standardized-audio-context "^25.3.41"
+    tslib "^2.5.0"
+    web-audio-beat-detector-worker "^5.2.33"
+
+web-audio-beat-detector-worker@^5.2.33:
+  version "5.2.33"
+  resolved "https://registry.npmjs.org/web-audio-beat-detector-worker/-/web-audio-beat-detector-worker-5.2.33.tgz"
+  integrity sha512-4+Tz+j1Mu6jrusYy1lNSzKrt+BcD/M41UunpvgwDTcvjfqsZwl424cSBb27TOIM4+mPoxETE1Q63seW8Toy3Kg==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    tslib "^2.5.0"
+
+web-audio-beat-detector@^8.1.43:
+  version "8.1.43"
+  resolved "https://registry.npmjs.org/web-audio-beat-detector/-/web-audio-beat-detector-8.1.43.tgz"
+  integrity sha512-MPY1ZyxXwqBWkI3Io8ARy8s/EIMcr5e3qbpsIkhlP5YSzMl59CG+opDRTHR0fub4h3VCtCLeDDrEmfCKW/nGNA==
+  dependencies:
+    "@babel/runtime" "^7.21.0"
+    tslib "^2.5.0"
+    web-audio-beat-detector-broker "^4.0.80"
+    web-audio-beat-detector-worker "^5.2.33"
 
 webrtc-adapter@^2.0.2:
   version "2.1.0"

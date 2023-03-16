@@ -1,46 +1,87 @@
 import createCamera from './createCamera'
 
-//import FBXLoader from 'three-fbx-loader'
+
+
+
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
+import { analyze } from 'web-audio-beat-detector';
+import {FBXLoader} from './FBXLoader'
+console.log(123)
+
+
+var loader = new FBXLoader();
+
+
+loader.load('./run.txt',   (object) => {
+  // object.traverse(function (child) {
+  //     if ((child as THREE.Mesh).isMesh) {
+  //         // (child as THREE.Mesh).material = material
+  //         if ((child as THREE.Mesh).material) {
+  //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+  //         }
+  //     }
+  // })
+  // object.scale.set(.01, .01, .01)
+  console.log('55523')
+  console.log(object)
+},
+(xhr) => {
+  console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+},
+(error) => {
+  console.log(error)
+}
+)
 
 //import GLTFLoader from 'three-gltf-loader';
-//change mesh when it detects a beat
-import ColladaLoader from 'three-collada-loader'
 
-const loader = new ColladaLoader();
-loader.load(
-	'https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/start_plank.txt',
-	( gltf ) => {
-		// called when the resource is loaded
-		console.log(gltf)
-	},
-	( xhr ) => {
-    console.log(xhr)
-		// called while loading is progressing
-		console.log( `${( xhr.loaded / xhr.total * 100 )}% loaded` );
-	},
-	( error ) => {
-		// called when loading has errors
-		console.error( 'An error happened', error );
-	},
-);
+//change mesh when it detects a beat [.5]
+//animate collada meshes so it dances [0]
+//gold particles for mesh [0]
+//add rainbow particles for motion - detect DX and show trail [0]
 
 
-async function abc() {
+let keyframes = [
+  []//VBO
+]
 
-  const soundBuffer =  await fetch( 'sounds/webgpu-audio-processing.mp3' ).then( res => res.arrayBuffer() );
-  const audioContext = new AudioContext();
 
-  const audioBuffer = await audioContext.decodeAudioData( soundBuffer );
 
-  waveBuffer = audioBuffer.getChannelData( 0 );
+// const loader = new ColladaLoader();
+// loader.load(
+// 	'https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/start_plank.txt',
+// 	( gltf ) => {
+// 		// called when the resource is loaded
+// 		console.log(gltf)
+// 	},
+// 	( xhr ) => {
+//     console.log(xhr)
+// 		// called while loading is progressing
+// 		console.log( `${( xhr.loaded / xhr.total * 100 )}% loaded` );
+// 	},
+// 	( error ) => {
+// 		// called when loading has errors
+// 		console.error( 'An error happened', error );
+// 	},
+// );
 
-  // adding extra silence to delay and pitch
-  waveBuffer = new Float32Array( [ ...waveBuffer, ...new Float32Array( 200000 ) ] );
 
-  sampleRate = audioBuffer.sampleRate / audioBuffer.numberOfChannels;
-}
+// async function abc() {
+
+//   const soundBuffer =  await fetch( './dance.txt' ).then( res => res.arrayBuffer() );
+//   const audioContext = new AudioContext();
+
+
+//   waveBuffer = audioBuffer.getChannelData( 0 );
+
+//   // adding extra silence to delay and pitch
+//   waveBuffer = new Float32Array( [ ...waveBuffer, ...new Float32Array( 200000 ) ] );
+
+//   sampleRate = audioBuffer.sampleRate / audioBuffer.numberOfChannels;
+//   console.log(waveBuffer)
+// }
+// abc()
 
 import { WebGPUScan } from './scan'
 
@@ -243,7 +284,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
  @location(2) pos2: vec4<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
-    var stuff = mix(inPosition.xy, pos2.xy, (sin(vec2<f32>(camera.time) + 1) / 2));
+    var stuff = mix(inPosition.xy, pos2.xy, (sin(vec2<f32>(camera.time) /2 ) + 1));
 
 
 
@@ -362,7 +403,9 @@ setInterval(
       model.byteLength
     );
     const a = new Float32Array(1)
-    a.forEach((d, i) => a[i] = performance.now() * .001)
+
+    a.forEach((d, i) => a[i] = window.avg / 40)
+    a.forEach((d, i) => a[i] = performance.now()/ 1000)
 
     device.queue.writeBuffer(
       cameraUniformBuffer,
@@ -372,7 +415,6 @@ setInterval(
       a.byteLength
     );
   
-   
  
 
     drawCube({})
@@ -382,3 +424,125 @@ setInterval(
 }
 
 basic()
+//http://labs.dinahmoe.com/plink/
+
+
+  // create the audio context (chrome only for now)
+  var context;
+  var audioBuffer;
+  var sourceNode;
+  var splitter;
+  var analyser, analyser2;
+  var javascriptNode;
+
+  function setupAudioNodes() {
+    context = new AudioContext()
+      // setup a javascript node
+      javascriptNode = context.createScriptProcessor(2048, 1, 1);
+      // connect to destination, else it isn't called
+      javascriptNode.connect(context.destination);
+
+      // when the javascript node is called
+      // we use information from the analyzer node
+      // to draw the volume
+      javascriptNode.onaudioprocess = function(stuff) {
+
+          // get the average for the channel
+          var array = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(array);
+          window.avg = getAverageVolume(array);
+          // const buffer = stuff.outputBuffer
+          // analyze(buffer)
+          // .then((tempo) => {
+          //     console.log(tempo)
+          // })
+          // .catch((err) => {
+          //     // something went wrong
+          // });
+      }
+
+      // setup a analyzer
+      analyser = context.createAnalyser();
+      analyser.smoothingTimeConstant = 0.3;
+      analyser.fftSize = 1024;
+
+      // create a buffer source node
+      sourceNode = context.createBufferSource();
+      splitter = context.createChannelSplitter();
+
+      // connect the source to the analyser and the splitter
+      sourceNode.connect(splitter);
+
+      // connect one of the outputs from the splitter to
+      // the analyser
+      splitter.connect(analyser,0,0);
+
+      // connect the splitter to the javascriptnode
+      // we use the javascript node to draw at a
+      // specific interval.
+      analyser.connect(javascriptNode);
+
+      // and connect to destination
+      sourceNode.connect(context.destination);
+  }
+
+  // load the specified sound
+  function loadSound(url) {
+      var request = new XMLHttpRequest();
+      request.open('GET', url, true);
+      request.responseType = 'arraybuffer';
+
+      // When loaded decode the data
+      request.onload = function() {
+
+        console.log(request.response)
+          // decode the data
+          console.log(context)
+          document.querySelector('body').addEventListener('click', function() {
+            context.resume().then(() => {
+              console.log('Playback resumed successfully');
+            });
+            context.decodeAudioData(request.response, function(buffer) {
+              // when the audio is decoded play the sound
+              // setInterval(() => {
+         
+
+              // },16)
+              playSound(buffer);
+   
+          }, onError);
+          });
+      
+      }
+      request.send();
+  }
+
+  function playSound(buffer) {
+      sourceNode.buffer = buffer;
+      sourceNode.start(0);
+
+         
+  }
+
+  // log if an error occurs
+  function onError(e) {
+      console.log(e);
+  }
+
+  function getAverageVolume(array) {
+      var values = 0;
+      var average;
+
+      var length = array.length;
+      //console.log(array)
+      // get all the frequency amplitudes
+      for (var i = 0; i < length; i++) {
+          values += array[i];
+      }
+
+      average = values / length;
+      return average;
+  }
+
+  setupAudioNodes()
+  loadSound('https://ia800300.us.archive.org/16/items/JusticeDance/03D.a.n.c.e.mp3')
