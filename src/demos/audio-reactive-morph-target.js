@@ -13,7 +13,7 @@ console.log(123)
 var loader = new FBXLoader();
 
 
-loader.load('./run.txt',   (object) => {
+loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/run.txt',   (object) => {
   // object.traverse(function (child) {
   //     if ((child as THREE.Mesh).isMesh) {
   //         // (child as THREE.Mesh).material = material
