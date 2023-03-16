@@ -1,29 +1,48 @@
 import createCamera from './createCamera'
 
+//import FBXLoader from 'three-fbx-loader'
+import bunny from 'bunny'
+import dragon from 'stanford-dragon'
+
+console.log(dragon)
+// fetch('./breakdance.txt').then(d => {
+//   d.json()
+// }).then(d => {
+//   console.log(d)
+// }
+// )
+
+// fetch('./data.bin').then((response) => {
+//   return response.arrayBuffer();
+// }).then(data => {
+//   //const vertices = new Float64Array(data)
+//   console.log(data)
+// })
+
+//post processing glow
+//audio reactive - change size of particles
 
 
 
+//create a particle for every point in the FBX
+//every frame load the point in the FBX
+//https://www.youtube.com/watch?v=q76dnjqPA6Q
 
+async function abc() {
 
+  const soundBuffer =  await fetch( 'sounds/webgpu-audio-processing.mp3' ).then( res => res.arrayBuffer() );
+  const audioContext = new AudioContext();
 
+  const audioBuffer = await audioContext.decodeAudioData( soundBuffer );
 
+  waveBuffer = audioBuffer.getChannelData( 0 );
 
+  // adding extra silence to delay and pitch
+  waveBuffer = new Float32Array( [ ...waveBuffer, ...new Float32Array( 200000 ) ] );
 
+  sampleRate = audioBuffer.sampleRate / audioBuffer.numberOfChannels;
+}
 
-
-
-
-// const soundBuffer = await fetch( 'sounds/webgpu-audio-processing.mp3' ).then( res => res.arrayBuffer() );
-// const audioContext = new AudioContext();
-
-// const audioBuffer = await audioContext.decodeAudioData( soundBuffer );
-
-// waveBuffer = audioBuffer.getChannelData( 0 );
-
-// // adding extra silence to delay and pitch
-// waveBuffer = new Float32Array( [ ...waveBuffer, ...new Float32Array( 200000 ) ] );
-
-// sampleRate = audioBuffer.sampleRate / audioBuffer.numberOfChannels;
 
 
 
@@ -99,7 +118,7 @@ import { WebGPUScan } from './scan'
 
 const stuff = 4
 const NUM_PARTICLES = 256 * 4 * stuff
-const particlesCount = NUM_PARTICLES
+const particlesCount = bunny.positions.length
 const SCAN_THREADS = 256
 const PARTICLE_WORKGROUP_SIZE = SCAN_THREADS
 const NGROUPS = NUM_PARTICLES / 256 
@@ -112,7 +131,6 @@ const HASH_VEC = [
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
   Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
 ] 
-console.log(NUM_PARTICLES, 1231231)
 const PARTICLE_RADIUS = 0.1
 const GRID_SPACING = 2 * PARTICLE_RADIUS
 
@@ -292,10 +310,11 @@ function makeBuffer (size=particlesCount, flag) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  for (let iParticle = 0; iParticle < particlesCount; iParticle++) {
-      particlesBuffer[4 * iParticle + 0] = flag && (Math.random() );
-      particlesBuffer[4 * iParticle + 1] = flag && (Math.random() );
-      particlesBuffer[4 * iParticle + 2] = flag && (Math.random());
+  for (let iParticle = 0; iParticle < 1839; iParticle++) {
+    const i = iParticle;
+      particlesBuffer[4 * iParticle + 0] = flag && (bunny.positions[i][0]);
+      particlesBuffer[4 * iParticle + 1] = flag && (bunny.positions[i][1]);
+      particlesBuffer[4 * iParticle + 2] = flag && (bunny.positions[i][2]);
       particlesBuffer[4 * iParticle + 3] = 0
   }
 
@@ -307,13 +326,12 @@ function makeBuffer (size=particlesCount, flag) {
   gpuBuffer.unmap();
   return gpuBuffer
 } 
-
-const posBuffer = makeBuffer(particlesCount, 1)
+const posBuffer = makeBuffer(bunny.length - 10, 1)
 const velocityBuffer = makeBuffer(particlesCount, 0)
 const vorticityBuffer = makeBuffer(particlesCount, 0)
 const predictionBuffer = makeBuffer(particlesCount, 0)
 const densityBuffer = makeBuffer(particlesCount / 4, 0)
-const constBuffer = makeBuffer(particlesCount, 1)
+const constBuffer = makeBuffer(particlesCount, 0)
 const correctParticle = makeBuffer(particlesCount, 0)
 const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
@@ -1035,9 +1053,9 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 @location(2) density: f32
 ) -> VSOut {
     var vsOut: VSOut;
-    vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+    vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
-   vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(inPosition.xy + (.09 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     vsOut.density = density;
@@ -1083,7 +1101,8 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 10000,1.,.1);
+//    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 10000,1.,.1);
+return vec4<f32>(1., 0., 0., 1.);
 }
 `},
   attributeBuffers: buffers,
@@ -1118,7 +1137,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
   }
 })
 let camera = createCamera({
-  center: [-5., 1.5, .3],
+  center: [5., 1.5, .3],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -1136,7 +1155,7 @@ const gridCountScan = new WebGPUScan({
   dataUnit: '0u'
 })
 
-const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts)
+//const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts)
 let hasRun = 0;
 setInterval(
   async function () {
@@ -1196,17 +1215,17 @@ setInterval(
   //    hasRun += 1;
 
 
-    gridCopyParticlePipeline()
+    // gridCopyParticlePipeline()
 
-    computeDensity()
+    // computeDensity()
 
-    for (var i = 0; i < 2 ; i++) {
-      applyConstraintCompute()
-      applyConstraintCorrection()
-    }
+    // for (var i = 0; i < 2 ; i++) {
+    //   applyConstraintCompute()
+    //   applyConstraintCorrection()
+    // }
     
-    //applyVorticityCompute()
-      updatePositionCompute()
+    // //applyVorticityCompute()
+    //   updatePositionCompute()
 
     drawCube({})
 

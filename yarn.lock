@@ -190,6 +190,11 @@ builtin-modules@^3.3.0:
   resolved "https://registry.npmjs.org/builtin-modules/-/builtin-modules-3.3.0.tgz"
   integrity sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==
 
+bunny@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/bunny/-/bunny-1.0.1.tgz"
+  integrity sha512-KsMt755E0AVYjeUnQeOPtVNGuDLiWjJ6VIoyywLmVx5R6QliuL5AS0X/gi+ORDDlBZfOaDBAqdqCv5XAlF9tCQ==
+
 camelcase@^6.0.0:
   version "6.3.0"
   resolved "https://registry.npmjs.org/camelcase/-/camelcase-6.3.0.tgz"
@@ -846,6 +851,11 @@ map-limit@0.0.0:
   dependencies:
     once "~1.3.0"
 
+memop@^1.1.0:
+  version "1.6.0"
+  resolved "https://registry.npmjs.org/memop/-/memop-1.6.0.tgz"
+  integrity sha512-93OxA1zdZGycXeBV/r0jx0ItOeHJ57roz1b9hPQTwE+F7BjVVaEXpp3oLp+0kTCJOYaYu/UQ3VGXbfO2xHxmxQ==
+
 minimatch@^3.0.4:
   version "3.1.2"
   resolved "https://registry.npmjs.org/minimatch/-/minimatch-3.1.2.tgz"
@@ -967,6 +977,11 @@ p-locate@^5.0.0:
   dependencies:
     p-limit "^3.0.2"
 
+pako@^1.0.6:
+  version "1.0.11"
+  resolved "https://registry.npmjs.org/pako/-/pako-1.0.11.tgz"
+  integrity sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==
+
 parse-ply@^0.1.0:
   version "0.1.0"
   resolved "https://registry.npmjs.org/parse-ply/-/parse-ply-0.1.0.tgz"
@@ -1028,6 +1043,15 @@ readdirp@~3.6.0:
   dependencies:
     picomatch "^2.2.1"
 
+regltf@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/regltf/-/regltf-1.0.0.tgz"
+  integrity sha512-khKfK2c7l0N6nmWCQTNzfh5BskHJRe26Rq0a6hAmCTQkhsVo7pd3Q2uV1IFAl8imcs1WpONdEiV96zmowF++SA==
+  dependencies:
+    memop "^1.1.0"
+    scene-graph "^1.0.3"
+    vmath "^1.2.0"
+
 require-directory@^2.1.1:
   version "2.1.1"
   resolved "https://registry.npmjs.org/require-directory/-/require-directory-2.1.1.tgz"
@@ -1080,6 +1104,13 @@ safe-buffer@^5.1.0:
   version "2.1.2"
   resolved "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
+
+scene-graph@^1.0.3:
+  version "1.4.0"
+  resolved "https://registry.npmjs.org/scene-graph/-/scene-graph-1.4.0.tgz"
+  integrity sha512-PCm/XRhUAVmND311Xc3Td5fkis33+ZLT6UGt4g3ki319aR5tR+F4NsgENYfSJdp79f4sq0L/FYSJVDmnchaeRA==
+  dependencies:
+    vmath "^1.4.5"
 
 sdp@^1.0.0:
   version "1.5.4"
@@ -1157,6 +1188,19 @@ supports-preserve-symlinks-flag@^1.0.0:
   resolved "https://registry.npmjs.org/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz"
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
+three-fbx-loader@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/three-fbx-loader/-/three-fbx-loader-1.0.3.tgz"
+  integrity sha512-CQZ0IkwqX+ZbIca225mfKCq1feH8XJOf2zqMcC2bugvq20S7alHGsG9QEELbyN9zSL0EvkBXADVDO2lupF0E+A==
+  dependencies:
+    pako "^1.0.6"
+    three "^0.89.0"
+
+three@^0.89.0:
+  version "0.89.0"
+  resolved "https://registry.npmjs.org/three/-/three-0.89.0.tgz"
+  integrity sha512-Evv3JolLQtag/lCWu1o3cgz2E5UYCSZHbh9lfBjeLz7nlK8DMmASID680Odl++ZPYk63rrZjPAMq88IrMP3GCA==
+
 three@0.149.0:
   version "0.149.0"
   resolved "https://registry.npmjs.org/three/-/three-0.149.0.tgz"
@@ -1221,6 +1265,11 @@ vite@^2.6.13:
     rollup "^2.57.0"
   optionalDependencies:
     fsevents "~2.3.2"
+
+vmath@^1.2.0, vmath@^1.4.5:
+  version "1.4.8"
+  resolved "https://registry.npmjs.org/vmath/-/vmath-1.4.8.tgz"
+  integrity sha512-Kswa/EtKY3JtwaQZSiaNfJUr0yRYvSWJIe9/bn3yldZNG3iWtQVYN2l3pZbqnHTJ2CkJsodOCcfEO2iWEjcfIg==
 
 webrtc-adapter@^2.0.2:
   version "2.1.0"

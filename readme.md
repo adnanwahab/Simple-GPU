@@ -296,3 +296,6 @@ npm run dev
 ```
 
 https://www.youtube.com/watch?v=Jl06sOvMnvU
+
+
+//https://www.khronos.org/assets/uploads/developers/presentations/WebGPU_Best_Practices_Google.pdf
