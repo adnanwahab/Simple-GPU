@@ -1,13 +1,13 @@
 //https://observablehq.com/@douglyuckling/rainbow-phyllotaxis
 
-function mustHave<T>(x:T|null|undefined) : T {
-  if (!x) {
-    document.body.innerHTML = `Your browser does not support WebGPU`	
-    throw new Error('WebGPU not supported')
-  }
-  return x
-}
-mustHave(navigator.gpu)
+// function mustHave<T>(x:T|null|undefined) : T {
+//   if (!x) {
+//     document.body.innerHTML = `Your browser does not support WebGPU`	
+//     throw new Error('WebGPU not supported')
+//   }
+//   return x
+// }
+// mustHave(navigator.gpu)
 
  function makeCanvas () {
   const canvas = document.createElement('canvas')
@@ -26,12 +26,12 @@ mustHave(navigator.gpu)
   return canvas
 }
 async function main () {
-  const adapter = mustHave(await navigator.gpu.requestAdapter())
+  const adapter = (await navigator.gpu.requestAdapter())
   const device = await adapter.requestDevice()
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat()
 
   const canvas = makeCanvas()
-  const context = mustHave(canvas.getContext('webgpu'))
+  const context = (canvas.getContext('webgpu'))
   context.configure({
     device,
     format: presentationFormat,
@@ -183,7 +183,7 @@ fn vertMain(
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: 'clear',
           storeOp: 'store',
-        } as const,
+        },
       ],
     })
     passEncoder.setPipeline(pipeline)

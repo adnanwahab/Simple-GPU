@@ -1,10 +1,14 @@
+//import basic from './audio-reactive-morph-target'
+
+//basic()
+
 
 // //TODO put directly in HTML 
 // //use import map to import the demos
 // //use import to import all 100 and 
 // //use unique {demo_title}.html for SEO which imports JS file and module from CDN for reusable Template
 // //add demo.js to each index.html that just calls the imported DEMO
-
+// [] nice to have MIXAMO - dancing shit - parser for FBX - use 3 
 
 
 // import basic from "./basic";
