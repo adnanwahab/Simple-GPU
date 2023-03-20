@@ -1,12 +1,39 @@
-fetch('./matt.obj').then(d => {
-  d.text()
+let shapes = [
+
+]
+
+
+
+
+function writeBuffer (device, buffer, array) {
+  console.log('hi', buffer, array)
+  device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
+}
+
+
+
+
+fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
+  return d.text()
 }).then((d) => {
-  let abc = parseOBJ(d)
+  let abc = parseOBJ(d).position
+  console.log(abc)
+  shapes.push(window.makeBuffer(abc), 0,'leaf')
+  // const plantBuffer = webgpu.device.createBuffer({
+  //   size: Float32Array.BYTES_PER_ELEMENT * abc.length,
+  //   usage: GPUBufferUsage.VERTEX,
+  //   mappedAtCreation: true,
+  // });
   
+  // new Float32Array(plantBuffer.getMappedRange()).set(abc);
+  // plantBuffer.unmap();
+  // shapes.push(plantBuffer)
+
 })
 
 
 function parseOBJ(text) {
+  //console.log(text)
   // because indices are base 1 let's just fill in the 0th data
   const objPositions = [[0, 0, 0]];
   const objTexcoords = [[0, 0]];
@@ -83,7 +110,7 @@ function parseOBJ(text) {
     const parts = line.split(/\s+/).slice(1);
     const handler = keywords[keyword];
     if (!handler) {
-      console.warn('unhandled keyword:', keyword);  // eslint-disable-line no-console
+      //console.warn('unhandled keyword:', keyword);  // eslint-disable-line no-console
       continue;
     }
     handler(parts, unparsedArgs);
@@ -217,11 +244,11 @@ loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demo
   //     }
   // })
   // object.scale.set(.01, .01, .01)
-  console.log('55523')
-  console.log(object)
+  //console.log('55523')
+  //console.log(object)
 },
 (xhr) => {
-  console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+  //console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
 },
 (error) => {
   console.log(error)
@@ -294,23 +321,21 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
 });
 
 
-function makeBuffer (stuff, flag) {
-  let particlesCount = stuff.positions.length
+window.makeBuffer = function makeBuffer (stuff, flag, label) {
+  let particlesCount = stuff.length
+  stuff = stuff.flat()
   const particleSize = 16
-  const gpuBufferSize = particlesCount * particleSize
+  const gpuBufferSize = 1e7 * particleSize
   //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
 
   if (flag) {
-    stuff.positions.forEach((triplet) => {
-      triplet[0] /= 18
-      triplet[1] /= 18
-      triplet[2] /= 18
-
+    stuff.forEach((d, i, array) => {
+      array[i] /= 18
     })
-
   }
 
   const gpuBuffer = webgpu.device.createBuffer({
+    label,
     size: gpuBufferSize,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     mappedAtCreation: true,
@@ -319,9 +344,9 @@ function makeBuffer (stuff, flag) {
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
   for (let iParticle = 0; iParticle < 1839; iParticle++) {
     const i = iParticle;
-      particlesBuffer[4 * iParticle + 0] = (stuff.positions[i][0]);
-      particlesBuffer[4 * iParticle + 1] = (stuff.positions[i][1]);
-      particlesBuffer[4 * iParticle + 2] = (stuff.positions[i][2]);
+      particlesBuffer[4 * iParticle + 0] = (stuff[i*3+0]);
+      particlesBuffer[4 * iParticle + 1] = (stuff[i*3+1]);
+      particlesBuffer[4 * iParticle + 2] = (stuff[i*3+2]);
       particlesBuffer[4 * iParticle + 3] = 0
   }
 
@@ -333,9 +358,11 @@ function makeBuffer (stuff, flag) {
   gpuBuffer.unmap();
   return gpuBuffer
 } 
-const posBuffer = makeBuffer(bunny)
+const posBuffer = makeBuffer(bunny.positions, 0, 'bunny')
 
-const dragonBuffer = makeBuffer(dragon, 1)
+const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
+shapes.push(posBuffer)
+shapes.push(dragonBuffer)
 // const velocityBuffer = makeBuffer(particlesCount, 0)
 // const vorticityBuffer = makeBuffer(particlesCount, 0)
 // const predictionBuffer = makeBuffer(particlesCount, 0)
@@ -345,6 +372,8 @@ const dragonBuffer = makeBuffer(dragon, 1)
 // const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 // const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
 // const debugGetNeighbors = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
+
+
 
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
@@ -480,8 +509,6 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
     var vsOut: VSOut;
     var stuff = mix(inPosition.xy, pos2.xy, (sin(vec2<f32>(camera.time)) + 1. ) / 2.);
 
-
-
     vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
    vec4<f32>(stuff + (.09 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
@@ -529,7 +556,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
 //    return  col + vec4<f32>(distanceFromCenter - 1.5,  / 10000,1.,.1);
-return vec4<f32>(1., sin(camera.time), 0., 1.);
+    return vec4<f32>(1., sin(camera.time), 0., 1.);
 }
 `},
   attributeBuffers: buffers,
@@ -563,6 +590,8 @@ return vec4<f32>(1., sin(camera.time), 0., 1.);
   });
   }
 })
+
+
 let camera = createCamera({
   center: [5., 1.5, .3],
   damping: 0,
@@ -615,6 +644,26 @@ setInterval(
 
 
     }, 8) 
+
+    let choice = false
+    //do this every 5th beat
+    let i = 0
+
+    setInterval(function () {
+      i = (i + 1) % (shapes.length - 1)
+      //choice = (choice === a) ? b : a 
+      //choice.writeBuffer(shapes[i])
+      //choice = (choice === posBuffer) ? dragonBuffer : posBuffer
+      console.log(shapes[i])
+      choice = ! choice;
+      drawCube.state.options.attributeBufferData[
+        choice ? 0 : 2
+      ] = shapes[i]
+
+
+      //writeBuffer(device, choice, shapes[i].flat())
+    }, 1000 * 3)
+
 }
 
 basic()
@@ -689,9 +738,7 @@ basic()
       // When loaded decode the data
       request.onload = function() {
 
-        console.log(request.response)
           // decode the data
-          console.log(context)
           document.querySelector('body').addEventListener('click', function() {
             context.resume().then(() => {
               console.log('Playback resumed successfully');
@@ -740,3 +787,6 @@ basic()
 
   setupAudioNodes()
   loadSound('https://ia800300.us.archive.org/16/items/JusticeDance/03D.a.n.c.e.mp3')
+
+
+  //https://toji.dev/webgpu-best-practices/buffer-uploads
