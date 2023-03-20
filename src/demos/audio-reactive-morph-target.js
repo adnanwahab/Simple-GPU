@@ -17,8 +17,7 @@ fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt
   return d.text()
 }).then((d) => {
   let abc = parseOBJ(d).position
-  console.log(abc)
-  shapes.push(window.makeBuffer(abc), 0,'leaf')
+  shapes.push(window.makeBuffer(abc, 0,'leaf'))
   // const plantBuffer = webgpu.device.createBuffer({
   //   size: Float32Array.BYTES_PER_ELEMENT * abc.length,
   //   usage: GPUBufferUsage.VERTEX,
@@ -649,17 +648,19 @@ setInterval(
     //do this every 5th beat
     let i = 0
 
+
+    console.log(shapes)
     setInterval(function () {
-      i = (i + 1) % (shapes.length - 1)
+      i = (i + 1) % (shapes.length)
       //choice = (choice === a) ? b : a 
       //choice.writeBuffer(shapes[i])
       //choice = (choice === posBuffer) ? dragonBuffer : posBuffer
-      console.log(shapes[i])
+      //console.log(shapes[i])
       choice = ! choice;
       drawCube.state.options.attributeBufferData[
         choice ? 0 : 2
       ] = shapes[i]
-
+// console.log(shapes[i])
 
       //writeBuffer(device, choice, shapes[i].flat())
     }, 1000 * 3)
