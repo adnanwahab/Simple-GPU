@@ -11,6 +11,13 @@ function writeBuffer (device, buffer, array) {
 }
 
 
+fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
+  return d.text()
+}).then((d) => {
+  let abc = parseOBJ(d).position
+  shapes.push(window.makeBuffer(abc, 0,'flower'))
+})
+
 
 
 fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
@@ -18,16 +25,6 @@ fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt
 }).then((d) => {
   let abc = parseOBJ(d).position
   shapes.push(window.makeBuffer(abc, 0,'leaf'))
-  // const plantBuffer = webgpu.device.createBuffer({
-  //   size: Float32Array.BYTES_PER_ELEMENT * abc.length,
-  //   usage: GPUBufferUsage.VERTEX,
-  //   mappedAtCreation: true,
-  // });
-  
-  // new Float32Array(plantBuffer.getMappedRange()).set(abc);
-  // plantBuffer.unmap();
-  // shapes.push(plantBuffer)
-
 })
 
 
