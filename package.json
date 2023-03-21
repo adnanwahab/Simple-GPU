@@ -44,7 +44,10 @@
     "vite": "^2.6.13"
   },
   "dependencies": {
+    "@loaders.gl/core": "^3.3.1",
+    "@loaders.gl/gltf": "^3.3.1",
     "bunny": "^1.0.1",
+    "loaders.gl": "^0.3.5",
     "regltf": "^1.0.0",
     "three-collada-loader": "^0.0.1",
     "three-fbx-loader": "^1.0.3",

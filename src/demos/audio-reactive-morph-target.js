@@ -1,8 +1,18 @@
+import {load} from '@loaders.gl/core';
+import {GLBLoader} from '@loaders.gl/gltf';
+
+
+
+const ply = `https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/point-cloud-ply/lucy800k.ply`
+
+const gltf = load(ply, GLBLoader).then(d => {
+  console.log(d)
+})
+
+
 let shapes = [
 
 ]
-
-
 
 
 function writeBuffer (device, buffer, array) {
@@ -11,21 +21,24 @@ function writeBuffer (device, buffer, array) {
 }
 
 
-fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
-  return d.text()
-}).then((d) => {
-  let abc = parseOBJ(d).position
-  shapes.push(window.makeBuffer(abc, 0,'flower'))
-})
+// fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
+//   return d.text()
+// }).then((d) => {
+//   let abc = parseOBJ(d).position
+//   shapes.push(window.makeBuffer(abc, 0,'flower'))
+// })
 
 
+setTimeout(function () {
+  fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.txt').then(d => {
+    return d.text()
+  }).then((d) => {
+    let abc = parseOBJ(d).position
+    shapes.push(window.makeBuffer(abc, 0,'leaf'))
+  })
 
-fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
-  return d.text()
-}).then((d) => {
-  let abc = parseOBJ(d).position
-  shapes.push(window.makeBuffer(abc, 0,'leaf'))
-})
+}, 250 )
+
 
 
 function parseOBJ(text) {
