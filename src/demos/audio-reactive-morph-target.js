@@ -1,25 +1,25 @@
 import {load} from '@loaders.gl/core';
 import {GLBLoader} from '@loaders.gl/gltf';
 
-
+// interpret black and white images as vector fields
+// repel mouse by vel = (-y,x)
+// faux metallic lighting 
+// 3d model - rotate the model
+// onkeyPress - 1 - 8 = change vector field
 
 const ply = `https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/point-cloud-ply/lucy800k.ply`
 
-const gltf = load(ply, GLBLoader).then(d => {
-  console.log(d)
-})
-
+// const gltf = load(ply, GLBLoader).then(d => {
+//   console.log(d)
+// })
 
 let shapes = [
 
 ]
-
-
 function writeBuffer (device, buffer, array) {
   console.log('hi', buffer, array)
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
-
 
 // fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
 //   return d.text()
@@ -27,7 +27,6 @@ function writeBuffer (device, buffer, array) {
 //   let abc = parseOBJ(d).position
 //   shapes.push(window.makeBuffer(abc, 0,'flower'))
 // })
-
 
 setTimeout(function () {
   fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.txt').then(d => {
@@ -40,9 +39,7 @@ setTimeout(function () {
 }, 250 )
 
 
-
 function parseOBJ(text) {
-  //console.log(text)
   // because indices are base 1 let's just fill in the 0th data
   const objPositions = [[0, 0, 0]];
   const objTexcoords = [[0, 0]];
@@ -132,16 +129,6 @@ function parseOBJ(text) {
   };
 }
 
-
-
-
-
-
-
-
-
-
-
 //need a way to swap meshes
 //make 5 functions that load 5 point clouds
 //make a beat detection function that calls function upon volume threshold 
@@ -149,11 +136,6 @@ function parseOBJ(text) {
 //no animation 
 // have to make a demo so good it unites stream
 // cant just survive their insanity 
-
-
-
-// import * as THREE from 'three';
-// import * as Nodes from 'three/nodes';
 
 // import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 // //import * as Nodes from 'three/examples/jsm/nodes/Nodes.js';
@@ -225,23 +207,14 @@ function parseOBJ(text) {
 
 // }
 
-
-
-
 import createCamera from './createCamera'
-
-
-
 
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
 import { analyze } from 'web-audio-beat-detector';
 import {FBXLoader} from './FBXLoader'
-console.log(123)
-
 
 var loader = new FBXLoader();
-
 
 loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/run.txt',   (object) => {
   // object.traverse(function (child) {
@@ -271,12 +244,9 @@ loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demo
 //gold particles for mesh [0]
 //add rainbow particles for motion - detect DX and show trail [0]
 
-
 let keyframes = [
   []//VBO
 ]
-
-
 
 // const loader = new ColladaLoader();
 // loader.load(
@@ -372,17 +342,6 @@ const posBuffer = makeBuffer(bunny.positions, 0, 'bunny')
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
 shapes.push(dragonBuffer)
-// const velocityBuffer = makeBuffer(particlesCount, 0)
-// const vorticityBuffer = makeBuffer(particlesCount, 0)
-// const predictionBuffer = makeBuffer(particlesCount, 0)
-// const densityBuffer = makeBuffer(particlesCount / 4, 0)
-// const constBuffer = makeBuffer(particlesCount, 0)
-// const correctParticle = makeBuffer(particlesCount, 0)
-// const hashCounts = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
-// const particleIds = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
-// const debugGetNeighbors = makeBuffer(COLLISION_TABLE_SIZE * 4, 0, false)
-
-
 
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
@@ -658,20 +617,13 @@ setInterval(
     //do this every 5th beat
     let i = 0
 
-
-    console.log(shapes)
     setInterval(function () {
       i = (i + 1) % (shapes.length)
-      //choice = (choice === a) ? b : a 
-      //choice.writeBuffer(shapes[i])
-      //choice = (choice === posBuffer) ? dragonBuffer : posBuffer
-      //console.log(shapes[i])
+   
       choice = ! choice;
       drawCube.state.options.attributeBufferData[
         choice ? 0 : 2
       ] = shapes[i]
-// console.log(shapes[i])
-
       //writeBuffer(device, choice, shapes[i].flat())
     }, 1000 * 3)
 
@@ -700,19 +652,12 @@ basic()
       // we use information from the analyzer node
       // to draw the volume
       javascriptNode.onaudioprocess = function(stuff) {
-
           // get the average for the channel
           var array = new Uint8Array(analyser.frequencyBinCount);
           analyser.getByteFrequencyData(array);
-          window.avg = getAverageVolume(array);
-          // const buffer = stuff.outputBuffer
-          // analyze(buffer)
-          // .then((tempo) => {
-          //     console.log(tempo)
-          // })
-          // .catch((err) => {
-          //     // something went wrong
-          // });
+          getAverageVolume(array);
+          const buffer = stuff.outputBuffer
+          console.log(window.avg)
       }
 
       // setup a analyzer
@@ -754,16 +699,14 @@ basic()
             context.resume().then(() => {
               console.log('Playback resumed successfully');
             });
-            context.decodeAudioData(request.response, function(buffer) {
+            context.decodeAudioData(request.response)
+            .then(function(buffer) {
               // when the audio is decoded play the sound
-              // setInterval(() => {
-         
 
-              // },16)
               playSound(buffer);
    
-          }, onError);
-          });
+          })
+        });
       
       }
       request.send();
@@ -791,7 +734,7 @@ basic()
       for (var i = 0; i < length; i++) {
           values += array[i];
       }
-
+console.log(array)
       average = values / length;
       return average;
   }
@@ -801,3 +744,6 @@ basic()
 
 
   //https://toji.dev/webgpu-best-practices/buffer-uploads
+
+
+  //its impossible to know what a good decision is when thousands of people add thoughts to my head that come from randomness

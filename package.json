@@ -41,14 +41,21 @@
     "three": "0.149.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.4.4",
-    "vite": "^2.6.13"
+    "vite": "^2.6.13",
+    "@mediapipe/face_detection": "~0.4.0",
+    "@tensorflow-models/face-detection": "1.0.1",
+    "@tensorflow/tfjs-backend-wasm": "^4.0.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.0.0",
+    "@tensorflow/tfjs-backend-webgpu": "^0.0.1-alpha.14",
+    "@tensorflow/tfjs-converter": "^4.0.0",
+    "@tensorflow/tfjs-core": "^4.0.0",
+    "@tensorflow/tfjs": "4.2.0"
   },
   "dependencies": {
     "@loaders.gl/core": "^3.3.1",
     "@loaders.gl/gltf": "^3.3.1",
     "bunny": "^1.0.1",
     "loaders.gl": "^0.3.5",
-    "regltf": "^1.0.0",
     "three-collada-loader": "^0.0.1",
     "three-fbx-loader": "^1.0.3",
     "three-gltf-loader": "^1.111.0",

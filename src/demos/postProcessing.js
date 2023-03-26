@@ -1,5 +1,6 @@
 import webgpuInit from "../../lib/main";
 import utils from '../../lib/utils'
+import simpleWebgpuInit from '../../lib/main';
 
 const tileDim = 128;
 //change to sepia and glow
