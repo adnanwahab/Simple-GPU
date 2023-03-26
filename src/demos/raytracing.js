@@ -56,6 +56,9 @@ frag: `
   }
 
 fn ray_color(r: ray) -> vec3<f32> {
+    if (hit_sphere(vec3<f32>(0,0,-1), .5, r)) {
+      return vec3<f32>(1, 0, 0);
+    }
     var unit_direction = normalize(r.direction);
     var t = 0.5*(unit_direction.y + 1.0);
     return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
@@ -63,24 +66,59 @@ fn ray_color(r: ray) -> vec3<f32> {
 
 
 struct ray {
-  origin: vec2<f32>,
+  origin: vec3<f32>,
   direction: vec3<f32>,
 }
+
+fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> bool {
+  var oc = r.origin - center; 
+  var a = dot(r.direction, r.direction);
+  var b = 2.0 * dot(oc, r.direction);
+  var c = dot(oc, oc) - radius * radius;
+  var discriminant = b*b - 4*a*c;
+//  return true;
+  return discriminant > 0;
+}
+
+
 
 
 @fragment
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var uv = in.fragUV.xy * vec2<f32>(500., 500.);
-    var fragColor = vec4<f32>(1.);
 
-    var origin = vec2<f32>(0.);
+
+    const aspect_ratio = 16.0 / 9.0;
+    const image_width = 400.;
+    const image_height = f32(image_width / aspect_ratio);
+    
+    // Camera
+    
+    const viewport_height = 2.0;
+    const viewport_width = aspect_ratio * viewport_height;
+    const focal_length = 1.0;
+    
+
+    var origin = vec3<f32>(0.);
     var direction = vec3<f32>(0.);
 
-    var r = ray(origin, direction);
+    let horizontal = vec3(viewport_width, 0, 0);
+    let vertical = vec3(0, viewport_height, 0);
+    let lower_left_corner = origin - horizontal/2 - vertical/2 - vec3(0, 0, focal_length);
+    
+
+
+
+    var uv = in.fragUV.xy * vec2<f32>(500., 500.);
+    var fragColor = vec4<f32>(1.);
+    var u = uv.x / image_width;
+    var v = uv.y / image_height;
+
+    var r = ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
     fragColor = vec4<f32>(ray_color(r), 1.);
     // if (distance(in.fragUV.xy, vec2<f32>(.1, .1)) < .1) {
     //   fragColor.x = .0;
     // }
+
 
     return fragColor;
   }
