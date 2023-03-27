@@ -56,11 +56,17 @@ frag: `
   }
 
 fn ray_color(r: ray) -> vec3<f32> {
-    if (hit_sphere(vec3<f32>(0,0,-1), .5, r)) {
-      return vec3<f32>(1, 0, 0);
+    var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
+
+    if (t > 0.0) {
+      var N = normalize(rayAt(r, t) - vec3<f32>(0, 0, -1));
+      return 0.5 * vec3<f32>(N.x+1, N.y+1, N.z+1);
     }
+
+
+
     var unit_direction = normalize(r.direction);
-    var t = 0.5*(unit_direction.y + 1.0);
+    t = 0.5*(unit_direction.y + 1.0);
     return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 }
 
@@ -70,14 +76,21 @@ struct ray {
   direction: vec3<f32>,
 }
 
-fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> bool {
+fn rayAt(r:ray , t: f32) -> vec3<f32> {
+  return r.origin + t * r.direction;
+}
+
+fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   var oc = r.origin - center; 
   var a = dot(r.direction, r.direction);
   var b = 2.0 * dot(oc, r.direction);
   var c = dot(oc, oc) - radius * radius;
   var discriminant = b*b - 4*a*c;
-//  return true;
-  return discriminant > 0;
+  if (discriminant < 0) {
+    return -1.0;
+  } else {
+    return (-b - sqrt(discriminant)) / (2.0 * a);
+  }
 }
 
 
@@ -87,8 +100,8 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> bool {
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 
-    const aspect_ratio = 16.0 / 9.0;
-    const image_width = 400.;
+    const aspect_ratio = 1.;
+    const image_width = 500.;
     const image_height = f32(image_width / aspect_ratio);
     
     // Camera
