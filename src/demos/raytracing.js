@@ -51,13 +51,6 @@ const webgpu = await simpleWebgpuInit();
 
 const drawCube = await webgpu.initDrawCall({
 frag: `
-  struct hit_record {
-    p: vec3<f32>,
-    normal: vec3<f32>,
-    t: f32,
-    front_face: bool,
-  }
-
   fn set_face_normal(h:hit_record, r: ray, outward_normal: vec3<f32>) {
     //h.front_face = dot(r.direction, outward_normal) < 0;
     if (h.front_face) {
@@ -74,14 +67,18 @@ struct sphere {
 
 
 
-fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> bool {
+fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
+  var hit: hit_record;
+
+
+
   var oc = r.origin - s.center; 
   var a = pow(length(r.direction), 2.);
   var half_b = dot(oc, r.direction);
   var c = dot(oc, oc) - s.radius * s.radius;
   var discriminant = half_b*half_b - a*c;
   if (discriminant < 0) {
-    return false;
+    return hit;
   }
   var sqrtd = sqrt(discriminant);
 
@@ -89,16 +86,16 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> bool {
   if (root < t_min || t_max < root) {
     root = (-half_b +sqrtd) / a;
     if (root < t_min || t_max < root) {
-      return false;
+      return hit;
     }
   }
 
-  //rec.t = root;
-  //* rec.p = rayAt(r, rec.t);
-  //
-  //rec.normal = (rec.p - center) / radius;
+  hit.t = root;
+  hit.p = rayAt(r, hit.t);
+  hit.normal = (hit.p - s.center) / s.radius;
+  hit.hit_anything = discriminant > 0;
 
-  return true;
+  return hit;
 }
 
 
@@ -109,31 +106,35 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> bool {
   }
 
 
-
+struct hit_record {
+  p: vec3<f32>,
+  normal: vec3<f32>,
+  t: f32,
+  front_face: bool,
+  hit_anything: bool
+}
  
-fn world_hit(sphereList:array<sphere,3>, r: ray, t_min: f32, t_max: f32) -> bool {
-  var hit_anything = false;
+fn world_hit(sphereList:array<sphere,3>, r: ray, t_min: f32, t_max: f32) -> hit_record {
+  var hit: hit_record;
   var closest_so_far = t_max;
 
   for (var i =0; i < 3; i += 1) {
-    if (sphereHit(sphereList[i], r, t_min, t_max)) {
-      hit_anything = true;
-      //closest_so_far = 
+    var hit = sphereHit(sphereList[i], r, t_min, t_max);
+    if (hit.hit_anything) { 
+      return hit;
     }
   }
 
-  return hit_anything;
+  return hit;
 }
-
+const infinity = 10000000000000000000000000000.;
 fn ray_color(r: ray, world:array<sphere, 3>) -> vec3<f32> {
     var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
 
-    if (t > 0.0) {
-      var N = normalize(rayAt(r, t) - vec3<f32>(0, 0, -1));
-      return 0.5 * vec3<f32>(N.x+1, N.y+1, N.z+1);
+    var hit = world_hit(world, r, 0, infinity);
+    if (hit.hit_anything) {
+      return 0.5 * (hit.normal + vec3(1,1,1));
     }
-
-
 
     var unit_direction = normalize(r.direction);
     t = 0.5*(unit_direction.y + 1.0);
@@ -171,7 +172,6 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var world:array<sphere, 3>;
     world[0] = sphere(vec3<f32>(0,0,-1), .5);
     world[1] = sphere(vec3<f32>(0,-100.5,-1), 100);
-    // world[2] = sphere(vec3<f32>(-1,0,-1), .3);
 
     const aspect_ratio = 1.;
     const image_width = 500.;
@@ -190,14 +190,11 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     let horizontal = vec3(viewport_width, 0, 0);
     let vertical = vec3(0, viewport_height, 0);
     let lower_left_corner = origin - horizontal/2 - vertical/2 - vec3(0, 0, focal_length);
-    
-
-
 
     var uv = in.fragUV.xy * vec2<f32>(500., 500.);
     var fragColor = vec4<f32>(1.);
-    var u = uv.x / image_width;
-    var v = uv.y / image_height;
+    var u = uv.x / image_width; //fragment position
+    var v = 1. - (uv.y / image_height); //fragment position
 
     var r = ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
     fragColor = vec4<f32>(ray_color(r, world), 1.);
