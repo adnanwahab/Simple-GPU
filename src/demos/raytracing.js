@@ -1,6 +1,6 @@
 //import simpleWebgpu from "../lib/main";
 import simpleWebgpuInit from '../../lib/main';
-
+//if you finish this ray tracer then we can finish the story of renderbuffer
 
 //convert meshes to a BVH or buffer 
 //do ray casting stuff
@@ -47,15 +47,85 @@ const webgpu = await simpleWebgpuInit();
 //ray tracing = quad in fragment shader - for each pixel - for each object
 //ray traced particles = opposite - for each object - each pixel it covers 
 
+//const compute = 
+
 const drawCube = await webgpu.initDrawCall({
 frag: `
+  struct hit_record {
+    p: vec3<f32>,
+    normal: vec3<f32>,
+    t: f32,
+    front_face: bool,
+  }
+
+  fn set_face_normal(h:hit_record, r: ray, outward_normal: vec3<f32>) {
+    //h.front_face = dot(r.direction, outward_normal) < 0;
+    if (h.front_face) {
+      //h.normal = outward_normal; 
+    } else {
+      //h.normal = - -outward_normal;
+    }
+}
+
+struct sphere {
+  center: vec3<f32>,
+  radius: f32
+}
+
+
+
+fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> bool {
+  var oc = r.origin - s.center; 
+  var a = pow(length(r.direction), 2.);
+  var half_b = dot(oc, r.direction);
+  var c = dot(oc, oc) - s.radius * s.radius;
+  var discriminant = half_b*half_b - a*c;
+  if (discriminant < 0) {
+    return false;
+  }
+  var sqrtd = sqrt(discriminant);
+
+  var root = (-half_b - sqrtd) / a;
+  if (root < t_min || t_max < root) {
+    root = (-half_b +sqrtd) / a;
+    if (root < t_min || t_max < root) {
+      return false;
+    }
+  }
+
+  //rec.t = root;
+  //* rec.p = rayAt(r, rec.t);
+  //
+  //rec.normal = (rec.p - center) / radius;
+
+  return true;
+}
+
+
   struct VertexOutput {
     @builtin(position) Position : vec4<f32>,
     @location(0) fragUV : vec2<f32>,
     @location(1) fragPosition: vec4<f32>,
   }
 
-fn ray_color(r: ray) -> vec3<f32> {
+
+
+ 
+fn world_hit(sphereList:array<sphere,3>, r: ray, t_min: f32, t_max: f32) -> bool {
+  var hit_anything = false;
+  var closest_so_far = t_max;
+
+  for (var i =0; i < 3; i += 1) {
+    if (sphereHit(sphereList[i], r, t_min, t_max)) {
+      hit_anything = true;
+      //closest_so_far = 
+    }
+  }
+
+  return hit_anything;
+}
+
+fn ray_color(r: ray, world:array<sphere, 3>) -> vec3<f32> {
     var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
 
     if (t > 0.0) {
@@ -76,6 +146,8 @@ struct ray {
   direction: vec3<f32>,
 }
 
+
+
 fn rayAt(r:ray , t: f32) -> vec3<f32> {
   return r.origin + t * r.direction;
 }
@@ -93,12 +165,13 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   }
 }
 
-
-
-
 @fragment
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
-
+    var Hit: hit_record;
+    var world:array<sphere, 3>;
+    world[0] = sphere(vec3<f32>(0,0,-1), .5);
+    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100);
+    // world[2] = sphere(vec3<f32>(-1,0,-1), .3);
 
     const aspect_ratio = 1.;
     const image_width = 500.;
@@ -127,11 +200,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var v = uv.y / image_height;
 
     var r = ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-    fragColor = vec4<f32>(ray_color(r), 1.);
-    // if (distance(in.fragUV.xy, vec2<f32>(.1, .1)) < .1) {
-    //   fragColor.x = .0;
-    // }
-
+    fragColor = vec4<f32>(ray_color(r, world), 1.);
 
     return fragColor;
   }
