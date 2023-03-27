@@ -103,6 +103,11 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
     @builtin(position) Position : vec4<f32>,
     @location(0) fragUV : vec2<f32>,
     @location(1) fragPosition: vec4<f32>,
+    @location(2) vertexIndex: f32
+  }
+
+  fn material() {
+
   }
 
 
@@ -140,14 +145,16 @@ fn length_squared(e:vec3<f32>) -> f32 {
 
 
 fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
-  while (true) {
-    var p = vec3<f32>(random(st), random(st), random(st));
-    if (length_squared(p) > 1) {
-      continue;
-    }
-    return p;
-  }
-  return vec3<f32>(0.);
+  // while (true) {
+  //   var p = vec3<f32>(random(st), random(st), random(st));
+  //   if (length_squared(p) > 1) {
+  //     continue;
+  //   }
+  //   return p;
+  // }
+  var p = vec3<f32>(random(st), random(st), random(st));
+  return p;
+  return vec3<f32>(.4, .3, .3);
 }
 
 
@@ -163,24 +170,32 @@ const infinity = 10000000000000000000000000000.;
 fn ray_color(r: ray, world:array<sphere, 3>, depth:f32, xy: vec2<f32>) -> vec3<f32> {
     var color = vec3<f32>(0);
 
-    var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
-    var hit = world_hit(world, r, 0, infinity);
-
-
-    if (hit.hit_anything) {
-        var targ = hit.p + hit.normal + random_in_unit_sphere(xy);
-        return 0.5 * (hit.normal + vec3(1,1,1));
-        //return 0.5 * ray_color(ray(hit.p, targ - hit.p, world, depth -1));
-    }
-
-
-
+    var current_ray = r;
+    var hit = world_hit(world, r, 0, infinity); //a, b, sky
 
     
-
-    var unit_direction = normalize(r.direction);
-    t = 0.5*(unit_direction.y + 1.0);
-    return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3<f32>(0.5, 0.7, 1.0);
+    
+    //ray from camera hits sphere A
+    // ray from sphere A hits sphere B
+    // ray from sphere B hits sky 
+    var cur_attenuation = 1.0;
+    for (var i = 0; i < 5; i+= 1) {
+      hit = world_hit(world, current_ray, 0, infinity); 
+      if (hit.hit_anything) {
+          var targ = hit.p + hit.normal + random_in_unit_sphere(xy);
+          //color += 0.1 * (hit.normal + vec3(1,1,1));
+          cur_attenuation *= .5;
+          current_ray = ray(hit.p, targ - hit.p);
+      } else {
+        var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
+        var unit_direction = normalize(r.direction);
+        t = 0.5*(unit_direction.y + 1.0);
+        color += (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3<f32>(0.5, 0.7, 1.0);
+//        break;
+        return cur_attenuation * color;
+      }
+    }
+    return color;
 }
 
 
@@ -212,7 +227,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var Hit: hit_record;
     var world:array<sphere, 3>;
-    world[0] = sphere(vec3<f32>(0,0,-1), .5);
+    world[0] = sphere(vec3<f32>(0,0,-2), .5);
     world[1] = sphere(vec3<f32>(0,-100.5,-1), 100);
 
     const aspect_ratio = 1.;
@@ -239,7 +254,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var v = 1. - (uv.y / image_height); //fragment position
 
     var r = ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-    fragColor = vec4<f32>(ray_color(r, world, 50, uv), 1.);
+    fragColor = vec4<f32>(sqrt(ray_color(r, world, 50, uv *  in.vertexIndex + 123.)), 1.);
 
     return fragColor;
   }
@@ -250,6 +265,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     @builtin(position) Position : vec4<f32>,
     @location(0) fragUV : vec2<f32>,
     @location(1) fragPosition: vec4<f32>,
+    @location(2) vertexIndex: f32
   }
 
   @vertex
@@ -277,6 +293,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     output.Position = vec4<f32>(pos[VertexIndex], 0.0, 1.0);
 
     output.fragUV = uv[VertexIndex];
+    output.vertexIndex = f32(VertexIndex);
 
     return output;
   }
