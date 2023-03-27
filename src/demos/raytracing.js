@@ -127,18 +127,60 @@ fn world_hit(sphereList:array<sphere,3>, r: ray, t_min: f32, t_max: f32) -> hit_
 
   return hit;
 }
-const infinity = 10000000000000000000000000000.;
-fn ray_color(r: ray, world:array<sphere, 3>) -> vec3<f32> {
-    var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
 
-    var hit = world_hit(world, r, 0, infinity);
-    if (hit.hit_anything) {
-      return 0.5 * (hit.normal + vec3(1,1,1));
+fn random (st: vec2<f32>) -> f32 {
+  return fract(sin(dot(st.xy,
+                       vec2(12.9898,78.233)))*
+      43758.5453123);
+}
+
+fn length_squared(e:vec3<f32>) -> f32 {
+  return e.x * e.x + e.y * e.y + e.z * e.z;
+}
+
+
+fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
+  while (true) {
+    var p = vec3<f32>(random(st), random(st), random(st));
+    if (length_squared(p) > 1) {
+      continue;
     }
+    return p;
+  }
+  return vec3<f32>(0.);
+}
+
+
+
+//bounces = 0
+//if it hits a sphere - scatter it 
+// else collect light from sky
+
+
+
+
+const infinity = 10000000000000000000000000000.;
+fn ray_color(r: ray, world:array<sphere, 3>, depth:f32, xy: vec2<f32>) -> vec3<f32> {
+    var color = vec3<f32>(0);
+
+    var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
+    var hit = world_hit(world, r, 0, infinity);
+
+
+    if (hit.hit_anything) {
+        var targ = hit.p + hit.normal + random_in_unit_sphere(xy);
+        return 0.5 * (hit.normal + vec3(1,1,1));
+        //return 0.5 * ray_color(ray(hit.p, targ - hit.p, world, depth -1));
+    }
+
+
+
+
+    
 
     var unit_direction = normalize(r.direction);
     t = 0.5*(unit_direction.y + 1.0);
-    return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+    return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3<f32>(0.5, 0.7, 1.0);
 }
 
 
@@ -197,7 +239,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var v = 1. - (uv.y / image_height); //fragment position
 
     var r = ray(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-    fragColor = vec4<f32>(ray_color(r, world), 1.);
+    fragColor = vec4<f32>(ray_color(r, world, 50, uv), 1.);
 
     return fragColor;
   }
