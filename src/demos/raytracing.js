@@ -82,14 +82,14 @@ fn rayAt(r:ray , t: f32) -> vec3<f32> {
 
 fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   var oc = r.origin - center; 
-  var a = dot(r.direction, r.direction);
-  var b = 2.0 * dot(oc, r.direction);
+  var a = pow(length(r.direction), 2.);
+  var half_b = dot(oc, r.direction);
   var c = dot(oc, oc) - radius * radius;
-  var discriminant = b*b - 4*a*c;
+  var discriminant = half_b*half_b - a*c;
   if (discriminant < 0) {
     return -1.0;
   } else {
-    return (-b - sqrt(discriminant)) / (2.0 * a);
+    return (-half_b - sqrt(discriminant)) / a;
   }
 }
 
