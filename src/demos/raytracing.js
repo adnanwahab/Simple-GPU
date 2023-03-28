@@ -62,8 +62,31 @@ frag: `
 
 struct sphere {
   center: vec3<f32>,
-  radius: f32
+  radius: f32,
+  material: f32
+  // metal
+  // diffuse
 }
+
+//var albedo:array<vec3<f32>, 3>;
+
+fn material (s: sphere, rec: hit_record, xy: vec2<f32>){
+  if (s.material == 1) {
+    //metal
+
+
+  } else if (s.material == 2){
+    //diffuse
+    var direction = rec.normal + random_in_unit_sphere(xy);
+
+  }
+
+
+
+
+
+}
+
 
 
 
@@ -93,7 +116,8 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   hit.t = root;
   hit.p = rayAt(r, hit.t);
   hit.normal = (hit.p - s.center) / s.radius;
-  hit.hit_anything = discriminant > 0;
+  hit.hit_anything = discriminant > 0.;
+  //hit.sphere = s;
 
   return hit;
 }
@@ -106,9 +130,7 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
     @location(2) vertexIndex: f32
   }
 
-  fn material() {
-
-  }
+ 
 
 
 struct hit_record {
@@ -116,14 +138,15 @@ struct hit_record {
   normal: vec3<f32>,
   t: f32,
   front_face: bool,
-  hit_anything: bool
+  hit_anything: bool,
+  s: sphere
 }
  
-fn world_hit(sphereList:array<sphere,3>, r: ray, t_min: f32, t_max: f32) -> hit_record {
+fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit_record {
   var hit: hit_record;
   var closest_so_far = t_max;
 
-  for (var i =0; i < 3; i += 1) {
+  for (var i =0; i < 10; i += 1) {
     var hit = sphereHit(sphereList[i], r, t_min, t_max);
     if (hit.hit_anything) { 
       return hit;
@@ -146,15 +169,9 @@ fn length_squared(e:vec3<f32>) -> f32 {
 
 fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
   // while (true) {
-  //   var p = vec3<f32>(random(st), random(st), random(st));
-  //   if (length_squared(p) > 1) {
-  //     continue;
-  //   }
-  //   return p;
-  // }
-  var p = vec3<f32>(random(st), random(st), random(st));
+  var p = vec3<f32>(random(st ), random(st ), random(st ));
   return p;
-  return vec3<f32>(.4, .3, .3);
+  //return vec3<f32>(.4, .3, .3);
 }
 
 
@@ -167,7 +184,7 @@ fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
 
 
 const infinity = 10000000000000000000000000000.;
-fn ray_color(r: ray, world:array<sphere, 3>, depth:f32, xy: vec2<f32>) -> vec3<f32> {
+fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<f32> {
     var color = vec3<f32>(0);
 
     var current_ray = r;
@@ -179,11 +196,13 @@ fn ray_color(r: ray, world:array<sphere, 3>, depth:f32, xy: vec2<f32>) -> vec3<f
     // ray from sphere A hits sphere B
     // ray from sphere B hits sky 
     var cur_attenuation = 1.0;
-    for (var i = 0; i < 5; i+= 1) {
+    for (var i = 0; i < 50; i+= 1) {
       hit = world_hit(world, current_ray, 0, infinity); 
       if (hit.hit_anything) {
-          var targ = hit.p + hit.normal + random_in_unit_sphere(xy);
-          //color += 0.1 * (hit.normal + vec3(1,1,1));
+
+          var targ = hit.p + hit.normal
+           + random_in_unit_sphere(xy);
+          color += (1 / 50.) * (hit.normal + vec3(1,1,1));
           cur_attenuation *= .5;
           current_ray = ray(hit.p, targ - hit.p);
       } else {
@@ -197,8 +216,8 @@ fn ray_color(r: ray, world:array<sphere, 3>, depth:f32, xy: vec2<f32>) -> vec3<f
     }
     return color;
 }
-
-
+//https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
+//https://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/reflection_refraction.pdf
 struct ray {
   origin: vec3<f32>,
   direction: vec3<f32>,
@@ -223,12 +242,27 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   }
 }
 
+
+
 @fragment
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var Hit: hit_record;
-    var world:array<sphere, 3>;
-    world[0] = sphere(vec3<f32>(0,0,-2), .5);
-    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100);
+    var world:array<sphere, 10>;
+    world[0] = sphere(vec3<f32>(0,0,-2), .5, 1);
+    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1);
+
+     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 1);
+     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 1);
+    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 1);
+    // world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1);
+    // world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1);
+    // world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1);
+    // world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1);
+    // world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1);
+
+
+
+
 
     const aspect_ratio = 1.;
     const image_width = 500.;
@@ -298,7 +332,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     return output;
   }
   `,
-  count: 36,
+  count: 6,
   // uniforms: {
   //   time: () => Date.now()
   // }
