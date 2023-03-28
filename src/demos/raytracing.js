@@ -67,7 +67,8 @@ frag: `
 struct sphere {
   center: vec3<f32>,
   radius: f32,
-  material: f32
+  material: f32,
+  albedo: vec3<f32>
   // metal
   // diffuse
 }
@@ -96,7 +97,7 @@ fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
 
 fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
 
-  var albedo = vec3<f32>(0., 0., 1.);
+  var albedo = s.albedo;
 
   if (s.material == 0.) {
     //metal
@@ -144,6 +145,7 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   hit.p = rayAt(r, hit.t);
   hit.normal = (hit.p - s.center) / s.radius;
   hit.hit_anything = discriminant > 0.;
+  hit.sphere = s;
 
   return hit;
 }
@@ -283,19 +285,21 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var Hit: hit_record;
     var world:array<sphere, 10>;
     var red = vec3<f32>(1., 0., 0.);
+    var green = vec3<f32>(0., 1., 0.);
+    var blue = vec3<f32>(0., 0., 1.);
 
 
-    world[0] = sphere(vec3<f32>(0,0,-2), .4, 2.);
-    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 0);
+    world[0] = sphere(vec3<f32>(0,0,-2), .4, 0., red);
+    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1, blue);
 
-     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 0);
-     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0);
-    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 0);
-     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1);
-     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1);
-    // world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1);
-    // world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1);
-    // world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1);
+     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 0, blue);
+     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0, red);
+    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 0, green);
+     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1, blue);
+     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1, red);
+    world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1, green);
+    world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1, blue);
+    world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1, red);
 
 
 
