@@ -1,4 +1,14 @@
-//import simpleWebgpu from "../lib/main";
+// finish Demo - 5hours
+
+// rotating camera - 1hr
+
+// randomize spheres - 1hr
+
+// denoise - 1hr []
+
+// glass sphere - 1hr 10am [x]
+
+
 import simpleWebgpuInit from '../../lib/main';
 //if you finish this ray tracer then we can finish the story of renderbuffer
 
@@ -7,35 +17,8 @@ import simpleWebgpuInit from '../../lib/main';
 //read data from texture -- apply sphere texture to 
 //write ray casting data to texture 
 
-
-//vertex draw quad
-//fragment draw stuff
-
-
-
-//navigate via footsteps sending echolocation 
-
-
-
 async function basic () {
 const webgpu = await simpleWebgpuInit();
-
-
-// const abc =     new Array(1e3).fill(0).map(() => Math.random()).map(_ => {
-//   const abc = [Math.random() * 500,_ * 500 ]
-//   return `  if (distance(uv, vec2<f32>(${abc[0]},${abc[1]})) < 1.) {
-//     fragColor.g =  
-    
-    
-    
-//     dot(
-//       vec2<f32>(${abc[0]},${abc[1]}),
-//       vec2<f32>(0, 0)
-//     );
-//   }`
-// }
-// ) 
-
 
 // shoot ray from camera to pixel
 // if ray coincides with object
@@ -47,34 +30,14 @@ const webgpu = await simpleWebgpuInit();
 //ray tracing = quad in fragment shader - for each pixel - for each object
 //ray traced particles = opposite - for each object - each pixel it covers 
 
-//const compute = 
-
-
-
-
-//light may not be respecting face_normal_side -> reflecting from incorrect
 const drawCube = await webgpu.initDrawCall({
 frag: `
-  fn set_face_normal(h:hit_record, r: ray, outward_normal: vec3<f32>) {
-    //h.front_face = dot(r.direction, outward_normal) < 0;
-    if (h.front_face) {
-      //h.normal = outward_normal; 
-    } else {
-      //h.normal = - -outward_normal;
-    }
-}
-
 struct sphere {
   center: vec3<f32>,
   radius: f32,
   material: f32,
   albedo: vec3<f32>
-  // metal
-  // diffuse
 }
-
-//var albedo:array<vec3<f32>, 3>;
-
 
 struct mat {
   scattered: ray,
@@ -85,14 +48,14 @@ struct mat {
 fn reflect(v:vec3<f32>, n:vec3<f32>) -> vec3<f32> {
   return v - 2*dot(v,n)*n;
 }
+
 struct ray {
   origin: vec3<f32>,
   direction: vec3<f32>,
 }
 
-
 fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
-  return 1/ normalize(v);
+  return v/ length(v);
 } 
 
 fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
@@ -106,17 +69,54 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
     var attenuation = albedo;
     var isScatter = dot(scattered.direction, rec.normal) > 0;
     return mat(scattered, attenuation, isScatter);
-  } else {
+  } else if (s.material == 1.) {
     //diffuse
-    var direction = rec.normal + random_in_unit_sphere(xy);
+    var direction = rec.p + rec.normal + random_in_unit_sphere(xy);
     var attenuation = albedo;
 
     var scattered = ray(rec.p, direction);
     return mat(
       scattered, attenuation, true
     );
+  } else if (s.material == 2.) {
+    var ir = 1.5;
+    var attenuation = vec3<f32>(1.);
+    var refraction_ratio:f32;
+    if (! rec.front_face) {
+      refraction_ratio = 1.0 / ir;
+    } else {
+      refraction_ratio = ir;
+    }
+
+    var unit_direction = unit_vector(r.direction);
+    var cos_theta = min(dot(-unit_direction, rec.normal) , 1.0);
+    var sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+    var cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+    var direction:vec3<f32>;
+    if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random(xy)) {
+       direction = reflect(unit_direction, rec.normal);
+    } else {
+      direction = refract(unit_direction, rec.normal, refraction_ratio);
+    }
+    var scattered = ray(rec.p, direction);
+    return mat(scattered, attenuation, true);
   }
   return mat();
+}
+
+fn refract2( uv:vec3<f32>, n:vec3<f32>,  etai_over_etat:f32) -> vec3<f32>{
+  var cos_theta = min(dot(-uv, n), 1.0);
+  var r_out_perp =  etai_over_etat * (uv + cos_theta*n);
+  var r_out_parallel = -sqrt(abs(1.0 - length(r_out_perp))) * n;
+  return vec3<f32>(3.);
+  return r_out_perp + r_out_parallel;
+}
+
+fn reflectance (cosine:f32, ref_idx:f32) -> f32{
+  var r0 = (1 -ref_idx) / (1 + ref_idx);
+  r0 = r0*r0;
+  return r0 + (1-r0)*pow((1 - cosine), 5);
 }
 
 
@@ -146,6 +146,13 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   hit.normal = (hit.p - s.center) / s.radius;
   hit.hit_anything = discriminant > 0.;
   hit.sphere = s;
+  var outward_normal = (hit.p - s.center) / s.radius;
+  hit.front_face = dot(r.direction, outward_normal) < 0;
+  if (hit.front_face) {
+    hit.normal = outward_normal; 
+  } else {
+    hit.normal = - -outward_normal;
+  }
 
   return hit;
 }
@@ -177,7 +184,6 @@ fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit
   for (var i =0; i < 10; i += 1) {
     var didHit = sphereHit(sphereList[i], r, t_min, closest_so_far);
     if (didHit.hit_anything) { 
-      //return didHit; //FIXME - depth culling adds noise effect 
       closest_so_far = didHit.t;
       hit = didHit;
     }
@@ -198,53 +204,35 @@ fn length_squared(e:vec3<f32>) -> f32 {
 
 
 fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
-  // while (true) {
-  var p = vec3<f32>(random(st ), random(st ), random(st ));
+ var p = vec3<f32>(random(st ), random(st ), random(st ));
   return p;
   //return vec3<f32>(.4, .3, .3);
 }
 
-
-
-//bounces = 0
-//if it hits a sphere - scatter it 
-// else collect light from sky
-
-
-//use materials to make some spheres different reflection models
-//diffuse reflection = random scattering 
-//shiny metal = direct reflection + slight diffuse depending on diffuse
-//glass = refraction + dielctric reflection
-
-
-const infinity = 10000000000000000000000000000.;
+const infinity = 1.;
 fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<f32> {
     var color = vec3<f32>(0);
 
     var current_ray = r;
     var hit = world_hit(world, r, 0, infinity); //a, b, sky
 
-    
-    
     //ray from camera hits sphere A
     // ray from sphere A hits sphere B
     // ray from sphere B hits sky 
     var cur_attenuation = 1.0;
     for (var i = 0; i < 50; i+= 1) {
-      hit = world_hit(world, current_ray, 0, infinity); 
+      hit = world_hit(world, current_ray, .0000001, 1000000.); 
       if (hit.hit_anything) {
           var targ = hit.p + hit.normal;
-           //+ random_in_unit_sphere(xy);
-           let mat = material (current_ray, hit.sphere, hit, xy);
-
-          color += mat.albedo;
-          //target = mat.scattered;
-          //(1 / 50.) * (vec3<f32>(0, 50, 0) + vec3(1,1,1));
+          let mat = material(current_ray, hit.sphere, hit, xy);
           
           current_ray = mat.scattered;
-          //ray(hit.p, targ - hit.p);
-          cur_attenuation *= .5;
-          
+          if (hit.sphere.material != 2.) {
+            color += mat.albedo; 
+            cur_attenuation *= .5;
+          } else {
+            //cur_attenuation = .2 ;
+          }
       } else {
         var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
         var unit_direction = normalize(r.direction);
@@ -257,8 +245,6 @@ fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<
 }
 //https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
 //https://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/reflection_refraction.pdf
-
-
 
 
 fn rayAt(r:ray , t: f32) -> vec3<f32> {
@@ -277,6 +263,7 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     return (-half_b - sqrt(discriminant)) / a;
   }
 }
+//discriminant coefficent of polynomal which describes root fx=fx^2
 
 
 
@@ -288,22 +275,17 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var green = vec3<f32>(0., 1., 0.);
     var blue = vec3<f32>(0., 0., 1.);
 
-
-    world[0] = sphere(vec3<f32>(0,0,-2), .4, 0., red);
+    world[0] = sphere(vec3<f32>(0,0,-2), .4, 2., red);
     world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1, blue);
 
-     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 0, blue);
+     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 1, blue);
      world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0, red);
     world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 0, green);
      world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1, blue);
-     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1, red);
-    world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1, green);
-    world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1, blue);
-    world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1, red);
-
-
-
-
+     world[6] = sphere(vec3<f32>(.9,.9,-0.), .35, 1, red);
+    world[7] = sphere(vec3<f32>(-.9,.8,-2.), .35, 1, green);
+    world[8] = sphere(vec3<f32>(-3.,.8,-2.), .35, 1, blue);
+    world[9] = sphere(vec3<f32>(-3,.3,0.), .35, 1, red);
 
     const aspect_ratio = 1.;
     const image_width = 500.;
@@ -390,3 +372,8 @@ setInterval(
 }
 
 basic()
+
+
+//https://www.shadertoy.com/view/tddSz4
+//spectral ray tracing
+//https://www.shadertoy.com/view/stSXzm
