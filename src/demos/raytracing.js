@@ -49,6 +49,10 @@ const webgpu = await simpleWebgpuInit();
 
 //const compute = 
 
+
+
+
+//light may not be respecting face_normal_side -> reflecting from incorrect
 const drawCube = await webgpu.initDrawCall({
 frag: `
   fn set_face_normal(h:hit_record, r: ray, outward_normal: vec3<f32>) {
@@ -70,16 +74,48 @@ struct sphere {
 
 //var albedo:array<vec3<f32>, 3>;
 
-fn material (s: sphere, rec: hit_record, xy: vec2<f32>){
-  if (s.material == 1) {
+
+struct mat {
+  scattered: ray,
+  albedo: vec3<f32>,
+  isScatter: bool
+}
+
+fn reflect(v:vec3<f32>, n:vec3<f32>) -> vec3<f32> {
+  return v - 2*dot(v,n)*n;
+}
+struct ray {
+  origin: vec3<f32>,
+  direction: vec3<f32>,
+}
+
+
+fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
+  return 1/ normalize(v);
+} 
+
+fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
+
+  var albedo = vec3<f32>(0., 0., 1.);
+
+  if (s.material == 0.) {
     //metal
-
-
-  } else if (s.material == 2){
+    var reflected = reflect(normalize(r.direction), rec.normal);
+    var scattered = ray(rec.p, reflected);
+    var attenuation = albedo;
+    var isScatter = dot(scattered.direction, rec.normal) > 0;
+    return mat(scattered, attenuation, isScatter);
+  } else {
     //diffuse
     var direction = rec.normal + random_in_unit_sphere(xy);
+    var attenuation = albedo;
 
+    var scattered = ray(rec.p, direction);
+    return mat(
+      scattered, attenuation, true
+    );
   }
+  return mat();
 }
 
 
@@ -120,7 +156,7 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
     @location(2) vertexIndex: f32
   }
 
- 
+
 
 
 struct hit_record {
@@ -129,7 +165,7 @@ struct hit_record {
   t: f32,
   front_face: bool,
   hit_anything: bool,
-  s: sphere
+  sphere: sphere
 }
  
 fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit_record {
@@ -139,6 +175,7 @@ fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit
   for (var i =0; i < 10; i += 1) {
     var didHit = sphereHit(sphereList[i], r, t_min, closest_so_far);
     if (didHit.hit_anything) { 
+      //return didHit; //FIXME - depth culling adds noise effect 
       closest_so_far = didHit.t;
       hit = didHit;
     }
@@ -172,10 +209,10 @@ fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
 // else collect light from sky
 
 
-fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
-  return v / normalize(v);
-} 
-
+//use materials to make some spheres different reflection models
+//diffuse reflection = random scattering 
+//shiny metal = direct reflection + slight diffuse depending on diffuse
+//glass = refraction + dielctric reflection
 
 
 const infinity = 10000000000000000000000000000.;
@@ -196,12 +233,19 @@ fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<
       if (hit.hit_anything) {
           var targ = hit.p + hit.normal;
            //+ random_in_unit_sphere(xy);
-          color += (1 / 50.) * (vec3<f32>(0, 0, 50) + vec3(1,1,1));
+           let mat = material (current_ray, hit.sphere, hit, xy);
+
+          color += mat.albedo;
+          //target = mat.scattered;
+          //(1 / 50.) * (vec3<f32>(0, 50, 0) + vec3(1,1,1));
+          
+          current_ray = mat.scattered;
+          //ray(hit.p, targ - hit.p);
           cur_attenuation *= .5;
-          current_ray = ray(hit.p, targ - hit.p);
+          
       } else {
         var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
-        var unit_direction = unit_vector(r.direction);
+        var unit_direction = normalize(r.direction);
         t = 0.5*(unit_direction.y + 1.0);
         color += (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3<f32>(0.5, 0.7, 1.0);
         return cur_attenuation * color;
@@ -211,10 +255,7 @@ fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<
 }
 //https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
 //https://web.cse.ohio-state.edu/~shen.94/681/Site/Slides_files/reflection_refraction.pdf
-struct ray {
-  origin: vec3<f32>,
-  direction: vec3<f32>,
-}
+
 
 
 
@@ -241,14 +282,17 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var Hit: hit_record;
     var world:array<sphere, 10>;
-    world[0] = sphere(vec3<f32>(0,0,-2), .4, 1);
-    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1);
+    var red = vec3<f32>(1., 0., 0.);
 
-     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 2);
-     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 2);
-    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 2);
-     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 2);
-     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 2);
+
+    world[0] = sphere(vec3<f32>(0,0,-2), .4, 2.);
+    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 0);
+
+     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 0);
+     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0);
+    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 0);
+     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1);
+     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1);
     // world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1);
     // world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1);
     // world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1);
