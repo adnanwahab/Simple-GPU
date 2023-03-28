@@ -80,20 +80,11 @@ fn material (s: sphere, rec: hit_record, xy: vec2<f32>){
     var direction = rec.normal + random_in_unit_sphere(xy);
 
   }
-
-
-
-
-
 }
-
-
 
 
 fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   var hit: hit_record;
-
-
 
   var oc = r.origin - s.center; 
   var a = pow(length(r.direction), 2.);
@@ -117,7 +108,6 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   hit.p = rayAt(r, hit.t);
   hit.normal = (hit.p - s.center) / s.radius;
   hit.hit_anything = discriminant > 0.;
-  //hit.sphere = s;
 
   return hit;
 }
@@ -147,9 +137,10 @@ fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit
   var closest_so_far = t_max;
 
   for (var i =0; i < 10; i += 1) {
-    var hit = sphereHit(sphereList[i], r, t_min, t_max);
-    if (hit.hit_anything) { 
-      return hit;
+    var didHit = sphereHit(sphereList[i], r, t_min, closest_so_far);
+    if (didHit.hit_anything) { 
+      closest_so_far = didHit.t;
+      hit = didHit;
     }
   }
 
@@ -181,6 +172,10 @@ fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
 // else collect light from sky
 
 
+fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
+  return v / normalize(v);
+} 
+
 
 
 const infinity = 10000000000000000000000000000.;
@@ -199,18 +194,16 @@ fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<
     for (var i = 0; i < 50; i+= 1) {
       hit = world_hit(world, current_ray, 0, infinity); 
       if (hit.hit_anything) {
-
-          var targ = hit.p + hit.normal
-           + random_in_unit_sphere(xy);
-          color += (1 / 50.) * (hit.normal + vec3(1,1,1));
+          var targ = hit.p + hit.normal;
+           //+ random_in_unit_sphere(xy);
+          color += (1 / 50.) * (vec3<f32>(0, 0, 50) + vec3(1,1,1));
           cur_attenuation *= .5;
           current_ray = ray(hit.p, targ - hit.p);
       } else {
         var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
-        var unit_direction = normalize(r.direction);
+        var unit_direction = unit_vector(r.direction);
         t = 0.5*(unit_direction.y + 1.0);
         color += (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3<f32>(0.5, 0.7, 1.0);
-//        break;
         return cur_attenuation * color;
       }
     }
@@ -248,14 +241,14 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   fn main(in: VertexOutput) -> @location(0) vec4<f32> {
     var Hit: hit_record;
     var world:array<sphere, 10>;
-    world[0] = sphere(vec3<f32>(0,0,-2), .5, 1);
+    world[0] = sphere(vec3<f32>(0,0,-2), .4, 1);
     world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1);
 
-     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 1);
-     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 1);
-    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 1);
-    // world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1);
-    // world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 1);
+     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 2);
+     world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 2);
+    world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 2);
+     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 2);
+     world[6] = sphere(vec3<f32>(.8,.1,-0.), .35, 2);
     // world[7] = sphere(vec3<f32>(.7,.4,-0.), .35, 1);
     // world[8] = sphere(vec3<f32>(.6,.5,-0.), .35, 1);
     // world[9] = sphere(vec3<f32>(.5,.3,0.), .35, 1);
