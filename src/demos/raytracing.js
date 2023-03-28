@@ -82,7 +82,7 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
     var ir = 1.5;
     var attenuation = vec3<f32>(1.);
     var refraction_ratio:f32;
-    if (! rec.front_face) {
+    if (rec.front_face) {
       refraction_ratio = 1.0 / ir;
     } else {
       refraction_ratio = ir;
@@ -105,13 +105,6 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
   return mat();
 }
 
-fn refract2( uv:vec3<f32>, n:vec3<f32>,  etai_over_etat:f32) -> vec3<f32>{
-  var cos_theta = min(dot(-uv, n), 1.0);
-  var r_out_perp =  etai_over_etat * (uv + cos_theta*n);
-  var r_out_parallel = -sqrt(abs(1.0 - length(r_out_perp))) * n;
-  return vec3<f32>(3.);
-  return r_out_perp + r_out_parallel;
-}
 
 fn reflectance (cosine:f32, ref_idx:f32) -> f32{
   var r0 = (1 -ref_idx) / (1 + ref_idx);
@@ -147,7 +140,7 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   hit.hit_anything = discriminant > 0.;
   hit.sphere = s;
   var outward_normal = (hit.p - s.center) / s.radius;
-  hit.front_face = dot(r.direction, outward_normal) < 0;
+  hit.front_face = dot(r.direction, outward_normal) > 0;
   if (hit.front_face) {
     hit.normal = outward_normal; 
   } else {
