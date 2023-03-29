@@ -9,6 +9,12 @@
 // glass sphere - 1hr 10am [x]
 
 
+//interactivity
+
+//triangular - compute shader bvh
+
+//audio-reactive w/o uniforms
+
 import simpleWebgpuInit from '../../lib/main';
 //if you finish this ray tracer then we can finish the story of renderbuffer
 
@@ -79,32 +85,77 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
       scattered, attenuation, true
     );
   } else if (s.material == 2.) {
-    var ir = 1.5;
-    var attenuation = vec3<f32>(1.);
-    var refraction_ratio:f32;
-    if (rec.front_face) {
-      refraction_ratio = 1.0 / ir;
+    var outward_normal: vec3<f32>;
+    var reflected = reflect(r.direction, rec.normal);
+    var ni_over_nt:f32;
+    //var refracted: vec3<f32>;
+    var reflect_prob = 0.;
+    var cosine = 0.;
+    var ref_idx=1.5;
+    if (dot(r.direction, rec.normal) > 0) {
+      outward_normal = -rec.normal;
+      ni_over_nt =  1.5;
+      cosine = dot(r.direction, rec.normal) / length(r.direction);
     } else {
-      refraction_ratio = ir;
+      outward_normal = rec.normal;
+      ni_over_nt = 1.0 / 1.5;
+      cosine = -dot(r.direction, rec.normal) / length(r.direction);
+    }
+    var scattered:ray;
+    var refracted = refract2(r.direction, outward_normal, ni_over_nt);
+    if (refracted.x < -1000.) {
+      reflect_prob = reflectance(cosine, ref_idx);
+      scattered = ray(rec.p, refracted );
+    } else {
+      scattered = ray(rec.p, reflected);
+      reflect_prob = 1.0;
     }
 
-    var unit_direction = unit_vector(r.direction);
-    var cos_theta = min(dot(-unit_direction, rec.normal) , 1.0);
-    var sin_theta = sqrt(1.0 - cos_theta * cos_theta);
-    var cannot_refract = refraction_ratio * sin_theta > 1.0;
-
-    var direction:vec3<f32>;
-    if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random(xy)) {
-       direction = reflect(unit_direction, rec.normal);
+    if (random(xy) > reflect_prob) {
+      scattered = ray(rec.p, reflected);
     } else {
-      direction = refract(unit_direction, rec.normal, refraction_ratio);
+      scattered = ray(rec.p, refracted);
     }
-    var scattered = ray(rec.p, direction);
-    return mat(scattered, attenuation, true);
+
+    return mat(scattered, vec3<f32>(1.), true);
+
+    // var ir = 1.5;
+    // var attenuation = vec3<f32>(1.);
+    // var refraction_ratio:f32;
+    // if (rec.front_face) {
+    //   refraction_ratio = 1.0 / ir;
+    // } else {
+    //   refraction_ratio = ir;
+    // }
+
+    // var unit_direction = unit_vector(r.direction);
+    // var cos_theta = min(dot(-unit_direction, rec.normal) , 1.0);
+    // var sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+    // var cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+    // var direction:vec3<f32>;
+    // if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random(xy)) {
+    //    direction = reflect(unit_direction, rec.normal);
+    // } else {
+    //   direction = refract(unit_direction, rec.normal, refraction_ratio);
+    // }
+    // var scattered = ray(rec.p, direction);
+    // return mat(scattered, attenuation, true);
   }
   return mat();
 }
 
+fn refract2(v:vec3<f32>, n:vec3<f32>, ni_over_nt:f32) -> vec3<f32> {
+  var uv = unit_vector(v);
+  var dt = dot(uv, n);
+  var discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
+  if (discriminant > 0) {
+//    return vec3<f32>(0.);
+    return ni_over_nt*(uv - n * dt)- n * sqrt(discriminant);
+  } else {
+    return vec3<f32>(-1000.);
+  }
+}
 
 fn reflectance (cosine:f32, ref_idx:f32) -> f32{
   var r0 = (1 -ref_idx) / (1 + ref_idx);
@@ -186,7 +237,8 @@ fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit
 }
 
 fn random (st: vec2<f32>) -> f32 {
-  return fract(sin(dot(st.xy,
+  var hello = st.xy ;
+  return fract(sin(dot(hello,
                        vec2(12.9898,78.233)))*
       43758.5453123);
 }
@@ -197,9 +249,10 @@ fn length_squared(e:vec3<f32>) -> f32 {
 
 
 fn random_in_unit_sphere(st: vec2<f32>) -> vec3<f32> {
+  // return vec3<f32>(.4, .3, .3);
+
  var p = vec3<f32>(random(st ), random(st ), random(st ));
   return p;
-  //return vec3<f32>(.4, .3, .3);
 }
 
 const infinity = 1.;
@@ -220,12 +273,12 @@ fn ray_color(r: ray, world:array<sphere, 10>, depth:f32, xy: vec2<f32>) -> vec3<
           let mat = material(current_ray, hit.sphere, hit, xy);
           
           current_ray = mat.scattered;
-          if (hit.sphere.material != 2.) {
+          //if (hit.sphere.material != 2.) {
             color += mat.albedo; 
             cur_attenuation *= .5;
-          } else {
+          //} else {
             //cur_attenuation = .2 ;
-          }
+          //}
       } else {
         var t = hit_sphere(vec3<f32>(0,0,-1), .5, r);
         var unit_direction = normalize(r.direction);
@@ -268,8 +321,8 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var green = vec3<f32>(0., 1., 0.);
     var blue = vec3<f32>(0., 0., 1.);
 
-    world[0] = sphere(vec3<f32>(0,0,-2), .4, 2., red);
-    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1, blue);
+    world[0] = sphere(vec3<f32>(0,0,-2), -.4, 2., red);
+    world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1, green);
 
      world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 1, blue);
      world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0, red);
@@ -278,7 +331,11 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
      world[6] = sphere(vec3<f32>(.9,.9,-0.), .35, 1, red);
     world[7] = sphere(vec3<f32>(-.9,.8,-2.), .35, 1, green);
     world[8] = sphere(vec3<f32>(-3.,.8,-2.), .35, 1, blue);
-    world[9] = sphere(vec3<f32>(-3,.3,0.), .35, 1, red);
+    world[9] = sphere(vec3<f32>(-0,0, -3), .35, 1, red);
+
+
+    //try a better random function
+
 
     const aspect_ratio = 1.;
     const image_width = 500.;
