@@ -1,4 +1,4 @@
-// finish Demo - 5hours
+//add laser 
 
 // rotating camera - 1hr
 
@@ -14,6 +14,7 @@
 //triangular - compute shader bvh
 
 //audio-reactive w/o uniforms
+import utils from '../../lib/utils'
 
 import simpleWebgpuInit from '../../lib/main';
 //if you finish this ray tracer then we can finish the story of renderbuffer
@@ -36,8 +37,27 @@ const webgpu = await simpleWebgpuInit();
 //ray tracing = quad in fragment shader - for each pixel - for each object
 //ray traced particles = opposite - for each object - each pixel it covers 
 
+
+const device = webgpu.device;
+
+
+
+
+const cameraUniformBuffer = device.createBuffer({
+  size: 4 * 16, // 4x4 matrix
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+
 const drawCube = await webgpu.initDrawCall({
 frag: `
+
+struct Uniforms {
+  mouse: vec2<f32>
+}
+@group(0) @binding(0) var<uniform> uniforms : Uniforms;
+
+
 struct sphere {
   center: vec3<f32>,
   radius: f32,
@@ -64,6 +84,8 @@ fn unit_vector(v: vec3<f32>) -> vec3<f32>  {
   return v/ length(v);
 } 
 
+//uses T for ray with normalized vector 
+
 fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
 
   var albedo = s.albedo;
@@ -88,28 +110,30 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
     var outward_normal: vec3<f32>;
     var reflected = reflect(r.direction, rec.normal);
     var ni_over_nt:f32;
-    //var refracted: vec3<f32>;
     var reflect_prob = 0.;
     var cosine = 0.;
-    var ref_idx=1.5;
+    var ref_idx = 1.5;
     if (dot(r.direction, rec.normal) > 0) {
+      //outside
       outward_normal = -rec.normal;
-      ni_over_nt =  1.5;
+      ni_over_nt = ref_idx;
       cosine = dot(r.direction, rec.normal) / length(r.direction);
     } else {
+      //inside
       outward_normal = rec.normal;
-      ni_over_nt = 1.0 / 1.5;
+      ni_over_nt = 1.0 / ref_idx;
       cosine = -dot(r.direction, rec.normal) / length(r.direction);
     }
     var scattered:ray;
     var refracted = refract2(r.direction, outward_normal, ni_over_nt);
-    if (refracted.x < -1000.) {
+    if (refracted.y == -1000.) {
       reflect_prob = reflectance(cosine, ref_idx);
       scattered = ray(rec.p, refracted );
     } else {
       scattered = ray(rec.p, reflected);
       reflect_prob = 1.0;
     }
+
 
     if (random(xy) > reflect_prob) {
       scattered = ray(rec.p, reflected);
@@ -135,10 +159,12 @@ fn material (r:ray, s: sphere, rec: hit_record, xy: vec2<f32>) -> mat {
 
     // var direction:vec3<f32>;
     // if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random(xy)) {
-    //    direction = reflect(unit_direction, rec.normal);
+    //    //direction = reflect(unit_direction, rec.normal);
     // } else {
     //   direction = refract(unit_direction, rec.normal, refraction_ratio);
     // }
+    // direction = refract(unit_direction, rec.normal, refraction_ratio);
+
     // var scattered = ray(rec.p, direction);
     // return mat(scattered, attenuation, true);
   }
@@ -150,7 +176,6 @@ fn refract2(v:vec3<f32>, n:vec3<f32>, ni_over_nt:f32) -> vec3<f32> {
   var dt = dot(uv, n);
   var discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
   if (discriminant > 0) {
-//    return vec3<f32>(0.);
     return ni_over_nt*(uv - n * dt)- n * sqrt(discriminant);
   } else {
     return vec3<f32>(-1000.);
@@ -160,7 +185,7 @@ fn refract2(v:vec3<f32>, n:vec3<f32>, ni_over_nt:f32) -> vec3<f32> {
 fn reflectance (cosine:f32, ref_idx:f32) -> f32{
   var r0 = (1 -ref_idx) / (1 + ref_idx);
   r0 = r0*r0;
-  return r0 + (1-r0)*pow((1 - cosine), 5);
+  return r0 + (1-r0)*pow((1 - clamp(cosine, 0., 1.)), 5);
 }
 
 
@@ -195,7 +220,7 @@ fn sphereHit(s: sphere, r:ray, t_min: f32, t_max: f32) -> hit_record {
   if (hit.front_face) {
     hit.normal = outward_normal; 
   } else {
-    hit.normal = - -outward_normal;
+    hit.normal = - outward_normal;
   }
 
   return hit;
@@ -236,9 +261,9 @@ fn world_hit(sphereList:array<sphere,10>, r: ray, t_min: f32, t_max: f32) -> hit
   return hit;
 }
 
-fn random (st: vec2<f32>) -> f32 {
-  var hello = st.xy ;
-  return fract(sin(dot(hello,
+fn random(st: vec2<f32>) -> f32 {
+
+  return fract(sin(dot(st.xy,
                        vec2(12.9898,78.233)))*
       43758.5453123);
 }
@@ -321,20 +346,37 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
     var green = vec3<f32>(0., 1., 0.);
     var blue = vec3<f32>(0., 0., 1.);
 
-    world[0] = sphere(vec3<f32>(0,0,-2), -.4, 2., red);
+    var x = uniforms.mouse.x > 250;
+
+    // var material: f32;
+    // if (x) { 
+    //   material = 0;
+    // } else {
+    //   material = 2;
+    // }
+
+    world[0] = sphere(vec3<f32>(.0, .1,-1.0), .4, 2, 
+    
+    
+    red );
     world[1] = sphere(vec3<f32>(0,-100.5,-1), 100, 1, green);
 
-     world[2] = sphere(vec3<f32>(-1.,0,-2.), .35, 1, blue);
+
+    for (var i = 2; i < 9; i += 1) {
+      
+      //world[i] = sphere(vec3<f32>(-random(in.fragUV.xy) * f32(i),0,-1.), .35, 1, blue);
+    }
      world[3] = sphere(vec3<f32>(0,.7,-1.), .35, 0, red);
     world[4] = sphere(vec3<f32>(.4,.3,-0.), .35, 0, green);
-     world[5] = sphere(vec3<f32>(.9,.2,-0.), .35, 1, blue);
-     world[6] = sphere(vec3<f32>(.9,.9,-0.), .35, 1, red);
-    world[7] = sphere(vec3<f32>(-.9,.8,-2.), .35, 1, green);
-    world[8] = sphere(vec3<f32>(-3.,.8,-2.), .35, 1, blue);
-    world[9] = sphere(vec3<f32>(-0,0, -3), .35, 1, red);
+    // world[5] = sphere(vec3<f32>(.5,.4,.5), .35, 1, blue);
+     world[6] = sphere(vec3<f32>(.1,.9,-0.), .35, 1, red);
+    world[7] = sphere(vec3<f32>(-.1,.8,-2.), .35, 1, green);
+    world[8] = sphere(vec3<f32>(-3.,.8,-1.), .35, 1, blue);
+    world[9] = sphere(vec3<f32>(-2,0, -3), .35, 1, red);
 
 
     //try a better random function
+
 
 
     const aspect_ratio = 1.;
@@ -367,6 +409,14 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   }
 `,
   vert: `
+
+  struct uniforms {
+    mouse: vec2<f32>
+  }
+  // struct Uniforms {
+  //   modelMatrix : mat4x4<f32>,
+  //   normalModelMatrix : mat4x4<f32>,
+  // }
 
   struct VertexOutput {
     @builtin(position) Position : vec4<f32>,
@@ -406,13 +456,49 @@ fn hit_sphere(center: vec3<f32>, radius:f32, r:ray) -> f32 {
   }
   `,
   count: 6,
+  bindGroup: function ({pipeline}) {
+    return utils.makeBindGroup(device, pipeline.getBindGroupLayout(0),
+    [cameraUniformBuffer]
+)
+  }
   // uniforms: {
-  //   time: () => Date.now()
+  //   mouse: () => [500, 500]
   // }
 })
 
+//use mouse to hover over sphere 
+//if sphere is hit
+//make sphere glow 
+
+
+//spectral ray tracing - glowy shit - lasers 
+//lasers mirrors  
+
+//cast ray from cursor to sphere - make laser beam
+//add a camera - import 
+
+webgpu.canvas.addEventListener('mousemove', function (e) {
+  
+
+  let cameraViewProj = new Float32Array(2);
+  cameraViewProj[0] = e.clientX
+  cameraViewProj[1] = e.clientY
+  webgpu.device.queue.writeBuffer(
+    cameraUniformBuffer,
+    0,
+    cameraViewProj.buffer,
+    cameraViewProj.byteOffset,
+    cameraViewProj.byteLength
+  );
+});
+
+
 setInterval(
   function () {
+
+
+    
+
     drawCube({
       //texture: webgpu.texture(img)
     })
