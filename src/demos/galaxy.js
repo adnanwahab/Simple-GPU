@@ -8,15 +8,71 @@ import * as d3 from "d3";
 import {geoMercator} from "d3-geo";
 
 
+//RA = right ascension measured in time or angle - vertical 
+//declination = longitude - horizontal 
+
+
+
 //2gb 30 million rows csv
 //binary 
 
+
+//parse and upload all copies of galaxy
+//animate evolution of galaxy using morph target animation
+//zoomable - time scrub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/bye.txt`).then((response) => {
-    console.log(response)
+    
     return response.arrayBuffer();
 }).then(data => {
-    //const vertices = new Float64Array(data)
-    console.log(new Float32Array(data))
+ 
+let stuff = new Float32Array(data)
+    let x = []
+    let y = []
+    let color = []
+    for (var i = 0; i < stuff.length; i+= 6) {
+        x.push(stuff[i])
+        y.push(stuff[i+1])
+        color.push(stuff[i+2])
+    }
+    console.log(color)
+
+    console.log(
+      d3.min(x), d3.max(x),
+    
+      d3.min(y), d3.max(y)
+    )
+    let xScale = d3.scaleLinear()
+    .domain([d3.min(x), d3.max(x)])
+    .range([-1, 1])
+
+    let yScale = d3.scaleLinear().domain([d3.min(y), d3.max(y)])
+    .range([-1, 1])
+
+      console.log(x)
+    let a = x.map(xScale)
+    let b = y.map(yScale)
+
+    //console.log(x, y)
+    main(a,b)
 })
 
 const coordinates = [
@@ -93,7 +149,7 @@ const blend = {
 const particlesCount = 1e6;
 const particleSize = 100;
 
-async function main() {
+async function main(a,b) {
     const webgpu = await simpleWebgpuInit();
 
     const quadBuffer = webgpu.device.createBuffer({
@@ -118,10 +174,10 @@ async function main() {
         });
         
         const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-        for (let iParticle = 0; iParticle < coordinates.length / 2; iParticle++) {
+        for (let iParticle = 0; iParticle < a.length / 2; iParticle++) {
 
-            particlesBuffer[4 * iParticle + 0] = coordinates[iParticle][0]
-            particlesBuffer[4 * iParticle + 1] = coordinates[iParticle][1]
+            particlesBuffer[4 * iParticle + 0] = a[iParticle]
+            particlesBuffer[4 * iParticle + 1] = b[iParticle]
 
             particlesBuffer[4 * iParticle + 2] = 0;
             particlesBuffer[4 * iParticle + 3] = 0
@@ -152,9 +208,9 @@ async function main() {
       @vertex
       fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
           var vsOut: VSOut;
-          vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
+          vsOut.position =  //vec4<f32>(inPosition.xy + (.0000009 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
           
-         vec4<f32>(inPosition.xy + (.006 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+         vec4<f32>(inPosition.xy + (.09 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
           vsOut.position.y = vsOut.position.y;
           vsOut.localPosition = quadCorner;
           return vsOut;
