@@ -11,12 +11,12 @@ import {geoMercator} from "d3-geo";
 //2gb 30 million rows csv
 //binary 
 
-fetch('./stuff.txt').then((response) => {
-console.log(response)
-    return response.text();
+fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/bye.txt`).then((response) => {
+    console.log(response)
+    return response.arrayBuffer();
 }).then(data => {
     //const vertices = new Float64Array(data)
-    console.log(data)
+    console.log(new Float32Array(data))
 })
 
 const coordinates = [
@@ -34,21 +34,22 @@ function canvasToClipSpace(stuff) {
 }
 
 
-const data = d3.csv(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/data/311.csv`).then(d => {
-    d.forEach(d => {
-        // console.log(canvasToClipSpace(projection([
-        //     + d.Longitude,
-        //     + d.Latitude
-        //  ])));
-        coordinates.push(
-            canvasToClipSpace(projection([
-            + d.Longitude,
-            + d.Latitude
-         ]))
-      )
-    })
-    main()
-})
+// const data = d3.text().then(d => {
+//     console.log(d)
+//     // d.forEach(d => {
+//     //     // console.log(canvasToClipSpace(projection([
+//     //     //     + d.Longitude,
+//     //     //     + d.Latitude
+//     //     //  ])));
+//     //     coordinates.push(
+//     //         canvasToClipSpace(projection([
+//     //         + d.Longitude,
+//     //         + d.Latitude
+//     //      ]))
+//     //   )
+//     // })
+//     main()
+// })
 
 const blend = {
     color: {

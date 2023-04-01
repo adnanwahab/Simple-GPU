@@ -26,8 +26,9 @@ fs.createReadStream('./gaia.csv')
     const resultBuffer = new Float32Array(results.length * 6)
     results.forEach((d, i) => {
         d.forEach((datum, j) => {
-            resultBuffer[j] = datum;
+            resultBuffer[i*6+j] = datum;
         })
     })
-    fs.writeFileSync('bye.txt', resultBuffer)
+    console.log('writing bye.txt')
+    fs.writeFileSync('./src/bye.txt', resultBuffer)
   });
