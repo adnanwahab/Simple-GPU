@@ -1,3 +1,13 @@
+//web based Dtrace
+
+// Procedural Terrain Generation: You can use compute shaders to generate complex terrain using noise functions. To do this, you would first create a heightmap using a noise function such as Perlin noise. Then, you would use the compute shader to generate the terrain mesh from the heightmap.
+
+// To make this demo more interesting, you can add additional features such as rivers, lakes, and vegetation. You can use another noise function such as Worley noise to generate patterns for water and vegetation. You can also use physics simulations to add realistic erosion effects to the terrain.
+
+// To visualize the terrain, you can use a graphics shader to add textures, lighting, and shadows. You can also implement LOD (level of detail) to optimize performance for large terrains.
+
+// Overall, this demo can be a fun and creative way to showcase the power and versatility of compute shaders.
+
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 
@@ -8,18 +18,6 @@ import * as d3 from "d3";
 import {geoMercator} from "d3-geo";
 
 
-//RA = right ascension measured in time or angle - vertical 
-//declination = longitude - horizontal 
-
-
-
-//2gb 30 million rows csv
-//binary 
-
-
-//parse and upload all copies of galaxy
-//animate evolution of galaxy using morph target animation
-//zoomable - time scrub
 var stuff
 
 var hash = {
