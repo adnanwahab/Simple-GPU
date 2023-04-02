@@ -22,58 +22,53 @@ import {geoMercator} from "d3-geo";
 //zoomable - time scrub
 
 
+//should just use images - png has compression - repeated colors are indexed so takes less space
+//image with 4 colors will take like .1mb
+var abc = []
+for (let i = 0; i< 100; i++) {
+ setTimeout(function () {
+  console.log(123)
 
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/${i}.txt`).then((response) => {
+    return response.text();
+  }).then(data => {
+    console.log(data.slice(0,50))
+    abc.push(data)
+    })
+ }, 100 * i)
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/bye.txt`).then((response) => {
-    
-    return response.arrayBuffer();
-}).then(data => {
  
-let stuff = new Float32Array(data)
-    let x = []
-    let y = []
-    let color = []
-    for (var i = 0; i < stuff.length; i+= 6) {
-        x.push(stuff[i])
-        y.push(stuff[i+1])
-        color.push(stuff[i+2])
-    }
-    console.log(color)
+// let stuff = new Float32Array(data)
+//     let x = []
+//     let y = []
+//     let color = []
+//     for (var i = 0; i < stuff.length; i+= 6) {
+//         x.push(stuff[i])
+//         y.push(stuff[i+1])
+//         color.push(stuff[i+2])
+//     }
+//     console.log(color)
 
-    console.log(
-      d3.min(x), d3.max(x),
+//     console.log(
+//       d3.min(x), d3.max(x),
     
-      d3.min(y), d3.max(y)
-    )
-    let xScale = d3.scaleLinear()
-    .domain([d3.min(x), d3.max(x)])
-    .range([-1, 1])
+//       d3.min(y), d3.max(y)
+//     )
+//     let xScale = d3.scaleLinear()
+//     .domain([d3.min(x), d3.max(x)])
+//     .range([-1, 1])
 
-    let yScale = d3.scaleLinear().domain([d3.min(y), d3.max(y)])
-    .range([-1, 1])
+//     let yScale = d3.scaleLinear().domain([d3.min(y), d3.max(y)])
+//     .range([-1, 1])
 
-      console.log(x)
-    let a = x.map(xScale)
-    let b = y.map(yScale)
+//       console.log(x)
+//     let a = x.map(xScale)
+//     let b = y.map(yScale)
 
-    //console.log(x, y)
-    main(a,b)
-})
+//     //console.log(x, y)
+//     main(a,b)
+// }
 
 const coordinates = [
 
@@ -299,4 +294,4 @@ async function main(a,b) {
 //16 million complaints - 100 million in person nyc data office 
 
 //http://vis.stanford.edu/files/2013-imMens-EuroVis.pdf
-//http://vis.stanford.edu/projects/immens/demo/brightkite/
+///http://vis.stanford.edu/projects/immens/demo/brightkite/

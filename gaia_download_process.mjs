@@ -5,28 +5,47 @@ import {
 import { Buffer } from 'node:buffer';
 import fs from 'node:fs'
 
-const file = await open('./GRCA.fna');
+//const file = await open('./GRCA.fna');
 
 
-var buf = Buffer.alloc(5e6)
+var buf = ''
+// Buffer.alloc(5e6)
 var length = 0
 var count = 0
 var i =0
 
-for await (const chunk of file.readableWebStream()){
-  buf.write(chunk.toString()) 
-  length += chunk.byteLength
-  console.log('hi', chunk.byteLength, i++)
-  if (length > 5e6) {
-    length = 0
-    buf = Buffer.alloc(5e6)
-    count+= 1;
-    fs.writeFileSync(`${count}.bin`, buf)
-  }
+function arrayBufferToString(buffer) {
+  return String.fromCharCode.apply(null, new Uint16Array(buffer));
 }
+
+
+const readableStream = fs.createReadStream('./GRCA.fna', 'utf8')
+
+readableStream.on('data', (chunk) => {
+  buf += chunk
+  //console.log(arrayBufferToString(chunk)  )
+  length += chunk.length
+
+
+  if(i > 100) return;
+  if (length > 5e6) {
+    fs.writeFileSync(`${count}.txt`, buf)
+    length = 0
+    buf = ''
+    count+= 1;
+    console.log('wirting file # ' + count)
+    i++
+  }
+
+})
+
+
+// for await (const chunk of file.readableWebStream()){
+
+// }
   
 
-await file.close();
+//await file.close();
 
 // import  csv from 'csv-parser'
 // import fs from 'fs'
