@@ -9,7 +9,7 @@ import * as d3 from 'd3'
 
 //algorithm is what we want
 
-const ply = `https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/point-cloud-ply/lucy800k.ply`
+const ply = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/scene.gltf`
 
 const gltf = load(ply, GLBLoader).then(d => {
   console.log(d)
