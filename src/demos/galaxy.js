@@ -152,15 +152,27 @@ const particleSize = 100;
 async function main(a,b) {
     const webgpu = await simpleWebgpuInit();
 
+
+
+    const stuff = [
+      -1,-1,0,
+      1,-1,0
+      -1,-1,-1,
+      1,-1,-1
+    ]
+
     const quadBuffer = webgpu.device.createBuffer({
         size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
         usage: GPUBufferUsage.VERTEX,
         mappedAtCreation: true,
       });
-      new Float32Array(quadBuffer.getMappedRange()).set([
-        -1, -1, +1, -1, +1, +1,
-        -1, -1, +1, +1, -1, +1
-      ]);
+      new Float32Array(quadBuffer.getMappedRange()).set(
+        stuff       
+      //   [
+      //   -1, -1, +1, -1, +1, +1,
+      //   -1, -1, +1, +1, -1, +1
+      // ]
+      );
       quadBuffer.unmap();
       
     

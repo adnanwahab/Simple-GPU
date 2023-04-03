@@ -1,17 +1,19 @@
 import {load} from '@loaders.gl/core';
 import {GLBLoader} from '@loaders.gl/gltf';
-
+import * as d3 from 'd3'
 // interpret black and white images as vector fields
 // repel mouse by vel = (-y,x)
 // faux metallic lighting 
 // 3d model - rotate the model
 // onkeyPress - 1 - 8 = change vector field
 
+//algorithm is what we want
+
 const ply = `https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/point-cloud-ply/lucy800k.ply`
 
-// const gltf = load(ply, GLBLoader).then(d => {
-//   console.log(d)
-// })
+const gltf = load(ply, GLBLoader).then(d => {
+  console.log(d)
+})
 
 let shapes = [
 
@@ -34,10 +36,11 @@ setTimeout(function () {
   }).then((d) => {
     let abc = parseOBJ(d).position
     shapes.push(window.makeBuffer(abc, 0,'leaf'))
+    console.log(shapes)
+
   })
 
 }, 250 )
-
 
 function parseOBJ(text) {
   // because indices are base 1 let's just fill in the 0th data
@@ -475,7 +478,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
  @location(2) pos2: vec4<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
-    var stuff = mix(inPosition.xy, pos2.xy, (sin(vec2<f32>(camera.time)) + 1. ) / 2.);
+    var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
     vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
@@ -559,6 +562,56 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
   }
 })
 
+const a = new Float32Array(1)
+
+
+//a.forEach((d, i) => a[i] = Math.sin((Date.now()- elapsed ) * .001))
+
+let choice = false
+//do this every 5th beat
+let i = 0
+
+// setInterval(function () {
+  
+
+//   //writeBuffer(device, choice, shapes[i].flat())
+// }, 3000 * 3)
+
+
+
+//simplest thing - 8 meshes = 8 attribute buffers
+//chat GPT to generate the pointcloud according to user input - spoken - i want a avocado
+
+//a 1 2 3
+//b 3 1 2
+
+function recur () {
+  i = (i + 1) % (shapes.length)
+
+  choice = ! choice;
+  let swap = drawCube.state.options.attributeBufferData[
+    choice ? 0 : 2
+  ]
+  drawCube.state.options.attributeBufferData[
+    choice ? 0 : 2
+  ] = shapes[i]
+  // drawCube.state.options.attributeBufferData[
+  //   choice ? 2 : 0
+  // ] = shapes[i]
+  d3.transition().duration(3 * 1000)
+  .ease(d3.easeCubic)
+  .attrTween('animation', function () {
+    return function (t) {
+      if (choice) t = 1.0 - t
+      a.forEach((d, i) => a[i] = t)
+
+     
+    }
+    
+  }).on('end', recur)
+}
+recur()
+
 
 let camera = createCamera({
   center: [5., 1.5, .3],
@@ -567,7 +620,6 @@ let camera = createCamera({
   renderOnDirty: true,
   element: webgpu.canvas
 });
-
 setInterval(
   async function () {
     let {projection, view} = camera()
@@ -593,10 +645,8 @@ setInterval(
       model.byteOffset,
       model.byteLength
     );
-    const a = new Float32Array(1)
-
-    a.forEach((d, i) => a[i] = window.avg / 40)
-    a.forEach((d, i) => a[i] = performance.now()/ 1000)
+ 
+   
 
     device.queue.writeBuffer(
       cameraUniformBuffer,
@@ -613,26 +663,20 @@ setInterval(
 
     }, 8) 
 
-    let choice = false
-    //do this every 5th beat
-    let i = 0
-
-    setInterval(function () {
-      i = (i + 1) % (shapes.length)
-   
-      choice = ! choice;
-      drawCube.state.options.attributeBufferData[
-        choice ? 0 : 2
-      ] = shapes[i]
-      //writeBuffer(device, choice, shapes[i].flat())
-    }, 1000 * 3)
+  
 
 }
 
+//dancing mesh = write to mesh
+//galaxy mesh = write to mesh
+//mountain landscape 
+// flower garden 
+
+//2024 - water 
+
+
+
 basic()
-//http://labs.dinahmoe.com/plink/
-
-
   // create the audio context (chrome only for now)
   var context;
   var audioBuffer;
@@ -729,12 +773,10 @@ basic()
       var average;
 
       var length = array.length;
-      //console.log(array)
       // get all the frequency amplitudes
       for (var i = 0; i < length; i++) {
           values += array[i];
       }
-console.log(array)
       average = values / length;
       return average;
   }
@@ -743,7 +785,7 @@ console.log(array)
   loadSound('https://ia800300.us.archive.org/16/items/JusticeDance/03D.a.n.c.e.mp3')
 
 
-  //https://toji.dev/webgpu-best-practices/buffer-uploads
+  //https://toji.dev/webgpu-best-practices/buffer-uploads - galaxy
 
 
   //its impossible to know what a good decision is when thousands of people add thoughts to my head that come from randomness

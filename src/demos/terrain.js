@@ -1,5 +1,3 @@
-//web based Dtrace
-
 // Procedural Terrain Generation: You can use compute shaders to generate complex terrain using noise functions. To do this, you would first create a heightmap using a noise function such as Perlin noise. Then, you would use the compute shader to generate the terrain mesh from the heightmap.
 
 // To make this demo more interesting, you can add additional features such as rivers, lakes, and vegetation. You can use another noise function such as Worley noise to generate patterns for water and vegetation. You can also use physics simulations to add realistic erosion effects to the terrain.
@@ -7,306 +5,276 @@
 // To visualize the terrain, you can use a graphics shader to add textures, lighting, and shadows. You can also implement LOD (level of detail) to optimize performance for large terrains.
 
 // Overall, this demo can be a fun and creative way to showcase the power and versatility of compute shaders.
-
+//import simpleWebgpu from "../lib/main";
 import simpleWebgpuInit from '../../lib/main';
-import utils from '../../lib/utils';
-
-import { mat4, vec3 } from 'gl-matrix'
-
-import * as d3 from "d3";
-
-import {geoMercator} from "d3-geo";
+import { mat4, vec3 } from 'gl-matrix';
+//import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
+//dont look up anything not even noise
 
 
-var stuff
-
-var hash = {
-  g: 0,
-  a: 1,
-  t: 2,
-  c: 3,
-  G: 0,
-  A: 1,
-  T: 2,
-  C: 3
-}
-
-//should just use images - png has compression - repeated colors are indexed so takes less space
-//image with 4 colors will take like .1mb
-var abc = []
-for (let i = 0; i< 100; i++) {
- setTimeout(function () {
-  console.log(123)
-
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/${i}.txt`).then((response) => {
-    return response.text();
-  }).then(data => {
-    //console.log(data.slice(0,50))
-    abc.push(data.split('').map(d => {
-      return hash[d]
-    }))
-    })
- }, 100 * i)
-}
-
-    let xScale = d3.scaleLinear()
-    .domain([0, 1e6])
-    .range([-1, 1])
-
-    let yScale = d3.scaleLinear()
-    .domain([0, 1e6])
-    .range([-1, 1])
 
 
- 
-// let stuff = new Float32Array(data)
-//     let x = []
-//     let y = []
-//     let color = []
-//     for (var i = 0; i < stuff.length; i+= 6) {
-//         x.push(stuff[i])
-//         y.push(stuff[i+1])
-//         color.push(stuff[i+2])
-//     }
-//     console.log(color)
 
-//     console.log(
-//       d3.min(x), d3.max(x),
-    
-//       d3.min(y), d3.max(y)
-//     )
-
-
-//       console.log(x)
-//     let a = x.map(xScale)
-//     let b = y.map(yScale)
-
-//     //console.log(x, y)
-//     main(a,b)
-// }
-
-const coordinates = [
-
-]
-const projection = d3.geoMercator()
-.center([-73.9375, 40.7324])
-.scale((1090000) / (10 * Math.PI))
-.translate([500 / 2, 500 / 2])
-
-
-function canvasToClipSpace(stuff) {
-    let [x, y] = stuff
-    return [(x / 500) * 2 -1 , (1- y / 500) ]
-}
-
-
-// const data = d3.text().then(d => {
-//     console.log(d)
-//     // d.forEach(d => {
-//     //     // console.log(canvasToClipSpace(projection([
-//     //     //     + d.Longitude,
-//     //     //     + d.Latitude
-//     //     //  ])));
-//     //     coordinates.push(
-//     //         canvasToClipSpace(projection([
-//     //         + d.Longitude,
-//     //         + d.Latitude
-//     //      ]))
-//     //   )
-//     // })
-//     main()
-// })
-
-const blend = {
-    color: {
-      srcFactor: 'src-alpha',
-      dstFactor: 'one',
-      operation: 'add',
-    },
-    alpha: {
-      srcFactor: 'zero',
-      dstFactor: 'one',
-      operation: 'add',
-    },
-  }
-
-  const buffers = [
-    {
-        attributes: [
-            {
-                shaderLocation: 0,
-                offset: 0,
-                format: "float32x4",
-            }
-        ],
-        arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-        stepMode: "instance",
-    },
-    {
-        attributes: [
-            {
-                shaderLocation: 1,
-                offset: 0,
-                format: "float32x2",
-            }
-        ],
-        arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-        stepMode: "vertex",
-    }
-  ]
+async function basic () {
+  const position = ([
+    //float4 position, float4 color, float2 uv,
+    [1, -1, 1, 1,   ],
+    [-1, -1, 1, 1,  ],
+    [-1, -1, -1, 1, ],
+    [1, -1, -1, 1,  ],
+    [1, -1, 1, 1,   ],
+    [-1, -1, -1, 1, ],
+  
+    [1, 1, 1, 1,    ],
+    [1, -1, 1, 1,   ],
+    [1, -1, -1, 1,  ],
+    [1, 1, -1, 1,   ],
+    [1, 1, 1, 1,    ],
+    [1, -1, -1, 1,  ],
+  
+    [-1, 1, 1, 1,   ],
+    [1, 1, 1, 1,    ],
+    [1, 1, -1, 1,   ],
+    [-1, 1, -1, 1,  ],
+    [-1, 1, 1, 1,   ],
+    [1, 1, -1, 1,   ],
+  
+    [-1, -1, 1, 1,  ],
+    [-1, 1, 1, 1,   ],
+    [-1, 1, -1, 1,  ],
+    [-1, -1, -1, 1, ],
+    [-1, -1, 1, 1,  ],
+    [-1, 1, -1, 1,  ],
+  
+    [1, 1, 1, 1,    ],
+    [-1, 1, 1, 1,   ],
+    [-1, -1, 1, 1, ],
+    [-1, -1, 1, 1,  ],
+    [1, -1, 1, 1,   ],
+    [1, 1, 1, 1,    ],
+  
+    [1, -1, -1, 1,  ],
+    [-1, -1, -1, 1, ],
+    [-1, 1, -1, 1, ],
+    [1, 1, -1, 1,   ],
+    [1, -1, -1, 1,  ],
+    [-1, 1, -1, 1,  ],
+  ]);
+  const uv = ([
+    //float4 position, float4 color, float2 uv,
+    [  1, 1],
+    [ 0, 1],
+    [ 0, 0],
+    [  1, 0],
+    [  1, 1],
+    [  0, 0],
+  
+    [  1, 1],
+    [  0, 1],
+    [  0, 0],
+    [  1, 0],
+    [  1, 1],
+    [  0, 0],
+  
+    [  1, 1],
+    [  0, 1],
+    [  0, 0],
+    [  1, 0],
+    [  1, 1],
+    [  0, 0],
+  
+    [  1, 1],
+    [  0, 1],
+    [  0, 0],
+    [  1, 0],
+    [  1, 1],
+    [  0, 0],
+  
+    [  1, 1],
+    [  0, 1],
+    [  0, 0],
+    [  0, 0],
+    [  1, 0],
+    [  1, 1],
+  
+    [  1, 1],
+    [  0, 1],
+    [  0, 0],
+    [  1, 0],
+    [  1, 1],
+    [  0, 0],
+  ]);
+  
   
 
-const particlesCount = 1e6;
-const particleSize = 100;
+  //code using your own module - no lookups...?
 
-async function main(a,b) {
-    const webgpu = await simpleWebgpuInit();
+  
+  const cubeVertexArray = ([
+    //float4 position, float4 color, float2 uv,
+    [1, -1, 1, 1,   1, 0, 1, 1,  1, 1],
+    [-1, -1, 1, 1,  0, 0, 1, 1,  0, 1],
+    [-1, -1, -1, 1, 0, 0, 0, 1,  0, 0],
+    [1, -1, -1, 1,  1, 0, 0, 1,  1, 0],
+    [1, -1, 1, 1,   1, 0, 1, 1,  1, 1],
+    [-1, -1, -1, 1, 0, 0, 0, 1,  0, 0],
+  
+    [1, 1, 1, 1,    1, 1, 1, 1,  1, 1],
+    [1, -1, 1, 1,   1, 0, 1, 1,  0, 1],
+    [1, -1, -1, 1,  1, 0, 0, 1,  0, 0],
+    [1, 1, -1, 1,   1, 1, 0, 1,  1, 0],
+    [1, 1, 1, 1,    1, 1, 1, 1,  1, 1],
+    [1, -1, -1, 1,  1, 0, 0, 1,  0, 0],
+  
+    [-1, 1, 1, 1,   0, 1, 1, 1,  1, 1],
+    [1, 1, 1, 1,    1, 1, 1, 1,  0, 1],
+    [1, 1, -1, 1,   1, 1, 0, 1,  0, 0],
+    [-1, 1, -1, 1,  0, 1, 0, 1,  1, 0],
+    [-1, 1, 1, 1,   0, 1, 1, 1,  1, 1],
+    [1, 1, -1, 1,   1, 1, 0, 1,  0, 0],
+  
+    [-1, -1, 1, 1,  0, 0, 1, 1,  1, 1],
+    [-1, 1, 1, 1,   0, 1, 1, 1,  0, 1],
+    [-1, 1, -1, 1,  0, 1, 0, 1,  0, 0],
+    [-1, -1, -1, 1, 0, 0, 0, 1,  1, 0],
+    [-1, -1, 1, 1,  0, 0, 1, 1,  1, 1],
+    [-1, 1, -1, 1,  0, 1, 0, 1,  0, 0],
+  
+    [1, 1, 1, 1,    1, 1, 1, 1,  1, 1],
+    [-1, 1, 1, 1,   0, 1, 1, 1,  0, 1],
+    [-1, -1, 1, 1,  0, 0, 1, 1,  0, 0],
+    [-1, -1, 1, 1,  0, 0, 1, 1,  0, 0],
+    [1, -1, 1, 1,   1, 0, 1, 1,  1, 0],
+    [1, 1, 1, 1,    1, 1, 1, 1,  1, 1],
+  
+    [1, -1, -1, 1,  1, 0, 0, 1,  1, 1],
+    [-1, -1, -1, 1, 0, 0, 0, 1,  0, 1],
+    [-1, 1, -1, 1,  0, 1, 0, 1,  0, 0],
+    [1, 1, -1, 1,   1, 1, 0, 1,  1, 0],
+    [1, -1, -1, 1,  1, 0, 0, 1,  1, 1],
+    [-1, 1, -1, 1,  0, 1, 0, 1,  0, 0],
+  ]);
 
-    const quadBuffer = webgpu.device.createBuffer({
-        size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true,
-      });
-      new Float32Array(quadBuffer.getMappedRange()).set([
-        -1, -1, +1, -1, +1, +1,
-        -1, -1, +1, +1, -1, +1
-      ]);
-      quadBuffer.unmap();
-      
-    
-    function makeBuffer (size=particlesCount, flag=1, log) {
-        const gpuBufferSize = particlesCount * particleSize;
-    
-        const gpuBuffer = webgpu.device.createBuffer({
-          size: gpuBufferSize,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-          mappedAtCreation: true,
-        });
-        
-        const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-        for (let iParticle = 0; iParticle < 1e6; iParticle++) {
+  for (var i = 0; i < cubeVertexArray.length; i+= 1){
+    cubeVertexArray[i][0] = -1
+    cubeVertexArray[i][1] = -1
+    cubeVertexArray[i][2] = -1
+    cubeVertexArray[i][3] = -1
+  }
+  
+  function getTransformationMatrix() {
+    const presentationSize = [500, 500]
+    const aspect = presentationSize[0] / presentationSize[1];
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 100.0);
+  
+    const viewMatrix = mat4.create();
+    mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -4));
+    const now = Date.now() / 1000;
+    mat4.rotate(
+      viewMatrix,
+      viewMatrix,
+      1,
+      vec3.fromValues(Math.sin(now), Math.cos(now), 0)
+    );
+  
+    const modelViewProjectionMatrix = mat4.create();
+    mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
+    return modelViewProjectionMatrix
+  }
+// Calling simplewebgpu.init() creates a new partially evaluated draw command
+let webgpu = await simpleWebgpuInit()
 
-            particlesBuffer[4 * iParticle + 0] =( Math.random () -1 ) /2  
-            particlesBuffer[4 * iParticle + 1] = (Math.random () -1 ) /2 
 
-            particlesBuffer[4 * iParticle + 2] = 0;
-            particlesBuffer[4 * iParticle + 3] = 0
-        }
-        gpuBuffer.unmap();
-        return gpuBuffer
-      } 
+const quadBuffer = webgpu.device.createBuffer({
+  size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
+  usage: GPUBufferUsage.VERTEX,
+  mappedAtCreation: true,
+});
 
-      const posBuffer = makeBuffer(particlesCount, 1)
+const stuff = [
+  -1,-1,0,
+  1,-1,0
+  -1,-1,-1,
+  1,-1,-1
+]
+new Float32Array(quadBuffer.getMappedRange()).set([
+  stuff
+  // -1, -1, +1, -1, +1, +1,
+  // -1, -1, +1, +1, -1, +1
+]);
+quadBuffer.unmap();
 
-    const drawCube = await webgpu.initDrawCall({
-        shader: {
-          vertEntryPoint: 'main_vertex',
-          fragEntryPoint: 'main_fragment',
-          code:`struct Uniforms {             //             align(16)  size(24)
-          color: vec4<f32>,         // offset(0)   align(16)  size(16)
-          spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
-      };
-      
-      struct VSOut {
-          @builtin(position) position: vec4<f32>,
-          @location(0) localPosition: vec2<f32>, // in {-1, +1}^2
-      };
-      
-      @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-      
-      
-      @vertex
-      fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>) -> VSOut {
-          var vsOut: VSOut;
-          vsOut.position =  //vec4<f32>(inPosition.xy + (.0000009 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
-          
-         vec4<f32>(inPosition.xy + (.09 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-          vsOut.position.y = vsOut.position.y;
-          vsOut.localPosition = quadCorner;
-          return vsOut;
-      }
-      
-      @fragment
-      fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32> {
-          let distanceFromCenter: f32 = length(localPosition);
-          if (distanceFromCenter > 1.0) {
-              discard;
+
+
+const buffers = [
+  {
+    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+      attributes: [
+          {
+              shaderLocation: 0,
+              offset: 0,
+              format: "float32x3",
           }
-          var viewDir = vec3<f32>(0,0,0);
-          var lightSpecularColor = vec3<f32>(1);
-          var lightSpecularPower = 1.;
-          var lightPosition = vec3<f32>(-1,-1, 0);
-      
-          var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
-      
-              var distance = length(lightDir);
-      
-              lightDir = lightDir / distance; // = normalize(lightDir);
-              distance = distance * distance; //This line may be optimised using Inverse square root
-          var normal = vec3(-1.,-1., 0.);
-      
-              //Intensity of the diffuse light. Saturate to keep within the 0-1 range.
-              var NdotL = dot(normal, lightDir);
-              var intensity = saturate(NdotL);
-      
-              // Calculate the diffuse light factoring in light color, power and the attenuation
-              //OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
-      
-              //Calculate the half vector between the light vector and the view vector.
-              //This is typically slower than calculating the actual reflection vector
-              // due to the normalize function's reciprocal square root
-              var H = normalize(lightDir + viewDir);
-      
-              //Intensity of the specular light
-              var NdotH = dot(normal, H);
-              //intensity = pow(saturate(NdotH), specularHardness);
-      
-              //Sum up the specular light factoring
-              let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
-      
-          return col + vec4<f32>(distanceFromCenter - 1.5, 0,1.,.1);
-      }
-      `},
-        attributeBuffers: buffers,
-        attributeBufferData: [
-          posBuffer, quadBuffer,
-        ],
-        count: 6,
-        blend,
-        instances: particlesCount ,
-        bindGroup: function ({pipeline}) {
-          const uniformsBuffer = webgpu.device.createBuffer({
-            size: 32, 
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-        });
-          return webgpu.device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: uniformsBuffer,
-                    }
-                }
-            ]
-        });
-        }
-      })
+      ],
+  },
+]
 
+const drawCube = await webgpu.initDrawCall({
+frag:
+`
+  @group(0) @binding(1) var mySampler: sampler;
+  @group(0) @binding(2) var myTexture: texture_2d<f32>;
+  @fragment
+  fn main(
+   // @location(0) fragUV: vec2<f32>,
+    @location(0) fragPosition: vec4<f32>
+  ) -> @location(0) vec4<f32> {
+      return fragPosition;
+  }`,
+  vert: `
+  struct Uniforms {
+    modelViewProjectionMatrix : mat4x4<f32>,
+  }
+  @binding(0) @group(0) var<uniform> uniforms : Uniforms;
+  struct VertexOutput {
+    @builtin(position) Position : vec4<f32>,
+    @location(0) fragUV : vec2<f32>,
+    @location(1) fragPosition: vec4<f32>,
+  }  
+  @vertex
+  fn main(
+    @location(0) position : vec4<f32>,
+   // @location(1) uv : vec2<f32>
+  ) -> VertexOutput {
+    var output : VertexOutput;
+    output.Position = uniforms.modelViewProjectionMatrix * position;
+    //output.fragUV = uv;
+    output.fragPosition = position;
+    return output;
+  }`,
+  buffers: buffers,
+  attributeBufferData: [
+    quadBuffer,
+  ],
+  // attributes: {
+  //   //uv: new webgpu.attribute(uv, 0, 2),
+  //   position: new webgpu.attribute(
+  //     cubeVertexArray, 0, 4),
+  // },
+  uniforms: {
+    modelViewProjectionMatrix: getTransformationMatrix,
+  },
+  count: 6
+})
 
-      drawCube()
+setInterval(
+  function () {
+    drawCube({
+    })
+  }, 50
+)
+  
 }
 
-
-main()
-
-// map vertex points to longitude latitude 
-// 20 million points
-
-//compute shader - parralell query processing
-//complaints - date time stamp 
-//catgeorical
-//16 million complaints - 100 million in person nyc data office 
-
-//http://vis.stanford.edu/files/2013-imMens-EuroVis.pdf
-///http://vis.stanford.edu/projects/immens/demo/brightkite/
+basic()
