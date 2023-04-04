@@ -1,6 +1,33 @@
 import {load} from '@loaders.gl/core';
 import {GLBLoader} from '@loaders.gl/gltf';
 import * as d3 from 'd3'
+import objFile from 'obj-file-parser'
+
+
+const obj = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/30myfile.obj`
+
+
+let dancer = []
+
+fetch(obj).then(d => {
+  return d.text()
+}).then((d) => {
+
+  let lines = d.split('\n')
+  lines.forEach(line => {
+    if (line[0] === 'v') {
+      dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
+        return d * 1
+      }))
+    }
+  })
+  //dancer = parseOBJ(d).position
+  console.log(parseOBJ(d))
+  // const objFile = new objFile(d);
+  // const output = objFile.parse();
+  // console.log(output)
+})
+
 // interpret black and white images as vector fields
 // repel mouse by vel = (-y,x)
 // faux metallic lighting 
@@ -13,11 +40,11 @@ import * as d3 from 'd3'
 
 //algorithm is what we want
 
-const ply = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/scene.gltf`
+// const ply = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/scene.gltf`
 
-const gltf = load(ply, GLBLoader).then(d => {
-  console.log(d)
-})
+// const gltf = load(ply, GLBLoader).then(d => {
+//   console.log(d)
+// })
 
 let shapes = [
 
@@ -39,9 +66,11 @@ setTimeout(function () {
     return d.text()
   }).then((d) => {
     let abc = parseOBJ(d).position
-    shapes.push(window.makeBuffer(abc, 0,'leaf'))
-    console.log(shapes)
+    //shapes.push(window.makeBuffer(abc, 0,'leaf'))
 
+    shapes.push(window.makeBuffer(dancer, 0,'leaf'))
+    //console.log(shapes)
+    basic()
   })
 
 }, 250 )
@@ -142,77 +171,7 @@ function parseOBJ(text) {
 //one more to diff particles 
 //no animation 
 // have to make a demo so good it unites stream
-// cant just survive their insanity 
 
-// import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-// //import * as Nodes from 'three/examples/jsm/nodes/Nodes.js';
-// //import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
-
-// let camera, renderer;
-
-// let mixer, clock;
-
-// export default init
-// let   scene = new THREE.Scene();
-//   camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-//   camera.position.set( 100, 200, 300 );
-
-//   camera.lookAt( 0, 100, 0 );
-
-//   clock = new THREE.Clock();
-//    const loader = new FBXLoader();
-
-// function init () {
-
-//   loader.load('./data/samba.fbx', function ( object ) {
-// console.log(object)
-//     mixer = new THREE.AnimationMixer( object );
-
-//     const action = mixer.clipAction( object.animations[ 0 ] );
-//     action.play();
-
-//     object.traverse( function ( child ) {
-//       if ( child.isMesh ) {
-
-//         child.visible = false;
-
-//         const materialPoints = new PointsNodeMaterial();
-//         materialPoints.colorNode = uniform( new THREE.Color() );
-//         materialPoints.positionNode = skinning( child );
-//         console.log(child.geometry)
-//         const pointCloud = new THREE.Points( child.geometry, materialPoints );
-//         scene.add( pointCloud );
-//         console.log(pointCloud, 123)
-//       }
-
-//     } );
-
-//     scene.add( object );
-//   });
-//   renderer = new THREE.WebGLRenderer();
-//   renderer.setPixelRatio( window.devicePixelRatio );
-//   renderer.setSize( 500, 500   );
-//   renderer.setAnimationLoop( animate );
-//   document.body.appendChild( renderer.domElement );
-
-//   window.addEventListener( 'resize', onWindowResize );
-// }
-// function onWindowResize() {
-//   camera.aspect = window.innerWidth / window.innerHeight;
-//   camera.updateProjectionMatrix();
-
-//   renderer.setSize( innerWidth, innerHeight );
-
-// }
-
-// function animate() {
-//   const delta = clock.getDelta();
-
-//   if ( mixer ) mixer.update( delta );
-
-//   renderer.render( scene, camera );
-
-// }
 
 import createCamera from './createCamera'
 
@@ -232,9 +191,7 @@ loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demo
   //         }
   //     }
   // })
-  // object.scale.set(.01, .01, .01)
-  //console.log('55523')
-  //console.log(object)
+ 
 },
 (xhr) => {
   //console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
@@ -294,17 +251,10 @@ import { WebGPUScan } from './scan'
 
 const stuff = 4
 const NUM_PARTICLES = 256 * 4 * stuff
-const particlesCount = bunny.positions.length
+const particlesCount = 442008 / 3 
 const SCAN_THREADS = 256
 import simpleWebgpuInit from '../../lib/main';
 import { mat4, vec3 } from 'gl-matrix'
-
-async function basic () {
-let webgpu = await simpleWebgpuInit()
-const cameraUniformBuffer = webgpu.device.createBuffer({
-  size: 3 * 4 * 16 + 16, // 4x4 matrix
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-});
 
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
@@ -337,13 +287,23 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   }
 
 
-  particlesBuffer[0] = .2
-  particlesBuffer[1] = -1
-  particlesBuffer[2] = 1
+  // particlesBuffer[0] = .2
+  // particlesBuffer[1] = -1
+  // particlesBuffer[2] = 1
 
   gpuBuffer.unmap();
   return gpuBuffer
 } 
+let webgpu = simpleWebgpuInit().then(w => webgpu = w)
+async function basic () {
+ 
+const cameraUniformBuffer = webgpu.device.createBuffer({
+  size: 3 * 4 * 16 + 16, // 4x4 matrix
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+
+
 const posBuffer = makeBuffer(bunny.positions, 0, 'bunny')
 
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
@@ -536,7 +496,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    dragonBuffer, quadBuffer, posBuffer
+    shapes[0], quadBuffer, posBuffer
   ],
   count: 6,
   blend,
@@ -614,11 +574,11 @@ function recur () {
     
   }).on('end', recur)
 }
-recur()
+//recur()
 
 
 let camera = createCamera({
-  center: [5., 1.5, .3],
+  center: [.5, 1.5, -.3],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -678,9 +638,6 @@ setInterval(
 
 //2024 - water 
 
-
-
-basic()
   // create the audio context (chrome only for now)
   var context;
   var audioBuffer;
@@ -744,9 +701,9 @@ basic()
 
           // decode the data
           document.querySelector('body').addEventListener('click', function() {
-            context.resume().then(() => {
-              console.log('Playback resumed successfully');
-            });
+            // context.resume().then(() => {
+            //   console.log('Playback resumed successfully');
+            // });
             context.decodeAudioData(request.response)
             .then(function(buffer) {
               // when the audio is decoded play the sound
