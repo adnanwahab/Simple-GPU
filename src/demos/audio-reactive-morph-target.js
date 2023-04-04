@@ -1,50 +1,112 @@
+//optimize loading = convert obj offline to binary float array
+//use different 3d model - use blender - swap skeletal animation w/ more pointcloudy model
 import {load} from '@loaders.gl/core';
 import {GLBLoader} from '@loaders.gl/gltf';
 import * as d3 from 'd3'
 import objFile from 'obj-file-parser'
 
 
-const obj = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/30myfile.obj`
-
+const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/${n}myfile.obj`
 
 let dancer = []
+let frames = []
 
-fetch(obj).then(d => {
+let frameMax = 40
+let frameCount = [...Array(frameMax).keys()]
+
+frameCount.forEach(function (i) {
+  let frame = []
+fetch(obj(i)).then(d => {
   return d.text()
 }).then((d) => {
 
   let lines = d.split('\n')
   lines.forEach(line => {
     if (line[0] === 'v') {
-      dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
+      frame.push(line.slice(2).split(' ').map(parseFloat).map(d => {
         return d * 1
       }))
     }
+    // if (line[0] === 'f') {
+    //  // dancer.push()
+    //  line.slice(2).split(' ').map(function (trip) {
+    //   return trip.split('/')
+    // }).flat().map(parseFloat)
+    //   //console.log(line[1])
+    // }
   })
-  //dancer = parseOBJ(d).position
-  console.log(parseOBJ(d))
-  // const objFile = new objFile(d);
-  // const output = objFile.parse();
-  // console.log(output)
+  frames.push(frame)
+  //if (i == 4) setTimeout(makeStagingBuffer, 1000)
+  })
 })
 
-// interpret black and white images as vector fields
-// repel mouse by vel = (-y,x)
-// faux metallic lighting 
-// 3d model - rotate the model
-// onkeyPress - 1 - 8 = change vector field
+fetch(obj(0)).then(d => {
+  return d.text()
+}).then((d) => {
+//console.log(d)
+  let lines = d.split('\n')
+  lines.forEach(line => {
+    if (line[0] === 'v') {
+      dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
+        return d * 1
+      }))
 
-//convert 2d image to vector field + inital particle position 
+    }
+    // if (line[0] === 'f') {
+    //  // dancer.push()
+    //  line.slice(2).split(' ').map(function (trip) {
+    //   return trip.split('/')
+    // }).flat().map(parseFloat)
+    //   //console.log(line[1])
+    // }
+  })
+  dancer = parseOBJ(d).position
+})
 
 
 
-//algorithm is what we want
+let time = 0
+let stagingBuffer
+function makeStagingBuffer() {
+  stagingBuffer = webgpu.device.createBuffer({
+    size: 1e7,
+    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+  //frames = frames.map(window.makeBuffer)
+  //console.log(frames[0])
+  setInterval(function () {
+    if (! shapes[0]) return;
+ 
+    time += 1
+    let frame = time % frames.length
+    //let mesh = 
+    const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
+    const toCopy = frames[frame]
 
-// const ply = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/scene.gltf`
+    for (let i =0 ; i < toCopy.length; i+=4){
+      vertexPositions[i]= toCopy[i][0]
+      vertexPositions[i+1]= toCopy[i][1]
+      vertexPositions[i+2]= toCopy[i][2]
+      vertexPositions[i+3]= 0
 
-// const gltf = load(ply, GLBLoader).then(d => {
-//   console.log(d)
-// })
+    }
+  
+    // //console.log(vertexPositions)
+    stagingBuffer.unmap();
+
+     // Copy the staging buffer contents to the vertex buffer.
+    const commandEncoder = webgpu.device.createCommandEncoder({});
+    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, 77073 * 4 * 4);
+    webgpu.device.queue.submit([commandEncoder.finish()]);
+
+    // Immediately after copying, re-map the buffer. Push onto the list of staging buffers when the
+    // mapping completes.
+    stagingBuffer.mapAsync(GPUMapMode.WRITE).then(() => {
+      //waveGridStagingBuffers.push(stagingBuffer);
+    });
+  }, 41)
+}
 
 let shapes = [
 
@@ -66,10 +128,9 @@ setTimeout(function () {
     return d.text()
   }).then((d) => {
     let abc = parseOBJ(d).position
-    //shapes.push(window.makeBuffer(abc, 0,'leaf'))
+    //shapes.push(window.makeBuffer(abc, 1,'leaf'))
 
     shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-    //console.log(shapes)
     basic()
   })
 
@@ -178,28 +239,6 @@ import createCamera from './createCamera'
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
 import { analyze } from 'web-audio-beat-detector';
-import {FBXLoader} from './FBXLoader'
-
-var loader = new FBXLoader();
-
-loader.load('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/run.txt',   (object) => {
-  // object.traverse(function (child) {
-  //     if ((child as THREE.Mesh).isMesh) {
-  //         // (child as THREE.Mesh).material = material
-  //         if ((child as THREE.Mesh).material) {
-  //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
-  //         }
-  //     }
-  // })
- 
-},
-(xhr) => {
-  //console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-},
-(error) => {
-  console.log(error)
-}
-)
 
 //import GLTFLoader from 'three-gltf-loader';
 
@@ -260,37 +299,33 @@ import { mat4, vec3 } from 'gl-matrix'
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   let particlesCount = stuff.length
   stuff = stuff.flat()
-  const particleSize = 16
+  //console.log(stuff)
+  const particleSize = 1
   const gpuBufferSize = 1e7 * particleSize
   //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
 
-  if (flag) {
-    stuff.forEach((d, i, array) => {
-      array[i] /= 18
-    })
-  }
+  // if (flag) {
+  //   stuff.forEach((d, i, array) => {
+  //     array[i] /= 18
+  //   })
+  // }
 
   const gpuBuffer = webgpu.device.createBuffer({
     label,
     size: gpuBufferSize,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST ,
     mappedAtCreation: true,
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  for (let iParticle = 0; iParticle < 1839; iParticle++) {
+  for (let iParticle = 0; iParticle < stuff.length; iParticle+=4) {
     const i = iParticle;
-      particlesBuffer[4 * iParticle + 0] = (stuff[i*3+0]);
-      particlesBuffer[4 * iParticle + 1] = (stuff[i*3+1]);
-      particlesBuffer[4 * iParticle + 2] = (stuff[i*3+2]);
-      particlesBuffer[4 * iParticle + 3] = 0
+      particlesBuffer[iParticle + 0] = (stuff[i+0]);
+      particlesBuffer[iParticle + 1] = (stuff[i+1]);
+      particlesBuffer[iParticle + 2] = (stuff[i+2]);
+      particlesBuffer[iParticle + 3] = 1
   }
-
-
-  // particlesBuffer[0] = .2
-  // particlesBuffer[1] = -1
-  // particlesBuffer[2] = 1
-
+  console.log(particlesBuffer)
   gpuBuffer.unmap();
   return gpuBuffer
 } 
@@ -304,7 +339,7 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
 
 
 
-const posBuffer = makeBuffer(bunny.positions, 0, 'bunny')
+const posBuffer = makeBuffer(bunny.positions, 1, 'bunny')
 
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
@@ -446,7 +481,9 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
     vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
-   vec4<f32>(stuff + (.09 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+
+     vec4<f32>(stuff + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+   //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
     return vsOut;
@@ -700,18 +737,18 @@ setInterval(
       request.onload = function() {
 
           // decode the data
-          document.querySelector('body').addEventListener('click', function() {
-            // context.resume().then(() => {
-            //   console.log('Playback resumed successfully');
-            // });
-            context.decodeAudioData(request.response)
-            .then(function(buffer) {
-              // when the audio is decoded play the sound
+        //   document.querySelector('body').addEventListener('click', function() {
+        //     context.resume().then(() => {
+        //       console.log('Playback resumed successfully');
+        //     });
+        //     context.decodeAudioData(request.response)
+        //     .then(function(buffer) {
+        //       // when the audio is decoded play the sound
 
-              playSound(buffer);
+        //       playSound(buffer);
    
-          })
-        });
+        //   })
+        // });
       
       }
       request.send();
@@ -746,7 +783,7 @@ setInterval(
   loadSound('https://ia800300.us.archive.org/16/items/JusticeDance/03D.a.n.c.e.mp3')
 
 
-  //https://toji.dev/webgpu-best-practices/buffer-uploads - galaxy
+//   //https://toji.dev/webgpu-best-practices/buffer-uploads - galaxy
 
 
-  //its impossible to know what a good decision is when thousands of people add thoughts to my head that come from randomness
+//   //its impossible to know what a good decision is when thousands of people add thoughts to my head that come from randomness
