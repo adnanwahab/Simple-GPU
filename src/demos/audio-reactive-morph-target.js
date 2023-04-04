@@ -7,6 +7,10 @@ import * as d3 from 'd3'
 // 3d model - rotate the model
 // onkeyPress - 1 - 8 = change vector field
 
+//convert 2d image to vector field + inital particle position 
+
+
+
 //algorithm is what we want
 
 const ply = `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/scene.gltf`
