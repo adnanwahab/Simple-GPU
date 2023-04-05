@@ -27,13 +27,14 @@ async function writeShit (dir, i) {
     lines.forEach((line, idx) => {
       if (line[0] === 'v'&& line[1] === ' ') {
         //if (idx=== 4)
-        //console.log(line)
+        console.log(line)
         frame.push(line.slice(2).split(' ')
         .map(parseFloat).concat(0))
       }
       
       
     })
+    console.log(lines.length)
     //if (i === 0) frame.forEach(console.log)
 
     let numbers = frame.flat()

@@ -15,7 +15,7 @@ const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/o
 let dancer = []
 let frames = []
 
-let frameMax = 10
+let frameMax = 200
 let frameCount = [...Array(frameMax).keys()]
 
 
