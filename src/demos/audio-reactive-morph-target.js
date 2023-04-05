@@ -10,18 +10,18 @@ import objFile from 'obj-file-parser'
 //Curl noise to tween to next dancer type
 
 
-const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.initial`
+const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
 let dancer = []
 let frames = []
 
-let frameMax = 200
+let frameMax = 50
 let frameCount = [...Array(frameMax).keys()]
 
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/2/${i}myfile.bin`
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`
   )
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
@@ -43,19 +43,19 @@ frameCount.forEach(function (i) {
 })
 
 fetch(obj(0)).then(d => {
-  return d.text()
+  return d.arrayBuffer()
 }).then((d) => {
+  dancer = d
+  // let lines = d.split('\n')
+  // lines.forEach(line => {
+  //   if (line[0] === 'v' && line[1] === ' ') {
+  //     dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
+  //       return d * 1
+  //     }))
 
-  let lines = d.split('\n')
-  lines.forEach(line => {
-    if (line[0] === 'v' && line[1] === ' ') {
-      dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
-        return d * 1
-      }))
-
-    }
-  })
-  console.log('dancer', dancer.length)
+  //   }
+  // })
+  // console.log('dancer', dancer.length)
 })
 
 window.frames = frames

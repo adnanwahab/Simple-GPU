@@ -34,7 +34,7 @@ async function writeShit (file, dir) {
     
     lines.forEach((line, idx) => {
       if (line[0] === 'o') hasPassed+= 1
-      if (line[0] === 'v'&& line[1] === ' ' && hasPassed===2) {
+      if (line[0] === 'v') {
         //if (idx=== 4)
         //console.log(line)
         frame.push(line.slice(2).split(' ')
