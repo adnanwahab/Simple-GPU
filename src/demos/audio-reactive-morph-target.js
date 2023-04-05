@@ -11,15 +11,17 @@ const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/$
 let dancer = []
 let frames = []
 
-let frameMax = 40
+let frameMax = 200
 let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
 
-  fetch(urlToFloatFile)
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`)
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
+ 
     var floatBuffer = new Float32Array(buffer)
+    console.log(i)
     frames[i]=floatBuffer
   })
 
@@ -58,7 +60,7 @@ fetch(obj(0)).then(d => {
   //dancer = parseOBJ(d).position
 })
 
-
+window.frames = frames
 
 let time = 0
 let stagingBuffer
@@ -80,12 +82,14 @@ function makeStagingBuffer() {
     const toCopy = frames[frame]
 
     for (let i =0 ; i < toCopy.length; i++){
-      vertexPositions[4*i]= toCopy[i][0]
-      vertexPositions[4*i+1]= toCopy[i][1]
-      vertexPositions[4*i+2]= toCopy[i][2]
+      vertexPositions[4*i]= toCopy[i]
+      vertexPositions[4*i+1]= toCopy[i]
+      vertexPositions[4*i+2]= toCopy[i]
       vertexPositions[4*i+3]= 0
 
     }
+    //console.log(toCopy.length, frame)
+//    vertexPositions.set(toCopy)
   
     // //console.log(vertexPositions)
     stagingBuffer.unmap();
@@ -97,10 +101,10 @@ function makeStagingBuffer() {
 
     // Immediately after copying, re-map the buffer. Push onto the list of staging buffers when the
     // mapping completes.
-    stagingBuffer.mapAsync(GPUMapMode.WRITE).then(() => {
-      //waveGridStagingBuffers.push(stagingBuffer);
-    });
-  }, 41)
+    // stagingBuffer.mapAsync(GPUMapMode.WRITE).then(() => {
+    //   //waveGridStagingBuffers.push(stagingBuffer);
+    // });
+  }, 8)
 }
 
 let shapes = [
