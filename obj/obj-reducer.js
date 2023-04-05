@@ -25,15 +25,16 @@ async function writeShit (dir, i) {
     let lines = data.toString().split('\n')
     let frame = []
     lines.forEach((line, idx) => {
-      if (line[0] === 'v') {
-//        if (idx=== 4)console.log(line)
+      if (line[0] === 'v'&& line[1] === ' ') {
+        //if (idx=== 4)
+        //console.log(line)
         frame.push(line.slice(2).split(' ')
         .map(parseFloat).concat(0))
       }
       
       
     })
-    //console.log(frame)
+    //if (i === 0) frame.forEach(console.log)
 
     let numbers = frame.flat()
     //console.log(numbers.length)
@@ -51,7 +52,7 @@ async function writeShit (dir, i) {
     // var wstream = f.createWriteStream('data.dat');
     // wstream.write(b);
     // wstream.end();
-    console.log(writeTo)
+    //console.log(writeTo)
     f.writeFileSync(writeTo, b)
   // await fs.writeFile(writeTo,
   //   b, function (err, data) {

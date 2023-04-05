@@ -10,12 +10,12 @@ import objFile from 'obj-file-parser'
 //Curl noise to tween to next dancer type
 
 
-const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/${n}myfile.obj`
+const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.initial`
 
 let dancer = []
 let frames = []
 
-let frameMax = 50
+let frameMax = 10
 let frameCount = [...Array(frameMax).keys()]
 
 
@@ -27,7 +27,6 @@ frameCount.forEach(function (i) {
   .then((buffer) => {
  
     var floatBuffer = new Float32Array(buffer)
-    console.log(i)
     frames[i]=floatBuffer
   })
 
@@ -46,32 +45,24 @@ frameCount.forEach(function (i) {
 fetch(obj(0)).then(d => {
   return d.text()
 }).then((d) => {
-//console.log(d)
+
   let lines = d.split('\n')
   lines.forEach(line => {
-    if (line[0] === 'v') {
+    if (line[0] === 'v' && line[1] === ' ') {
       dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
         return d * 1
       }))
 
     }
-    // if (line[0] === 'f') {
-    //  // dancer.push()
-    //  line.slice(2).split(' ').map(function (trip) {
-    //   return trip.split('/')
-    // }).flat().map(parseFloat)
-    //   //console.log(line[1])
-    // }
   })
-  //dancer = parseOBJ(d).position
+  console.log('dancer', dancer.length)
 })
 
 window.frames = frames
 
-let time = 20
+let time = 0
 let stagingBuffer
 function makeStagingBuffer() {
-return
   //frames = frames.map(window.makeBuffer)
   //console.log(frames[0])
   setInterval(function () {
@@ -81,30 +72,29 @@ return
       usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
+    let frame = time % frames.length
+    const toCopy = frames[frame]
+
+    if (time === 0) window.toCopy = toCopy
 
     time += 1
-    let frame = time % frames.length
+    
     //console.log(frames[frame])
     //let mesh = 
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
-    const toCopy = frames[frame]
 
-    // for (let i =0 ; i < toCopy.length; i++){
-    //   vertexPositions[i]= toCopy[i]
-    //   vertexPositions[i+1]= toCopy[i+1]
-    //   vertexPositions[i+2]= toCopy[i+2]
-    //   vertexPositions[i+3]= 0
+    for (let i =0 ; i < toCopy.length; i++){
+      vertexPositions[4*i]= toCopy[4*i]
+      vertexPositions[4*i+1]= toCopy[4*i+1]
+      vertexPositions[4*i+2]= toCopy[4*i+2]
+      vertexPositions[4*i+3]= 0
+    }
 
-    // }
-    //console.log(toCopy.length, frame)
-  vertexPositions.set(toCopy)
-    window.toCopy = toCopy
-    // //console.log(vertexPositions)
     stagingBuffer.unmap();
 
      // Copy the staging buffer contents to the vertex buffer.
     const commandEncoder = webgpu.device.createCommandEncoder({});
-    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, 77073 * 4 * 4);
+    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
     webgpu.device.queue.submit([commandEncoder.finish()]);
 
     // Immediately after copying, re-map the buffer. Push onto the list of staging buffers when the
@@ -123,20 +113,13 @@ function writeBuffer (device, buffer, array) {
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
-// fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.obj').then(d => {
-//   return d.text()
-// }).then((d) => {
-//   let abc = parseOBJ(d).position
-//   shapes.push(window.makeBuffer(abc, 0,'flower'))
-// })
-
 setTimeout(function () {
   fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.txt').then(d => {
     return d.text()
   }).then((d) => {
     let abc = parseOBJ(d).position
     //shapes.push(window.makeBuffer(abc, 1,'leaf'))
-
+    window.dance = dancer
     shapes.push(window.makeBuffer(dancer, 0,'leaf'))
     basic()
   })
@@ -715,7 +698,7 @@ setInterval(
           analyser.getByteFrequencyData(array);
           getAverageVolume(array);
           const buffer = stuff.outputBuffer
-          console.log(window.avg)
+    
       }
 
       // setup a analyzer
