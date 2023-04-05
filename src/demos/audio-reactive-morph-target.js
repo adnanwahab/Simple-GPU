@@ -15,18 +15,14 @@ let frameMax = 40
 let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
-  let frame = []
-fetch(obj(i)).then(d => {
-  return d.text()
-}).then((d) => {
 
-  let lines = d.split('\n')
-  lines.forEach(line => {
-    if (line[0] === 'v') {
-      frame.push(line.slice(2).split(' ').map(parseFloat).map(d => {
-        return d * 1
-      }))
-    }
+  fetch(urlToFloatFile)
+  .then((res) => res.arrayBuffer())
+  .then((buffer) => {
+    var floatBuffer = new Float32Array(buffer)
+    frames[i]=floatBuffer
+  })
+
     // if (line[0] === 'f') {
     //  // dancer.push()
     //  line.slice(2).split(' ').map(function (trip) {
@@ -34,10 +30,9 @@ fetch(obj(i)).then(d => {
     // }).flat().map(parseFloat)
     //   //console.log(line[1])
     // }
-  })
-  frames[i]=(frame)
+  
+
   if (i == frameMax -1) setTimeout(makeStagingBuffer, 1000)
-  })
 })
 
 fetch(obj(0)).then(d => {
