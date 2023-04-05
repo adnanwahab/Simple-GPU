@@ -1,14 +1,5 @@
-//optimize loading = convert obj offline to binary float array
-//use different 3d model - use blender - swap skeletal animation w/ more pointcloudy model
-import {load} from '@loaders.gl/core';
-import {GLBLoader} from '@loaders.gl/gltf';
+
 import * as d3 from 'd3'
-import objFile from 'obj-file-parser'
-
-//MVP
-//Dance -
-//Curl noise to tween to next dancer type
-
 
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
@@ -19,52 +10,43 @@ let frameMax = 50
 let frameCount = [...Array(frameMax).keys()]
 
 
-frameCount.forEach(function (i) {
+function getFrames(model) { 
+  frames[model]= []
+  frameCount.forEach(function (i) {
+    fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
+    )
+    .then((res) => res.arrayBuffer())
+    .then((buffer) => {
+  
+      var floatBuffer = new Float32Array(buffer)
+      frames[model][i]=floatBuffer
+    })
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/2/${i}myfile.bin`
-  )
-  .then((res) => res.arrayBuffer())
-  .then((buffer) => {
- 
-    var floatBuffer = new Float32Array(buffer)
-    frames[i]=floatBuffer
+    if (i == frameMax -1) setTimeout(makeStagingBuffer, 1000)
   })
 
-    // if (line[0] === 'f') {
-    //  // dancer.push()
-    //  line.slice(2).split(' ').map(function (trip) {
-    //   return trip.split('/')
-    // }).flat().map(parseFloat)
-    //   //console.log(line[1])
-    // }
   
+}
 
-  if (i == frameMax -1) setTimeout(makeStagingBuffer, 1000)
-})
-
-fetch(obj(0)).then(d => {
+fetch(obj(1)).then(d => {
   return d.arrayBuffer()
 }).then((d) => {
   dancer = d
-  // let lines = d.split('\n')
-  // lines.forEach(line => {
-  //   if (line[0] === 'v' && line[1] === ' ') {
-  //     dancer.push(line.slice(2).split(' ').map(parseFloat).map(d => {
-  //       return d * 1
-  //     }))
 
-  //   }
-  // })
-  // console.log('dancer', dancer.length)
+  shapes.push(window.makeBuffer(dancer, 0,'leaf'))
+  basic()
 })
-
-window.frames = frames
+getFrames(1)
+getFrames(2)
 
 let time = 0
 let stagingBuffer
+
+let choice = 1
+window.addEventListener('click', function () {
+  choice = (choice + 1) % 2
+})
 function makeStagingBuffer() {
-  //frames = frames.map(window.makeBuffer)
-  //console.log(frames[0])
   setInterval(function () {
     if (! shapes[0]) return;
     stagingBuffer = webgpu.device.createBuffer({
@@ -72,8 +54,8 @@ function makeStagingBuffer() {
       usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
-    let frame = time % frames.length
-    const toCopy = frames[frame]
+    let frame = time % frames[choice].length
+    const toCopy = frames[choice][frame]
 
     if (time === 0) window.toCopy = toCopy
 
@@ -113,108 +95,6 @@ function writeBuffer (device, buffer, array) {
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
-setTimeout(function () {
-  fetch('https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/matt.txt').then(d => {
-    return d.text()
-  }).then((d) => {
-    let abc = parseOBJ(d).position
-    //shapes.push(window.makeBuffer(abc, 1,'leaf'))
-    window.dance = dancer
-    shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-    basic()
-  })
-
-}, 250 )
-
-function parseOBJ(text) {
-  // because indices are base 1 let's just fill in the 0th data
-  const objPositions = [[0, 0, 0]];
-  const objTexcoords = [[0, 0]];
-  const objNormals = [[0, 0, 0]];
-
-  // same order as `f` indices
-  const objVertexData = [
-    objPositions,
-    objTexcoords,
-    objNormals,
-  ];
-
-  // same order as `f` indices
-  let webglVertexData = [
-    [],   // positions
-    [],   // texcoords
-    [],   // normals
-  ];
-
-  function newGeometry() {
-    // If there is an existing geometry and it's
-    // not empty then start a new one.
-    if (geometry && geometry.data.position.length) {
-      geometry = undefined;
-    }
-    setGeometry();
-  }
-
-  function addVertex(vert) {
-    const ptn = vert.split('/');
-    ptn.forEach((objIndexStr, i) => {
-      if (!objIndexStr) {
-        return;
-      }
-      const objIndex = parseInt(objIndexStr);
-      const index = objIndex + (objIndex >= 0 ? 0 : objVertexData[i].length);
-      webglVertexData[i].push(...objVertexData[i][index]);
-    });
-  }
-
-  const keywords = {
-    v(parts) {
-      objPositions.push(parts.map(parseFloat));
-    },
-    vn(parts) {
-      objNormals.push(parts.map(parseFloat));
-    },
-    vt(parts) {
-      // should check for missing v and extra w?
-      objTexcoords.push(parts.map(parseFloat));
-    },
-    f(parts) {
-      const numTriangles = parts.length - 2;
-      for (let tri = 0; tri < numTriangles; ++tri) {
-        addVertex(parts[0]);
-        addVertex(parts[tri + 1]);
-        addVertex(parts[tri + 2]);
-      }
-    },
-  };
-
-  const keywordRE = /(\w*)(?: )*(.*)/;
-  const lines = text.split('\n');
-  for (let lineNo = 0; lineNo < lines.length; ++lineNo) {
-    const line = lines[lineNo].trim();
-    if (line === '' || line.startsWith('#')) {
-      continue;
-    }
-    const m = keywordRE.exec(line);
-    if (!m) {
-      continue;
-    }
-    const [, keyword, unparsedArgs] = m;
-    const parts = line.split(/\s+/).slice(1);
-    const handler = keywords[keyword];
-    if (!handler) {
-      //console.warn('unhandled keyword:', keyword);  // eslint-disable-line no-console
-      continue;
-    }
-    handler(parts, unparsedArgs);
-  }
-
-  return {
-    position: webglVertexData[0],
-    texcoord: webglVertexData[1],
-    normal: webglVertexData[2],
-  };
-}
 
 //need a way to swap meshes
 //make 5 functions that load 5 point clouds
@@ -233,48 +113,8 @@ import { analyze } from 'web-audio-beat-detector';
 //import GLTFLoader from 'three-gltf-loader';
 
 //change mesh when it detects a beat [.5]
-//animate collada meshes so it dances [0]
 //gold particles for mesh [0]
 //add rainbow particles for motion - detect DX and show trail [0]
-
-let keyframes = [
-  []//VBO
-]
-
-// const loader = new ColladaLoader();
-// loader.load(
-// 	'https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/src/demos/start_plank.txt',
-// 	( gltf ) => {
-// 		// called when the resource is loaded
-// 		console.log(gltf)
-// 	},
-// 	( xhr ) => {
-//     console.log(xhr)
-// 		// called while loading is progressing
-// 		console.log( `${( xhr.loaded / xhr.total * 100 )}% loaded` );
-// 	},
-// 	( error ) => {
-// 		// called when loading has errors
-// 		console.error( 'An error happened', error );
-// 	},
-// );
-
-
-// async function abc() {
-
-//   const soundBuffer =  await fetch( './dance.txt' ).then( res => res.arrayBuffer() );
-//   const audioContext = new AudioContext();
-
-
-//   waveBuffer = audioBuffer.getChannelData( 0 );
-
-//   // adding extra silence to delay and pitch
-//   waveBuffer = new Float32Array( [ ...waveBuffer, ...new Float32Array( 200000 ) ] );
-
-//   sampleRate = audioBuffer.sampleRate / audioBuffer.numberOfChannels;
-//   console.log(waveBuffer)
-// }
-// abc()
 
 import { WebGPUScan } from './scan'
 
@@ -283,22 +123,15 @@ const NUM_PARTICLES = 256 * 4 * stuff
 const particlesCount = 442008 / 3 
 const SCAN_THREADS = 256
 import simpleWebgpuInit from '../../lib/main';
+import utils from '../../lib/utils';
+
 import { mat4, vec3 } from 'gl-matrix'
 
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   let particlesCount = stuff.length
-  //stuff = stuff.flat()
-  //console.log(stuff)
   const particleSize = 1
   const gpuBufferSize = 1e7 * particleSize
-  //const gpuBufferSize = particlesCount * (flag ? particleSize :1)
-
-  // if (flag) {
-  //   stuff.forEach((d, i, array) => {
-  //     array[i] /= 18
-  //   })
-  // }
 
   const gpuBuffer = webgpu.device.createBuffer({
     label,
@@ -442,52 +275,160 @@ const blend = {
 //compute shader = transition from one mesh to another
 //vertex -> fragment = simple display + lighting
 
+let vectorFieldBuffer = makeBuffer([])
 
-// const computeTransition = webgpu.initComputeCall({
-//   label: `predictedPosition`,
-//   code:`
+const computeTransition = webgpu.initComputeCall({
+  label: `predictedPosition`,
+  code:`
 
-
-//   struct Uniforms {
-//     time: f32,
+  struct Uniforms {
+    time: f32,
   
-//   }
-//   @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
-//   @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
-//   @group(0) @binding(2) var<storage,read_write> buffer3: array<vec4<f32>>;
+  }
+  @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
+  @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
+  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
+
+  @group(0) @binding(4) var<uniform> uniforms: Uniforms;
 
 
-//   @compute @workgroup_size(256)
-//   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-//     let index: u32 = GlobalInvocationID.x;
+  //  fn mod289( x: vec3<f32>) -> vec3<f32>
+  // {
+  //   return x - floor(x * (1.0 / 289.0)) * 289.0;
+  // }
+  
+  // fn mod289v( x: vec4<f32>)  ->vec4<f32>
+  // {
+  //   return x - floor(x * (1.0 / 289.0)) * 289.0;
+  // }
+  
+  // fn permute( x: vec4<f32>) -> vec4<f32>
+  // {
+  //   return mod289v(((x*34.0)+1.0)*x);
+  // }
+  
+  // fn taylorInvSqrt(r: vec4<f32>) -> vec4<f32>
+  // {
+  //   return 1.79284291400159 - 0.85373472095314 * r;
+  // }
+  
+  // fn fade( t: vec3<f32>) -> vec3<f32> {
+  //   return t*t*t*(t*(t*6.0-15.0)+10.0);
+  // }
+  
+  // // Classic Perlin noise, periodic variant
+  // fn pnoise( P: vec3<f32>,  rep: vec3<f32>) -> f32
+  // {
+  //   var Pi0 = floor(P)%  rep; // Integer part, modulo period
+  //   var Pi1 = (Pi0 + vec3(1.0))%  rep; // Integer part + 1, mod period
+  //   Pi0 = mod289(Pi0);
+  //   Pi1 = mod289(Pi1);
+  //   var Pf0 = fract(P); // Fractional part for interpolation
+  //   var Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+  //   var ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  //   var iy = vec4(Pi0.yy, Pi1.yy);
+  //   var iz0 = Pi0.zzzz;
+  //   var iz1 = Pi1.zzzz;
+  
+  //   var ixy = permute(permute(ix) + iy);
+  //   var ixy0 = permute(ixy + iz0);
+  //   var ixy1 = permute(ixy + iz1);
+  
+  //   var gx0 = ixy0 * (1.0 / 7.0);
+  //   var gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+  //   gx0 = fract(gx0);
+  //   var gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+  //   var sz0 = smoothstep(gz0, vec4(0.0));
+  //   gx0 -= sz0 * (smoothstep(0.0, gx0) - 0.5);
+  //   gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+  
+  //   var gx1 = ixy1 * (1.0 / 7.0);
+  //   var gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+  //   gx1 = fract(gx1);
+  //   var gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+  //   var sz1 = smoothstep(gz1, vec4(0.0));
+  //   gx1 -= sz1 * (smoothstep(0.0, gx1) - 0.5);
+  //   gy1 -= sz1 * (smoothstep(0.0, gy1) - 0.5);
+  
+  //   var g000 = vec3(gx0.x,gy0.x,gz0.x);
+  //   var g100 = vec3(gx0.y,gy0.y,gz0.y);
+  //   var g010 = vec3(gx0.z,gy0.z,gz0.z);
+  //   var g110 = vec3(gx0.w,gy0.w,gz0.w);
+  //   var g001 = vec3(gx1.x,gy1.x,gz1.x);
+  //   var g101 = vec3(gx1.y,gy1.y,gz1.y);
+  //   var g011 = vec3(gx1.z,gy1.z,gz1.z);
+  //   var g111 = vec3(gx1.w,gy1.w,gz1.w);
+  
+  //   var norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+  //   g000 *= norm0.x;
+  //   g010 *= norm0.y;
+  //   g100 *= norm0.z;
+  //   g110 *= norm0.w;
+  //   var norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+  //   g001 *= norm1.x;
+  //   g011 *= norm1.y;
+  //   g101 *= norm1.z;
+  //   g111 *= norm1.w;
+  
+  //   var n000 = dot(g000, Pf0);
+  //   var n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+  //   var n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+  //   var n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+  //   var n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+  //   var n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+  //   var n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+  //   var n111 = dot(g111, Pf1);
+  
+  //   var fade_xyz = fade(Pf0);
+  //   var n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+  //   var n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+  //   var n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
+  //   return 2.2 * n_xyz;
+  // }
+
+
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;
+
+    let v = vectorFieldBuffer[index];
     
-//     buffer3[index] = mix(buffer1[index], buffer2[index], Uniforms.time);
-//   }`,
+    buffer3[index] = mix(buffer1[index], buffer2[index], uniforms.time);
+  }`,
 
-//   exec: function (state){
-//     const device = state.device
-//     const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+  exec: function (state){
+    const device = state.device
+    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
 
-//     const computePass = commandEncoder.beginComputePass();
-//     state.computePass.computePass = computePass;
+    const computePass = commandEncoder.beginComputePass();
+    state.computePass.computePass = computePass;
 
-//     computePass.setPipeline(state.computePass.pipeline);
-//     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-//     computePass.dispatchWorkgroups(NGROUPS);
-//     computePass.end();
-//   },
-//   bindGroups: function (state, computePipeline) {
-//     const computeBindGroup =
-//       utils.makeBindGroup(state.device,
-//         computePipeline.getBindGroupLayout(0),
-//       [
-//         velocityBuffer,
-//         predictionBuffer,
-//         posBuffer,
-//       ])
-//     return [computeBindGroup]
-//   }
-// })
+    computePass.setPipeline(state.computePass.pipeline);
+    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+    computePass.dispatchWorkgroups(NGROUPS);
+    computePass.end();
+  },
+  bindGroups: function (state, computePipeline) {
+
+    const uniformsBuffer = webgpu.device.createBuffer({
+      size: 32, 
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+  });
+    const computeBindGroup =
+      utils.makeBindGroup(state.device,
+        computePipeline.getBindGroupLayout(0),
+      [
+        posBuffer,
+        posBuffer,
+        posBuffer,
+        vectorFieldBuffer,
+        uniformsBuffer,
+
+      ])
+    return [computeBindGroup]
+  }
+})
 
 const drawCube = await webgpu.initDrawCall({
   shader: {
@@ -612,29 +553,8 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 
 const a = new Float32Array(1)
 
-
-//a.forEach((d, i) => a[i] = Math.sin((Date.now()- elapsed ) * .001))
-
 let choice = false
-//do this every 5th beat
 let i = 0
-
-// setInterval(function () {
-  
-
-//   //writeBuffer(device, choice, shapes[i].flat())
-// }, 3000 * 3)
-
-
-
-//simplest thing - 8 meshes = 8 attribute buffers
-//chat GPT to generate the pointcloud according to user input - spoken - i want a avocado
-
-//a 1 2 3
-//b 3 1 2
-
-
-//need triplets because 
 
 function recur () {
   i = (i + 1) % (shapes.length)
