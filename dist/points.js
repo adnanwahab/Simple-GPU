@@ -9,7 +9,7 @@
       data.mouseY = y / event.target.clientHeight;
     });
   };
-  function createCanvas(width = 500, height = 500) {
+  function createCanvas(width = 1e3, height = 1e3) {
     let dpi = devicePixelRatio;
     var canvas = document.createElement("canvas");
     canvas.width = dpi * width;
@@ -35,8 +35,8 @@
       })
     };
   }
-  async function readBuffer(state, buffer) {
-    const constructor = Float32Array;
+  async function readBuffer(state, buffer, flag = false) {
+    const constructor = flag ? Float32Array : Uint32Array;
     const device = state.device;
     const commandEncoder = device.createCommandEncoder();
     const C = new constructor(buffer.size);
@@ -52,7 +52,7 @@
     commandEncoder.copyBufferToBuffer(buffer, 0, CReadCopy, 0, buffer.size);
     device.queue.submit([commandEncoder.finish()]);
     await CReadCopy.mapAsync(GPUMapMode.READ);
-    C.set(new Float32Array(CReadCopy.getMappedRange()));
+    C.set(new constructor(CReadCopy.getMappedRange()));
     CReadCopy.unmap();
     return C;
   }

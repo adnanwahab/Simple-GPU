@@ -1665,7 +1665,7 @@
       data.mouseY = y / event.target.clientHeight;
     });
   };
-  function createCanvas(width = 500, height = 500) {
+  function createCanvas(width = 1e3, height = 1e3) {
     let dpi = devicePixelRatio;
     var canvas = document.createElement("canvas");
     canvas.width = dpi * width;
@@ -1691,8 +1691,8 @@
       })
     };
   }
-  async function readBuffer(state2, buffer2) {
-    const constructor = Float32Array;
+  async function readBuffer(state2, buffer2, flag = false) {
+    const constructor = flag ? Float32Array : Uint32Array;
     const device = state2.device;
     const commandEncoder = device.createCommandEncoder();
     const C = new constructor(buffer2.size);
@@ -1708,7 +1708,7 @@
     commandEncoder.copyBufferToBuffer(buffer2, 0, CReadCopy, 0, buffer2.size);
     device.queue.submit([commandEncoder.finish()]);
     await CReadCopy.mapAsync(GPUMapMode.READ);
-    C.set(new Float32Array(CReadCopy.getMappedRange()));
+    C.set(new constructor(CReadCopy.getMappedRange()));
     CReadCopy.unmap();
     return C;
   }
@@ -2063,7 +2063,7 @@
       );
     }
     const depthTexture = device.createTexture({
-      size: [500 * devicePixelRatio, 500 * devicePixelRatio],
+      size: [1e3 * devicePixelRatio, 1e3 * devicePixelRatio],
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
@@ -2103,7 +2103,11 @@
       return alert("Error: webgpu is not available. Please install canary!!!");
     const context = canvas.getContext("webgpu");
     const adapter = await navigator.gpu.requestAdapter();
-    const device = await adapter?.requestDevice();
+    const device = await adapter?.requestDevice({
+      //    requiredFeatures: ["timestamp-query"],
+      //https://omar-shehata.medium.com/how-to-use-webgpu-timestamp-query-9bf81fb5344a
+      //https://www.graphics.rwth-aachen.de/media/papers/splatting1.pdf
+    });
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
     Object.assign(state2, {
       device,
@@ -2202,6 +2206,7 @@
       draw.initDrawCall = initDrawCall;
       draw.state = localState;
       draw.draw = draw;
+      draw.state = localState;
       return draw;
     }
   }

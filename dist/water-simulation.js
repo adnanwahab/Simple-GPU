@@ -395,940 +395,6 @@
     }
   });
 
-  // src/demos/water-simulation.js
-  var import_mouse_change = __toESM(require_mouse_listen());
-  var import_mouse_wheel = __toESM(require_wheel());
-
-  // src/demos/scan.ts
-  var MAX_BUFFER_SIZE = 134217728;
-  var DEFAULT_DATA_TYPE = "f32";
-  var DEFAULT_DATA_SIZE = 4;
-  var DEFAULT_DATA_FUNC = "A + B";
-  var DEFAULT_DATA_UNIT = "0.";
-  var WebGPUScan = class {
-    logNumBanks = 5;
-    threadsPerGroup = 256;
-    itemsPerThread = 256;
-    itemsPerGroup = 65536;
-    itemSize = 4;
-    device;
-    prefixSumShader;
-    postBindGroupLayout;
-    dataBindGroupLayout;
-    postBuffer;
-    postBindGroup;
-    prefixSumIn;
-    prefixSumPost;
-    prefixSumOut;
-    minItems() {
-      return this.itemsPerGroup;
-    }
-    minSize() {
-      return this.minItems() * this.itemSize;
-    }
-    maxItems() {
-      return Math.min(this.itemsPerGroup * this.itemsPerGroup, Math.floor(MAX_BUFFER_SIZE / (this.itemSize * this.itemsPerGroup)) * this.itemsPerGroup);
-    }
-    maxSize() {
-      return this.itemSize;
-    }
-    constructor(config) {
-      this.device = config.device;
-      if (config["threadsPerGroup"]) {
-        this.threadsPerGroup = config["threadsPerGroup"] >>> 0;
-        if (this.threadsPerGroup < 1 || this.threadsPerGroup > 256) {
-          throw new Error("Threads per group must be between 1 and 256");
-        }
-      }
-      if (config["itemsPerThread"]) {
-        this.itemsPerThread = config["itemsPerThread"] >>> 0;
-        if (this.itemsPerThread < 1) {
-          throw new Error("Items per thread must be > 1");
-        }
-      }
-      this.itemsPerGroup = this.threadsPerGroup * this.itemsPerThread;
-      const dataType = config.dataType || DEFAULT_DATA_TYPE;
-      const dataSize = config.dataSize || DEFAULT_DATA_SIZE;
-      const dataFunc = config.dataFunc || DEFAULT_DATA_FUNC;
-      const dataUnit = config.dataUnit || DEFAULT_DATA_UNIT;
-      this.itemSize = dataSize;
-      this.prefixSumShader = this.device.createShaderModule({
-        code: `
-${config.header || ""}
-
-@binding(0) @group(0) var<storage, read_write> post : array<${dataType}>;
-@binding(0) @group(1) var<storage, read_write> data : array<${dataType}>;
-@binding(1) @group(1) var<storage, read_write> work : array<${dataType}>;
-
-fn conflictFreeOffset (offset:u32) -> u32 {
-  return offset + (offset >> ${this.logNumBanks});
-}
-  
-var<workgroup> workerSums : array<${dataType}, ${2 * this.threadsPerGroup}>;
-fn partialSum (localId : u32) -> ${dataType} {
-  var offset = 1u;
-  for (var d = ${this.threadsPerGroup >> 1}u; d > 0u; d = d >> 1u) {
-    if (localId < d) {
-      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
-      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
-      var A = workerSums[ai];
-      var B = workerSums[bi];
-      workerSums[bi] = ${dataFunc};
-    }
-    offset *= 2u;
-    workgroupBarrier();
-  }
-  if (localId == 0u) {
-    workerSums[conflictFreeOffset(${this.threadsPerGroup - 1}u)] = ${dataUnit};
-  }
-  for (var d = 1u; d < ${this.threadsPerGroup}u; d = d * 2u) {
-    offset = offset >> 1u;
-    if (localId < d) {
-      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
-      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
-      var A = workerSums[ai];
-      var B = workerSums[bi];
-      workerSums[ai] = B;
-      workerSums[bi] = ${dataFunc};
-    }
-    workgroupBarrier();
-  }
-
-  return workerSums[conflictFreeOffset(localId)];
-}
-  
-@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
-fn prefixSumIn(
-  @builtin(workgroup_id) groupId : vec3<u32>,
-  @builtin(local_invocation_id) localVec : vec3<u32>,
-  @builtin(global_invocation_id) globalVec : vec3<u32>) {
-  var localId = localVec.x;
-  var globalId = globalVec.x;
-  var offset = ${this.itemsPerThread}u * globalId;
-
-  var A = ${dataUnit};
-  var localVals = array<${dataType}, ${this.itemsPerThread}>();
-  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-    var B = data[offset + i];
-    A = ${dataFunc};
-    localVals[i] = A;
-  }
-  workerSums[conflictFreeOffset(localId)] = A;
-  workgroupBarrier();
-
-  A = partialSum(localId);
-
-  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-    var B = localVals[i];
-    var C = ${dataFunc};
-    work[offset + i] = C;
-    if (i == ${this.itemsPerThread - 1}u && localId == ${this.threadsPerGroup - 1}u) {
-      post[groupId.x] = C;
-    }
-  }
-}
-
-@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
-fn prefixSumPost(@builtin(local_invocation_id) localVec : vec3<u32>) {
-  var localId = localVec.x;
-  var offset = localId * ${this.itemsPerThread}u;
-
-  var A = ${dataUnit};
-  var localVals = array<${dataType}, ${this.itemsPerThread}>();
-  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-    var B = post[offset + i];
-    A = ${dataFunc};
-    localVals[i] = A;
-  }
-  workerSums[conflictFreeOffset(localId)] = A;
-  workgroupBarrier();
-
-  A = partialSum(localId);
-  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-    var B = localVals[i];
-    post[offset + i] = ${dataFunc};
-  }
-}
-
-@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
-fn prefixSumOut(
-  @builtin(workgroup_id) groupId : vec3<u32>,
-  @builtin(global_invocation_id) globalVec : vec3<u32>) {
-  var globalId = globalVec.x;
-  var offset = ${this.itemsPerThread}u * globalId;
-  if (groupId.x > 0u) {
-    var s = post[groupId.x - 1u];
-    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-      data[offset + i] = s + work[offset + i];
-    }
-  } else {
-    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
-      data[offset + i] = work[offset + i];
-    }
-  }
-}
-`
-      });
-      this.postBuffer = this.device.createBuffer({
-        label: "postBuffer",
-        size: this.itemsPerGroup * this.itemSize,
-        usage: GPUBufferUsage.STORAGE
-      });
-      this.postBindGroupLayout = this.device.createBindGroupLayout({
-        label: "postBindGroupLayout",
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: "storage",
-            hasDynamicOffset: false,
-            minBindingSize: this.itemSize * this.itemsPerGroup
-          }
-        }]
-      });
-      this.postBindGroup = this.device.createBindGroup({
-        label: "postBindGroup",
-        layout: this.postBindGroupLayout,
-        entries: [{
-          binding: 0,
-          resource: {
-            buffer: this.postBuffer
-          }
-        }]
-      });
-      this.dataBindGroupLayout = this.device.createBindGroupLayout({
-        label: "dataBindGroupLayout",
-        entries: [{
-          binding: 0,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: "storage",
-            hasDynamicOffset: false,
-            minBindingSize: this.itemSize * this.itemsPerGroup
-          }
-        }, {
-          binding: 1,
-          visibility: GPUShaderStage.COMPUTE,
-          buffer: {
-            type: "storage",
-            hasDynamicOffset: false,
-            minBindingSize: this.itemSize * this.itemsPerGroup
-          }
-        }]
-      });
-      const layout = this.device.createPipelineLayout({
-        label: "commonScanLayout",
-        bindGroupLayouts: [
-          this.postBindGroupLayout,
-          this.dataBindGroupLayout
-        ]
-      });
-      this.prefixSumIn = this.device.createComputePipelineAsync({
-        label: "prefixSumIn",
-        layout,
-        compute: {
-          module: this.prefixSumShader,
-          entryPoint: "prefixSumIn"
-        }
-      });
-      this.prefixSumPost = this.device.createComputePipelineAsync({
-        label: "prefixSumPost",
-        layout: this.device.createPipelineLayout({
-          label: "postScanLayout",
-          bindGroupLayouts: [this.postBindGroupLayout]
-        }),
-        compute: {
-          module: this.prefixSumShader,
-          entryPoint: "prefixSumPost"
-        }
-      });
-      this.prefixSumOut = this.device.createComputePipelineAsync({
-        label: "prefixSumOut",
-        layout,
-        compute: {
-          module: this.prefixSumShader,
-          entryPoint: "prefixSumOut"
-        }
-      });
-    }
-    async createPass(n, data, work) {
-      if (n < this.minItems() || n > this.maxItems() || n % this.itemsPerGroup !== 0) {
-        throw new Error("Invalid item count");
-      }
-      let ownsWorkBuffer = false;
-      let workBuffer = null;
-      if (n > this.minItems()) {
-        if (work) {
-          workBuffer = work;
-        } else {
-          workBuffer = this.device.createBuffer(
-            {
-              label: "workBuffer",
-              size: n * this.itemSize,
-              usage: GPUBufferUsage.STORAGE
-            }
-          );
-          ownsWorkBuffer = true;
-        }
-      }
-      let dataBindGroup;
-      if (workBuffer) {
-        dataBindGroup = this.device.createBindGroup({
-          label: "dataBindGroup",
-          layout: this.dataBindGroupLayout,
-          entries: [{
-            binding: 0,
-            resource: {
-              buffer: data
-            }
-          }, {
-            binding: 1,
-            resource: {
-              buffer: workBuffer
-            }
-          }]
-        });
-      } else {
-        dataBindGroup = this.device.createBindGroup({
-          label: "dataBindGroupSmall",
-          layout: this.postBindGroupLayout,
-          entries: [{
-            binding: 0,
-            resource: {
-              buffer: data
-            }
-          }]
-        });
-      }
-      return new WebGPUScanPass(
-        n / this.itemsPerGroup >>> 0,
-        dataBindGroup,
-        this.postBindGroup,
-        workBuffer,
-        ownsWorkBuffer,
-        await this.prefixSumIn,
-        await this.prefixSumPost,
-        await this.prefixSumOut
-      );
-    }
-    destroy() {
-      this.postBuffer.destroy();
-    }
-  };
-  var WebGPUScanPass = class {
-    constructor(numGroups, dataBindGroup, postBindGroup, work, ownsWorkBuffer, prefixSumIn, prefixSumPost, prefixSumOut) {
-      this.numGroups = numGroups;
-      this.dataBindGroup = dataBindGroup;
-      this.postBindGroup = postBindGroup;
-      this.work = work;
-      this.ownsWorkBuffer = ownsWorkBuffer;
-      this.prefixSumIn = prefixSumIn;
-      this.prefixSumPost = prefixSumPost;
-      this.prefixSumOut = prefixSumOut;
-    }
-    run(passEncoder) {
-      if (this.work) {
-        passEncoder.setBindGroup(0, this.postBindGroup);
-        passEncoder.setBindGroup(1, this.dataBindGroup);
-        passEncoder.setPipeline(this.prefixSumIn);
-        passEncoder.dispatchWorkgroups(this.numGroups);
-        passEncoder.setPipeline(this.prefixSumPost);
-        passEncoder.dispatchWorkgroups(1);
-        passEncoder.setPipeline(this.prefixSumOut);
-        passEncoder.dispatchWorkgroups(this.numGroups);
-      } else {
-        passEncoder.setBindGroup(0, this.dataBindGroup);
-        passEncoder.setPipeline(this.prefixSumPost);
-        passEncoder.dispatchWorkgroups(1);
-      }
-    }
-    destroy() {
-      if (this.ownsWorkBuffer && this.work) {
-        this.work.destroy();
-      }
-    }
-  };
-
-  // lib/utils.js
-  var addMouseEvents = function(canvas, data) {
-    canvas.addEventListener("mousemove", (event) => {
-      let x = event.pageX;
-      let y = event.pageY;
-      data.mouseX = x / event.target.clientWidth;
-      data.mouseY = y / event.target.clientHeight;
-    });
-  };
-  function createCanvas(width = 500, height = 500) {
-    let dpi = devicePixelRatio;
-    var canvas = document.createElement("canvas");
-    canvas.width = dpi * width;
-    canvas.height = dpi * height;
-    canvas.style.width = width + "px";
-    document.body.appendChild(canvas);
-    return canvas;
-  }
-  function isBuffer(buffer2) {
-    return buffer2.__proto__.constructor.name === "GPUBuffer";
-  }
-  function makeResource(resource) {
-    return isBuffer(resource) ? { buffer: resource } : resource;
-  }
-  function makeBindGroupDescriptor(layout, resourceList, offset = 0) {
-    return {
-      layout,
-      entries: resourceList.map((resource, i) => {
-        return {
-          binding: i + offset,
-          resource: makeResource(resource)
-        };
-      })
-    };
-  }
-  async function readBuffer(state2, buffer2) {
-    const constructor = Float32Array;
-    const device = state2.device;
-    const commandEncoder = device.createCommandEncoder();
-    const C = new constructor(buffer2.size);
-    const CReadCopy = device.createBuffer({
-      size: buffer2.size,
-      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-    });
-    const texture = device.createTexture({
-      size: [500, 500, 1],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
-    });
-    commandEncoder.copyBufferToBuffer(buffer2, 0, CReadCopy, 0, buffer2.size);
-    device.queue.submit([commandEncoder.finish()]);
-    await CReadCopy.mapAsync(GPUMapMode.READ);
-    C.set(new Float32Array(CReadCopy.getMappedRange()));
-    CReadCopy.unmap();
-    return C;
-  }
-  function createBuffer(device, stuff) {
-    const buffer2 = device.createBuffer({
-      size: 4,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage.UNIFORM
-    });
-    new Uint32Array(buffer2.getMappedRange())[0] = stuff;
-    buffer2.unmap();
-    return buffer2;
-  }
-  function makeBuffer(device, size = 4, usage, data, type) {
-    const buffer2 = device.createBuffer({
-      size,
-      mappedAtCreation: true,
-      usage: GPUBufferUsage[usage]
-    });
-    new type(buffer2.getMappedRange()).set(data);
-    buffer2.unmap();
-    return buffer2;
-  }
-  var paramsBuffer = function(device) {
-    return device.createBuffer({
-      size: 8,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-    });
-  };
-  function makeBindGroup(device, pipelineLayout, resourceList, offset) {
-    return device.createBindGroup(makeBindGroupDescriptor(pipelineLayout, resourceList, offset));
-  }
-  var utils_default = {
-    paramsBuffer,
-    makeBuffer,
-    createBuffer,
-    createCanvas,
-    addMouseEvents,
-    makeBindGroupDescriptor,
-    makeBindGroup,
-    readBuffer
-  };
-
-  // lib/Texture.js
-  var makeImgTexture = async (state2) => {
-    const img = document.createElement("img");
-    const source = img;
-    source.width = innerWidth;
-    source.height = innerHeight;
-    img.src = state2.data.texture;
-    await img.decode();
-    return await createImageBitmap(img);
-  };
-  async function makeTexture(device, textureData, options = {}) {
-    if (Array.isArray(textureData)) {
-      return {
-        width: textureData[0],
-        height: textureData[1],
-        texture: device.createTexture({
-          size: {
-            width: textureData[0],
-            height: textureData[1]
-          },
-          format: "rgba8unorm",
-          usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
-        })
-      };
-    }
-    if (HTMLImageElement === textureData.constructor) {
-      let img = textureData;
-      await img.decode();
-      await createImageBitmap(img);
-      let imageBitmap = await createImageBitmap(img);
-      let texture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        mipLevelCount: options.mipLevelCount,
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
-      });
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      return {
-        imageBitmap,
-        texture,
-        width: imageBitmap.width,
-        height: imageBitmap.height
-      };
-    } else if ("string" === typeof textureData) {
-      let texture = device.createTexture({
-        size: [900, 500, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      let imageBitmap = await makeImgTexture(state);
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      return texture;
-    } else if (typeof textureData === "object") {
-      console.log(textureData.format);
-      let texture = device.createTexture({
-        size: [textureData.width, textureData.height, 1],
-        format: textureData.format,
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
-      });
-      return { texture, width: textureData.width, height: textureData.height };
-    }
-  }
-
-  // lib/computePass.js
-  function createComputePass(options, state2) {
-    let device = state2.device;
-    const pipeline = device.createComputePipeline({
-      layout: "auto",
-      label: options.label,
-      compute: {
-        module: device.createShaderModule({
-          code: options.code
-        }),
-        entryPoint: options.entryPoint || "main"
-      }
-    });
-    const mainComputePass = {
-      pipeline,
-      bindGroups: options.bindGroups(state2, pipeline),
-      uniforms: {
-        blur: {
-          buffer: utils_default.paramsBuffer(device),
-          value: 15
-        }
-      },
-      workGroups: [
-        [],
-        []
-      ]
-    };
-    state2.computePass = mainComputePass;
-  }
-
-  // lib/main.js
-  function isFunction(fn) {
-    return fn.call;
-  }
-  function bindUniforms(state2, options, device) {
-    const context = { tick: Date.now() };
-    let size = 0;
-    let uniforms = {};
-    for (let key in options.uniforms) {
-      if (!isFunction(options.uniforms[key]))
-        continue;
-      if (options.uniforms[key].isProp)
-        continue;
-      let result = options.uniforms[key](context);
-      size += result.byteLength || 4;
-      uniforms[key] = function(a) {
-        device.queue.writeBuffer(state2.uniformBuffer, size, a.buffer, a.byteOffset, a.byteLength);
-      };
-    }
-    const uniformBuffer = device.createBuffer({
-      size,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    });
-    return [uniformBuffer, uniforms];
-  }
-  async function makeBindGroup2(state2, options) {
-    let { device, pipeline } = state2;
-    [state2.uniformBuffer, state2.uniforms] = bindUniforms(state2, options, device);
-    state2.bindGroupDescriptor = state2.options.bindGroupDescriptor || {
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: state2.uniformBuffer }
-        }
-      ]
-    };
-    if (state2.options?.uniforms?.texture) {
-      let texture = await state2.options.uniforms.texture;
-      state2.bindGroupDescriptor.entries.push(
-        {
-          binding: 1,
-          resource: texture.sampler
-        },
-        {
-          binding: 2,
-          resource: texture.texture.createView()
-        }
-      );
-    }
-    return options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
-  }
-  async function createRenderPasses(state2, options) {
-    let device = state2.device;
-    const mainRenderPass = {
-      renderPassDescriptor: state2.renderPassDescriptor,
-      texture: state2.texture,
-      pipeline: state2.pipeline = await makePipeline(state2, options),
-      attributes: [],
-      type: "draw"
-    };
-    if (options.uniforms || options.bindGroup) {
-      mainRenderPass.bindGroup = await makeBindGroup2(state2, options);
-    }
-    if (options.indices) {
-      mainRenderPass.indices = options.indices;
-    }
-    for (var key in state2.options.attributes) {
-      mainRenderPass.attributes.push(updateAttributes(state2, device, key));
-    }
-    state2.renderPasses.push(mainRenderPass);
-  }
-  function updateUniforms(state2, device, newScope) {
-    let size = 0;
-    const context = { tick: Date.now() };
-    for (let key in state2.options.uniforms) {
-      if (!isFunction(state2.options.uniforms[key]))
-        continue;
-      if (state2.options.uniforms[key].isProp) {
-        return;
-      }
-      let result = isFunction(state2.options.uniforms[key]) ? state2.options.uniforms[key](context) : state2.options.uniforms[key];
-      device.queue.writeBuffer(state2.uniformBuffer, size, result.buffer, result.byteOffset, result.byteLength);
-      size += result.byteLength;
-    }
-  }
-  function isTypedArray(array) {
-    return array.subarray;
-  }
-  function updateAttributes(state2, device, name) {
-    let cubeVertexArray;
-    if (isTypedArray(state2.options.attributes)) {
-      cubeVertexArray = state2.options.attributes[name];
-    } else {
-      cubeVertexArray = new Float32Array(state2.options.attributes[name].data.flat());
-    }
-    return utils_default.makeBuffer(device, cubeVertexArray.byteLength, "VERTEX", cubeVertexArray, Float32Array);
-  }
-  var recordRenderPass = async function(state2, newScope = {}, CE) {
-    let { device, renderPassDescriptor } = state2;
-    const swapChainTexture = state2.context.getCurrentTexture();
-    if (state2.options.renderPassDescriptor) {
-      renderPassDescriptor = state2.options.renderPassDescriptor;
-    } else {
-      renderPassDescriptor.colorAttachments[0].view = swapChainTexture.createView();
-    }
-    const commandEncoder = CE || state2.ctx.commandEncoder || device.createCommandEncoder();
-    state2.ctx.commandEncoder = commandEncoder;
-    let _ = state2.renderPasses[0];
-    if (!_)
-      return console.log("no worky");
-    if (state2.options?.uniforms)
-      updateUniforms(state2, device, newScope);
-    let passEncoder = commandEncoder.beginRenderPass(
-      renderPassDescriptor
-    );
-    if (state2.options.attributeBufferData) {
-      for (let i = 0; i < state2.options.attributeBufferData.length; i++) {
-        passEncoder.setVertexBuffer(i, state2.options.attributeBufferData[i]);
-      }
-    } else {
-      for (let i = 0; i < _.attributes.length; i++) {
-        passEncoder.setVertexBuffer(i, _.attributes[i]);
-      }
-    }
-    passEncoder.setPipeline(_.pipeline);
-    if (_.bindGroup) {
-      if (Array.isArray(_.bindGroup)) {
-        _.bindGroup.forEach(function(bg, i) {
-          passEncoder.setBindGroup(i, bg);
-        });
-      } else
-        passEncoder.setBindGroup(0, _.bindGroup);
-    }
-    if (_.indices) {
-      const icoFaces = utils_default.makeBuffer(device, _.indices.length * 2, "INDEX", _.indices, Uint16Array);
-      passEncoder.setIndexBuffer(icoFaces, "uint16");
-      passEncoder.drawIndexed(state2.options.indexCount);
-    } else {
-      passEncoder.draw(state2?.options?.count || 6, state2?.options?.instances || 1, 0, 0);
-    }
-    passEncoder.end();
-    if (state2?.options?.postRender)
-      state2?.options?.postRender(commandEncoder, swapChainTexture);
-    if (!newScope.noSubmit) {
-      device.queue.submit([commandEncoder.finish()]);
-      delete state2.ctx.commandEncoder;
-    }
-  };
-  async function makePipeline(state2) {
-    let { device } = state2;
-    let pipelineDesc = {
-      layout: state2.options.layout || "auto",
-      label: state2?.options?.label || "simple-gpu-draw",
-      vertex: {
-        module: device.createShaderModule({
-          code: state2?.options?.shader?.code || state2.options.vert
-        }),
-        entryPoint: state2?.options?.shader?.vertEntryPoint || "main"
-      },
-      fragment: {
-        module: device.createShaderModule({
-          code: state2?.options?.shader?.code || state2.options.frag
-        }),
-        entryPoint: state2?.options?.shader?.fragEntryPoint || "main",
-        targets: state2.options.targets ? state2.options.targets.map((format) => {
-          return { format };
-        }) : [
-          {
-            format: navigator.gpu.getPreferredCanvasFormat(),
-            blend: state2.options.blend
-          }
-        ]
-      },
-      primitive: {
-        topology: state2?.options?.primitive || "triangle-list"
-      },
-      depthStencil: {
-        depthWriteEnabled: true,
-        depthCompare: "less",
-        format: "depth24plus"
-      }
-    };
-    if (state2.options.attributeBuffers) {
-      pipelineDesc.vertex.buffers = state2.options.attributeBuffers;
-    } else if (state2.options.attributes) {
-      pipelineDesc.vertex.buffers = [];
-      pipelineDesc.vertex.buffers.push(
-        {
-          arrayStride: 4 * state2.options.attributes.position.data[0].length,
-          //two vertices so 4 bytes each
-          attributes: [
-            {
-              // position
-              shaderLocation: 0,
-              offset: 0,
-              format: state2.options.attributes.position.format
-            },
-            {
-              // color
-              shaderLocation: 1,
-              offset: state2.options.attributes?.uv?.offset || 0,
-              //format: state.options.attributes.uv.format,
-              format: "float32x2"
-            }
-          ]
-        }
-      );
-    }
-    const depthTexture = device.createTexture({
-      size: [500 * devicePixelRatio, 500 * devicePixelRatio],
-      format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT
-    });
-    const renderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: void 0,
-          clearValue: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
-          loadOp: "clear",
-          storeOp: "store"
-        }
-      ],
-      depthStencilAttachment: {
-        view: depthTexture.createView(),
-        depthClearValue: 1,
-        depthLoadOp: "clear",
-        depthStoreOp: "store"
-      }
-    };
-    state2.renderPassDescriptor = renderPassDescriptor;
-    return device.createRenderPipeline({ ...pipelineDesc });
-  }
-  async function init(options = {}) {
-    let canvas = options.canvas || utils_default.createCanvas();
-    let ctx = {};
-    const state2 = {
-      renderPassDescriptor: {},
-      options,
-      compute: options.compute,
-      //user data
-      renderPasses: [],
-      //internal state
-      canvas,
-      ctx
-    };
-    if (!navigator.gpu)
-      return alert("Error: webgpu is not available. Please install canary!!!");
-    const context = canvas.getContext("webgpu");
-    const adapter = await navigator.gpu.requestAdapter();
-    const device = await adapter?.requestDevice();
-    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-    Object.assign(state2, {
-      device,
-      context,
-      adapter
-    });
-    context.configure({
-      device,
-      format: presentationFormat,
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-      alphaMode: "opaque"
-    });
-    async function texture(img, options2) {
-      const sampler = device.createSampler({
-        magFilter: "linear",
-        minFilter: "linear",
-        mipmapFilter: "nearest"
-      });
-      const texture2 = await makeTexture(device, img, options2);
-      return {
-        data: img,
-        texture: texture2.texture,
-        sampler,
-        width: texture2.width,
-        height: texture2.height,
-        imageBitmap: texture2.imageBitmap,
-        read: async function(n) {
-          const C = new Float32Array(n * n);
-          const CReadCopy = device.createBuffer({
-            size: m * n * 4,
-            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-          });
-          await CReadCopy.mapAsync(GPUMapMode.READ);
-          c.set(new Float32Array(CReadCopy.getMappedRange()));
-          CReadCopy.unmap();
-          return c;
-        }
-      };
-    }
-    return {
-      initDrawCall,
-      buffer,
-      prop,
-      clear,
-      frame,
-      initComputeCall,
-      device,
-      context,
-      texture,
-      attribute,
-      canvas,
-      state: state2
-    };
-    function initComputeCall(options2) {
-      let localState = {
-        ...state2
-      };
-      localState.compute = options2;
-      createComputePass(options2, localState);
-      function compute(options3, CE) {
-        localState.compute.exec(localState, CE);
-        return localState;
-      }
-      compute.submit = function() {
-        state2.device.queue.submit([state2.commandEncoder.finish()]);
-        delete state2.commandEncoder;
-      };
-      compute.state = state2;
-      return compute;
-    }
-    function frame(cb) {
-      requestAnimationFrame(function recur() {
-        cb();
-        requestAnimationFrame(recur);
-      });
-    }
-    async function initDrawCall(options2) {
-      let localState = Object.assign(
-        Object.create(state2),
-        {
-          options: options2,
-          device,
-          renderPasses: []
-        }
-      );
-      await createRenderPasses(localState, options2);
-      function draw(newScope, commandEncoder) {
-        if (Array.isArray(newScope))
-          return newScope.map((scope) => draw(scope));
-        recordRenderPass(localState, newScope, commandEncoder);
-        return draw;
-      }
-      draw.canvas = canvas;
-      draw.prop = prop;
-      draw.buffer = buffer;
-      draw.initDrawCall = initDrawCall;
-      draw.state = localState;
-      draw.draw = draw;
-      return draw;
-    }
-  }
-  function clear(options) {
-    state.clearValue.r = options.color[0];
-    state.clearValue.g = options.color[1];
-    state.clearValue.b = options.color[2];
-  }
-  function buffer(array) {
-    if (!(this instanceof buffer))
-      return new buffer(array);
-    this.array = array;
-  }
-  function prop(name) {
-    let functor = (state2, newScope) => {
-      let context = {
-        viewportWidth: 500,
-        viewportHeight: 500,
-        tick: performance.now()
-      };
-      return newscope[name];
-    };
-    functor.isProp = true;
-    return functor;
-  }
-  function attribute(data, offset, format) {
-    return {
-      data,
-      offset,
-      format: `float32x${format}`
-    };
-  }
-  var main_default = init;
-
   // node_modules/gl-matrix/esm/common.js
   var EPSILON = 1e-6;
   var ARRAY_TYPE = typeof Float32Array !== "undefined" ? Float32Array : Array;
@@ -2979,21 +2045,10 @@ fn prefixSumOut(
     };
   }();
 
-  // src/demos/water-simulation.js
-  var NUM_PARTICLES = 256 * 4 * 20;
-  var particlesCount = NUM_PARTICLES;
-  var SCAN_THREADS = 256;
-  var PARTICLE_WORKGROUP_SIZE = SCAN_THREADS;
-  var NGROUPS = NUM_PARTICLES / 256;
+  // src/demos/createCamera
+  var import_mouse_change = __toESM(require_mouse_listen());
+  var import_mouse_wheel = __toESM(require_wheel());
   var isBrowser = typeof window !== "undefined";
-  var COLLISION_TABLE_SIZE = particlesCount / 20;
-  var HASH_VEC = [
-    1,
-    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
-    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
-  ];
-  var PARTICLE_RADIUS = 1.15;
-  var GRID_SPACING = 2 * PARTICLE_RADIUS;
   function createCamera(props_) {
     var props = props_ || {};
     if (typeof props.noScroll === "undefined") {
@@ -3110,22 +2165,968 @@ fn prefixSumOut(
     }
     return setupCamera;
   }
-  var predefines = `struct Uniforms {                                  
-  force: vec2<f32>,                              
-  dt: f32,                                       
-  bounce: u32,                                   
-  friction: f32,                                 
-  aspectRatio: f32,                              
-  w: f32,
-  h: f32,
-};
+  var createCamera_default = createCamera;
 
-struct BucketContents {
-  indices : array<i32, 100>,
-  count : u32,
+  // src/demos/scan.ts
+  var MAX_BUFFER_SIZE = 134217728;
+  var DEFAULT_DATA_TYPE = "f32";
+  var DEFAULT_DATA_SIZE = 4;
+  var DEFAULT_DATA_FUNC = "A + B";
+  var DEFAULT_DATA_UNIT = "0.";
+  var WebGPUScan = class {
+    logNumBanks = 5;
+    threadsPerGroup = 256;
+    itemsPerThread = 256;
+    itemsPerGroup = 65536;
+    itemSize = 4;
+    device;
+    prefixSumShader;
+    postBindGroupLayout;
+    dataBindGroupLayout;
+    postBuffer;
+    postBindGroup;
+    prefixSumIn;
+    prefixSumPost;
+    prefixSumOut;
+    minItems() {
+      return this.itemsPerGroup;
+    }
+    minSize() {
+      return this.minItems() * this.itemSize;
+    }
+    maxItems() {
+      return Math.min(this.itemsPerGroup * this.itemsPerGroup, Math.floor(MAX_BUFFER_SIZE / (this.itemSize * this.itemsPerGroup)) * this.itemsPerGroup);
+    }
+    maxSize() {
+      return this.itemSize;
+    }
+    constructor(config) {
+      this.device = config.device;
+      if (config["threadsPerGroup"]) {
+        this.threadsPerGroup = config["threadsPerGroup"] >>> 0;
+        if (this.threadsPerGroup < 1 || this.threadsPerGroup > 256) {
+          throw new Error("Threads per group must be between 1 and 256");
+        }
+      }
+      if (config["itemsPerThread"]) {
+        this.itemsPerThread = config["itemsPerThread"] >>> 0;
+        if (this.itemsPerThread < 1) {
+          throw new Error("Items per thread must be > 1");
+        }
+      }
+      this.itemsPerGroup = this.threadsPerGroup * this.itemsPerThread;
+      const dataType = config.dataType || DEFAULT_DATA_TYPE;
+      const dataSize = config.dataSize || DEFAULT_DATA_SIZE;
+      const dataFunc = config.dataFunc || DEFAULT_DATA_FUNC;
+      const dataUnit = config.dataUnit || DEFAULT_DATA_UNIT;
+      this.itemSize = dataSize;
+      this.prefixSumShader = this.device.createShaderModule({
+        code: `
+${config.header || ""}
+
+@binding(0) @group(0) var<storage, read_write> post : array<${dataType}>;
+@binding(0) @group(1) var<storage, read_write> data : array<${dataType}>;
+@binding(1) @group(1) var<storage, read_write> work : array<${dataType}>;
+
+fn conflictFreeOffset (offset:u32) -> u32 {
+  return offset + (offset >> ${this.logNumBanks});
+}
+  
+var<workgroup> workerSums : array<${dataType}, ${2 * this.threadsPerGroup}>;
+fn partialSum (localId : u32) -> ${dataType} {
+  var offset = 1u;
+  for (var d = ${this.threadsPerGroup >> 1}u; d > 0u; d = d >> 1u) {
+    if (localId < d) {
+      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
+      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
+      var A = workerSums[ai];
+      var B = workerSums[bi];
+      workerSums[bi] = ${dataFunc};
+    }
+    offset *= 2u;
+    workgroupBarrier();
+  }
+  if (localId == 0u) {
+    workerSums[conflictFreeOffset(${this.threadsPerGroup - 1}u)] = ${dataUnit};
+  }
+  for (var d = 1u; d < ${this.threadsPerGroup}u; d = d * 2u) {
+    offset = offset >> 1u;
+    if (localId < d) {
+      var ai = conflictFreeOffset(offset * (2u * localId + 1u) - 1u);
+      var bi = conflictFreeOffset(offset * (2u * localId + 2u) - 1u);
+      var A = workerSums[ai];
+      var B = workerSums[bi];
+      workerSums[ai] = B;
+      workerSums[bi] = ${dataFunc};
+    }
+    workgroupBarrier();
+  }
+
+  return workerSums[conflictFreeOffset(localId)];
+}
+  
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumIn(
+  @builtin(workgroup_id) groupId : vec3<u32>,
+  @builtin(local_invocation_id) localVec : vec3<u32>,
+  @builtin(global_invocation_id) globalVec : vec3<u32>) {
+  var localId = localVec.x;
+  var globalId = globalVec.x;
+  var offset = ${this.itemsPerThread}u * globalId;
+
+  var A = ${dataUnit};
+  var localVals = array<${dataType}, ${this.itemsPerThread}>();
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = data[offset + i];
+    A = ${dataFunc};
+    localVals[i] = A;
+  }
+  workerSums[conflictFreeOffset(localId)] = A;
+  workgroupBarrier();
+
+  A = partialSum(localId);
+
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = localVals[i];
+    var C = ${dataFunc};
+    work[offset + i] = C;
+    if (i == ${this.itemsPerThread - 1}u && localId == ${this.threadsPerGroup - 1}u) {
+      post[groupId.x] = C;
+    }
+  }
 }
 
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumPost(@builtin(local_invocation_id) localVec : vec3<u32>) {
+  var localId = localVec.x;
+  var offset = localId * ${this.itemsPerThread}u;
+
+  var A = ${dataUnit};
+  var localVals = array<${dataType}, ${this.itemsPerThread}>();
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = post[offset + i];
+    A = ${dataFunc};
+    localVals[i] = A;
+  }
+  workerSums[conflictFreeOffset(localId)] = A;
+  workgroupBarrier();
+
+  A = partialSum(localId);
+  for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+    var B = localVals[i];
+    post[offset + i] = ${dataFunc};
+  }
+}
+
+@compute @workgroup_size(${this.threadsPerGroup}, 1, 1)
+fn prefixSumOut(
+  @builtin(workgroup_id) groupId : vec3<u32>,
+  @builtin(global_invocation_id) globalVec : vec3<u32>) {
+  var globalId = globalVec.x;
+  var offset = ${this.itemsPerThread}u * globalId;
+  if (groupId.x > 0u) {
+    var s = post[groupId.x - 1u];
+    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+      data[offset + i] = s + work[offset + i];
+    }
+  } else {
+    for (var i = 0u; i < ${this.itemsPerThread}u; i = i + 1u) {
+      data[offset + i] = work[offset + i];
+    }
+  }
+}
+`
+      });
+      this.postBuffer = this.device.createBuffer({
+        label: "postBuffer",
+        size: this.itemsPerGroup * this.itemSize,
+        usage: GPUBufferUsage.STORAGE
+      });
+      this.postBindGroupLayout = this.device.createBindGroupLayout({
+        label: "postBindGroupLayout",
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }]
+      });
+      this.postBindGroup = this.device.createBindGroup({
+        label: "postBindGroup",
+        layout: this.postBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: this.postBuffer
+          }
+        }]
+      });
+      this.dataBindGroupLayout = this.device.createBindGroupLayout({
+        label: "dataBindGroupLayout",
+        entries: [{
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }, {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: {
+            type: "storage",
+            hasDynamicOffset: false,
+            minBindingSize: this.itemSize * this.itemsPerGroup
+          }
+        }]
+      });
+      const layout = this.device.createPipelineLayout({
+        label: "commonScanLayout",
+        bindGroupLayouts: [
+          this.postBindGroupLayout,
+          this.dataBindGroupLayout
+        ]
+      });
+      this.prefixSumIn = this.device.createComputePipelineAsync({
+        label: "prefixSumIn",
+        layout,
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumIn"
+        }
+      });
+      this.prefixSumPost = this.device.createComputePipelineAsync({
+        label: "prefixSumPost",
+        layout: this.device.createPipelineLayout({
+          label: "postScanLayout",
+          bindGroupLayouts: [this.postBindGroupLayout]
+        }),
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumPost"
+        }
+      });
+      this.prefixSumOut = this.device.createComputePipelineAsync({
+        label: "prefixSumOut",
+        layout,
+        compute: {
+          module: this.prefixSumShader,
+          entryPoint: "prefixSumOut"
+        }
+      });
+    }
+    async createPass(n, data, work) {
+      if (n < this.minItems() || n > this.maxItems() || n % this.itemsPerGroup !== 0) {
+        throw new Error("Invalid item count");
+      }
+      let ownsWorkBuffer = false;
+      let workBuffer = null;
+      if (n > this.minItems()) {
+        if (work) {
+          workBuffer = work;
+        } else {
+          workBuffer = this.device.createBuffer(
+            {
+              label: "workBuffer",
+              size: n * this.itemSize,
+              usage: GPUBufferUsage.STORAGE
+            }
+          );
+          ownsWorkBuffer = true;
+        }
+      }
+      let dataBindGroup;
+      if (workBuffer) {
+        dataBindGroup = this.device.createBindGroup({
+          label: "dataBindGroup",
+          layout: this.dataBindGroupLayout,
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: data
+            }
+          }, {
+            binding: 1,
+            resource: {
+              buffer: workBuffer
+            }
+          }]
+        });
+      } else {
+        dataBindGroup = this.device.createBindGroup({
+          label: "dataBindGroupSmall",
+          layout: this.postBindGroupLayout,
+          entries: [{
+            binding: 0,
+            resource: {
+              buffer: data
+            }
+          }]
+        });
+      }
+      return new WebGPUScanPass(
+        n / this.itemsPerGroup >>> 0,
+        dataBindGroup,
+        this.postBindGroup,
+        workBuffer,
+        ownsWorkBuffer,
+        await this.prefixSumIn,
+        await this.prefixSumPost,
+        await this.prefixSumOut
+      );
+    }
+    destroy() {
+      this.postBuffer.destroy();
+    }
+  };
+  var WebGPUScanPass = class {
+    constructor(numGroups, dataBindGroup, postBindGroup, work, ownsWorkBuffer, prefixSumIn, prefixSumPost, prefixSumOut) {
+      this.numGroups = numGroups;
+      this.dataBindGroup = dataBindGroup;
+      this.postBindGroup = postBindGroup;
+      this.work = work;
+      this.ownsWorkBuffer = ownsWorkBuffer;
+      this.prefixSumIn = prefixSumIn;
+      this.prefixSumPost = prefixSumPost;
+      this.prefixSumOut = prefixSumOut;
+    }
+    run(passEncoder) {
+      if (this.work) {
+        passEncoder.setBindGroup(0, this.postBindGroup);
+        passEncoder.setBindGroup(1, this.dataBindGroup);
+        passEncoder.setPipeline(this.prefixSumIn);
+        passEncoder.dispatchWorkgroups(this.numGroups);
+        passEncoder.setPipeline(this.prefixSumPost);
+        passEncoder.dispatchWorkgroups(1);
+        passEncoder.setPipeline(this.prefixSumOut);
+        passEncoder.dispatchWorkgroups(this.numGroups);
+      } else {
+        passEncoder.setBindGroup(0, this.dataBindGroup);
+        passEncoder.setPipeline(this.prefixSumPost);
+        passEncoder.dispatchWorkgroups(1);
+      }
+    }
+    destroy() {
+      if (this.ownsWorkBuffer && this.work) {
+        this.work.destroy();
+      }
+    }
+  };
+
+  // lib/utils.js
+  var addMouseEvents = function(canvas, data) {
+    canvas.addEventListener("mousemove", (event) => {
+      let x = event.pageX;
+      let y = event.pageY;
+      data.mouseX = x / event.target.clientWidth;
+      data.mouseY = y / event.target.clientHeight;
+    });
+  };
+  function createCanvas(width = 1e3, height = 1e3) {
+    let dpi = devicePixelRatio;
+    var canvas = document.createElement("canvas");
+    canvas.width = dpi * width;
+    canvas.height = dpi * height;
+    canvas.style.width = width + "px";
+    document.body.appendChild(canvas);
+    return canvas;
+  }
+  function isBuffer(buffer2) {
+    return buffer2.__proto__.constructor.name === "GPUBuffer";
+  }
+  function makeResource(resource) {
+    return isBuffer(resource) ? { buffer: resource } : resource;
+  }
+  function makeBindGroupDescriptor(layout, resourceList, offset = 0) {
+    return {
+      layout,
+      entries: resourceList.map((resource, i) => {
+        return {
+          binding: i + offset,
+          resource: makeResource(resource)
+        };
+      })
+    };
+  }
+  async function readBuffer(state2, buffer2, flag = false) {
+    const constructor = flag ? Float32Array : Uint32Array;
+    const device = state2.device;
+    const commandEncoder = device.createCommandEncoder();
+    const C = new constructor(buffer2.size);
+    const CReadCopy = device.createBuffer({
+      size: buffer2.size,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+    const texture = device.createTexture({
+      size: [500, 500, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
+    });
+    commandEncoder.copyBufferToBuffer(buffer2, 0, CReadCopy, 0, buffer2.size);
+    device.queue.submit([commandEncoder.finish()]);
+    await CReadCopy.mapAsync(GPUMapMode.READ);
+    C.set(new constructor(CReadCopy.getMappedRange()));
+    CReadCopy.unmap();
+    return C;
+  }
+  function createBuffer(device, stuff2) {
+    const buffer2 = device.createBuffer({
+      size: 4,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage.UNIFORM
+    });
+    new Uint32Array(buffer2.getMappedRange())[0] = stuff2;
+    buffer2.unmap();
+    return buffer2;
+  }
+  function makeBuffer(device, size = 4, usage, data, type) {
+    const buffer2 = device.createBuffer({
+      size,
+      mappedAtCreation: true,
+      usage: GPUBufferUsage[usage]
+    });
+    new type(buffer2.getMappedRange()).set(data);
+    buffer2.unmap();
+    return buffer2;
+  }
+  var paramsBuffer = function(device) {
+    return device.createBuffer({
+      size: 8,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+    });
+  };
+  function makeBindGroup(device, pipelineLayout, resourceList, offset) {
+    return device.createBindGroup(makeBindGroupDescriptor(pipelineLayout, resourceList, offset));
+  }
+  var utils_default = {
+    paramsBuffer,
+    makeBuffer,
+    createBuffer,
+    createCanvas,
+    addMouseEvents,
+    makeBindGroupDescriptor,
+    makeBindGroup,
+    readBuffer
+  };
+
+  // lib/Texture.js
+  var makeImgTexture = async (state2) => {
+    const img = document.createElement("img");
+    const source = img;
+    source.width = innerWidth;
+    source.height = innerHeight;
+    img.src = state2.data.texture;
+    await img.decode();
+    return await createImageBitmap(img);
+  };
+  async function makeTexture(device, textureData, options = {}) {
+    if (Array.isArray(textureData)) {
+      return {
+        width: textureData[0],
+        height: textureData[1],
+        texture: device.createTexture({
+          size: {
+            width: textureData[0],
+            height: textureData[1]
+          },
+          format: "rgba8unorm",
+          usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
+        })
+      };
+    }
+    if (HTMLImageElement === textureData.constructor) {
+      let img = textureData;
+      await img.decode();
+      await createImageBitmap(img);
+      let imageBitmap = await createImageBitmap(img);
+      let texture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        mipLevelCount: options.mipLevelCount,
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.STORAGE_BINDING
+      });
+      device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture },
+        [imageBitmap.width, imageBitmap.height]
+      );
+      return {
+        imageBitmap,
+        texture,
+        width: imageBitmap.width,
+        height: imageBitmap.height
+      };
+    } else if ("string" === typeof textureData) {
+      let texture = device.createTexture({
+        size: [900, 500, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      let imageBitmap = await makeImgTexture(state);
+      device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture },
+        [imageBitmap.width, imageBitmap.height]
+      );
+      return texture;
+    } else if (typeof textureData === "object") {
+      console.log(textureData.format);
+      let texture = device.createTexture({
+        size: [textureData.width, textureData.height, 1],
+        format: textureData.format,
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      return { texture, width: textureData.width, height: textureData.height };
+    }
+  }
+
+  // lib/computePass.js
+  function createComputePass(options, state2) {
+    let device = state2.device;
+    const pipeline = device.createComputePipeline({
+      layout: "auto",
+      label: options.label,
+      compute: {
+        module: device.createShaderModule({
+          code: options.code
+        }),
+        entryPoint: options.entryPoint || "main"
+      }
+    });
+    const mainComputePass = {
+      pipeline,
+      bindGroups: options.bindGroups(state2, pipeline),
+      uniforms: {
+        blur: {
+          buffer: utils_default.paramsBuffer(device),
+          value: 15
+        }
+      },
+      workGroups: [
+        [],
+        []
+      ]
+    };
+    state2.computePass = mainComputePass;
+  }
+
+  // lib/main.js
+  function isFunction(fn) {
+    return fn.call;
+  }
+  function bindUniforms(state2, options, device) {
+    const context = { tick: Date.now() };
+    let size = 0;
+    let uniforms = {};
+    for (let key in options.uniforms) {
+      if (!isFunction(options.uniforms[key]))
+        continue;
+      if (options.uniforms[key].isProp)
+        continue;
+      let result = options.uniforms[key](context);
+      size += result.byteLength || 4;
+      uniforms[key] = function(a) {
+        device.queue.writeBuffer(state2.uniformBuffer, size, a.buffer, a.byteOffset, a.byteLength);
+      };
+    }
+    const uniformBuffer = device.createBuffer({
+      size,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+    return [uniformBuffer, uniforms];
+  }
+  async function makeBindGroup2(state2, options) {
+    let { device, pipeline } = state2;
+    [state2.uniformBuffer, state2.uniforms] = bindUniforms(state2, options, device);
+    state2.bindGroupDescriptor = state2.options.bindGroupDescriptor || {
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: state2.uniformBuffer }
+        }
+      ]
+    };
+    if (state2.options?.uniforms?.texture) {
+      let texture = await state2.options.uniforms.texture;
+      state2.bindGroupDescriptor.entries.push(
+        {
+          binding: 1,
+          resource: texture.sampler
+        },
+        {
+          binding: 2,
+          resource: texture.texture.createView()
+        }
+      );
+    }
+    return options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+  }
+  async function createRenderPasses(state2, options) {
+    let device = state2.device;
+    const mainRenderPass = {
+      renderPassDescriptor: state2.renderPassDescriptor,
+      texture: state2.texture,
+      pipeline: state2.pipeline = await makePipeline(state2, options),
+      attributes: [],
+      type: "draw"
+    };
+    if (options.uniforms || options.bindGroup) {
+      mainRenderPass.bindGroup = await makeBindGroup2(state2, options);
+    }
+    if (options.indices) {
+      mainRenderPass.indices = options.indices;
+    }
+    for (var key in state2.options.attributes) {
+      mainRenderPass.attributes.push(updateAttributes(state2, device, key));
+    }
+    state2.renderPasses.push(mainRenderPass);
+  }
+  function updateUniforms(state2, device, newScope) {
+    let size = 0;
+    const context = { tick: Date.now() };
+    for (let key in state2.options.uniforms) {
+      if (!isFunction(state2.options.uniforms[key]))
+        continue;
+      if (state2.options.uniforms[key].isProp) {
+        return;
+      }
+      let result = isFunction(state2.options.uniforms[key]) ? state2.options.uniforms[key](context) : state2.options.uniforms[key];
+      device.queue.writeBuffer(state2.uniformBuffer, size, result.buffer, result.byteOffset, result.byteLength);
+      size += result.byteLength;
+    }
+  }
+  function isTypedArray(array) {
+    return array.subarray;
+  }
+  function updateAttributes(state2, device, name) {
+    let cubeVertexArray;
+    if (isTypedArray(state2.options.attributes)) {
+      cubeVertexArray = state2.options.attributes[name];
+    } else {
+      cubeVertexArray = new Float32Array(state2.options.attributes[name].data.flat());
+    }
+    return utils_default.makeBuffer(device, cubeVertexArray.byteLength, "VERTEX", cubeVertexArray, Float32Array);
+  }
+  var recordRenderPass = async function(state2, newScope = {}, CE) {
+    let { device, renderPassDescriptor } = state2;
+    const swapChainTexture = state2.context.getCurrentTexture();
+    if (state2.options.renderPassDescriptor) {
+      renderPassDescriptor = state2.options.renderPassDescriptor;
+    } else {
+      renderPassDescriptor.colorAttachments[0].view = swapChainTexture.createView();
+    }
+    const commandEncoder = CE || state2.ctx.commandEncoder || device.createCommandEncoder();
+    state2.ctx.commandEncoder = commandEncoder;
+    let _ = state2.renderPasses[0];
+    if (!_)
+      return console.log("no worky");
+    if (state2.options?.uniforms)
+      updateUniforms(state2, device, newScope);
+    let passEncoder = commandEncoder.beginRenderPass(
+      renderPassDescriptor
+    );
+    if (state2.options.attributeBufferData) {
+      for (let i = 0; i < state2.options.attributeBufferData.length; i++) {
+        passEncoder.setVertexBuffer(i, state2.options.attributeBufferData[i]);
+      }
+    } else {
+      for (let i = 0; i < _.attributes.length; i++) {
+        passEncoder.setVertexBuffer(i, _.attributes[i]);
+      }
+    }
+    passEncoder.setPipeline(_.pipeline);
+    if (_.bindGroup) {
+      if (Array.isArray(_.bindGroup)) {
+        _.bindGroup.forEach(function(bg, i) {
+          passEncoder.setBindGroup(i, bg);
+        });
+      } else
+        passEncoder.setBindGroup(0, _.bindGroup);
+    }
+    if (_.indices) {
+      const icoFaces = utils_default.makeBuffer(device, _.indices.length * 2, "INDEX", _.indices, Uint16Array);
+      passEncoder.setIndexBuffer(icoFaces, "uint16");
+      passEncoder.drawIndexed(state2.options.indexCount);
+    } else {
+      passEncoder.draw(state2?.options?.count || 6, state2?.options?.instances || 1, 0, 0);
+    }
+    passEncoder.end();
+    if (state2?.options?.postRender)
+      state2?.options?.postRender(commandEncoder, swapChainTexture);
+    if (!newScope.noSubmit) {
+      device.queue.submit([commandEncoder.finish()]);
+      delete state2.ctx.commandEncoder;
+    }
+  };
+  async function makePipeline(state2) {
+    let { device } = state2;
+    let pipelineDesc = {
+      layout: state2.options.layout || "auto",
+      label: state2?.options?.label || "simple-gpu-draw",
+      vertex: {
+        module: device.createShaderModule({
+          code: state2?.options?.shader?.code || state2.options.vert
+        }),
+        entryPoint: state2?.options?.shader?.vertEntryPoint || "main"
+      },
+      fragment: {
+        module: device.createShaderModule({
+          code: state2?.options?.shader?.code || state2.options.frag
+        }),
+        entryPoint: state2?.options?.shader?.fragEntryPoint || "main",
+        targets: state2.options.targets ? state2.options.targets.map((format) => {
+          return { format };
+        }) : [
+          {
+            format: navigator.gpu.getPreferredCanvasFormat(),
+            blend: state2.options.blend
+          }
+        ]
+      },
+      primitive: {
+        topology: state2?.options?.primitive || "triangle-list"
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    };
+    if (state2.options.attributeBuffers) {
+      pipelineDesc.vertex.buffers = state2.options.attributeBuffers;
+    } else if (state2.options.attributes) {
+      pipelineDesc.vertex.buffers = [];
+      pipelineDesc.vertex.buffers.push(
+        {
+          arrayStride: 4 * state2.options.attributes.position.data[0].length,
+          //two vertices so 4 bytes each
+          attributes: [
+            {
+              // position
+              shaderLocation: 0,
+              offset: 0,
+              format: state2.options.attributes.position.format
+            },
+            {
+              // color
+              shaderLocation: 1,
+              offset: state2.options.attributes?.uv?.offset || 0,
+              //format: state.options.attributes.uv.format,
+              format: "float32x2"
+            }
+          ]
+        }
+      );
+    }
+    const depthTexture = device.createTexture({
+      size: [1e3 * devicePixelRatio, 1e3 * devicePixelRatio],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    const renderPassDescriptor = {
+      colorAttachments: [
+        {
+          view: void 0,
+          clearValue: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+          loadOp: "clear",
+          storeOp: "store"
+        }
+      ],
+      depthStencilAttachment: {
+        view: depthTexture.createView(),
+        depthClearValue: 1,
+        depthLoadOp: "clear",
+        depthStoreOp: "store"
+      }
+    };
+    state2.renderPassDescriptor = renderPassDescriptor;
+    return device.createRenderPipeline({ ...pipelineDesc });
+  }
+  async function init(options = {}) {
+    let canvas = options.canvas || utils_default.createCanvas();
+    let ctx = {};
+    const state2 = {
+      renderPassDescriptor: {},
+      options,
+      compute: options.compute,
+      //user data
+      renderPasses: [],
+      //internal state
+      canvas,
+      ctx
+    };
+    if (!navigator.gpu)
+      return alert("Error: webgpu is not available. Please install canary!!!");
+    const context = canvas.getContext("webgpu");
+    const adapter = await navigator.gpu.requestAdapter();
+    const device = await adapter?.requestDevice({
+      //    requiredFeatures: ["timestamp-query"],
+      //https://omar-shehata.medium.com/how-to-use-webgpu-timestamp-query-9bf81fb5344a
+      //https://www.graphics.rwth-aachen.de/media/papers/splatting1.pdf
+    });
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    Object.assign(state2, {
+      device,
+      context,
+      adapter
+    });
+    context.configure({
+      device,
+      format: presentationFormat,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      alphaMode: "opaque"
+    });
+    async function texture(img, options2) {
+      const sampler = device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+        mipmapFilter: "nearest"
+      });
+      const texture2 = await makeTexture(device, img, options2);
+      return {
+        data: img,
+        texture: texture2.texture,
+        sampler,
+        width: texture2.width,
+        height: texture2.height,
+        imageBitmap: texture2.imageBitmap,
+        read: async function(n) {
+          const C = new Float32Array(n * n);
+          const CReadCopy = device.createBuffer({
+            size: m * n * 4,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+          });
+          await CReadCopy.mapAsync(GPUMapMode.READ);
+          c.set(new Float32Array(CReadCopy.getMappedRange()));
+          CReadCopy.unmap();
+          return c;
+        }
+      };
+    }
+    return {
+      initDrawCall,
+      buffer,
+      prop,
+      clear,
+      frame,
+      initComputeCall,
+      device,
+      context,
+      texture,
+      attribute,
+      canvas,
+      state: state2
+    };
+    function initComputeCall(options2) {
+      let localState = {
+        ...state2
+      };
+      localState.compute = options2;
+      createComputePass(options2, localState);
+      function compute(options3, CE) {
+        localState.compute.exec(localState, CE);
+        return localState;
+      }
+      compute.submit = function() {
+        state2.device.queue.submit([state2.commandEncoder.finish()]);
+        delete state2.commandEncoder;
+      };
+      compute.state = state2;
+      return compute;
+    }
+    function frame(cb) {
+      requestAnimationFrame(function recur() {
+        cb();
+        requestAnimationFrame(recur);
+      });
+    }
+    async function initDrawCall(options2) {
+      let localState = Object.assign(
+        Object.create(state2),
+        {
+          options: options2,
+          device,
+          renderPasses: []
+        }
+      );
+      await createRenderPasses(localState, options2);
+      function draw(newScope, commandEncoder) {
+        if (Array.isArray(newScope))
+          return newScope.map((scope) => draw(scope));
+        recordRenderPass(localState, newScope, commandEncoder);
+        return draw;
+      }
+      draw.canvas = canvas;
+      draw.prop = prop;
+      draw.buffer = buffer;
+      draw.initDrawCall = initDrawCall;
+      draw.state = localState;
+      draw.draw = draw;
+      draw.state = localState;
+      return draw;
+    }
+  }
+  function clear(options) {
+    state.clearValue.r = options.color[0];
+    state.clearValue.g = options.color[1];
+    state.clearValue.b = options.color[2];
+  }
+  function buffer(array) {
+    if (!(this instanceof buffer))
+      return new buffer(array);
+    this.array = array;
+  }
+  function prop(name) {
+    let functor = (state2, newScope) => {
+      let context = {
+        viewportWidth: 500,
+        viewportHeight: 500,
+        tick: performance.now()
+      };
+      return newscope[name];
+    };
+    functor.isProp = true;
+    return functor;
+  }
+  function attribute(data, offset, format) {
+    return {
+      data,
+      offset,
+      format: `float32x${format}`
+    };
+  }
+  var main_default = init;
+
+  // src/demos/water-simulation.js
+  var stuff = 4;
+  var NUM_PARTICLES = 256 * 4 * stuff;
+  var particlesCount = NUM_PARTICLES;
+  var SCAN_THREADS = 256;
+  var NGROUPS = NUM_PARTICLES / 256;
+  var COLLISION_TABLE_SIZE = particlesCount;
+  var HASH_VEC = [
+    1,
+    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 1 / 3)),
+    Math.ceil(Math.pow(COLLISION_TABLE_SIZE, 2 / 3))
+  ];
+  console.log(NUM_PARTICLES, 1231231);
+  var PARTICLE_RADIUS = 0.1;
+  var GRID_SPACING = 2 * PARTICLE_RADIUS;
+  var COMMON_SHADER_FUNCS = `
 fn bucketHash (p:vec3<i32>) -> u32 {
+  // var grid_res = 100;
+  // var result = p.x * grid_res * grid_res
+  // + p.y * grid_res
+  // + p.z;
+  // return u32(result);
+
+
+  // return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791));
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
   if h < 0 {
     return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
@@ -3137,24 +3138,66 @@ fn bucketHash (p:vec3<i32>) -> u32 {
 fn particleBucket (p:vec3<f32>) -> vec3<i32> {
   return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
 }
+
 fn particleHash (p:vec3<f32>) -> u32 {
   return bucketHash(particleBucket(p));
-} 
+}
+`;
+  var predefines = `
 
-fn getNeighbors (centerId: u32) -> BucketContents {
-  //for 27 neighboring bucketHashes, append particleId onto list 
+
+struct Uniforms {                                  
+  force: vec2<f32>,                              
+  dt: f32,                                       
+  bounce: u32,                                   
+  friction: f32,                                 
+  aspectRatio: f32,                              
+  w: f32,
+  h: f32,
+};
+
+struct BucketContents {
+  indices : array<i32, 400>,
+  count : u32,
+}
+
+${COMMON_SHADER_FUNCS}
+
+fn getNeighbors (centerId:  u32) -> BucketContents {
   var result : BucketContents;
 
+  //getNeighbors is not being offset by the centerID
+  //hashCounts only works for the first 1024 particles
+  //what if hashCounts is always 0
+
+  for (var i = 0; i < ${200}; i += 1) {
+    result.indices[i] = i32(i);
+//    workgroupBarrier();
+    result.count += 1u;
+  }
+  return result;
+
+  var p = particlesStorage[centerId].xyz;
+  var grid = ${GRID_SPACING};
+  var pos = bucketHash(vec3(i32(p.x), i32(p.y), i32(p.z)));
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
-            var bucketId = (centerId + bucketHash(vec3<i32>(i, j, k))) % ${COLLISION_TABLE_SIZE}u;
+            
+            var bucketId = //bucketHash(vec3<i32>(i, j, k));
+            //particleHash(p.xyz);
+            //particleHash(vec3<f32>(p.x, p.y, p.z));
+            //particleHash(vec3<f32>(0,0,0));
+
+            particleHash(vec3<f32>(p.x+f32(i)*grid, p.y+f32(j)*grid, p.z+f32(k)*grid));
+            
+             // % ${COLLISION_TABLE_SIZE}u;
             var bucketStart = hashCounts[bucketId];
             var bucketEnd = ${NUM_PARTICLES}u;
-            if bucketId < ${COLLISION_TABLE_SIZE - 1} {
+            //if bucketId < ${COLLISION_TABLE_SIZE - 1} {
               bucketEnd = hashCounts[bucketId + 1];
-            }
-            for (var n = 0u; n < 20; n = n + 1u) {
+            //}
+            for (var n = 0u; n < 10; n = n + 1u) {
               var p = bucketStart + n;
               if p >= bucketEnd {
                 break;
@@ -3169,20 +3212,19 @@ fn getNeighbors (centerId: u32) -> BucketContents {
       }
       return result;
     }
-
 //particle Ids keeps getting bigger 
+//particleIds only references 0
 
-
-const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+const ABS_WALL_POS = vec3<f32>(.9,.9,.9);
 
 const effectRadius = 0.3f;
-const restDensity = 4.f;
-const relaxCFM = 400.0f;
+const restDensity = 450f;
+const relaxCFM = 600.0f;
 const isArtPressureEnabled = 1;
 const artPressureRadius = 0.006f;
 
-const artPressureCoeff = 0.0001f;
-const artPressureExp = 40;
+const artPressureCoeff = .0001f;
+const artPressureExp = 4;
 const isVorticityConfEnabled = 1;
 const vorticityConfCoeff = 0.0004f;
 const xsphViscosityCoeff = 0.0001f;
@@ -3226,12 +3268,12 @@ fn artPressure( vec:vec4<f32>) -> f32 {
       // 4x4 matrix
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const particleSize = 16;
     const computeUniformsBuffer = webgpu.device.createBuffer({
       size: 96,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
     });
-    function makeBuffer2(size = particlesCount, flag, log) {
+    function makeBuffer2(size = particlesCount, flag) {
+      const particleSize = 16;
       const gpuBufferSize = particlesCount * particleSize;
       const gpuBuffer = webgpu.device.createBuffer({
         size: gpuBufferSize,
@@ -3246,7 +3288,7 @@ fn artPressure( vec:vec4<f32>) -> f32 {
         particlesBuffer[4 * iParticle + 3] = 0;
       }
       particlesBuffer[0] = 0.2;
-      particlesBuffer[1] = 1;
+      particlesBuffer[1] = -1;
       particlesBuffer[2] = 1;
       gpuBuffer.unmap();
       return gpuBuffer;
@@ -3256,7 +3298,7 @@ fn artPressure( vec:vec4<f32>) -> f32 {
     const vorticityBuffer = makeBuffer2(particlesCount, 0);
     const predictionBuffer = makeBuffer2(particlesCount, 0);
     const densityBuffer = makeBuffer2(particlesCount / 4, 0);
-    const constBuffer = makeBuffer2(particlesCount, 0);
+    const constBuffer = makeBuffer2(particlesCount, 1);
     const correctParticle = makeBuffer2(particlesCount, 0);
     const hashCounts = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
     const particleIds = makeBuffer2(COLLISION_TABLE_SIZE * 4, 0, false);
@@ -3291,24 +3333,6 @@ fn artPressure( vec:vec4<f32>) -> f32 {
         return [computeBindGroup];
       }
     });
-    const COMMON_SHADER_FUNCS = `
-fn bucketHash (p:vec3<i32>) -> u32 {
-  var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
-  if h < 0 {
-    return ${COLLISION_TABLE_SIZE}u - (u32(-h) % ${COLLISION_TABLE_SIZE}u);
-  } else {
-    return u32(h) % ${COLLISION_TABLE_SIZE}u;
-  }
-}
-
-fn particleBucket (p:vec3<f32>) -> vec3<i32> {
-  return vec3<i32>(floor(p * ${(1 / GRID_SPACING).toFixed(3)}));
-}
-
-fn particleHash (p:vec3<f32>) -> u32 {
-  return bucketHash(particleBucket(p));
-}
-`;
     const predictedPosition = webgpu.initComputeCall({
       label: `predictedPosition`,
       code: `
@@ -3321,14 +3345,15 @@ fn particleHash (p:vec3<f32>) -> u32 {
     let index: u32 = GlobalInvocationID.x;
     var velocity = velocityStorage[index];
   
-    var GRAVITY_ACC = vec4<f32>(0,1., 0, 0);
+    var GRAVITY_ACC = vec4<f32>(0, -1., 0, 0);
     velocityStorage[index] = velocity;
 
     //1. predicted Position
     const timeStep = 0.10f;
     var newVel = velocityStorage[index] + GRAVITY_ACC * timeStep;
 
-    predPos[index] = particlesStorage[index] + newVel * .01;
+    var a = predPos[index] + particlesStorage[index];
+    predPos[index] = particlesStorage[index] + newVel * .05;
   }`,
       exec: function(state2) {
         const device2 = state2.device;
@@ -3348,7 +3373,6 @@ fn particleHash (p:vec3<f32>) -> u32 {
             velocityBuffer,
             predictionBuffer,
             posBuffer
-            //correctParticle
           ]
         );
         return [computeBindGroup];
@@ -3364,6 +3388,8 @@ fn particleHash (p:vec3<f32>) -> u32 {
   @group(0) @binding(2) var<storage,read_write> hashCounts: array<u32>;
   @group(0) @binding(3) var<storage,read_write> particleIds: array<u32>;
 
+  @group(0) @binding(4) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;  
@@ -3371,13 +3397,12 @@ fn particleHash (p:vec3<f32>) -> u32 {
     let pos = predPos[index];
     var fluidDensity = 0.;
 
-    
     var startEnd = getNeighbors(index);
-
       
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
-      fluidDensity += poly6(pos - predPos[e], effectRadius);
+    for (var i = 0u; i < 10000u; i++) {
+      //var e = particleIds[i];
+
+      fluidDensity += poly6(pos - predPos[i], effectRadius);
     }
 
     density[index] = fluidDensity;
@@ -3400,7 +3425,8 @@ fn particleHash (p:vec3<f32>) -> u32 {
             predictionBuffer,
             densityBuffer,
             hashCounts,
-            particleIds
+            particleIds,
+            posBuffer
           ]
         );
         return [computeBindGroup];
@@ -3412,8 +3438,8 @@ fn particleHash (p:vec3<f32>) -> u32 {
   ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-  
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+
+  @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
     var id = globalVec.x;
     var bucket = particleHash(positions[id].xyz);
     atomicAdd(&hashCounts[bucket], 1u);
@@ -3445,13 +3471,13 @@ fn particleHash (p:vec3<f32>) -> u32 {
   ${COMMON_SHADER_FUNCS}
   @binding(0) @group(0) var<storage, read> positions : array<vec4<f32>>;
   @binding(1) @group(0) var<storage, read_write> hashCounts : array<atomic<u32>>;
-  @binding(2) @group(0) var<storage, read_write> particleIds : array<u32>;
+  @binding(2) @group(0) var<storage, read_write> particleIds : array<i32>;
 
-  @compute @workgroup_size(${PARTICLE_WORKGROUP_SIZE},1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
+  @compute @workgroup_size(256,1,1) fn main (@builtin(global_invocation_id) globalVec : vec3<u32>) {
   var id = globalVec.x;
   var bucket = particleHash(positions[id].xyz);
   var offset = atomicSub(&hashCounts[bucket], 1u) - 1u;
-  particleIds[offset] = id;
+  particleIds[id] = i32(id);
 }`,
       exec: function(state2) {
         const device2 = state2.device;
@@ -3480,7 +3506,6 @@ fn particleHash (p:vec3<f32>) -> u32 {
       code: `
   ${predefines}
   
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> vorticity: array<vec4<f32>>;
@@ -3521,10 +3546,10 @@ fn particleHash (p:vec3<f32>) -> u32 {
       var n = vec4<f32>(0.0f);
       var startEnd = getNeighbors(index);
 
-      for (var i = 0u; i < startEnd.count; i++) {
-        var e = startEnd.indices[i];
-        //n += 1.;//(vorticity[e]);
-        //* gradSpiky(pos - predPos[e], effectRadius);
+      for (var i = 0u; i < 10000u; i++) {
+        var e = particleIds[i];
+  
+//        n += length(vorticity[e])* gradSpiky(pos - predPos[e], effectRadius);
       }
       velocityStorage[index] += 
       
@@ -3542,8 +3567,9 @@ fn particleHash (p:vec3<f32>) -> u32 {
 
     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
+    for (var i = 0u; i < 10000u; i++) {
+      var e = particleIds[i];
+
       viscosity += (velocityStorage[e] - velocity) * poly6(pos - predPos[e], effectRadius);
     }
     velocityStorage[index] = velocity + xsphViscosityCoeff * viscosity;
@@ -3601,7 +3627,6 @@ fn particleHash (p:vec3<f32>) -> u32 {
       },
       code: `
   ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
   @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
@@ -3613,7 +3638,6 @@ fn particleHash (p:vec3<f32>) -> u32 {
   @binding(7) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(8) @group(0) var<storage, read_write> hashCounts : array<u32>;
 
-
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
@@ -3621,8 +3645,8 @@ fn particleHash (p:vec3<f32>) -> u32 {
     var velocity = velocityStorage[index];
     var correctPar = correctParticle[index];
     var aspectRatioStuff = uniforms.aspectRatio;
-    var constraint = constFactor[index];
-    var fluidDensity = densityStorage[index];
+    //var constraint = constFactor[index];
+
     //3. compute constraint factor
   {
     var vec = vec4<f32>(0);
@@ -3630,13 +3654,12 @@ fn particleHash (p:vec3<f32>) -> u32 {
     var sumGradCi = vec4<f32>(0);
     var sumSqGradC = 0.;
     var pos = predPos[index];
-    let densityC = fluidDensity / restDensity - 1.0;
+    let densityC = densityStorage[index] / restDensity - 1.0;
     
     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
-      vec = pos - predPos[e];
+    for (var i = 0u; i < 10000u; i++) {
+      vec = pos - predPos[i];
 
       grad = gradSpiky(vec, effectRadius);
 
@@ -3651,6 +3674,58 @@ fn particleHash (p:vec3<f32>) -> u32 {
     constFactor[index] = - densityC / (sumSqGradC + relaxCFM);
   }
 
+  //9 apply Bounding Wall
+  }`,
+      exec: function(state2) {
+        const device2 = state2.device;
+        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(state2.computePass.pipeline);
+        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+        computePass.dispatchWorkgroups(NGROUPS);
+        computePass.end();
+      }
+    });
+    const applyConstraintCorrection = webgpu.initComputeCall({
+      label: `applyConstraintCorrection`,
+      bindGroups: function(state2, computePipeline) {
+        const computeBindGroup = utils_default.makeBindGroup(
+          state2.device,
+          computePipeline.getBindGroupLayout(0),
+          [
+            computeUniformsBuffer,
+            velocityBuffer,
+            predictionBuffer,
+            constBuffer,
+            posBuffer,
+            correctParticle,
+            hashCounts,
+            particleIds
+          ]
+        );
+        return [computeBindGroup];
+      },
+      code: `
+  ${predefines}
+  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+  @group(0) @binding(1) var<storage,read_write> velocityStorage: array<vec4<f32>>;
+  @group(0) @binding(2) var<storage,read_write> predPos: array<vec4<f32>>;
+  @group(0) @binding(3) var<storage,read_write> constFactor: array<f32>;
+  @group(0) @binding(4) var<storage,read_write> particlesStorage: array<vec4<f32>>;
+  @group(0) @binding(5) var<storage,read_write> correctParticle: array<vec4<f32>>;
+
+  @group(0) @binding(6)  var<storage, read_write> particleIds : array<i32>;
+  @group(0)  @binding(7) var<storage, read_write> hashCounts : array<u32>;
+
+  @compute @workgroup_size(256)
+  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+    let index: u32 = GlobalInvocationID.x;
+    var pos = particlesStorage[index];
+    var velocity = velocityStorage[index];
+    var correctPar = correctParticle[index];
+    var aspectRatioStuff = uniforms.aspectRatio;
+    var constraint = constFactor[index];
+
   //4. compute constraint correction
   {
     var pos = particlesStorage[index];
@@ -3660,31 +3735,30 @@ fn particleHash (p:vec3<f32>) -> u32 {
 
     var startEnd = getNeighbors(index);
 
-    for (var i = 0u; i < startEnd.count; i++) {
-      var e = startEnd.indices[i];
-      vec = pos - predPos[e];
-      if (u32(e) == index) { 
-        continue; 
-      };
+    for (var i = 0u; i < 10000u; i++) {
+      var e = particleIds[i];
 
-      corr += (lambdaI + constFactor[e] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+      vec = pos - predPos[i];
+     
+      corr += (lambdaI + constFactor[i] + artPressure(vec)) * gradSpiky(vec, effectRadius);
+ //      const kSoftening = 0.2;
+//       let d = vec4((pos - predPos[i]).xyz, 0);
+//       let distSq = d.x*d.x + d.y*d.y + d.z*d.z;// + kSoftening*kSoftening;
+//       let dist   = distance(pos, predPos[i]);
+//       if (dist < .01) {
+//         corr.y += .5;
+//       }
+
     }
-
-    //particles are only getting neighbors for 1st index
-
     correctParticle[index] = corr / restDensity;
 
-    predPos[index] = predPos[index] + correctParticle[index];
+    predPos[i32(index)] = predPos[index] + correctParticle[index];
   
     //velocityStorage[index] = predPos[index] - particlesStorage[index];
     const MAX_VEL = vec4<f32>(30.);
 
-    //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (5.), -MAX_VEL, MAX_VEL);
+    //velocityStorage[index] = clamp((predPos[index] - pos[index]) / (50000.), -MAX_VEL, MAX_VEL);
   }
-    
-  
-   //particlesStorage[index] = vec4<f32>(clamp(predPos[index].xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
-
   //9 apply Bounding Wall
   }`,
       exec: function(state2) {
@@ -3701,23 +3775,38 @@ fn particleHash (p:vec3<f32>) -> u32 {
       label: `updatePositionCompute`,
       code: `  
 ${predefines}
-  var<workgroup> tile : array<array<vec3<f32>, 128>, 4>;
   @group(0) @binding(0) var<storage,read_write> predPos: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read_write> particlesStorage: array<vec4<f32>>;
-  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<f32>;
+  @binding(2) @group(0) var<storage, read_write> debugGetNeighbors : array<u32>;
 
   @binding(3) @group(0) var<storage, read_write> particleIds : array<u32>;
   @binding(4) @group(0) var<storage, read_write> hashCounts : array<u32>;
-
   
   @compute @workgroup_size(256)
   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
     let index: u32 = GlobalInvocationID.x;
     let predPos = predPos[index];
   
-  const ABS_WALL_POS = vec3<f32>(.7,.7,.5);
+  const ABS_WALL_POS = vec3<f32>(.9,.9,.9);
+  var stuff = f32(getNeighbors(index).count);
 
-  debugGetNeighbors[index]=  f32(getNeighbors(index).count);
+  var p = particlesStorage[index].xyz;
+
+  let g = getNeighbors(1);
+
+for (var i = 0; i < 10000; i++) {
+  var e = particleIds[i];
+  debugGetNeighbors[i] = e;
+}
+
+  //g.count is always 270 = BAD
+  //g.indices is always 0 = BAD
+  //ParticleHash always returns a list of 0 because the particle Hash is indexing a range that is outside of the hashCounts sequence 
+  //HashCounts is always set to 0 beyond 1024
+  //but some of the hashCounts are below 1024 
+  //investigate further
+
+  //get neighbors for each particle - write to buffer
 
   particlesStorage[index] = vec4<f32>(clamp(predPos.xyz, -ABS_WALL_POS, ABS_WALL_POS), 1.);
   //9 apply Bounding Wall
@@ -3822,17 +3911,14 @@ ${predefines}
             format: "float32"
           }
         ],
-        arrayStride: 0,
+        arrayStride: 4,
         stepMode: "vertex"
       }
     ];
     const device = webgpu.device;
     const model = mat4_exports.identity(new Float32Array(16));
     function getCameraViewProjMatrix() {
-      const eyePosition = vec3_exports.fromValues(0, 0, -1.5);
-      const upVector = vec3_exports.fromValues(0, 1, 0);
-      const origin = vec3_exports.fromValues(0, 0, 0);
-      const rad = Math.PI * (Date.now() / 5);
+      mat4_exports.translate(model, model, vec3_exports.fromValues(2, 2, 0));
       mat4_exports.rotate(
         model,
         model,
@@ -3847,10 +3933,10 @@ ${predefines}
       let viewProjectionMatrix = mat4_exports.create();
       mat4_exports.perspectiveZO(
         projectionMatrix,
-        1,
+        100,
         500 / 500,
-        0.1,
-        500
+        0.9,
+        100
       );
       mat4_exports.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
       let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
@@ -3890,7 +3976,6 @@ struct VSOut {
     @builtin(position) position: vec4<f32>,
     @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
     @location(2) density: f32
-
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -3903,7 +3988,6 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 ) -> VSOut {
     var vsOut: VSOut;
     vsOut.position =  //vec4<f32>(inPosition.xy + (.03 + uniforms.spriteSize) * quadCorner, 0.0, 1.0);
-    
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
    vec4<f32>(inPosition.xy + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
     vsOut.position.y = vsOut.position.y;
@@ -3951,7 +4035,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
 		//Sum up the specular light factoring
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 500,1.,.1);
+    return  col + vec4<f32>(distanceFromCenter - 1.5, density / 10000,1.,.1);
 }
 `
       },
@@ -3988,14 +4072,14 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
         });
       }
     });
-    let camera = createCamera({
-      center: [-7, -0, -0],
+    let camera = createCamera_default({
+      center: [-5, 1.5, 0.3],
       damping: 0,
       noScroll: true,
       renderOnDirty: true,
       element: webgpu.canvas
     });
-    let stuff = camera();
+    let stuff2 = camera();
     const gridCountScan = new WebGPUScan({
       device,
       threadsPerGroup: SCAN_THREADS,
@@ -4006,6 +4090,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
       dataUnit: "0u"
     });
     const gridCountScanPass = await gridCountScan.createPass(COLLISION_TABLE_SIZE, hashCounts);
+    let hasRun = 0;
     setInterval(
       async function() {
         let { projection, view } = camera();
@@ -4039,34 +4124,16 @@ fn main_fragment(@location(0) localPosition: vec2<f32>,
           model.byteLength
         );
         let localState = resetPass();
-        let commandEncoder = device.createCommandEncoder();
+        let commandEncoder = localState.ctx.commandEncoder;
         predictedPosition();
-        gridCountPipeline();
-        const computePass = commandEncoder.beginComputePass();
-        window.hashCounts = await utils_default.readBuffer(webgpu.state, hashCounts);
-        gridCountScanPass.run(computePass);
-        computePass.end();
         gridCopyParticlePipeline();
         computeDensity();
-        for (var i = 0; i < 1; i++)
+        for (var i = 0; i < 2; i++) {
           applyConstraintCompute();
+          applyConstraintCorrection();
+        }
         updatePositionCompute();
         drawCube({});
-        window.debugGetNeighbors = await utils_default.readBuffer(webgpu.state, debugGetNeighbors);
-        window.particleIds = await utils_default.readBuffer(webgpu.state, particleIds);
-        window.density = await utils_default.readBuffer(webgpu.state, densityBuffer);
-        window.constBuffer = await utils_default.readBuffer(webgpu.state, constBuffer);
-        window.predictionBuffer = await utils_default.readBuffer(webgpu.state, predictionBuffer);
-        window.correctParticle = await utils_default.readBuffer(webgpu.state, correctParticle);
-        window.velocityBuffer = await utils_default.readBuffer(webgpu.state, velocityBuffer);
-        window.countY = function countY() {
-          let stuff2 = window.w;
-          let result = [];
-          for (let i2 = 0; i2 < stuff2.length; i2 += 4) {
-            result.push(stuff2[i2 + 1]);
-          }
-          console.log(result);
-        };
       },
       8
     );
