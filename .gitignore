@@ -9,3 +9,5 @@ package-lock.json
 
 **/*.obj
 *.obj
+
+!spec/0.obj
