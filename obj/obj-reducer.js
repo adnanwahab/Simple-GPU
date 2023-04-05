@@ -32,7 +32,7 @@ async function writeShit (file, dir) {
     let frame = []
     
     lines.forEach((line, idx) => {
-      if (line[0] === 'v') {
+      if (line[0] === 'v' && line[1] == ' ') {
         //if (idx=== 4)
         //console.log(line)
         frame.push(line.slice(2).split(' ')

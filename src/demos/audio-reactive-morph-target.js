@@ -21,7 +21,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/2/${i}myfile.bin`
   )
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
@@ -443,51 +443,51 @@ const blend = {
 //vertex -> fragment = simple display + lighting
 
 
-const computeTransition = webgpu.initComputeCall({
-  label: `predictedPosition`,
-  code:`
+// const computeTransition = webgpu.initComputeCall({
+//   label: `predictedPosition`,
+//   code:`
 
 
-  struct Uniforms {
-    time: f32,
+//   struct Uniforms {
+//     time: f32,
   
-  }
-  @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
-  @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> buffer3: array<vec4<f32>>;
+//   }
+//   @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
+//   @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
+//   @group(0) @binding(2) var<storage,read_write> buffer3: array<vec4<f32>>;
 
 
-  @compute @workgroup_size(256)
-  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-    let index: u32 = GlobalInvocationID.x;
+//   @compute @workgroup_size(256)
+//   fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+//     let index: u32 = GlobalInvocationID.x;
     
-    buffer3[index] = mix(buffer1[index], buffer2[index], Uniforms.time);
-  }`,
+//     buffer3[index] = mix(buffer1[index], buffer2[index], Uniforms.time);
+//   }`,
 
-  exec: function (state){
-    const device = state.device
-    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+//   exec: function (state){
+//     const device = state.device
+//     const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
 
-    const computePass = commandEncoder.beginComputePass();
-    state.computePass.computePass = computePass;
+//     const computePass = commandEncoder.beginComputePass();
+//     state.computePass.computePass = computePass;
 
-    computePass.setPipeline(state.computePass.pipeline);
-    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(NGROUPS);
-    computePass.end();
-  },
-  bindGroups: function (state, computePipeline) {
-    const computeBindGroup =
-      utils.makeBindGroup(state.device,
-        computePipeline.getBindGroupLayout(0),
-      [
-        velocityBuffer,
-        predictionBuffer,
-        posBuffer,
-      ])
-    return [computeBindGroup]
-  }
-})
+//     computePass.setPipeline(state.computePass.pipeline);
+//     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+//     computePass.dispatchWorkgroups(NGROUPS);
+//     computePass.end();
+//   },
+//   bindGroups: function (state, computePipeline) {
+//     const computeBindGroup =
+//       utils.makeBindGroup(state.device,
+//         computePipeline.getBindGroupLayout(0),
+//       [
+//         velocityBuffer,
+//         predictionBuffer,
+//         posBuffer,
+//       ])
+//     return [computeBindGroup]
+//   }
+// })
 
 const drawCube = await webgpu.initDrawCall({
   shader: {
