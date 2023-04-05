@@ -27,9 +27,8 @@ async function writeShit (dir, i) {
     lines.forEach(line => {
       if (line[0] === 'v') {
         //console.log(line)
-        frame.push(line.slice(2).split(' ').map(parseFloat).map(d => {
-          return d * 1
-        }))
+        frame.push(line.slice(2).split(' ')
+        .map(parseFloat).concat(0))
       }
       //console.log(frame.length)
       
@@ -40,12 +39,13 @@ async function writeShit (dir, i) {
       let buffer= new Float32Array(numbers.length);
       buffer.set(numbers)
       //console.log(numbers)
-      var b = Buffer.from(buffer)
+      var b = Buffer.alloc(buffer.length * 4)
+      //var b = Buffer.from(buffer)
       //console.log(__dirname + dir + `/${i}myfile.bin`)
-      // for (let i = 0; i < buffer.length; i++) {
-      //   //console.log(buffer[i])
-      //   b.writeFloatLE(buffer[i] || 0, i*4)
-      // }
+      for (let i = 0; i < buffer.length; i++) {
+        // console.log(buffer[i])
+        b.writeFloatLE(buffer[i] || 0, i*4)
+      }
     // console.log(writeTo)
     // var wstream = f.createWriteStream('data.dat');
     // wstream.write(b);

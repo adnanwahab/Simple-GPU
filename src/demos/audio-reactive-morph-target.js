@@ -16,7 +16,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`)
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/3/${i}myfile.bin`)
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
  
@@ -82,9 +82,9 @@ function makeStagingBuffer() {
     const toCopy = frames[frame]
 
     for (let i =0 ; i < toCopy.length; i++){
-      vertexPositions[4*i]= toCopy[i]
-      vertexPositions[4*i+1]= toCopy[i]
-      vertexPositions[4*i+2]= toCopy[i]
+      vertexPositions[4*i]= toCopy[4*i]
+      vertexPositions[4*i+1]= toCopy[4*i+1]
+      vertexPositions[4*i+2]= toCopy[4*i+2]
       vertexPositions[4*i+3]= 0
 
     }
