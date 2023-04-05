@@ -35,8 +35,8 @@ fetch(obj(i)).then(d => {
     //   //console.log(line[1])
     // }
   })
-  frames.push(frame)
-  //if (i == 4) setTimeout(makeStagingBuffer, 1000)
+  frames[i]=(frame)
+  if (i == frameMax -1) setTimeout(makeStagingBuffer, 1000)
   })
 })
 
@@ -60,7 +60,7 @@ fetch(obj(0)).then(d => {
     //   //console.log(line[1])
     // }
   })
-  dancer = parseOBJ(d).position
+  //dancer = parseOBJ(d).position
 })
 
 
@@ -84,11 +84,11 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
     const toCopy = frames[frame]
 
-    for (let i =0 ; i < toCopy.length; i+=4){
-      vertexPositions[i]= toCopy[i][0]
-      vertexPositions[i+1]= toCopy[i][1]
-      vertexPositions[i+2]= toCopy[i][2]
-      vertexPositions[i+3]= 0
+    for (let i =0 ; i < toCopy.length; i++){
+      vertexPositions[4*i]= toCopy[i][0]
+      vertexPositions[4*i+1]= toCopy[i][1]
+      vertexPositions[4*i+2]= toCopy[i][2]
+      vertexPositions[4*i+3]= 0
 
     }
   
@@ -298,7 +298,7 @@ import { mat4, vec3 } from 'gl-matrix'
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   let particlesCount = stuff.length
-  stuff = stuff.flat()
+  //stuff = stuff.flat()
   //console.log(stuff)
   const particleSize = 1
   const gpuBufferSize = 1e7 * particleSize
@@ -318,12 +318,12 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  for (let iParticle = 0; iParticle < stuff.length; iParticle+=4) {
+  for (let iParticle = 0; iParticle < stuff.length; iParticle++) {
     const i = iParticle;
-      particlesBuffer[iParticle + 0] = (stuff[i+0]);
-      particlesBuffer[iParticle + 1] = (stuff[i+1]);
-      particlesBuffer[iParticle + 2] = (stuff[i+2]);
-      particlesBuffer[iParticle + 3] = 1
+      particlesBuffer[4 * iParticle + 0] = (stuff[i][0]);
+      particlesBuffer[4 * iParticle + 1] = (stuff[i][1]);
+      particlesBuffer[4 * iParticle + 2] = (stuff[i][2]);
+      particlesBuffer[4 * iParticle + 3] = 1
   }
   console.log(particlesBuffer)
   gpuBuffer.unmap();
@@ -482,7 +482,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
     vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
 
-     vec4<f32>(stuff + (.009 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+     vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
@@ -585,6 +585,9 @@ let i = 0
 
 //a 1 2 3
 //b 3 1 2
+
+
+//need triplets because 
 
 function recur () {
   i = (i + 1) % (shapes.length)
