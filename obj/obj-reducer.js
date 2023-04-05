@@ -24,16 +24,16 @@ async function writeShit (dir, i) {
   let data = await fs.readFile(file)
     let lines = data.toString().split('\n')
     let frame = []
-    lines.forEach(line => {
+    lines.forEach((line, idx) => {
       if (line[0] === 'v') {
-        //console.log(line)
+//        if (idx=== 4)console.log(line)
         frame.push(line.slice(2).split(' ')
         .map(parseFloat).concat(0))
       }
       
       
     })
-    console.log(frame)
+    //console.log(frame)
 
     let numbers = frame.flat()
     //console.log(numbers.length)

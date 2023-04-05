@@ -21,7 +21,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/3/${i}myfile.bin`
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`
   )
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
@@ -68,35 +68,37 @@ fetch(obj(0)).then(d => {
 
 window.frames = frames
 
-let time = 0
+let time = 20
 let stagingBuffer
 function makeStagingBuffer() {
-  stagingBuffer = webgpu.device.createBuffer({
-    size: 1e7,
-    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
+return
   //frames = frames.map(window.makeBuffer)
   //console.log(frames[0])
   setInterval(function () {
     if (! shapes[0]) return;
- 
+    stagingBuffer = webgpu.device.createBuffer({
+      size: 1e7,
+      usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+      mappedAtCreation: true,
+    });
+
     time += 1
     let frame = time % frames.length
+    //console.log(frames[frame])
     //let mesh = 
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
     const toCopy = frames[frame]
 
-    for (let i =0 ; i < toCopy.length; i++){
-      vertexPositions[4*i]= toCopy[3*i]
-      vertexPositions[4*i+1]= toCopy[3*i+1]
-      vertexPositions[4*i+2]= toCopy[3*i+2]
-      vertexPositions[4*i+3]= 0
+    // for (let i =0 ; i < toCopy.length; i++){
+    //   vertexPositions[i]= toCopy[i]
+    //   vertexPositions[i+1]= toCopy[i+1]
+    //   vertexPositions[i+2]= toCopy[i+2]
+    //   vertexPositions[i+3]= 0
 
-    }
+    // }
     //console.log(toCopy.length, frame)
-//    vertexPositions.set(toCopy)
-  
+  vertexPositions.set(toCopy)
+    window.toCopy = toCopy
     // //console.log(vertexPositions)
     stagingBuffer.unmap();
 
