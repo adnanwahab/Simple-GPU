@@ -2,7 +2,7 @@ let fs = require('fs').promises
 let f = require('fs')
 
 
-let folders = ["/1", "/2", "/3", "/4", "/5"]
+let folders = ["/1", "/2", "/3", "/4", "/5"].slice(0, 1)
 
 async function doStuff () {
   folders.forEach(async (dir) => {
@@ -30,10 +30,11 @@ async function writeShit (dir, i) {
         frame.push(line.slice(2).split(' ')
         .map(parseFloat).concat(0))
       }
-      //console.log(frame.length)
       
       
     })
+    console.log(frame)
+
     let numbers = frame.flat()
     //console.log(numbers.length)
       let buffer= new Float32Array(numbers.length);

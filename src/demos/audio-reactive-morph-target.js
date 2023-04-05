@@ -5,18 +5,24 @@ import {GLBLoader} from '@loaders.gl/gltf';
 import * as d3 from 'd3'
 import objFile from 'obj-file-parser'
 
+//MVP
+//Dance -
+//Curl noise to tween to next dancer type
+
 
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/${n}myfile.obj`
 
 let dancer = []
 let frames = []
 
-let frameMax = 200
+let frameMax = 50
 let frameCount = [...Array(frameMax).keys()]
+
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/3/${i}myfile.bin`)
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/3/${i}myfile.bin`
+  )
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
  
@@ -82,9 +88,9 @@ function makeStagingBuffer() {
     const toCopy = frames[frame]
 
     for (let i =0 ; i < toCopy.length; i++){
-      vertexPositions[4*i]= toCopy[4*i]
-      vertexPositions[4*i+1]= toCopy[4*i+1]
-      vertexPositions[4*i+2]= toCopy[4*i+2]
+      vertexPositions[4*i]= toCopy[3*i]
+      vertexPositions[4*i+1]= toCopy[3*i+1]
+      vertexPositions[4*i+2]= toCopy[3*i+2]
       vertexPositions[4*i+3]= 0
 
     }
@@ -104,7 +110,7 @@ function makeStagingBuffer() {
     // stagingBuffer.mapAsync(GPUMapMode.WRITE).then(() => {
     //   //waveGridStagingBuffers.push(stagingBuffer);
     // });
-  }, 8)
+  }, 50)
 }
 
 let shapes = [
@@ -444,6 +450,9 @@ const blend = {
   },
 }
 
+
+//const computeTransition = webgpu.initComputeCall({})
+
 const drawCube = await webgpu.initDrawCall({
   shader: {
     vertEntryPoint: 'main_vertex',
@@ -477,6 +486,9 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 ) -> VSOut {
     var vsOut: VSOut;
     var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+
+
+
 
     vsOut.position = 
      camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
