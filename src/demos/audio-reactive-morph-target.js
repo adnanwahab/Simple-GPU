@@ -21,7 +21,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 frameCount.forEach(function (i) {
 
-  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${i}myfile.bin`
+  fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/3/${i}myfile.bin`
   )
   .then((res) => res.arrayBuffer())
   .then((buffer) => {
