@@ -154,7 +154,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
       particlesBuffer[4 * iParticle + 2] = (stuff[i][2]);
       particlesBuffer[4 * iParticle + 3] = 1
   }
-  console.log(particlesBuffer)
+
   gpuBuffer.unmap();
   return gpuBuffer
 } 
@@ -687,7 +687,7 @@ fn hash (pos:vec3<f32>) -> i32{
     
     var test = mix(buffer1[index], buffer2[index], uniforms.time);
     var abc = buffer3[index];
-    buffer3[index] = pos + .0001 * vectorFieldBuffer[hash(pos.xyz)];
+    buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
     
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
   }`,
