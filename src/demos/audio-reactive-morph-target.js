@@ -1,5 +1,7 @@
 
 import * as d3 from 'd3'
+import {interpolateTurbo} from "d3-scale-chromatic";
+
 
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
@@ -12,6 +14,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 function getFrames(model) { 
   frames[model]= []
+  let loaded = 0
   frameCount.forEach(function (i) {
     fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
     )
@@ -21,8 +24,9 @@ function getFrames(model) {
       var floatBuffer = new Float32Array(buffer)
       frames[model][i]=floatBuffer
     })
-
-    if (i == frameMax -1) setTimeout(makeStagingBuffer, 3000)
+    loaded += 1
+    
+    if (loaded === frameMax - 1) setTimeout(makeStagingBuffer, 3000)
   })
 
   
@@ -31,8 +35,7 @@ function getFrames(model) {
 fetch(obj(1)).then(d => {
   return d.arrayBuffer()
 }).then((d) => {
-  dancer = d
-
+  dancer = new Float32Array(d)
   shapes.push(window.makeBuffer(dancer, 0,'leaf'))
   basic()
 })
@@ -97,7 +100,6 @@ let shapes = [
 
 ]
 function writeBuffer (device, buffer, array) {
-  console.log('hi', buffer, array)
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
@@ -133,7 +135,6 @@ import utils from '../../lib/utils';
 
 import { mat4, vec3 } from 'gl-matrix'
 
-
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   let particlesCount = stuff.length
   const particleSize = 1
@@ -147,13 +148,16 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  for (let iParticle = 0; iParticle < stuff.length; iParticle++) {
-    const i = iParticle;
-      particlesBuffer[4 * iParticle + 0] = (stuff[i][0]);
-      particlesBuffer[4 * iParticle + 1] = (stuff[i][1]);
-      particlesBuffer[4 * iParticle + 2] = (stuff[i][2]);
-      particlesBuffer[4 * iParticle + 3] = 1
-  }
+  // for (let iParticle = 0; iParticle < stuff.length; iParticle++) {
+  //   const i = iParticle;
+  //     particlesBuffer[4 * iParticle + 0] = stuff[4 * i]
+  //     particlesBuffer[4 * iParticle + 1] = stuff[4 * i + 1]
+  //     particlesBuffer[4 * iParticle + 2] = stuff[4 * i + 2]
+
+  // }
+  if (stuff.flat) stuff.flat()
+  particlesBuffer.set(stuff)
+console.log(particlesBuffer, label)
 
   gpuBuffer.unmap();
   return gpuBuffer
@@ -165,8 +169,6 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
-
-
 
 const posBuffer = makeBuffer(bunny.positions, 1, 'bunny')
 
@@ -219,6 +221,18 @@ const buffers = [
     ],
     arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
     stepMode: "instance",
+},
+
+{
+  attributes: [
+      {
+          shaderLocation: 3,
+          offset: 0,
+          format: "float32x3",
+      }
+  ],
+  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+  stepMode: "instance",
 },
 ]
 
@@ -274,14 +288,10 @@ const blend = {
   },
 }
 
-
-
-
-
 //compute shader = transition from one mesh to another
 //vertex -> fragment = simple display + lighting
 
-let vectorFieldBuffer = makeBuffer([])
+let vectorFieldBuffer = makeBuffer([], 0, 'vectorField')
 
 
 
@@ -726,13 +736,33 @@ fn hash (pos:vec3<f32>) -> i32{
   }
 })
 
+
+//turn down saturation by point density of cuboid 
+
+var rgb = new Float32Array(1e6);
+for (let i = 0; i < rgb.length; i+=3) {
+  let stuff = (i / rgb.length) * 1000 % 1000
+  let interval = (Math.sin((stuff)) + 1) / 2.
+  let color = d3.rgb( interpolateTurbo(interval));
+
+  rgb[i] = color.r / 255 / 2
+  rgb[i+1] = color.g / 255 / 2
+
+  rgb[i+2] = color.b / 255 / 2
+  //if (Math.random())console.log(i / rgb.length)
+
+}
+//console.log(d3.rgb(interpolateTurbo(Math.random())))
+console.log(rgb, 123)
+const colorBuffer = makeBuffer(rgb, 0, 'color')
+
 const drawCube = await webgpu.initDrawCall({
   shader: {
     vertEntryPoint: 'main_vertex',
     fragEntryPoint: 'main_fragment',
     code:`
     struct Uniforms {             //             align(16)  size(24)
-    color: vec4<f32>,         // offset(0)   align(16)  size(16)
+    color: vec3<f32>,         // offset(0)   align(16)  size(16)
     spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
 };
 
@@ -747,6 +777,7 @@ struct Camera {
 struct VSOut {
     @builtin(position) position: vec4<f32>,
     @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+    @location(1) color: vec3<f32>
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -755,12 +786,10 @@ struct VSOut {
 
 @vertex
 fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
- @location(2) pos2: vec4<f32>,
+ @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
     var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-
-
 
 
     vsOut.position = 
@@ -770,11 +799,13 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
     vsOut.position.y = vsOut.position.y;
     vsOut.localPosition = quadCorner;
+
+    vsOut.color = color;
     return vsOut;
 }
 
 @fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32> {
+fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
     let distanceFromCenter: f32 = length(localPosition);
     if (distanceFromCenter > 1.0) {
         discard;
@@ -812,12 +843,12 @@ fn main_fragment(@location(0) localPosition: vec2<f32>) -> @location(0) vec4<f32
 		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
 
 //    return  col + vec4<f32>(distanceFromCenter - 1.5,  / 10000,1.,.1);
-    return vec4<f32>(1., sin(camera.time), 0., 1.);
+    return vec4<f32>(color.xyz, 1.);
 }
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    shapes[0], quadBuffer, posBuffer
+    shapes[0], quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
   blend,
@@ -878,6 +909,7 @@ function recur () {
   }).on('end', recur)
 }
 //recur()
+
 
 
 let camera = createCamera({
