@@ -3,6 +3,7 @@ import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 
 //simplify meshes to less particles
+//chromatic motion blur
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
 let dancer = []
@@ -10,7 +11,6 @@ let frames = []
 
 let frameMax = 50
 let frameCount = [...Array(frameMax).keys()]
-
 
 function getFrames(model) { 
   frames[model]= []
@@ -20,7 +20,7 @@ function getFrames(model) {
     )
     .then((res) => res.arrayBuffer())
     .then((buffer) => {
-  
+
       var floatBuffer = new Float32Array(buffer)
       frames[model][i]=floatBuffer
     })
@@ -67,18 +67,10 @@ function makeStagingBuffer() {
     if (time === 0) window.toCopy = toCopy
 
     time += 1
-    
-    //console.log(frames[frame])
-    //let mesh = 
+
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-    for (let i =0 ; i < toCopy.length; i++){
-      vertexPositions[4*i]= toCopy[4*i]
-      vertexPositions[4*i+1]= toCopy[4*i+1]
-      vertexPositions[4*i+2]= toCopy[4*i+2]
-      vertexPositions[4*i+3]= 0
-    }
-
+    vertexPositions.set(toCopy)
     stagingBuffer.unmap();
 
      // Copy the staging buffer contents to the vertex buffer.
@@ -147,13 +139,6 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  // for (let iParticle = 0; iParticle < stuff.length; iParticle++) {
-  //   const i = iParticle;
-  //     particlesBuffer[4 * iParticle + 0] = stuff[4 * i]
-  //     particlesBuffer[4 * iParticle + 1] = stuff[4 * i + 1]
-  //     particlesBuffer[4 * iParticle + 2] = stuff[4 * i + 2]
-
-  // }
  
   if (stuff.flat) stuff.flat()
   particlesBuffer.set(stuff)
@@ -746,7 +731,7 @@ struct VSOut {
 
 
 @vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+fn main_vertex(@location(0) inPosition: vec3<f32>, @location(1) quadCorner: vec2<f32>,
  @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
@@ -758,7 +743,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
-    vsOut.position.y = vsOut.position.y;
+    
     vsOut.localPosition = quadCorner;
 
     vsOut.color = color;
@@ -812,7 +797,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
     shapes[0], quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
- // blend,
+  blend,
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
