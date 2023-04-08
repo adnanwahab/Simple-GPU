@@ -25,7 +25,6 @@ function getFrames(model) {
       frames[model][i]=floatBuffer
     })
     loaded += 1
-    
     if (loaded === frameMax - 1) setTimeout(makeStagingBuffer, 3000)
   })
 
@@ -136,7 +135,7 @@ import utils from '../../lib/utils';
 import { mat4, vec3 } from 'gl-matrix'
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
-  let particlesCount = stuff.length
+//  let particlesCount = stuff.length
   const particleSize = 1
   const gpuBufferSize = 1e7 * particleSize
 
@@ -155,9 +154,9 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   //     particlesBuffer[4 * iParticle + 2] = stuff[4 * i + 2]
 
   // }
+ 
   if (stuff.flat) stuff.flat()
   particlesBuffer.set(stuff)
-  //console.log(particlesBuffer, label)
 
   gpuBuffer.unmap();
   return gpuBuffer
@@ -196,10 +195,10 @@ const buffers = [
           {
               shaderLocation: 0,
               offset: 0,
-              format: "float32x4",
+              format: "float32x3",
           }
       ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
       stepMode: "instance",
   },
   {
@@ -218,10 +217,10 @@ const buffers = [
         {
             shaderLocation: 2,
             offset: 0,
-            format: "float32x4",
+            format: "float32x3",
         }
     ],
-    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+    arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
     stepMode: "instance",
 },
 
@@ -334,7 +333,7 @@ const blend = {
 // }
 
 
-let velocityBuffer = new Float32Array(1e6)
+let velocityBuffer = new Float32Array(1e3)
 
 
 function magnitude (v) {
@@ -356,7 +355,7 @@ let convert = function (x) {
   return ((x * .1).toPrecision(2) + 1) /2
 }
 
-for (let i = 0; i < shit.length; i++) {
+for (let i = 0; i < velocityBuffer.length; i++) {
   let buffer = velocityBuffer;
   let vec = shit[i % shit.length]
 
@@ -366,6 +365,42 @@ for (let i = 0; i < shit.length; i++) {
   buffer[4*i+3] = 0
   //console.log(hash)
 }
+
+
+let result = []
+let hasColided = {}
+let width = 10
+let height = 10
+
+
+
+
+for (let i = 0; i <100; i++) {
+  for (let j = 0; j <100; j++) {
+    for (let k = 0; k <100; k++) {
+      let idx = i  + j * width + k * width * height
+      try {
+      result[4 * idx] = Math.cos(i)
+      result[4 * idx+1] = Math.sin(j)
+      result[4 * idx+2] = 0
+      } catch (e) {
+        console.log(4*idx)
+
+      }
+
+      //if(hasColided[idx] > 1) console.log('ohnoe')
+    }
+    
+  }
+   
+}
+
+//access vector field with 
+
+console.log(result, 'result')
+
+
+
 //return i32(pos.x * 10. + pos.y * 100. + pos.z * 1000.);
 
 
@@ -377,7 +412,7 @@ for (let i = 0; i < shit.length; i++) {
 //
 //
 
-let vectorFieldBuffer = makeBuffer(velocityBuffer, 0, 'vectorField')
+let vectorFieldBuffer = makeBuffer(result, 0, 'vectorField')
 let velocity = makeBuffer(new Float32Array(2e5), 0, 'vectorField')
 
 // use a buffer to index 3 dimensionally
@@ -407,8 +442,6 @@ let texture = webgpu.device.createTexture({
     },
     [100, 100, 100]
   );
-
-let sampler = webgpu.device.createSampler();
 
 const computeTransition = webgpu.initComputeCall({
   label: `predictedPosition`,
@@ -594,7 +627,7 @@ fn hash (pos:vec3<f32>) -> i32{
 
     var pos = buffer3[index];
     //vectorFieldBuffer[index] = buffer3[index] - buffer3[index+1];
-    let idx = hash(pos.xyz);
+    //let idx = hash(pos.xyz);
     //vectorFieldBuffer[index] += snoise(pos.xyz);
     var t = uniforms.time;
     var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
@@ -605,9 +638,11 @@ fn hash (pos:vec3<f32>) -> i32{
        vec3<i32>(0, 0, 0), 
        0
        );
+       //x * 100, y * 100, z * 100
 
+    var idx = i32(pos.x *100 + pos.y * 100 * 100 + pos.z * 100 * 100 * 100);
     velocity[index] += .01 * vectorFieldBuffer[idx];
-    buffer3[index] = pos + .01 * vectorFieldBuffer[index];
+    buffer3[index] = pos + .01 * velocity[index];
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
   }`,
 
@@ -665,7 +700,7 @@ fn hash (pos:vec3<f32>) -> i32{
 
 //turn down saturation by point density of cuboid 
 //precisely calculate line interval convolutions using 
-var rgb = new Float32Array(1e6);
+var rgb = new Float32Array(2e5);
 for (let i = 0; i < rgb.length; i+=3) {
   let stuff = (i / rgb.length) * 1000 % 1000
   let interval = (Math.sin((stuff)) + 1) / 2.

@@ -36,7 +36,7 @@ async function writeShit (file, dir) {
         //if (idx=== 4)
         //console.log(line)
         frame.push(line.slice(2).split(' ')
-        .map(parseFloat).concat(0))
+        .map(parseFloat))
       }
       
       
