@@ -607,7 +607,7 @@ fn hash (pos:vec3<f32>) -> i32{
        );
 
     velocity[index] += .01 * vectorFieldBuffer[idx];
-    buffer3[index] = pos + .01 * velocity[index];
+    buffer3[index] = pos + .01 * vectorFieldBuffer[index];
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
   }`,
 
@@ -629,66 +629,9 @@ fn hash (pos:vec3<f32>) -> i32{
       size: 32, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
-
-      const bindGroupLayout = device.createBindGroupLayout({
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'storage',
-            },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'storage',
-            },
-          },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'storage',
-            },
-          },
-          {
-            binding: 3,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'storage',
-            },
-          },
-          {
-            binding: 4,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'uniform',
-            },
-          },
-          {
-            binding: 5,
-            visibility: GPUShaderStage.COMPUTE,
-            buffer: {
-              type: 'storage',
-            },
-          },
-          {
-            binding: 6,
-            visibility: GPUShaderStage.COMPUTE,
-            texture: {
-              sampleType: 'unfilterable-float',
-              viewDimension: '3d', // Change to 2D array
-              multisampled: false,
-            },
-          },
-        ],
-      });
-
     const computeBindGroup =
       utils.makeBindGroup(state.device,
-        bindGroupLayout,
+        computePipeline.getBindGroupLayout(0),
       [
         posBuffer,
         posBuffer,
