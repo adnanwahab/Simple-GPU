@@ -293,7 +293,6 @@ const blend = {
 //compute shader = transition from one mesh to another
 //vertex -> fragment = simple display + lighting
 
-let vectorFieldBuffer = makeBuffer([], 0, 'vectorField')
 
 
 
@@ -335,16 +334,35 @@ let vectorFieldBuffer = makeBuffer([], 0, 'vectorField')
 // }
 
 
-let buffer = []
+let velocityBuffer = new Float32Array(1e6)
 
 
-function vectorTo(b) {
-  return b
+function magnitude (v) {
+  return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2])
 }
 
-for (let i = 0; i < buffer.length; i+=2) {
-  buffer[i] = vectorTo(buffer[i+1])
+function unitVector (v) {
+  let l = magnitude(v)
+  return v.map(d => d / l);
 }
+
+function vectorTo(b, a) {
+  return unitVector(b) - unitVector(a)
+}
+
+let shit = bunny.positions
+console.log(shit)
+for (let i = 0; i < velocityBuffer.length; i++) {
+  let buffer = velocityBuffer;
+  let vec = shit[i % shit.length]
+  buffer[4*i] = vec[0]
+  buffer[4*i+1] = vec[1]
+  buffer[4*i+2] = vec[2]
+  buffer[4*i+3] = 0
+}
+
+
+let vectorFieldBuffer = makeBuffer(velocityBuffer, 0, 'vectorField')
 
 // use a buffer to index 3 dimensionally
 // use xyz to convert to a hash
@@ -529,9 +547,9 @@ fn hash (pos:vec3<f32>) -> i32{
     let v = vectorFieldBuffer[index];
 
     var pos = buffer3[index];
-    vectorFieldBuffer[index] = buffer2[index];
-    
-    //vectorFieldBuffer[hash(pos.xyz)] += snoise(pos.xyz);
+    //vectorFieldBuffer[index] = buffer3[index] - buffer3[index+1];
+    let idx = hash(pos.xyz);
+    //vectorFieldBuffer[index] += snoise(pos.xyz);
     var t = uniforms.time;
     var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
     var abc = buffer3[index];
@@ -550,7 +568,7 @@ fn hash (pos:vec3<f32>) -> i32{
 
     computePass.setPipeline(state.computePass.pipeline);
     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(10000);
+    computePass.dispatchWorkgroups(256);
     computePass.end();
   },
   bindGroups: function (state, computePipeline) {
