@@ -2,7 +2,7 @@
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 
-
+//simplify meshes to less particles
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
 let dancer = []
