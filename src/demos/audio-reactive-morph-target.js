@@ -170,7 +170,7 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-const posBuffer = makeBuffer(bunny.positions, 1, 'bunny')
+const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
 
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
@@ -186,6 +186,8 @@ new Float32Array(quadBuffer.getMappedRange()).set([
   -1, -1, +1, +1, -1, +1
 ]);
 quadBuffer.unmap();
+
+//convert each point in buffer to a vector to next point
 
 
 const buffers = [
@@ -333,6 +335,17 @@ let vectorFieldBuffer = makeBuffer([], 0, 'vectorField')
 // }
 
 
+let buffer = []
+
+
+function vectorTo(b) {
+  return b
+}
+
+for (let i = 0; i < buffer.length; i+=2) {
+  buffer[i] = vectorTo(buffer[i+1])
+}
+
 // use a buffer to index 3 dimensionally
 // use xyz to convert to a hash
 // x * 10 + y * 100 + z * 1000
@@ -350,47 +363,7 @@ const computeTransition = webgpu.initComputeCall({
   @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
 
   @group(0) @binding(4) var<uniform> uniforms: Uniforms;
-//  group(0) binding(5) var myTexture: texture_3d<f32>;
 
-
-//find unit cube that contains point
-//find relative xyz of point in cube
-//compute fade curves for each of x,y,z
-//hash coordinates of 8 cube corners
-//add blended results from 8 corners of cube 
-//convert LO bits of hash code into 12 gradient directions 
-
-
-// 225, 155, 210, 108, 175, 199, 221, 144, 203, 116, 70, 213, 69, 158, 33, 252,
-// 5, 82, 173, 133, 222, 139, 174, 27, 9, 71, 90, 246, 75, 130, 91, 191,
-// 169, 138, 2, 151, 194, 235, 81, 7, 25, 113, 228, 159, 205, 253, 134, 142,
-// 248, 65, 224, 217, 22, 121, 229, 63, 89, 103, 96, 104, 156, 17, 201, 129,
-// 36, 8, 165, 110, 237, 117, 231, 56, 132, 211, 152, 20, 181, 111, 239, 218,
-// 170, 163, 51, 172, 157, 47, 80, 212, 176, 250, 87, 49, 99, 242, 136, 189,
-// 162, 115, 44, 43, 124, 94, 150, 16, 141, 247, 32, 10, 198, 223, 255, 72,
-// 53, 131, 84, 57, 220, 197, 58, 50, 208, 11, 241, 28, 3, 192, 62, 202,
-// 18, 215, 153, 24, 76, 41, 15, 179, 39, 46, 55, 6, 128, 167, 23, 188,
-// 106, 34, 187, 140, 164, 73, 112, 182, 244, 195, 227, 13, 35, 77, 196, 185,
-// 26, 200, 226, 119, 31, 123, 168, 125, 249, 68, 183, 230, 177, 135, 160, 180,
-// 12, 1, 243, 148, 102, 166, 38, 238, 251, 37, 240, 126, 64, 74, 161, 40,
-// 184, 149, 171, 178, 101, 66, 29, 59, 146, 61, 254, 107, 42, 86, 154, 4,
-// 236, 232, 120, 21, 233, 209, 45, 98, 193, 114, 78, 19, 206, 14, 118, 127,
-// 48, 79, 147, 85, 30, 207, 219, 54, 88, 234, 190, 122, 95, 67, 143, 109,
-// 137, 214, 145, 93, 92, 100, 245, 0, 216, 186, 60, 83, 105, 97, 204, 52
-
-
-
-// fn mod289( x:vec3<f32>) -> vec3<f32> {
-//   return x - floor(x * (1.0 / 289.0)) * 289.0;
-// }
-
-// fn mod289( x: vec4<f32>) -> vec4<f32> {
-//   return x - floor(x * (1.0 / 289.0)) * 289.0;
-// }
-
-// fn permute( x: vec4<f32>) -> vec4<f32>{
-//      return mod289(((x*34.0)+1.0)*x);
-// }
 
 fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
 {
@@ -412,10 +385,6 @@ var l = 1.0 - g;
 var i1 = min( g.xyz, l.zxy );
 var i2 = max( g.xyz, l.zxy );
 
-  //   x0 = x0 - 0.0 + 0.0 * C.xxx;
-  //   x1 = x0 - i1  + 1.0 * C.xxx;
-  //   x2 = x0 - i2  + 2.0 * C.xxx;
-  //   x3 = x0 - 1.0 + 3.0 * C.xxx;
   var x1 = x0 - i1 + C.xxx;
   var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
   var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
@@ -474,52 +443,6 @@ var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
                                 dot(p2,x2), dot(p3,x3) ) );
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// fn unitCube (x: vec3<f32>, y: vec3<f32>, z:vec3<f32>) -> vec3<f32>{
-//   var G = [
-//     vec3<f32>(-1,1,0),vec3<f32>(1,-1,0),vec3<f32>(-1,-1,0),
-// vec3<f32>(1,0,1),vec3<f32>(-1,0,1),vec3<f32>(1,0,-1),vec3<f32>(-1,0,-1),
-// vec3<f32>(0,1,1),vec3<f32>(0,-1,1),vec3<f32>(0,1,-1),vec3<f32>(0,-1,-1)
-//   ];
-//   G[0] = vec3<f32>(1,1,0);
-//   var P = [12,312,312,31,31,23,3,13,123,1,31,];
-//   var g = 0.;
-//   //ijk = 8 points around cube
-//   for (var i = -1; i < 1; i+=1) {
-//     for (var j = -1; j < 1; j+=1) {
-//       for (var k = -1; k < 1; k+=1) {
-//         g += P[k + P[ j + P[i] ]];
-
-
-//       }
-//     }
-//   }
-//   var result = P[g]
-
-
-//https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph2007-curlnoise.pdf
-// }
-
-
 //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
 
 const list=5.;
@@ -531,19 +454,6 @@ fn curl_noise (pos:vec4<f32>, t: f32) -> vec4<f32> {
   var y = pos.y;
   var z = pos.z;
   var x0 = x + 1.;
-
-  //
-
-
-  //integer lattice
-  
-
-  //add several octaves at different scales together
-
-
-  //phi constrained() = ramp(d~x/d0)
-
-
   return vec4<f32>(sfrand(), sfrand(), sfrand(), sfrand());
 }
 
@@ -591,84 +501,10 @@ fn permute( x: vec4<f32>) -> vec4<f32>
   return mod289v(((x*34.0)+1.0)*x);
 }
 
-// fn taylorInvSqrt(r: vec4<f32>) -> vec4<f32>
-// {
-//   return 1.79284291400159 - 0.85373472095314 * r;
-// }
 
 fn fade( t: vec3<f32>) -> vec3<f32> {
   return t*t*t*(t*(t*6.0-15.0)+10.0);
 }
-
-// Classic Perlin noise, periodic variant
-// fn pnoise( P: vec3<f32>,  rep: vec3<f32>) -> f32
-// {
-//   var Pi0 = floor(P)%  rep; // Integer part, modulo period
-//   var Pi1 = (Pi0 + vec3(1.0))%  rep; // Integer part + 1, mod period
-//   Pi0 = mod289(Pi0);
-//   Pi1 = mod289(Pi1);
-//   var Pf0 = fract(P); // Fractional part for interpolation
-//   var Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
-//   var ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-//   var iy = vec4(Pi0.yy, Pi1.yy);
-//   var iz0 = Pi0.zzzz;
-//   var iz1 = Pi1.zzzz;
-
-//   var ixy = permute(permute(ix) + iy);
-//   var ixy0 = permute(ixy + iz0);
-//   var ixy1 = permute(ixy + iz1);
-
-//   var gx0 = ixy0 * (1.0 / 7.0);
-//   var gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-//   gx0 = fract(gx0);
-//   var gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-//   var sz0 = smoothstep(gz0, vec4(0.0));
-//   gx0 -= sz0 * (smoothstep(0.0, gx0) - 0.5);
-//   gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-
-//   var gx1 = ixy1 * (1.0 / 7.0);
-//   var gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-//   gx1 = fract(gx1);
-//   var gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-//   var sz1 = smoothstep(gz1, vec4(0.0));
-//   gx1 -= sz1 * (smoothstep(0.0, gx1) - 0.5);
-//   gy1 -= sz1 * (smoothstep(0.0, gy1) - 0.5);
-
-//   var g000 = vec3(gx0.x,gy0.x,gz0.x);
-//   var g100 = vec3(gx0.y,gy0.y,gz0.y);
-//   var g010 = vec3(gx0.z,gy0.z,gz0.z);
-//   var g110 = vec3(gx0.w,gy0.w,gz0.w);
-//   var g001 = vec3(gx1.x,gy1.x,gz1.x);
-//   var g101 = vec3(gx1.y,gy1.y,gz1.y);
-//   var g011 = vec3(gx1.z,gy1.z,gz1.z);
-//   var g111 = vec3(gx1.w,gy1.w,gz1.w);
-  
-//   var norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-//   g000 *= norm0.x;
-//   g010 *= norm0.y;
-//   g100 *= norm0.z;
-//   g110 *= norm0.w;
-//   var norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-//   g001 *= norm1.x;
-//   g011 *= norm1.y;
-//   g101 *= norm1.z;
-//   g111 *= norm1.w;
-
-//   var n000 = dot(g000, Pf0);
-//   var n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-//   var n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-//   var n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-//   var n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-//   var n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-//   var n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-//   var n111 = dot(g111, Pf1);
-
-//   var fade_xyz = fade(Pf0);
-//   var n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-//   var n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-//   var n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-//   return 2.2 * n_xyz;
-// }
 
 fn sfrand () -> f32{
   let co = vec2<f32>(${Math.random()}, ${Math.random()});
@@ -693,12 +529,15 @@ fn hash (pos:vec3<f32>) -> i32{
     let v = vectorFieldBuffer[index];
 
     var pos = buffer3[index];
-    vectorFieldBuffer[hash(pos.xyz)] += snoise(pos.xyz);
+    vectorFieldBuffer[index] = buffer2[index];
     
-    var test = mix(buffer1[index], buffer2[index], uniforms.time);
+    //vectorFieldBuffer[hash(pos.xyz)] += snoise(pos.xyz);
+    var t = uniforms.time;
+    var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
     var abc = buffer3[index];
-    buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
+    //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
     
+    buffer3[index] = pos + .001 * vectorFieldBuffer[index];
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
   }`,
 
@@ -711,7 +550,7 @@ fn hash (pos:vec3<f32>) -> i32{
 
     computePass.setPipeline(state.computePass.pipeline);
     computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(256);
+    computePass.dispatchWorkgroups(10000);
     computePass.end();
   },
   bindGroups: function (state, computePipeline) {
@@ -736,9 +575,21 @@ fn hash (pos:vec3<f32>) -> i32{
   }
 })
 
+// vector field = 2d image
+// vector field = 3d model
+// circulate particles throughout model - use curl noise to circulate throughout model with turbulence 
+// divergence set to 0
+// add 2nd particle sysstem with emitter at points with most change in flow
+
+//buffer[0]= vec from previous point to next point
+//
+
+
+//go slow to go fast
+//build one cool original algorithmic effect from scratch
 
 //turn down saturation by point density of cuboid 
-
+//precisely calculate line interval convolutions using 
 var rgb = new Float32Array(1e6);
 for (let i = 0; i < rgb.length; i+=3) {
   let stuff = (i / rgb.length) * 1000 % 1000
@@ -811,9 +662,9 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
         discard;
     }
     var viewDir = vec3<f32>(0,0,0);
-    var lightSpecularColor = vec3<f32>(1);
+    var lightSpecularColor = vec3<f32>(0., 0., 1.);
     var lightSpecularPower = 1.;
-    var lightPosition = vec3<f32>(-1,-1, 0);
+    var lightPosition = vec3<f32>(-1,0., 0);
 
     var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
 
@@ -837,12 +688,12 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 
 		//Intensity of the specular light
 		var NdotH = dot(normal, H);
-		//intensity = pow(saturate(NdotH), specularHardness);
+		intensity = pow(saturate(NdotH), .1);
 
 		//Sum up the specular light factoring
-		let col = vec4<f32>(1. * lightSpecularColor * lightSpecularPower / distance, .1);
-
-//    return  col + vec4<f32>(distanceFromCenter - 1.5,  / 10000,1.,.1);
+		let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
+    //return  col + vec4<f32>(distanceFromCenter - 1.5, 1.,1.,.1);
+    //return  col + vec4<f32>(distanceFromCenter - 1.5,  / 10000,1.,.1);
     return vec4<f32>(color.xyz, 1.);
 }
 `},
@@ -851,7 +702,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
     shapes[0], quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
-  blend,
+ // blend,
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
