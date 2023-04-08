@@ -157,7 +157,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   // }
   if (stuff.flat) stuff.flat()
   particlesBuffer.set(stuff)
-console.log(particlesBuffer, label)
+  //console.log(particlesBuffer, label)
 
   gpuBuffer.unmap();
   return gpuBuffer
@@ -351,22 +351,65 @@ function vectorTo(b, a) {
 }
 
 let shit = bunny.positions
-console.log(shit)
-for (let i = 0; i < velocityBuffer.length; i++) {
+let convert = function (x) {
+  //console.log(x.toPrecision(2))
+  return ((x * .1).toPrecision(2) + 1) /2
+}
+
+for (let i = 0; i < shit.length; i++) {
   let buffer = velocityBuffer;
   let vec = shit[i % shit.length]
+
   buffer[4*i] = vec[0]
   buffer[4*i+1] = vec[1]
   buffer[4*i+2] = vec[2]
   buffer[4*i+3] = 0
+  //console.log(hash)
 }
+//return i32(pos.x * 10. + pos.y * 100. + pos.z * 1000.);
 
+
+//100 cubes
+//iterate through bunny
+  //for each point -> draw a vector to that point from another point
+// 
+//
+//
+//
 
 let vectorFieldBuffer = makeBuffer(velocityBuffer, 0, 'vectorField')
+let velocity = makeBuffer(new Float32Array(2e5), 0, 'vectorField')
 
 // use a buffer to index 3 dimensionally
 // use xyz to convert to a hash
 // x * 10 + y * 100 + z * 1000
+
+
+let texture = webgpu.device.createTexture({
+  size: [100, 100, 100],
+//  mipLevelCount: 1,
+  format:  "rgba8unorm",
+//  usage: GPUTextureUsage.SAMPLED | GPUTextureUsage.COPY_DST,
+  dimension: "3d",
+
+  usage:
+    GPUTextureUsage.TEXTURE_BINDING |
+    GPUTextureUsage.COPY_DST |
+    GPUTextureUsage.STORAGE_BINDING,
+});
+
+  webgpu.device.queue.writeTexture(
+    { texture },
+    velocityBuffer,
+    {
+      bytesPerRow: 400,
+      rowsPerImage: 100,
+    },
+    [100, 100, 100]
+  );
+
+let sampler = webgpu.device.createSampler();
+
 const computeTransition = webgpu.initComputeCall({
   label: `predictedPosition`,
   code:`
@@ -382,6 +425,9 @@ const computeTransition = webgpu.initComputeCall({
 
   @group(0) @binding(4) var<uniform> uniforms: Uniforms;
 
+  @group(0) @binding(5) var<storage,read_write> velocity: array<vec4<f32>>;
+
+  @group(0) @binding(6) var myTexture: texture_3d<f32>;
 
 fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
 {
@@ -554,8 +600,14 @@ fn hash (pos:vec3<f32>) -> i32{
     var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
     var abc = buffer3[index];
     //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-    
-    buffer3[index] = pos + .001 * vectorFieldBuffer[index];
+    var position = pos.xyz;
+    var stuff =  textureLoad(myTexture,
+       vec3<i32>(0, 0, 0), 
+       0
+       );
+
+    velocity[index] += .01 * vectorFieldBuffer[idx];
+    buffer3[index] = pos + .01 * velocity[index];
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
   }`,
 
@@ -577,9 +629,66 @@ fn hash (pos:vec3<f32>) -> i32{
       size: 32, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
+
+      const bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'storage',
+            },
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'storage',
+            },
+          },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'storage',
+            },
+          },
+          {
+            binding: 3,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'storage',
+            },
+          },
+          {
+            binding: 4,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'uniform',
+            },
+          },
+          {
+            binding: 5,
+            visibility: GPUShaderStage.COMPUTE,
+            buffer: {
+              type: 'storage',
+            },
+          },
+          {
+            binding: 6,
+            visibility: GPUShaderStage.COMPUTE,
+            texture: {
+              sampleType: 'unfilterable-float',
+              viewDimension: '3d', // Change to 2D array
+              multisampled: false,
+            },
+          },
+        ],
+      });
+
     const computeBindGroup =
       utils.makeBindGroup(state.device,
-        computePipeline.getBindGroupLayout(0),
+        bindGroupLayout,
       [
         posBuffer,
         posBuffer,
@@ -587,8 +696,13 @@ fn hash (pos:vec3<f32>) -> i32{
         vectorFieldBuffer,
         shapes[0],
         uniformsBuffer,
+        velocity,
+        texture.createView({
+          dimension: '3d',
+          sampleType: 'float'
+        }),
+      ], )
 
-      ])
     return [computeBindGroup]
   }
 })
@@ -622,7 +736,7 @@ for (let i = 0; i < rgb.length; i+=3) {
 
 }
 //console.log(d3.rgb(interpolateTurbo(Math.random())))
-console.log(rgb, 123)
+//console.log(rgb, 123)
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 
 const drawCube = await webgpu.initDrawCall({
