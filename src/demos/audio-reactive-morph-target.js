@@ -55,7 +55,7 @@ window.addEventListener('click', function () {
 
 function makeStagingBuffer() {
   setTimeout(function () {
-    if (! shapes[0]) return;
+    if (! shapes[0] || !animating) return;
     stagingBuffer = webgpu.device.createBuffer({
       size: 1e7,
       usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
@@ -63,7 +63,7 @@ function makeStagingBuffer() {
     });
     let frame = time % frames[choice].length
     const toCopy = frames[choice][frame]
-
+    if (! toCopy) return console.log(toCopy, choice, frame)
     if (time === 0) window.toCopy = toCopy
 
     time += 1
@@ -320,7 +320,7 @@ const blend = {
 // }
 
 
-let velocityBuffer = new Float32Array(1e7)
+
 
 
 function magnitude (v) {
@@ -341,15 +341,15 @@ let convert = function (x) {
   //console.log(x.toPrecision(2))
   return ((x * .1).toPrecision(2) + 1) /2
 }
+let velocityBuffer = new Float32Array(1e6)
+// for (let i = 0; i < velocityBuffer.length; i++) {
+//   let buffer = velocityBuffer;
+//   let vec = shit[i % shit.length]
 
-for (let i = 0; i < velocityBuffer.length; i++) {
-  let buffer = velocityBuffer;
-  let vec = shit[i % shit.length]
-
-  buffer[3*i] = vec[0]
-  buffer[3*i+1] = vec[1]
-  buffer[3*i+2] = vec[2]
-}
+//   buffer[3*i] = vec[0]
+//   buffer[3*i+1] = vec[1]
+//   buffer[3*i+2] = vec[2]
+// }
 
 
 let result = []
@@ -359,43 +359,43 @@ let height = 10
 
 
 
-for (let i = 0; i <100; i++) {
-  for (let j = 0; j <100; j++) {
-    for (let k = 0; k <1000; k++) {
-      let idx = i  + j * width + k * width * height
-      result[3 * idx] = -1
-      result[3 * idx+1] = -1
-      result[3 * idx+2] = -1  
-      //if(hasColided[idx] > 1) console.log('ohnoe')
-    }
-    
-  }
-   
+// for (let i = 0; i <100; i++) {
+//   for (let j = 0; j <100; j++) {
+//     for (let k = 0; k <1000; k++) {
+//       let idx = i  + j * width + k * width * height
+//       result[3 * idx] = Math.cos(i)
+//       result[3 * idx+1] = Math.sin(i)
+//       result[3 * idx+2] = 1  
+//       //if(hasColided[idx] > 1) console.log('ohnoe')
+//     } 
+//   }
+// }
+let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
+//access vector field with 
+
+for (let i = 0; i <1e6; i+=3) {
+  result[i] = 1
+  result[i+1] = 1
+  result[i+2] = 1
 }
 console.log(result)
 let gridBuffer = makeBuffer(result, 0, 'result')
-//access vector field with 
 
 
+// for (let i = 0; i <100; i++) {
+//   for (let j = 0; j <100; j++) {
+//     for (let k = 0; k <1000; k++) {
+//       let idx = i  + j * width + k * width * height
+//       result[3 * idx] = 0
+//       result[3 * idx+1] = 1
+//       result[3 * idx+2] = 0
+//       //if(hasColided[idx] > 1) console.log('ohnoe')
+//     }
+    
+//   }
+   
+// }
 
-
-//return i32(pos.x * 10. + pos.y * 100. + pos.z * 1000.);
-
-
-//100 cubes
-//iterate through bunny
-  //for each point -> draw a vector to that point from another point
-// 
-//
-//
-//
-
-let vectorFieldBuffer = makeBuffer(result, 0, 'vectorField')
-let velocity = makeBuffer(new Float32Array(2e5), 0, 'vectorField')
-
-// use a buffer to index 3 dimensionally
-// use xyz to convert to a hash
-// x * 10 + y * 100 + z * 1000
 
 
 let texture = webgpu.device.createTexture({
@@ -424,7 +424,7 @@ let texture = webgpu.device.createTexture({
 
   let ce = device.createCommandEncoder();
 ce.copyBufferToTexture(
-  { buffer: vectorFieldBuffer },
+  { buffer: gridBuffer },
   { texture },
   { width: 100, height: 1, depthOrArrayLayers: 1, bytesPerRow: 400 },
   { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
@@ -621,18 +621,23 @@ fn hash (pos:vec3<f32>) -> i32{
     var abc = buffer3[index];
     //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
     var position = pos.xyz;
+    var i = GlobalInvocationID.xyz; 
     var stuff =  textureLoad(myTexture,
-       vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
+      vec3<i32>(i),
+       //vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
        0
        );
 
     var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
  
-    vectorFieldBuffer[index] = curlNoise(pos);
+//    vectorFieldBuffer[index] = curlNoise(pos);
 //    
-    velocity[index] += .01 * vectorFieldBuffer[index];
+  var vf = vec3<f32>(0., 1., 0.);
+    velocity[index] += .01 * vf;
+    //writing to y = no change
+    //writing to x or z = changes 1/3 of particles in different directions
     //
-    buffer3[index] = pos + .01 * velocity[index];
+    buffer3[index].z += .1;
     //
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
 
@@ -899,7 +904,7 @@ let camera = createCamera({
   element: webgpu.canvas
 });
 setInterval(
-  async function () {
+   function () {
     let {projection, view} = camera()
     device.queue.writeBuffer(
       cameraUniformBuffer,
