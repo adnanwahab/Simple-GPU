@@ -373,9 +373,14 @@ let height = 10
 let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 //access vector field with 
 
+
+//     r = np.sqrt(x**2 + y**2)
+//theta = np.arctan2(y, x)
+//u = np.cos(theta + r)
+//v = np.sin(theta + r)
 for (let i = 0; i <2e6; i+=4) {
-  result[i] = .01 * Math.cos(i)
-  result[i+1] =  .01 * Math.sin(i)
+  result[i] = .01 * Math.cos(i * .1)
+  result[i+1] =  .01 * Math.sin(i * .1)
   result[i+2] = 0
   result[i+3] = 0
 }
@@ -634,13 +639,15 @@ fn hash (pos:vec3<f32>) -> i32{
 //    vectorFieldBuffer[index] = curlNoise(pos);
 //    vec3<f32>(.1, 0., 0.); 
 
-  var vf = vectorFieldBuffer[index].xyz;
-    velocity[index] += .01 * vf;
+  var vf = curlNoise(vectorFieldBuffer[index].xyz);
+    velocity[index] += .1 * vf;
 
-    buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
+    //buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
     //buffer3[index] += vec4<f32>(.001, 0., 0., 0.);
 
-    // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
+    buffer3[index] = 
+    buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+    //001 * vec4<f32>(, 1.);
 
     //while animating - animate particles along mesh
 
