@@ -216,10 +216,10 @@ const buffers = [
       {
           shaderLocation: 3,
           offset: 0,
-          format: "float32x4",
+          format: "float32x3",
       }
   ],
-  arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
   stepMode: "instance",
 },
 ]
@@ -373,10 +373,11 @@ let height = 10
 let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 //access vector field with 
 
-for (let i = 0; i <1e6; i+=3) {
-  result[i] = 1
-  result[i+1] = 1
-  result[i+2] = 1
+for (let i = 0; i <2e6; i+=4) {
+  result[i] = .01 * Math.cos(i)
+  result[i+1] =  .01 * Math.sin(i)
+  result[i+2] = 0
+  result[i+3] = 0
 }
 console.log(result)
 let gridBuffer = makeBuffer(result, 0, 'result')
@@ -442,7 +443,7 @@ const computeTransition = webgpu.initComputeCall({
   }
   @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
   @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec3<f32>>;
+  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
   @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
 
   @group(0) @binding(4) var<uniform> uniforms: Uniforms;
@@ -631,14 +632,14 @@ fn hash (pos:vec3<f32>) -> i32{
     var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
  
 //    vectorFieldBuffer[index] = curlNoise(pos);
-//    
-  var vf = vec3<f32>(0., 1., 0.);
+//    vec3<f32>(.1, 0., 0.); 
+
+  var vf = vectorFieldBuffer[index].xyz;
     velocity[index] += .01 * vf;
-    //writing to y = no change
-    //writing to x or z = changes 1/3 of particles in different directions
-    //
-    buffer3[index].z += .1;
-    //
+
+    buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
+    //buffer3[index] += vec4<f32>(.001, 0., 0., 0.);
+
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
 
     //while animating - animate particles along mesh
@@ -770,7 +771,7 @@ struct VSOut {
 
 @vertex
 fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
- @location(2) pos2: vec4<f32>, @location(3) color: vec4<f32>,
+ @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
     var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
