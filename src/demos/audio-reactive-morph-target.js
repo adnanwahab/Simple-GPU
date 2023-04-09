@@ -182,10 +182,10 @@ const buffers = [
           {
               shaderLocation: 0,
               offset: 0,
-              format: "float32x3",
+              format: "float32x4",
           }
       ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
       stepMode: "instance",
   },
   {
@@ -204,10 +204,10 @@ const buffers = [
         {
             shaderLocation: 2,
             offset: 0,
-            format: "float32x3",
+            format: "float32x4",
         }
     ],
-    arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
     stepMode: "instance",
 },
 
@@ -216,10 +216,10 @@ const buffers = [
       {
           shaderLocation: 3,
           offset: 0,
-          format: "float32x3",
+          format: "float32x4",
       }
   ],
-  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+  arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
   stepMode: "instance",
 },
 ]
@@ -440,10 +440,10 @@ const computeTransition = webgpu.initComputeCall({
     time: f32,
   
   }
-  @group(0) @binding(0) var<storage,read> buffer1: array<vec3<f32>>;
-  @group(0) @binding(1) var<storage,read> buffer2: array<vec3<f32>>;
+  @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
+  @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
   @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec3<f32>>;
-  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec3<f32>>;
+  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
 
   @group(0) @binding(4) var<uniform> uniforms: Uniforms;
 
@@ -769,8 +769,8 @@ struct VSOut {
 
 
 @vertex
-fn main_vertex(@location(0) inPosition: vec3<f32>, @location(1) quadCorner: vec2<f32>,
- @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+ @location(2) pos2: vec4<f32>, @location(3) color: vec4<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
     var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
