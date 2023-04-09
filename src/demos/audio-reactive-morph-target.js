@@ -36,11 +36,16 @@ function makeComputeShader(webgpu, mesh) {
   //1,2
   //2, 1
   for (let i = 0; i < 1e6; i+=4) {
-    result[i] = .1 * Math.cos(i * .1)
-    result[i+1] =  .1 * Math.sin(i * .1)
+
+    result[i] = ( Math.cos(i / 100) * i) * .0001
+    result[i+1] =  (Math.sin(i / 100) * i) * .0001
     result[i+2] = 0
     result[i+3] = 0
 
+    // result[i] =  -1 //-dancer[i % dancer.length]
+    // result[i+1] = -1 //dancer[i % dancer.length + 1] 
+    // result[i+2] = 0
+    // result[i+3] = 0
     // result[i] = 1
     // result[i+1] =  1
     // result[i+2] = 0
@@ -61,7 +66,6 @@ function makeComputeShader(webgpu, mesh) {
     // }
   }
   console.log(result)
-  console.log(dancer)
   
   let gridBuffer = makeBuffer(result, 0, 'result')
   
@@ -265,6 +269,10 @@ function makeComputeShader(webgpu, mesh) {
     return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
   }
   
+
+  fn shift (x:f32)->f32 {
+    return (x + 1.) / 2.;
+  }
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -281,16 +289,16 @@ function makeComputeShader(webgpu, mesh) {
       var i = GlobalInvocationID.xyz; 
       var stuff =  textureLoad(myTexture,
         vec3<i32>(i),
-         //vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
+         //vec3<i32>(i32(shift(pos.x) * 100), i32(shift(pos.y * 255), i32(pos.z * 255)), 
          0
          );
   
-      var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
+      var idx = i32(floor(shift(pos.x) * 10) + floor(shift(pos.y) * 100)  + floor(shift(pos.z) * 1000));
    
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
-    var vf = .001 * vectorFieldBuffer[index].xyz;
+    var vf = .001 * vectorFieldBuffer[idx].xyz;
       velocity[index] += .1 * vf;
   
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
