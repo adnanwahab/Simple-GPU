@@ -636,18 +636,18 @@ fn hash (pos:vec3<f32>) -> i32{
 
     var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
  
-//    vectorFieldBuffer[index] = curlNoise(pos);
+    vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
 //    vec3<f32>(.1, 0., 0.); 
 
-  var vf = curlNoise(vectorFieldBuffer[index].xyz);
+  var vf = .001 * curlNoise(vectorFieldBuffer[index].xyz);
     velocity[index] += .1 * vf;
 
-    //buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
+  //  buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
     //buffer3[index] += vec4<f32>(.001, 0., 0., 0.);
 
-    buffer3[index] = 
-    buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    //001 * vec4<f32>(, 1.);
+    //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+    buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+
 
     //while animating - animate particles along mesh
 
