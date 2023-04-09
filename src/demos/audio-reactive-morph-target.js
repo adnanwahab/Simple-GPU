@@ -4,12 +4,344 @@ import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
-
-const stuff = 4
+import { mat4, vec3 } from 'gl-matrix'
 const particlesCount = 442008 / 3 
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
-import { mat4, vec3 } from 'gl-matrix'
+//curl noise turbulence
+//flowing along 3d model
+//magnets
+//spiral
+//writing words
+
+//3,4,5
+//Math.sqrt(9,16,25)
+ 
+function magnitude (v) {
+  let pow = (e) => Math.pow(e, 2)
+  return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]))
+}
+
+function unitVector (v) {
+  let l = magnitude(v)
+  return v.map(d => d / l);
+}
+
+function makeComputeShader(webgpu, mesh) {
+  let device = webgpu.device
+  let result = []
+  let velocityBuffer = new Float32Array(1e6)
+  let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
+  //3,3
+  //1,2
+  //2, 1
+  for (let i = 0; i < 1e6; i+=4) {
+    result[i] = .1 * Math.cos(i * .1)
+    result[i+1] =  .1 * Math.sin(i * .1)
+    result[i+2] = 0
+    result[i+3] = 0
+
+    // result[i] = 1
+    // result[i+1] =  1
+    // result[i+2] = 0
+    // result[i+3] = 0
+    //if (i > dancer.length- 6) break;
+    // let idx =  ((4 * i) % dancer.length);
+    // try {
+    //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7))
+    //   let v = 
+    //   (vec3.subtract([],  dancer.slice(idx+4, idx+7), dancer.slice(idx, idx +3)))
+    //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7));
+    // result[i] = v[0]
+    // result[i+1] =  v[1]
+    // result[i+2] = v[2]
+    // result[i+3] = 0
+    // } catch (e) {
+    //   //console.log(e, i)
+    // }
+  }
+  console.log(result)
+  console.log(dancer)
+  
+  let gridBuffer = makeBuffer(result, 0, 'result')
+  
+  let texture = webgpu.device.createTexture({
+    size: [100, 100, 100],
+    format:  "rgba8unorm",
+    dimension: "3d",
+    usage:
+      GPUTextureUsage.TEXTURE_BINDING |
+      GPUTextureUsage.COPY_DST |
+      GPUTextureUsage.STORAGE_BINDING |
+      GPUTextureUsage.COPY_SRC,
+  });
+  
+    webgpu.device.queue.writeTexture(
+      { texture },
+      velocityBuffer,
+      {
+        bytesPerRow: 400,
+        rowsPerImage: 100,
+      },
+      [0, 0, 0]
+    );
+  
+    let ce = device.createCommandEncoder();
+  ce.copyBufferToTexture(
+    { buffer: gridBuffer },
+    { texture },
+    { width: 100, height: 1, depthOrArrayLayers: 1, bytesPerRow: 400 },
+    { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
+  );
+  
+  device.queue.submit([ce.finish()]);
+  
+  return  webgpu.initComputeCall({
+    label: `predictedPosition`,
+    code:`
+  
+    struct Uniforms {
+      time: f32,
+    }
+    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+    @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
+    @group(0) @binding(2) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
+     @group(0) @binding(4) var myTexture: texture_3d<f32>;
+  
+  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
+  {
+    return 1.79284291400159 - 0.85373472095314 * r;
+  }
+  
+  fn snoise( v: vec3<f32>) -> f32
+    {
+      var  C = vec2(1.0/6.0, 1.0/3.0) ;
+      var  D = vec4(0.0, 0.5, 1.0, 2.0);
+  
+  // First corner
+  var i = floor(v + dot(v, C.yyy) );
+  var x0 =   v - i + dot(i, C.xxx) ;
+  
+  // Other corners
+  var g = step(x0.yzx, x0.xyz);
+  var l = 1.0 - g;
+  var i1 = min( g.xyz, l.zxy );
+  var i2 = max( g.xyz, l.zxy );
+  
+    var x1 = x0 - i1 + C.xxx;
+    var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+    var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+  
+  // Permutations
+    i = mod289(i);
+    var p = permute( permute( permute(
+               i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+             + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+             + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+  
+  // Gradients: 7x7 points over a square, mapped onto an octahedron.
+  // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+  let n_ = 0.142857142857; // 1.0/7.0
+  let  ns = n_ * D.wyz - D.xzx;
+  
+  let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+  
+  let x_ = floor(j * ns.z);
+  let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+  
+  let x = x_ *ns.x + ns.yyyy;
+  let y = y_ *ns.x + ns.yyyy;
+  let h = 1.0 - abs(x) - abs(y);
+  
+  let b0 = vec4( x.xy, y.xy );
+  let b1 = vec4( x.zw, y.zw );
+  
+    //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+    //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+    let s0 = floor(b0)*2.0 + 1.0;
+    let s1 = floor(b1)*2.0 + 1.0;
+    let sh = -step(h, vec4(0.0));
+  
+    let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+    let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+  
+    var p0 = vec3(a0.xy,h.x);
+    var p1 = vec3(a0.zw,h.y);
+    var p2 = vec3(a1.xy,h.z);
+    var p3 = vec3(a1.zw,h.w);
+  
+  //Normalise gradients
+    var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+    p0 *= norm.x;
+    p1 *= norm.y;
+    p2 *= norm.z;
+    p3 *= norm.w;
+  
+  // Mix final noise value
+  //t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+    
+  var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
+    m = m * m;
+    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                  dot(p2,x2), dot(p3,x3) ) );
+    }
+  
+  //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
+  
+  const list=5.;
+  
+  fn curl_noise (pos:vec4<f32>, t: f32) -> vec4<f32> {
+    //make unit cube
+    //take 8 gradients of trilinear interpolations |-|
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+    var x0 = x + 1.;
+    return vec4<f32>(sfrand(), sfrand(), sfrand(), sfrand());
+  }
+  
+  fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
+    var s  = snoise(vec3( x ));
+    var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
+    var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
+    var c = vec3( s , s1 , s2 );
+    return c;
+  
+  }
+  
+  fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
+    var e = .00001;
+    var dx = vec3( e   , 0.0 , 0.0 );
+    var dy = vec3( 0.0 , e   , 0.0 );
+    var dz = vec3( 0.0 , 0.0 , e   );
+  
+    var p_x0 = snoiseVec3( p - dx );
+    var p_x1 = snoiseVec3( p + dx );
+    var p_y0 = snoiseVec3( p - dy );
+    var p_y1 = snoiseVec3( p + dy );
+    var p_z0 = snoiseVec3( p - dz );
+    var p_z1 = snoiseVec3( p + dz );
+  
+    var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
+    var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
+    var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
+  
+    var divisor = 1.0 / ( 2.0 * e );
+    return normalize( vec3( x , y , z ) * divisor );
+  }
+  
+   fn mod289( x: vec3<f32>) -> vec3<f32> {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
+  
+  fn mod289v( x: vec4<f32>)  ->vec4<f32>
+  {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
+  
+  fn permute( x: vec4<f32>) -> vec4<f32>
+  {
+    return mod289v(((x*34.0)+1.0)*x);
+  }
+  
+  
+  fn fade( t: vec3<f32>) -> vec3<f32> {
+    return t*t*t*(t*(t*6.0-15.0)+10.0);
+  }
+  
+  fn sfrand () -> f32{
+    let co = vec2<f32>(${Math.random()}, ${Math.random()});
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+  
+  
+  fn mrand() ->  f32{
+    return (sfrand() * 2.) - 1.;
+  }
+  
+  fn hash (pos:vec3<f32>) -> i32{
+  
+    return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
+  }
+  
+  
+    @compute @workgroup_size(256)
+    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+      let index: u32 = GlobalInvocationID.x;
+  
+      let v = vectorFieldBuffer[index];
+  
+      var pos = buffer3[index];
+      //vectorFieldBuffer[index] += snoise(pos.xyz);
+      var t = uniforms.time;
+      var abc = buffer3[index];
+      //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
+      var position = pos.xyz;
+      var i = GlobalInvocationID.xyz; 
+      var stuff =  textureLoad(myTexture,
+        vec3<i32>(i),
+         //vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
+         0
+         );
+  
+      var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
+   
+      //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+  
+  
+    var vf = .001 * vectorFieldBuffer[index].xyz;
+      velocity[index] += .1 * vf;
+  
+      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
+  
+  
+  
+      //wind turbulenve
+      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+      
+      //sphere
+      //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+    }`,
+  
+    exec: function (state){
+      const device = state.device
+      const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+  
+      const computePass = commandEncoder.beginComputePass();
+      state.computePass.computePass = computePass;
+  
+      computePass.setPipeline(state.computePass.pipeline);
+      computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+      computePass.dispatchWorkgroups(256);
+      computePass.end();
+    },
+    bindGroups: function (state, computePipeline) {
+  
+      const uniformsBuffer = webgpu.device.createBuffer({
+        size: 32, 
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+    });
+      const computeBindGroup =
+        utils.makeBindGroup(state.device,
+          computePipeline.getBindGroupLayout(0),
+        [ 
+          gridBuffer,
+          shapes[0],
+          uniformsBuffer,
+          velocity,
+          texture.createView({
+            dimension: '3d',
+            sampleType: 'float'
+          }),
+        ], )
+  
+      return [computeBindGroup]
+    }
+  })
+  }
+
+
 
 //simplify meshes to less particles
 //chromatic motion blur
@@ -63,13 +395,14 @@ window.addEventListener('click', function () {
 })
 
 function makeStagingBuffer() {
+  stagingBuffer = stagingBuffer || webgpu.device.createBuffer({
+    size: 1e7,
+    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
   setTimeout(function () {
     if (! shapes[0] || !animating) return;
-    stagingBuffer = webgpu.device.createBuffer({
-      size: 1e7,
-      usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-      mappedAtCreation: true,
-    });
+
     let frame = time % frames[choice].length
     const toCopy = frames[choice][frame]
     if (! toCopy) return console.log(toCopy, choice, frame)
@@ -126,8 +459,10 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   return gpuBuffer
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
+
+
 async function basic () {
- 
+  let computeTransition = makeComputeShader(webgpu, shapes[0])
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -256,50 +591,6 @@ const blend = {
 //compute shader = transition from one mesh to another
 //vertex -> fragment = simple display + lighting
 
-
-
-
-// let vectorField = []
-// for (let i = 0; i < 10; i++) {
-//   vectorField[i] = []
-// }
-
-// for (let i = 0; i < 10; i++) {
-//   for (let i = 0; j < 10; i++) {
-//     vectorField[i][j] = []
-//   }
-// }
-// let count = 0
-
-
-// function getUpperBound(bound) {
-//   let ret = 0
-//   while (! ret && ret < bound){
-//     ret = Math.random()
-//   }
-//   return ret
-// }
-
-// while (count < 100) {
-  
-
-//   let line = [
-//     [Math.random() / 3, getUpperBound()],
-//     [Math.random() / 3, getUpperBound()],
-//   ]
-
-//   vectorField[
-
-
-//   ]
-
-
-// }
-
-
-
-
-
 function magnitude (v) {
   return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2])
 }
@@ -318,7 +609,7 @@ let convert = function (x) {
   //console.log(x.toPrecision(2))
   return ((x * .1).toPrecision(2) + 1) /2
 }
-let velocityBuffer = new Float32Array(1e6)
+
 // for (let i = 0; i < velocityBuffer.length; i++) {
 //   let buffer = velocityBuffer;
 //   let vec = shit[i % shit.length]
@@ -327,12 +618,6 @@ let velocityBuffer = new Float32Array(1e6)
 //   buffer[3*i+1] = vec[1]
 //   buffer[3*i+2] = vec[2]
 // }
-
-
-let result = []
-let width = 10
-let height = 10
-
 
 
 
@@ -347,361 +632,8 @@ let height = 10
 //     } 
 //   }
 // }
-let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
-for (let i = 0; i <2e6; i+=4) {
-  result[i] = .1 * Math.cos(i * .1)
-  result[i+1] =  .1 * Math.sin(i * .1)
-  result[i+2] = 0
-  result[i+3] = 0
-}
-console.log(result)
-let gridBuffer = makeBuffer(result, 0, 'result')
 
-
-// for (let i = 0; i <100; i++) {
-//   for (let j = 0; j <100; j++) {
-//     for (let k = 0; k <1000; k++) {
-//       let idx = i  + j * width + k * width * height
-//       result[3 * idx] = 0
-//       result[3 * idx+1] = 1
-//       result[3 * idx+2] = 0
-//       //if(hasColided[idx] > 1) console.log('ohnoe')
-//     }
-    
-//   }
-   
-// }
-
-
-
-//curl noise turbulence
-//flowing along 3d model
-//magnets
-//spiral
-//writing words
-
-
-let texture = webgpu.device.createTexture({
-  size: [100, 100, 100],
-  format:  "rgba8unorm",
-  dimension: "3d",
-  usage:
-    GPUTextureUsage.TEXTURE_BINDING |
-    GPUTextureUsage.COPY_DST |
-    GPUTextureUsage.STORAGE_BINDING |
-    GPUTextureUsage.COPY_SRC,
-});
-
-  webgpu.device.queue.writeTexture(
-    { texture },
-    velocityBuffer,
-    {
-      bytesPerRow: 400,
-      rowsPerImage: 100,
-    },
-    [0, 0, 0]
-  );
-
-  let ce = device.createCommandEncoder();
-ce.copyBufferToTexture(
-  { buffer: gridBuffer },
-  { texture },
-  { width: 100, height: 1, depthOrArrayLayers: 1, bytesPerRow: 400 },
-  { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
-);
-
-device.queue.submit([ce.finish()]);
-
-const computeTransition = webgpu.initComputeCall({
-  label: `predictedPosition`,
-  code:`
-
-  struct Uniforms {
-    time: f32,
-  
-  }
-  @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
-  @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
-
-  @group(0) @binding(4) var<uniform> uniforms: Uniforms;
-
-  @group(0) @binding(5) var<storage,read_write> velocity: array<vec3<f32>>;
-
-   @group(0) @binding(6) var myTexture: texture_3d<f32>;
-
-fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
-{
-  return 1.79284291400159 - 0.85373472095314 * r;
-}
-
-fn snoise( v: vec3<f32>) -> f32
-  {
-    var  C = vec2(1.0/6.0, 1.0/3.0) ;
-    var  D = vec4(0.0, 0.5, 1.0, 2.0);
-
-// First corner
-var i = floor(v + dot(v, C.yyy) );
-var x0 =   v - i + dot(i, C.xxx) ;
-
-// Other corners
-var g = step(x0.yzx, x0.xyz);
-var l = 1.0 - g;
-var i1 = min( g.xyz, l.zxy );
-var i2 = max( g.xyz, l.zxy );
-
-  var x1 = x0 - i1 + C.xxx;
-  var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
-  var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
-
-// Permutations
-  i = mod289(i);
-  var p = permute( permute( permute(
-             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-           + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-
-// Gradients: 7x7 points over a square, mapped onto an octahedron.
-// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
-let n_ = 0.142857142857; // 1.0/7.0
-let  ns = n_ * D.wyz - D.xzx;
-
-let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
-
-let x_ = floor(j * ns.z);
-let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
-
-let x = x_ *ns.x + ns.yyyy;
-let y = y_ *ns.x + ns.yyyy;
-let h = 1.0 - abs(x) - abs(y);
-
-let b0 = vec4( x.xy, y.xy );
-let b1 = vec4( x.zw, y.zw );
-
-  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
-  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
-  let s0 = floor(b0)*2.0 + 1.0;
-  let s1 = floor(b1)*2.0 + 1.0;
-  let sh = -step(h, vec4(0.0));
-
-  let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-  let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-
-  var p0 = vec3(a0.xy,h.x);
-  var p1 = vec3(a0.zw,h.y);
-  var p2 = vec3(a1.xy,h.z);
-  var p3 = vec3(a1.zw,h.w);
-
-//Normalise gradients
-  var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-  p0 *= norm.x;
-  p1 *= norm.y;
-  p2 *= norm.z;
-  p3 *= norm.w;
-
-// Mix final noise value
-//t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-  
-var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
-  m = m * m;
-  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
-                                dot(p2,x2), dot(p3,x3) ) );
-  }
-
-//ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
-
-const list=5.;
-
-fn curl_noise (pos:vec4<f32>, t: f32) -> vec4<f32> {
-  //make unit cube
-  //take 8 gradients of trilinear interpolations |-|
-  var x = pos.x;
-  var y = pos.y;
-  var z = pos.z;
-  var x0 = x + 1.;
-  return vec4<f32>(sfrand(), sfrand(), sfrand(), sfrand());
-}
-
-fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
-  var s  = snoise(vec3( x ));
-  var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
-  var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
-  var c = vec3( s , s1 , s2 );
-  return c;
-
-}
-
-fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
-  var e = .00001;
-  var dx = vec3( e   , 0.0 , 0.0 );
-  var dy = vec3( 0.0 , e   , 0.0 );
-  var dz = vec3( 0.0 , 0.0 , e   );
-
-  var p_x0 = snoiseVec3( p - dx );
-  var p_x1 = snoiseVec3( p + dx );
-  var p_y0 = snoiseVec3( p - dy );
-  var p_y1 = snoiseVec3( p + dy );
-  var p_z0 = snoiseVec3( p - dz );
-  var p_z1 = snoiseVec3( p + dz );
-
-  var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
-  var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
-  var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
-
-  var divisor = 1.0 / ( 2.0 * e );
-  return normalize( vec3( x , y , z ) * divisor );
-}
-
- fn mod289( x: vec3<f32>) -> vec3<f32> {
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-fn mod289v( x: vec4<f32>)  ->vec4<f32>
-{
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-fn permute( x: vec4<f32>) -> vec4<f32>
-{
-  return mod289v(((x*34.0)+1.0)*x);
-}
-
-
-fn fade( t: vec3<f32>) -> vec3<f32> {
-  return t*t*t*(t*(t*6.0-15.0)+10.0);
-}
-
-fn sfrand () -> f32{
-  let co = vec2<f32>(${Math.random()}, ${Math.random()});
-  return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-
-fn mrand() ->  f32{
-  return (sfrand() * 2.) - 1.;
-}
-
-fn hash (pos:vec3<f32>) -> i32{
-
-  return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
-}
-
-
-  @compute @workgroup_size(256)
-  fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-    let index: u32 = GlobalInvocationID.x;
-
-    let v = vectorFieldBuffer[index];
-
-    var pos = buffer3[index];
-    //vectorFieldBuffer[index] += snoise(pos.xyz);
-    var t = uniforms.time;
-    var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
-    var abc = buffer3[index];
-    //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-    var position = pos.xyz;
-    var i = GlobalInvocationID.xyz; 
-    var stuff =  textureLoad(myTexture,
-      vec3<i32>(i),
-       //vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
-       0
-       );
-
-    var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
- 
-    //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-
-
-  var vf = .001 * vectorFieldBuffer[idx].xyz;
-    velocity[index] += .1 * vf;
-
-    buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
-
-
-
-    //wind turbulenve
-    //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    
-    //sphere
-    //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-  }`,
-
-  exec: function (state){
-    const device = state.device
-    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
-
-    const computePass = commandEncoder.beginComputePass();
-    state.computePass.computePass = computePass;
-
-    computePass.setPipeline(state.computePass.pipeline);
-    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(256);
-    computePass.end();
-  },
-  bindGroups: function (state, computePipeline) {
-
-    const uniformsBuffer = webgpu.device.createBuffer({
-      size: 32, 
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-  });
-    const computeBindGroup =
-      utils.makeBindGroup(state.device,
-        computePipeline.getBindGroupLayout(0),
-      [
-        posBuffer,
-        posBuffer,
-        
-        gridBuffer,
-        shapes[0],
-        uniformsBuffer,
-        velocity,
-        texture.createView({
-          dimension: '3d',
-          sampleType: 'float'
-        }),
-      ], )
-
-    return [computeBindGroup]
-  }
-})
-
-// const bufferSize = 100 * 100 * 100; // assuming RGBA8Unorm texture format
-// const buffer = device.createBuffer({
-//   size: bufferSize,
-//   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-// });
-
-// const commandEncoder = device.createCommandEncoder();
-// commandEncoder.copyTextureToBuffer(
-//   { texture: texture },
-//   { buffer, offset: 0, bytesPerRow: 256 * 4 },
-//   { width:100, height:100, depth: 100 }
-// );
-// const commandBuffer = commandEncoder.finish();
-// device.queue.submit([commandBuffer]);
-
-// const hey = new Float32Array(buffer.getMappedRange())
-
-// buffer.unmap();
-
-// console.log(hey)
-
-// vector field = 2d image
-// vector field = 3d model
-// circulate particles throughout model - use curl noise to circulate throughout model with turbulence 
-// divergence set to 0
-// add 2nd particle sysstem with emitter at points with most change in flow
-
-//buffer[0]= vec from previous point to next point
-//
-
-
-//go slow to go fast
-//build one cool original algorithmic effect from scratch
-
-//turn down saturation by point density of cuboid 
 //precisely calculate line interval convolutions using 
 var rgb = new Float32Array(2e5);
 for (let i = 0; i < rgb.length; i+=3) {
@@ -713,11 +645,8 @@ for (let i = 0; i < rgb.length; i+=3) {
   rgb[i+1] = color.g / 255 / 2
 
   rgb[i+2] = color.b / 255 / 2
-  //if (Math.random())console.log(i / rgb.length)
-
 }
-//console.log(d3.rgb(interpolateTurbo(Math.random())))
-//console.log(rgb, 123)
+
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 
 const drawCube = await webgpu.initDrawCall({
@@ -805,8 +734,6 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 
 		//Sum up the specular light factoring
 		let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-    //return  col + vec4<f32>(distanceFromCenter - 1.5, 1.,1.,.1);
-    //return  col + vec4<f32>(distanceFromCenter - 1.5,  / 10000,1.,.1);
     return vec4<f32>(color.xyz, 1.);
 }
 `},
@@ -857,32 +784,25 @@ function recur () {
   drawCube.state.options.attributeBufferData[
     choice ? 0 : 2
   ] = shapes[i]
-  // drawCube.state.options.attributeBufferData[
-  //   choice ? 2 : 0
-  // ] = shapes[i]
   d3.transition().duration(3 * 1000)
   .ease(d3.easeCubic)
   .attrTween('animation', function () {
     return function (t) {
       if (choice) t = 1.0 - t
       a.forEach((d, i) => a[i] = t)
-
-     
     }
-    
   }).on('end', recur)
 }
 //recur()
 
-
-
 let camera = createCamera({
-  center: [.5, 1.5, -.3],
+  center: [.5, 1.5, .3],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
   element: webgpu.canvas
 });
+
 setInterval(
    function () {
     let {projection, view} = camera()
@@ -908,8 +828,6 @@ setInterval(
       model.byteOffset,
       model.byteLength
     );
- 
-   
 
     device.queue.writeBuffer(
       cameraUniformBuffer,
@@ -922,130 +840,5 @@ setInterval(
  
     if (! animating) computeTransition()
     drawCube({})
-
-
     }, 8) 
-
-  
-
 }
-
-//dancing mesh = write to mesh
-//galaxy mesh = write to mesh
-//mountain landscape 
-// flower garden 
-
-//2024 - water 
-
-  // create the audio context (chrome only for now)
-  var context;
-  var audioBuffer;
-  var sourceNode;
-  var splitter;
-  var analyser, analyser2;
-  var javascriptNode;
-
-  function setupAudioNodes() {
-    context = new AudioContext()
-      // setup a javascript node
-      javascriptNode = context.createScriptProcessor(2048, 1, 1);
-      // connect to destination, else it isn't called
-      javascriptNode.connect(context.destination);
-
-      // when the javascript node is called
-      // we use information from the analyzer node
-      // to draw the volume
-      javascriptNode.onaudioprocess = function(stuff) {
-          // get the average for the channel
-          var array = new Uint8Array(analyser.frequencyBinCount);
-          analyser.getByteFrequencyData(array);
-          getAverageVolume(array);
-          const buffer = stuff.outputBuffer
-    
-      }
-
-      // setup a analyzer
-      analyser = context.createAnalyser();
-      analyser.smoothingTimeConstant = 0.3;
-      analyser.fftSize = 1024;
-
-      // create a buffer source node
-      sourceNode = context.createBufferSource();
-      splitter = context.createChannelSplitter();
-
-      // connect the source to the analyser and the splitter
-      sourceNode.connect(splitter);
-
-      // connect one of the outputs from the splitter to
-      // the analyser
-      splitter.connect(analyser,0,0);
-
-      // connect the splitter to the javascriptnode
-      // we use the javascript node to draw at a
-      // specific interval.
-      analyser.connect(javascriptNode);
-
-      // and connect to destination
-      sourceNode.connect(context.destination);
-  }
-
-  // load the specified sound
-  function loadSound(url) {
-      var request = new XMLHttpRequest();
-      request.open('GET', url, true);
-      request.responseType = 'arraybuffer';
-
-      // When loaded decode the data
-      request.onload = function() {
-
-          // decode the data
-        //   document.querySelector('body').addEventListener('click', function() {
-        //     context.resume().then(() => {
-        //       console.log('Playback resumed successfully');
-        //     });
-        //     context.decodeAudioData(request.response)
-        //     .then(function(buffer) {
-        //       // when the audio is decoded play the sound
-
-        //       playSound(buffer);
-   
-        //   })
-        // });
-      
-      }
-      request.send();
-  }
-
-  function playSound(buffer) {
-      sourceNode.buffer = buffer;
-      sourceNode.start(0);
-
-         
-  }
-
-  // log if an error occurs
-  function onError(e) {
-      console.log(e);
-  }
-
-  function getAverageVolume(array) {
-      var values = 0;
-      var average;
-
-      var length = array.length;
-      // get all the frequency amplitudes
-      for (var i = 0; i < length; i++) {
-          values += array[i];
-      }
-      average = values / length;
-      return average;
-  }
-
-  setupAudioNodes()
-  loadSound('https://ia800300.us.archive.org/16/items/JusticeDance/03D.a.n.c.e.mp3')
-
-
-//   //https://toji.dev/webgpu-best-practices/buffer-uploads - galaxy
-
-
-//   //its impossible to know what a good decision is when thousands of people add thoughts to my head that come from randomness
