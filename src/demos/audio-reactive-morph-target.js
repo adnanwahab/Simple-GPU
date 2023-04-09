@@ -134,7 +134,9 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   const gpuBuffer = webgpu.device.createBuffer({
     label,
     size: gpuBufferSize,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST ,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    
+    |GPUBufferUsage.COPY_SRC,
     mappedAtCreation: true,
   });
   
@@ -318,7 +320,7 @@ const blend = {
 // }
 
 
-let velocityBuffer = new Float32Array(1e3)
+let velocityBuffer = new Float32Array(1e7)
 
 
 function magnitude (v) {
@@ -344,16 +346,13 @@ for (let i = 0; i < velocityBuffer.length; i++) {
   let buffer = velocityBuffer;
   let vec = shit[i % shit.length]
 
-  buffer[4*i] = vec[0]
-  buffer[4*i+1] = vec[1]
-  buffer[4*i+2] = vec[2]
-  buffer[4*i+3] = 0
-  //console.log(hash)
+  buffer[3*i] = vec[0]
+  buffer[3*i+1] = vec[1]
+  buffer[3*i+2] = vec[2]
 }
 
 
 let result = []
-let hasColided = {}
 let width = 10
 let height = 10
 
@@ -362,27 +361,21 @@ let height = 10
 
 for (let i = 0; i <100; i++) {
   for (let j = 0; j <100; j++) {
-    for (let k = 0; k <100; k++) {
+    for (let k = 0; k <1000; k++) {
       let idx = i  + j * width + k * width * height
-      try {
-      result[4 * idx] = Math.cos(i)
-      result[4 * idx+1] = Math.sin(j)
-      result[4 * idx+2] = 0
-      } catch (e) {
-        console.log(4*idx)
-
-      }
-
+      result[3 * idx] = -1
+      result[3 * idx+1] = -1
+      result[3 * idx+2] = -1  
       //if(hasColided[idx] > 1) console.log('ohnoe')
     }
     
   }
    
 }
-
+console.log(result)
+let gridBuffer = makeBuffer(result, 0, 'result')
 //access vector field with 
 
-console.log(result, 'result')
 
 
 
@@ -415,7 +408,8 @@ let texture = webgpu.device.createTexture({
   usage:
     GPUTextureUsage.TEXTURE_BINDING |
     GPUTextureUsage.COPY_DST |
-    GPUTextureUsage.STORAGE_BINDING,
+    GPUTextureUsage.STORAGE_BINDING |
+    GPUTextureUsage.COPY_SRC,
 });
 
   webgpu.device.queue.writeTexture(
@@ -425,8 +419,18 @@ let texture = webgpu.device.createTexture({
       bytesPerRow: 400,
       rowsPerImage: 100,
     },
-    [100, 100, 100]
+    [0, 0, 0]
   );
+
+  let ce = device.createCommandEncoder();
+ce.copyBufferToTexture(
+  { buffer: vectorFieldBuffer },
+  { texture },
+  { width: 100, height: 1, depthOrArrayLayers: 1, bytesPerRow: 400 },
+  { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
+);
+
+device.queue.submit([ce.finish()]);
 
 const computeTransition = webgpu.initComputeCall({
   label: `predictedPosition`,
@@ -436,16 +440,16 @@ const computeTransition = webgpu.initComputeCall({
     time: f32,
   
   }
-  @group(0) @binding(0) var<storage,read> buffer1: array<vec4<f32>>;
-  @group(0) @binding(1) var<storage,read> buffer2: array<vec4<f32>>;
-  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec4<f32>>;
+  @group(0) @binding(0) var<storage,read> buffer1: array<vec3<f32>>;
+  @group(0) @binding(1) var<storage,read> buffer2: array<vec3<f32>>;
+  @group(0) @binding(2) var<storage,read_write> vectorFieldBuffer: array<vec3<f32>>;
+  @group(0) @binding(3) var<storage,read_write> buffer3: array<vec3<f32>>;
 
   @group(0) @binding(4) var<uniform> uniforms: Uniforms;
 
-  @group(0) @binding(5) var<storage,read_write> velocity: array<vec4<f32>>;
+  @group(0) @binding(5) var<storage,read_write> velocity: array<vec3<f32>>;
 
-  @group(0) @binding(6) var myTexture: texture_3d<f32>;
+   @group(0) @binding(6) var myTexture: texture_3d<f32>;
 
 fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
 {
@@ -549,7 +553,7 @@ fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
 }
 
 fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
-  var e = .1;
+  var e = .00001;
   var dx = vec3( e   , 0.0 , 0.0 );
   var dy = vec3( 0.0 , e   , 0.0 );
   var dz = vec3( 0.0 , 0.0 , e   );
@@ -600,7 +604,7 @@ fn mrand() ->  f32{
 
 fn hash (pos:vec3<f32>) -> i32{
 
-  return i32(pos.x * 10. + pos.y * 100. + pos.z * 1000.);
+  return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
 }
 
 
@@ -611,8 +615,6 @@ fn hash (pos:vec3<f32>) -> i32{
     let v = vectorFieldBuffer[index];
 
     var pos = buffer3[index];
-    //vectorFieldBuffer[index] = buffer3[index] - buffer3[index+1];
-    //let idx = hash(pos.xyz);
     //vectorFieldBuffer[index] += snoise(pos.xyz);
     var t = uniforms.time;
     var test = mix(buffer1[index], buffer2[index], vectorFieldBuffer[hash(pos.xyz)].x);
@@ -620,15 +622,25 @@ fn hash (pos:vec3<f32>) -> i32{
     //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
     var position = pos.xyz;
     var stuff =  textureLoad(myTexture,
-       vec3<i32>(0, 0, 0), 
+       vec3<i32>(i32(pos.x * 100), i32(pos.y * 255), i32(pos.z * 255)), 
        0
        );
-       //x * 100, y * 100, z * 100
 
-    var idx = i32(pos.x *100 + pos.y * 100 * 100 + pos.z * 100 * 100 * 100);
-    velocity[index] += .01 * vectorFieldBuffer[idx];
+    var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
+ 
+    vectorFieldBuffer[index] = curlNoise(pos);
+//    
+    velocity[index] += .01 * vectorFieldBuffer[index];
+    //
     buffer3[index] = pos + .01 * velocity[index];
+    //
     // + .001 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1.);
+
+    //while animating - animate particles along mesh
+
+
+    //use 3d model to generate vector field -- curl noise(position)
+    //every other vector in vector field redirects toward model
   }`,
 
   exec: function (state){
@@ -656,7 +668,7 @@ fn hash (pos:vec3<f32>) -> i32{
         posBuffer,
         posBuffer,
         
-        vectorFieldBuffer,
+        gridBuffer,
         shapes[0],
         uniformsBuffer,
         velocity,
@@ -669,6 +681,27 @@ fn hash (pos:vec3<f32>) -> i32{
     return [computeBindGroup]
   }
 })
+
+// const bufferSize = 100 * 100 * 100; // assuming RGBA8Unorm texture format
+// const buffer = device.createBuffer({
+//   size: bufferSize,
+//   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+// });
+
+// const commandEncoder = device.createCommandEncoder();
+// commandEncoder.copyTextureToBuffer(
+//   { texture: texture },
+//   { buffer, offset: 0, bytesPerRow: 256 * 4 },
+//   { width:100, height:100, depth: 100 }
+// );
+// const commandBuffer = commandEncoder.finish();
+// device.queue.submit([commandBuffer]);
+
+// const hey = new Float32Array(buffer.getMappedRange())
+
+// buffer.unmap();
+
+// console.log(hey)
 
 // vector field = 2d image
 // vector field = 3d model
