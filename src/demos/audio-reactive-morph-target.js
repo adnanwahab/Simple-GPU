@@ -1,6 +1,15 @@
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
+import createCamera from './createCamera'
+import bunny from 'bunny'
+import dragon from 'stanford-dragon'
+
+const stuff = 4
+const particlesCount = 442008 / 3 
+import simpleWebgpuInit from '../../lib/main';
+import utils from '../../lib/utils';
+import { mat4, vec3 } from 'gl-matrix'
 
 //simplify meshes to less particles
 //chromatic motion blur
@@ -95,39 +104,7 @@ function writeBuffer (device, buffer, array) {
 }
 
 
-//need a way to swap meshes
-//make 5 functions that load 5 point clouds
-//make a beat detection function that calls function upon volume threshold 
-//one more to diff particles 
-//no animation 
-// have to make a demo so good it unites stream
-
-
-import createCamera from './createCamera'
-
-import bunny from 'bunny'
-import dragon from 'stanford-dragon'
-import { analyze } from 'web-audio-beat-detector';
-
-//import GLTFLoader from 'three-gltf-loader';
-
-//change mesh when it detects a beat [.5]
-//gold particles for mesh [0]
-//add rainbow particles for motion - detect DX and show trail [0]
-
-import { WebGPUScan } from './scan'
-
-const stuff = 4
-const NUM_PARTICLES = 256 * 4 * stuff
-const particlesCount = 442008 / 3 
-const SCAN_THREADS = 256
-import simpleWebgpuInit from '../../lib/main';
-import utils from '../../lib/utils';
-
-import { mat4, vec3 } from 'gl-matrix'
-
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
-//  let particlesCount = stuff.length
   const particleSize = 1
   const gpuBufferSize = 1e7 * particleSize
 
@@ -371,16 +348,10 @@ let height = 10
 //   }
 // }
 let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
-//access vector field with 
 
-
-//     r = np.sqrt(x**2 + y**2)
-//theta = np.arctan2(y, x)
-//u = np.cos(theta + r)
-//v = np.sin(theta + r)
 for (let i = 0; i <2e6; i+=4) {
-  result[i] = .01 * Math.cos(i * .1)
-  result[i+1] =  .01 * Math.sin(i * .1)
+  result[i] = .1 * Math.cos(i * .1)
+  result[i+1] =  .1 * Math.sin(i * .1)
   result[i+2] = 0
   result[i+3] = 0
 }
@@ -404,13 +375,17 @@ let gridBuffer = makeBuffer(result, 0, 'result')
 
 
 
+//curl noise turbulence
+//flowing along 3d model
+//magnets
+//spiral
+//writing words
+
+
 let texture = webgpu.device.createTexture({
   size: [100, 100, 100],
-//  mipLevelCount: 1,
   format:  "rgba8unorm",
-//  usage: GPUTextureUsage.SAMPLED | GPUTextureUsage.COPY_DST,
   dimension: "3d",
-
   usage:
     GPUTextureUsage.TEXTURE_BINDING |
     GPUTextureUsage.COPY_DST |
@@ -636,24 +611,21 @@ fn hash (pos:vec3<f32>) -> i32{
 
     var idx = i32(floor(pos.x *10) + floor(pos.y * 10)  + floor(pos.z * 10));
  
-    vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-//    vec3<f32>(.1, 0., 0.); 
+    //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
 
-  var vf = .001 * curlNoise(vectorFieldBuffer[index].xyz);
+
+  var vf = .001 * vectorFieldBuffer[idx].xyz;
     velocity[index] += .1 * vf;
 
-  //  buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
-    //buffer3[index] += vec4<f32>(.001, 0., 0., 0.);
+    buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
 
+
+
+    //wind turbulenve
     //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-
-
-    //while animating - animate particles along mesh
-
-
-    //use 3d model to generate vector field -- curl noise(position)
-    //every other vector in vector field redirects toward model
+    
+    //sphere
+    //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   }`,
 
   exec: function (state){
