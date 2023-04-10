@@ -4,7 +4,7 @@
 //dancerA -> dancerB
 //flow field - spiral 
 //magnet
-
+const mouse = [0,0]
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
@@ -46,27 +46,61 @@ function unitVector (v) {
 // 
 
 function unindex (x , y, z) {
+  let width = 10, height = 10;
   x = (1 + x) / 2
   y = (1 + y) / 2
   z = (1 + z) / 2
-  let hash = x * width + y * width * height + z * width * height * depth;
+  let hash = x * width + y * width * height ;//+ z * width * height * depth;
 
   return hash
 }
 
 function index(i) {
+  //x goes from -1 to 1
+  //y goes from 1 to -1
   // let width = 10, height = 10, depth = 10
   // var X = (index % width) / width * 2 - 1
   // var Y = (index % width* height) / height * 2 - 1
   // Y = Math.floor(index % (width * height) / height)
   // var Z = (index % (width * height)) / depth * 2 - 1
-  const width = 100;
-  const x = i % (100) / width * 2 - 1;
-  const y = Math.floor(i / 100) * 2 - 1;
-  const z = Math.floor(i / 100 / 100) * 2 -1
+  const width = 10;
+  const x = (i % 10) / width * 2 - 1;
+  const y = Math.floor(i / 10)
+  const z = 0
+  //x % 10
+  //y / 10 % 10
+  //z / 10 * 10
+  //const z = Math.floor(i / 100 / 100) * 2 -1
   //111 -.9, -.9, -.9
   return [x, y, z]
 }
+
+//index = x + width * (y + height * z)
+let grid = []
+for (var i = 0; i < 100; i+=3) { 
+  //let [x,y,z] = index(i)
+  grid[i] = i % 5 < 1 ? 1 : 0
+  grid[i+1]= i % 10 < 1 ? 1 : 0
+  grid[i+2] = 0
+}
+console.log(grid)
+for (var i = 0; i < 100; i+=3) { 
+  let x = grid[i]
+  let y = grid[i+1]
+  let z = grid[i+2]
+  let hash = unindex(x,y,z)
+  let x1 = grid[hash], y1 = grid[hash+1], z1 = grid[hash+2]
+
+  let errorMsg = 'do not work'
+  // console.assert(x === x1, "%o", {hash, x, x1, errorMsg});
+  // console.assert(y === y1, "%o", {hash, y, y1, errorMsg });
+  // console.assert(z === z1, "%o", {hash, z, z1, errorMsg });
+}
+
+//if this doesnt work use a view transform function 
+
+
+
 
 
 function makeComputeShader(webgpu, mesh) {
@@ -132,22 +166,34 @@ console.log('max', max, min)
 // if x > max - set to -x
 // if x > min - set to +x
 
-for (let i = 0; i < 10000; i += 3) {
-  const x = i % (100);
-  const y = Math.floor(i / 100);
-  const z = Math.floor(i / 100 / 100)
+for (let i = 0; i < 10000; i += 4) {
+  // const x = i % (100);
+  // const y = Math.floor(i / 100);
+  // const z = Math.floor(i / 100 / 100)
   // const z = Math.sin(x * 0.1) + Math.cos(y * 0.1);
-  if (i % 2 === 0){ 
-  result[i] = -x
-  result[i + 1] = y
-  } else {
-    result[i] = x
-    result[i+1] = -y
-  }
 
-  result[i + 2] = 0;
+  let [x,y,z] = index(i);
+
+  // if (Math.abs(x) > .7) {
+  // result[i] = 1
+
+  // } else {
+  //   result[i] = -1
+  
+  // }
+  // if (Math.abs(y) > .7){
+  // result[i + 1] = 1
+  
+  // } else {
+  //   result[i+1] = -10
+  // }
+  result[i] = 1
+  result[i+1] = -1
+  result[i + 2] = 1
+  result[i+3] = 0
+  //result[i + 3] = 0
+
 }
-
 
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
@@ -231,9 +277,9 @@ let coll = {}
   let gridBuffer = makeBuffer(result, 0, 'result')
   window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
-    size: [100, 100, 100],
+    size: [100, 100, 1],
     format:  "rgba8unorm",
-    dimension: "3d",
+    dimension: "2d",
     usage:
       GPUTextureUsage.TEXTURE_BINDING |
       GPUTextureUsage.COPY_DST |
@@ -241,38 +287,43 @@ let coll = {}
       GPUTextureUsage.COPY_SRC,
   });
   
-    webgpu.device.queue.writeTexture(
-      { texture },
-      velocityBuffer,
-      {
-        bytesPerRow: 400,
-        rowsPerImage: 100,
-      },
-      [0, 0, 0]
-    );
+    // webgpu.device.queue.writeTexture(
+    //   { texture },
+    //   grid,
+    //   {
+    //     bytesPerRow: 400,
+    //     rowsPerImage: 100,
+    //   },
+    //   [100, 100, 1]
+    // );
   
+    console.log(gridBuffer)
     let ce = device.createCommandEncoder();
   ce.copyBufferToTexture(
     { buffer: gridBuffer },
     { texture },
-    { width: 100, height: 1, depthOrArrayLayers: 1, bytesPerRow: 400 },
+    { width: 100, height: 00, depthOrArrayLayers: 1, bytesPerRow: 400 },
     { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
   );
   
   device.queue.submit([ce.finish()]);
   
+  const uniformsBuffer = webgpu.device.createBuffer({
+    size: 32, 
+    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+});
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code:`
   
     struct Uniforms {
-      time: f32,
+      mouse: vec2<f32>,
     }
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
-     @group(0) @binding(4) var myTexture: texture_3d<f32>;
+     @group(0) @binding(4) var myTexture: texture_2d<f32>;
   
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
   {
@@ -424,46 +475,48 @@ let coll = {}
   fn mrand() ->  f32{
     return (sfrand() * 2.) - 1.;
   }
-  
-  // fn hash (pos:vec3<f32>) -> i32{
-  
-  //   return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
-  // }
-  
 
   fn shift (x:f32)->f32 {
     return (x + 1.) / 2.;
   }
 
   fn hash (pos: vec3<f32>) -> i32 {
-    let idx = shift(pos.x) * 10 + shift(pos.y) * 100 + shift(pos.z) * 1000;
-    return i32(idx);
+    //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
+
+  
+    let x = (pos.x + 1) / 2.;
+    let y = ((pos.y * -1) + 1) / 2.;
+//    return i32(0);
+    return i32(x * 10 + y * 100);
+    //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
-      let v = vectorFieldBuffer[index];  
+
       var pos = buffer3[index];
-      var t = uniforms.time;
+
       var abc = buffer3[index];
 
       //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-      var i = GlobalInvocationID.xyz; 
+      var idx = hash(pos.xyz);
       var stuff =  textureLoad(myTexture,
-        vec3<i32>(i),
+        vec2<i32>(idx),
          //vec3<i32>(i32(shift(pos.x) * 100), i32(shift(pos.y * 255), i32(pos.z * 255)), 
          0
          );
   
-      var idx = i32(hash(pos.xyz));
+      
    
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
     var vf = vectorFieldBuffer[idx].xyz;
-      velocity[index] +=  vf;
-      buffer3[index] = vec4<f32>(pos.xyz + .001 * velocity[index],  1);
+    //vectorFieldBuffer[idx].xyz;
+      velocity[index] *= .1;
+      velocity[index] +=  1. * vf;
+      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
   
       //wind turbulenve
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -473,6 +526,17 @@ let coll = {}
 
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
       ;
+      //buffer3[index].x < 0. ||
+      var mouse = (uniforms.mouse - .5) * 2.;
+
+      // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
+      // if (distance(buffer3[index].xy, uniforms.mouse) < 1.) {
+      //   velocity[index].x = velocity[index].y;
+      //   velocity[index].y = -velocity[index].x;
+      //   velocity[index]*= .001;
+      // }
+      
+
     }`,
   
     exec: function (state){
@@ -482,17 +546,22 @@ let coll = {}
       const computePass = commandEncoder.beginComputePass();
       state.computePass.computePass = computePass;
   
+      //console.log(mouse)
+    webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
       computePass.dispatchWorkgroups(256);
       computePass.end();
     },
     bindGroups: function (state, computePipeline) {
+  //dancing
+  //3d vector field of spiral explosion thing
+  //3d vector field to transition to 2nd model dancing
+  // 2nd 3d model dancing
+
   
-      const uniformsBuffer = webgpu.device.createBuffer({
-        size: 32, 
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-    });
+//    console.log(uniformsBuffer)
+
       const computeBindGroup =
         utils.makeBindGroup(state.device,
           computePipeline.getBindGroupLayout(0),
@@ -502,7 +571,7 @@ let coll = {}
           uniformsBuffer,
           velocity,
           texture.createView({
-            dimension: '3d',
+            // dimension: '3d',
             sampleType: 'float'
           }),
         ], )
@@ -872,7 +941,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-     camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
+     //camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -991,6 +1060,11 @@ let camera = createCamera({
   renderOnDirty: true,
   element: document.createElement('div')//webgpu.canvas
 });
+
+webgpu.canvas.addEventListener('mousemove', function (e) {
+  mouse[0] = e.clientX / 1000
+  mouse[1] = e.clientX / 1000
+})
 
 setInterval(
    function () {
