@@ -41,6 +41,20 @@ async function writeShit (file, dir) {
       
       
     })
+
+    let max = [0,0,0]
+    frame.forEach(trip => {
+      max[0] = Math.max(trip[0], max[0])
+      max[1] = Math.max(trip[1], max[1])
+      max[2] = Math.max(trip[2], max[2])
+
+    })
+    let m = Math.max.apply(null, max)
+    frame.forEach(trip => {
+      trip[0] /= m
+      trip[1] /= m
+      trip[2] /= m
+    })
     //console.log(lines.length)
     //if (i === 0) frame.forEach(console.log)
 

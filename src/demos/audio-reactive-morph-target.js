@@ -4,6 +4,13 @@
 //dancerA -> dancerB
 //flow field - spiral 
 //magnet
+
+
+
+//make a vector field 
+//convert model to -1 to 1 - choose 
+//add camera to compute shader 
+
 const mouse = [0,0]
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
@@ -83,7 +90,7 @@ for (var i = 0; i < 100; i+=3) {
   grid[i+1]= i % 10 < 1 ? 1 : 0
   grid[i+2] = 0
 }
-console.log(grid)
+
 for (var i = 0; i < 100; i+=3) { 
   let x = grid[i]
   let y = grid[i+1]
@@ -142,8 +149,6 @@ for( let i = 0; i < mesh.stuff.length; i+=4) {
   min.y = Math.min(y, max.y)
   min.z = Math.min(z, max.z)
 }
-console.log('max', max, min)
-
 
 // coords.reverse().forEach((_,i) => {
 //   coords.reverse().forEach((_, j) => {
@@ -166,7 +171,7 @@ console.log('max', max, min)
 // if x > max - set to -x
 // if x > min - set to +x
 
-for (let i = 0; i < 10000; i += 4) {
+for (let i = 0; i < 120; i += 4) {
   // const x = i % (100);
   // const y = Math.floor(i / 100);
   // const z = Math.floor(i / 100 / 100)
@@ -187,10 +192,14 @@ for (let i = 0; i < 10000; i += 4) {
   // } else {
   //   result[i+1] = -10
   // }
-  result[i] = 1
-  result[i+1] = -1
+  result[i] = -1
+  result[i+1] = -10
   result[i + 2] = 1
   result[i+3] = 0
+
+  if (i > 100) {
+    result[i+1] = 10
+  }
   //result[i + 3] = 0
 
 }
@@ -198,8 +207,6 @@ for (let i = 0; i < 10000; i += 4) {
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
 
-
-console.log(result)
 window.result = result
 
 let count = 0
@@ -297,7 +304,6 @@ let coll = {}
     //   [100, 100, 1]
     // );
   
-    console.log(gridBuffer)
     let ce = device.createCommandEncoder();
   ce.copyBufferToTexture(
     { buffer: gridBuffer },
@@ -515,8 +521,8 @@ let coll = {}
     var vf = vectorFieldBuffer[idx].xyz;
     //vectorFieldBuffer[idx].xyz;
       velocity[index] *= .1;
-      velocity[index] +=  1. * vf;
-      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
+      velocity[index] +=  .1 * vf;
+      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
   
       //wind turbulenve
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -528,13 +534,15 @@ let coll = {}
       ;
       //buffer3[index].x < 0. ||
       var mouse = (uniforms.mouse - .5) * 2.;
+      if (distance(buffer3[index].xy, uniforms.mouse) < .4) {
+        velocity[index].x = velocity[index].y;
+        velocity[index].y = -velocity[index].x;
+        velocity[index].z += .5;
 
+        //velocity[index]*= .001;
+      }
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
-      // if (distance(buffer3[index].xy, uniforms.mouse) < 1.) {
-      //   velocity[index].x = velocity[index].y;
-      //   velocity[index].y = -velocity[index].x;
-      //   velocity[index]*= .001;
-      // }
+   
       
 
     }`,
@@ -941,7 +949,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-     //camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
+     camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
