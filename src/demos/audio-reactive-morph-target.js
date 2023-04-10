@@ -150,28 +150,8 @@ for( let i = 0; i < mesh.stuff.length; i+=4) {
   min.z = Math.min(z, max.z)
 }
 
-// coords.reverse().forEach((_,i) => {
-//   coords.reverse().forEach((_, j) => {
-//     coords.forEach((_, k) => {
-//       let idx = 4 * (i + j + k)
-//       let x = coords[k]
-//       let y = coords[j]
-//       let z = coords[i]
 
-//       result[idx] = -1
-//       result[idx+1] = -1
-//       result[idx+2] = 0
-//       result[idx+3] = 0
-//     })
-//   })
-// })
-
-//iterate through buffer
-//get x,y,z
-// if x > max - set to -x
-// if x > min - set to +x
-
-for (let i = 0; i < 40; i += 4) {
+for (let i = 0; i < 1e6; i += 4) {
   // const x = i % (100);
   // const y = Math.floor(i / 100);
   // const z = Math.floor(i / 100 / 100)
@@ -192,21 +172,42 @@ for (let i = 0; i < 40; i += 4) {
   // } else {
   //   result[i+1] = -10
   // }
+  function length (x,y) {
+    return Math.sqrt(x*x + y*y)
 
-  if (i < 10) {
-    result[i+1] = 100
-  result[i] = 100
   }
-  result[i+1] = -1
-  result[i] = -1
-  
-  result[i + 2] =  Math.random()
-  result[i+3] = 0
 
-  if (i > 100) {
-    result[i] = 1
+
+  result[i] = y
+  result[i+1] = Math.sin(Math.pow(x, 2)) + Math.cos(length(x,y))
+
+  // result[i] = Math.cos(length(x,y) * x)
+  // result[i+1] = y + Math.sin(y)
+  let p = {x, y}
+  let cos = Math.cos, max = Math.max, pow = Math.pow
+  let log = Math.log, exp = Math.pow, min = Math.min, sin = Math.sin
+  // result[i+0] = cos(length(p))*max(length(p),pow(sin(p.x), p.x));
+  // result[i+1] = (log(length(p))-max(cos(exp(length(p))),sin(p.y))*min(p.x,cos(length(p))));
+
     result[i+1] = 1
-  }
+  result[i+0] = pow(x, 2) - x
+
+  result[i+2]=  0
+  result[i+3] = 0
+  // if (i < 10) {
+  //   result[i+1] = 100
+  // result[i] = 100
+  // }
+  // result[i+1] = -1
+  // result[i] = -1
+  
+  // result[i + 2] =  Math.random()
+  // result[i+3] = 0
+
+  // if (i > 100) {
+  //   result[i] = 1
+  //   result[i+1] = 1
+  // }
   //result[i + 3] = 0
 
 }
@@ -287,8 +288,33 @@ let coll = {}
 //   }
   
   
+// function generateSpiralVectorField(width, height, centerX, centerY, angleStep) {
+//   //const vectorField = new Float32Array(width * height * 2);
+//   for (let y = 0; y < height; y++) {
+//     for (let x = 0; x < width; x++) {
+//       const index = (y * width + x) * 2;
+//       const dx = x - centerX;
+//       const dy = y - centerY;
+//       const r = Math.sqrt(dx * dx + dy * dy);
+//       const theta = Math.atan2(dy, dx) + angleStep * r;
+//       const gradientX = Math.cos(theta);
+//       const gradientY = Math.sin(theta);
+//       result[index] = gradientX;
+//       result[index + 1] = gradientY;
+//     }
+//   }
+//   //return vectorField;
+// }
+// console.log(result)
+// // example usage
+// const width = 256;
+// const height = 256;
+// const centerX = width / 2;
+// const centerY = height / 2;
+// const angleStep = 0.2;
+// const spiralVectorField = generateSpiralVectorField(width, height, centerX, centerY, angleStep);
 //  console.log(result)
-result = result.slice(0, 400)
+//result = result.slice(0, 400)
   let gridBuffer = makeBuffer(result, 0, 'result')
   window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
@@ -499,8 +525,10 @@ result = result.slice(0, 400)
 
   
     var x = (pos.x + 1) / 2.;
-    var y = ((pos.y * -1) + 1) / 2.;
-    if y > .99999 { y = -1; }
+    var y = ((pos.y  * -1) + 1) / 2.;
+    //if y > .99999 { y = 0; }
+    //if x < -.5 { x = 0; }
+
 //    return i32(0);
     return i32(x * 10 + y * 100);
     //return vec2<i32>(i32(x * 10), i32(y * 100));
@@ -529,8 +557,12 @@ result = result.slice(0, 400)
   
     var vf = vectorFieldBuffer[idx].xyz;
     //vectorFieldBuffer[idx].xyz;
-      velocity[index] *= .0000000001;
-      velocity[index] +=  .01 * vf;
+    // if (velocity[index].y < .01) {
+    //   velocity[index] = vec3<f32>(-10.);
+    // }
+      velocity[index] *= .01;
+      velocity[index] +=  .1 * vf;
+     
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
   
       //wind turbulenve
@@ -553,9 +585,9 @@ result = result.slice(0, 400)
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
       
-      // var p = buffer3[index];
-      // if (p.x > 1.){ buffer3[index].x = -1;}
-      // if (p.y > .5) {buffer3[index].y = -1;}
+      var p = buffer3[index];
+      if (p.x > 1.){ velocity[index].x = -1000;}
+      if (p.y > 1.) {velocity[index].y = -1000  ;}
       // if (p.z > 1.){ buffer3[index].z = -1;}
     }`,
   
