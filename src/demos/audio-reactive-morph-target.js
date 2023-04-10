@@ -171,7 +171,7 @@ for( let i = 0; i < mesh.stuff.length; i+=4) {
 // if x > max - set to -x
 // if x > min - set to +x
 
-for (let i = 0; i < 120; i += 4) {
+for (let i = 0; i < 40; i += 4) {
   // const x = i % (100);
   // const y = Math.floor(i / 100);
   // const z = Math.floor(i / 100 / 100)
@@ -192,17 +192,49 @@ for (let i = 0; i < 120; i += 4) {
   // } else {
   //   result[i+1] = -10
   // }
+
+  if (i < 10) {
+    result[i+1] = 100
+  result[i] = 100
+  }
+  result[i+1] = -1
   result[i] = -1
-  result[i+1] = -10
-  result[i + 2] = 1
+  
+  result[i + 2] =  Math.random()
   result[i+3] = 0
 
   if (i > 100) {
-    result[i+1] = 10
+    result[i] = 1
+    result[i+1] = 1
   }
   //result[i + 3] = 0
 
 }
+function generateSpiralVectorField(width, height, centerX, centerY, angleStep) {
+  //const vectorField = new Float32Array(width * height * 2);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const index = (y * width + x) * 2;
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      const theta = Math.atan2(dy, dx) + angleStep * r;
+      const gradientX = Math.cos(theta);
+      const gradientY = Math.sin(theta);
+      result[index] = gradientX;
+      result[index + 1] = gradientY;
+    }
+  }
+  //return vectorField;
+}
+console.log(result)
+// example usage
+const width = 256;
+const height = 256;
+const centerX = width / 2;
+const centerY = height / 2;
+const angleStep = 0.2;
+const spiralVectorField = generateSpiralVectorField(width, height, centerX, centerY, angleStep);
 
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
@@ -211,7 +243,7 @@ window.result = result
 
 let count = 0
 let coll = {}
-  let width = 100, height = 100, depth = 100
+//  let width = 100, height = 100, depth = 100
 // for (let i = 0; i < width; i++) {
 //   for (let j = 0; j < height; j++) {
 //     for (let k = 0; k < depth; k++) {
@@ -490,8 +522,9 @@ let coll = {}
     //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
 
   
-    let x = (pos.x + 1) / 2.;
-    let y = ((pos.y * -1) + 1) / 2.;
+    var x = (pos.x + 1) / 2.;
+    var y = ((pos.y * -1) + 1) / 2.;
+    if y > .99999 { y = -1; }
 //    return i32(0);
     return i32(x * 10 + y * 100);
     //return vec2<i32>(i32(x * 10), i32(y * 100));
@@ -520,7 +553,7 @@ let coll = {}
   
     var vf = vectorFieldBuffer[idx].xyz;
     //vectorFieldBuffer[idx].xyz;
-      velocity[index] *= .1;
+      velocity[index] *= .000001;
       velocity[index] +=  .1 * vf;
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
   
@@ -534,17 +567,20 @@ let coll = {}
       ;
       //buffer3[index].x < 0. ||
       var mouse = (uniforms.mouse - .5) * 2.;
-      if (distance(buffer3[index].xy, uniforms.mouse) < .4) {
-        velocity[index].x = velocity[index].y;
-        velocity[index].y = -velocity[index].x;
-        velocity[index].z += .5;
+      // if (distance(buffer3[index].xy, uniforms.mouse) < .4) {
+      //   velocity[index].x = velocity[index].y;
+      //   velocity[index].y = -velocity[index].x;
+      //   buffer3[index].z += .1;
 
-        //velocity[index]*= .001;
-      }
+      //   //velocity[index]*= .001;
+      // }
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
       
-
+      // var p = buffer3[index];
+      // if (p.x > 1.){ buffer3[index].x = -1;}
+      // if (p.y > .5) {buffer3[index].y = -1;}
+      // if (p.z > 1.){ buffer3[index].z = -1;}
     }`,
   
     exec: function (state){
