@@ -210,31 +210,6 @@ for (let i = 0; i < 40; i += 4) {
   //result[i + 3] = 0
 
 }
-function generateSpiralVectorField(width, height, centerX, centerY, angleStep) {
-  //const vectorField = new Float32Array(width * height * 2);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const index = (y * width + x) * 2;
-      const dx = x - centerX;
-      const dy = y - centerY;
-      const r = Math.sqrt(dx * dx + dy * dy);
-      const theta = Math.atan2(dy, dx) + angleStep * r;
-      const gradientX = Math.cos(theta);
-      const gradientY = Math.sin(theta);
-      result[index] = gradientX;
-      result[index + 1] = gradientY;
-    }
-  }
-  //return vectorField;
-}
-console.log(result)
-// example usage
-const width = 256;
-const height = 256;
-const centerX = width / 2;
-const centerY = height / 2;
-const angleStep = 0.2;
-const spiralVectorField = generateSpiralVectorField(width, height, centerX, centerY, angleStep);
 
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
@@ -312,7 +287,8 @@ let coll = {}
 //   }
   
   
-  
+//  console.log(result)
+result = result.slice(0, 400)
   let gridBuffer = makeBuffer(result, 0, 'result')
   window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
@@ -553,8 +529,8 @@ let coll = {}
   
     var vf = vectorFieldBuffer[idx].xyz;
     //vectorFieldBuffer[idx].xyz;
-      velocity[index] *= .000001;
-      velocity[index] +=  .1 * vf;
+      velocity[index] *= .0000000001;
+      velocity[index] +=  .01 * vf;
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
   
       //wind turbulenve
