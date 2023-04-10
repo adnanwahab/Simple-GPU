@@ -72,36 +72,43 @@ function makeComputeShader(webgpu, mesh) {
   let result = []
   let velocityBuffer = new Float32Array(1e6)
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
-  //3,3
-  //1,2
-  //2, 1
-  //start at highschool trig khan academy
-  //work the videos for 12 hours a day like farhad
+
 
 
 
 let coords = []
 
-for (var i = 0; i < 101; i++) {
-  coords.push((i / 1e2 - .5) * 2)
+for (var i = 0; i < 11; i++) {
+  coords.push((i / 11 - .5) * 2)
 }
 
 
 
-coords.reverse().forEach((_,i) => {
-  coords.reverse().forEach((_, j) => {
-    coords.forEach((_, k) => {
-      let idx = 3 * i * j * k
-      let x = coords[k]
-      let y = coords[j]
-      let z = coords[i]
+// coords.reverse().forEach((_,i) => {
+//   coords.reverse().forEach((_, j) => {
+//     coords.forEach((_, k) => {
+//       let idx = 4 * (i + j + k)
+//       let x = coords[k]
+//       let y = coords[j]
+//       let z = coords[i]
 
-      result[idx] = -1
-      result[idx+1] = -1
-      result[idx+2] = -1
-    })
-  })
-})
+//       result[idx] = -1
+//       result[idx+1] = -1
+//       result[idx+2] = 0
+//       result[idx+3] = 0
+//     })
+//   })
+// })
+
+for (let i = 0; i < 512 * 512 * 3; i += 3) {
+  const x = i % (512 * 3) / 3;
+  const y = Math.floor(i / (512 * 3));
+  const z = Math.sin(x * 0.1) + Math.cos(y * 0.1);
+  result[i] = Math.cos(z);
+  result[i + 1] = Math.sin(z);
+  result[i + 2] = 0;
+}
+
 console.log(result)
 window.result = result
 
@@ -217,7 +224,7 @@ let coll = {}
     struct Uniforms {
       time: f32,
     }
-    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec3<f32>>;
+    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
@@ -385,7 +392,7 @@ let coll = {}
   }
 
   fn hash (pos: vec3<f32>) -> i32 {
-    let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 1000000;
+    let idx = shift(pos.x) * 100 + shift(pos.y) * 100 + shift(pos.z) * 100;
     return i32(idx);
   }
   
@@ -410,12 +417,9 @@ let coll = {}
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
-    var vf = .001 * vectorFieldBuffer[index].xyz;
+    var vf = .01 * vectorFieldBuffer[index].xyz;
       velocity[index] += .1 * vf;
-  
-      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
-  
-  
+      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
   
       //wind turbulenve
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
