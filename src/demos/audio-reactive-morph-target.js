@@ -79,25 +79,59 @@ function makeComputeShader(webgpu, mesh) {
   //work the videos for 12 hours a day like farhad
 
 
-  let width = 100, height = 100, depth = 100
-for (let i = 0; i < width; i++) {
-  for (let j = 0; j < height; j++) {
-    for (let k = 0; k < depth; k++) {
-      let z = ((i / 100) - .5) * 2.
-      let y = ((j / 100) - .5) * 2.
-      let x = ((k / 100) - .5) * 2.
-  
-      let idx = 4 * i * j * k
-      //.console.log(idx)
-      result[idx] = x
-      result[idx+1] = y
-      result[idx+2] = z
-      result[idx+3] = 0
-      //console.log(idx)
-    }
-  }
+
+let coords = []
+
+for (var i = 0; i < 101; i++) {
+  coords.push((i / 1e2 - .5) * 2)
 }
+
+
+
+coords.reverse().forEach((_,i) => {
+  coords.reverse().forEach((_, j) => {
+    coords.forEach((_, k) => {
+      let idx = 3 * i * j * k
+      let x = coords[k]
+      let y = coords[j]
+      let z = coords[i]
+
+      result[idx] = -1
+      result[idx+1] = -1
+      result[idx+2] = -1
+    })
+  })
+})
 console.log(result)
+window.result = result
+
+let count = 0
+let coll = {}
+  let width = 100, height = 100, depth = 100
+// for (let i = 0; i < width; i++) {
+//   for (let j = 0; j < height; j++) {
+//     for (let k = 0; k < depth; k++) {
+//       let x = ((i / 100) - .5) * 2.
+//       let y = ((j / 100) - .5) * 2.
+//       let z = ((k / 100) - .5) * 2.
+  
+      
+//       let idx = 3 * i * j * k
+//       if (coll[[x,y,z].join(',')]) {
+//         console.log('collide')
+//       }
+//       coll[[x,y,z].join(',')] = true
+//       //.console.log(idx)
+//       result[idx] = x
+//       result[idx+1] = y
+//       result[idx+2] = z
+//       //result[idx+3] = 0
+//       //console.log(idx)
+//       count ++
+//     }
+//   }
+// }
+// console.log(result, count)
 
 //   for (let i = 0; i < 1e6; i+=4) {
 //     let [x ,y, z] = index(i);
@@ -140,10 +174,11 @@ console.log(result)
 //     //   //console.log(e, i)
 //     // }
 //   }
-  console.log(result)
+  
+  
   
   let gridBuffer = makeBuffer(result, 0, 'result')
-  
+  window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
     size: [100, 100, 100],
     format:  "rgba8unorm",
@@ -182,7 +217,7 @@ console.log(result)
     struct Uniforms {
       time: f32,
     }
-    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec3<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
@@ -350,22 +385,19 @@ console.log(result)
   }
 
   fn hash (pos: vec3<f32>) -> i32 {
-    let shit = shift(pos.x) * 10 + shift(pos.y) * 100 + shift(pos.z) * 1000;
-    return i32(shit);
+    let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 1000000;
+    return i32(idx);
   }
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
-  
-      let v = vectorFieldBuffer[index];
-  
+      let v = vectorFieldBuffer[index];  
       var pos = buffer3[index];
-      //vectorFieldBuffer[index] += snoise(pos.xyz);
       var t = uniforms.time;
       var abc = buffer3[index];
+
       //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-      var position = pos.xyz;
       var i = GlobalInvocationID.xyz; 
       var stuff =  textureLoad(myTexture,
         vec3<i32>(i),
@@ -545,7 +577,6 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-  console.log(label)
 
   if (stuff.flat) stuff.flat()
   particlesBuffer.set(stuff)
@@ -745,7 +776,7 @@ const colorBuffer = makeBuffer(rgb, 0, 'color')
 let hello = []
 for (let i = 0; i < 1e6; i+=4) {
   let [x,y,z] = index(i)
-
+  
   hello[i] = x
   hello[i+1] = y 
   hello[i+2] = z
@@ -844,7 +875,9 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    shapes[0], quadBuffer, posBuffer, colorBuffer
+    //window.gridBuffer
+    shapes[0]
+    , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
   blend,
@@ -905,7 +938,7 @@ let camera = createCamera({
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
-  element: webgpu.canvas
+  element: document.createElement('div')//webgpu.canvas
 });
 
 setInterval(
