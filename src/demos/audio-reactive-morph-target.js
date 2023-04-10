@@ -403,13 +403,15 @@ window.addEventListener('click', function () {
 })
 
 function makeStagingBuffer() {
-  stagingBuffer = stagingBuffer || webgpu.device.createBuffer({
-    size: 1e7,
-    usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
+ 
   setTimeout(function () {
+
     if (! shapes[0] || !animating) return;
+    stagingBuffer = stagingBuffer || webgpu.device.createBuffer({
+      size: 1e7,
+      usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+      mappedAtCreation: true,
+    });
 
     let frame = time % frames[choice].length
     const toCopy = frames[choice][frame]
