@@ -1,3 +1,9 @@
+//galaxy
+//globe
+//flower
+//dancerA -> dancerB
+//flow field - spiral 
+//magnet
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
@@ -27,6 +33,40 @@ function unitVector (v) {
   return v.map(d => d / l);
 }
 
+// function index(i) {
+  
+//   return [Math.floor(i / 10), Math.floor(i / 100), Math.floor(i / 1000)]
+// }
+// function index(pos) {
+//   let [x,y,z] = pos
+//   return [x * 10, y * 100 , z * 1000]
+// }
+//for each point 
+//find vector on grid
+// 
+
+function unindex (x , y, z) {
+  x = (1 + x) / 2
+  y = (1 + y) / 2
+  z = (1 + z) / 2
+  let hash = x * width + y * width * height + z * width * height * depth;
+
+  return hash
+}
+
+function index(index) {
+  let width = 10, height = 10, depth = 10
+  var X = (index % width) / width * 2 - 1
+  var Y = (index % width* height) / height * 2 - 1
+  Y = Math.floor(index % (width * height) / height)
+  var Z = (index % (width * height)) / depth * 2 - 1
+
+
+  //111 -.9, -.9, -.9
+  return [X, Y, Z]
+}
+
+
 function makeComputeShader(webgpu, mesh) {
   let device = webgpu.device
   let result = []
@@ -35,36 +75,71 @@ function makeComputeShader(webgpu, mesh) {
   //3,3
   //1,2
   //2, 1
-  for (let i = 0; i < 1e6; i+=4) {
+  //start at highschool trig khan academy
+  //work the videos for 12 hours a day like farhad
 
-    result[i] = ( Math.cos(i / 100) * i) * .0001
-    result[i+1] =  (Math.sin(i / 100) * i) * .0001
-    result[i+2] = 0
-    result[i+3] = 0
 
-    // result[i] =  -1 //-dancer[i % dancer.length]
-    // result[i+1] = -1 //dancer[i % dancer.length + 1] 
-    // result[i+2] = 0
-    // result[i+3] = 0
-    // result[i] = 1
-    // result[i+1] =  1
-    // result[i+2] = 0
-    // result[i+3] = 0
-    //if (i > dancer.length- 6) break;
-    // let idx =  ((4 * i) % dancer.length);
-    // try {
-    //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7))
-    //   let v = 
-    //   (vec3.subtract([],  dancer.slice(idx+4, idx+7), dancer.slice(idx, idx +3)))
-    //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7));
-    // result[i] = v[0]
-    // result[i+1] =  v[1]
-    // result[i+2] = v[2]
-    // result[i+3] = 0
-    // } catch (e) {
-    //   //console.log(e, i)
-    // }
+  let width = 100, height = 100, depth = 100
+for (let i = 0; i < width; i++) {
+  for (let j = 0; j < height; j++) {
+    for (let k = 0; k < depth; k++) {
+      let z = ((i / 100) - .5) * 2.
+      let y = ((j / 100) - .5) * 2.
+      let x = ((k / 100) - .5) * 2.
+  
+      let idx = 4 * i * j * k
+      //.console.log(idx)
+      result[idx] = x
+      result[idx+1] = y
+      result[idx+2] = z
+      result[idx+3] = 0
+      //console.log(idx)
+    }
   }
+}
+console.log(result)
+
+//   for (let i = 0; i < 1e6; i+=4) {
+//     let [x ,y, z] = index(i);
+// //    ( Math.cos(i / 100) * i) * .0001
+// //       (Math.sin(i / 100) * i) * .0001
+//     //let x= fib(i)
+//     // result[i] = x - y +(x*x + y*y)
+//     // result[i+1] = y - x*(x*x + y*y)
+
+
+//     //    result[i] = x > .5 ? 1 : -1
+//     // result[i+1] = y > 0 ? 1 : -1
+//     // result[i+2] = z > 0 ? 1 : -1
+//     // result[i+3] = 0
+//     result[i] = Math.random() - .5
+//     result[i+1] = Math.random() - .5
+//     result[i+2] = Math.random() - .5
+//     result[i+3] = 0
+
+//     // result[i] =  -1 //-dancer[i % dancer.length]
+//     // result[i+1] = -1 //dancer[i % dancer.length + 1] 
+//     // result[i+2] = 0
+//     // result[i+3] = 0
+//     // result[i] = 1
+//     // result[i+1] =  1
+//     // result[i+2] = 0
+//     // result[i+3] = 0
+//     //if (i > dancer.length- 6) break;
+//     // let idx =  ((4 * i) % dancer.length);
+//     // try {
+//     //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7))
+//     //   let v = 
+//     //   (vec3.subtract([],  dancer.slice(idx+4, idx+7), dancer.slice(idx, idx +3)))
+//     //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7));
+//     // result[i] = v[0]
+//     // result[i+1] =  v[1]
+//     // result[i+2] = v[2]
+//     // result[i+3] = 0
+//     // } catch (e) {
+//     //   //console.log(e, i)
+//     // }
+//   }
   console.log(result)
   
   let gridBuffer = makeBuffer(result, 0, 'result')
@@ -264,14 +339,19 @@ function makeComputeShader(webgpu, mesh) {
     return (sfrand() * 2.) - 1.;
   }
   
-  fn hash (pos:vec3<f32>) -> i32{
+  // fn hash (pos:vec3<f32>) -> i32{
   
-    return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
-  }
+  //   return i32((pos.x + 1.) * 10. + (pos.y+ 1.) * 100. + (pos.z + 1.) * 1000.);
+  // }
   
 
   fn shift (x:f32)->f32 {
     return (x + 1.) / 2.;
+  }
+
+  fn hash (pos: vec3<f32>) -> i32 {
+    let shit = shift(pos.x) * 10 + shift(pos.y) * 100 + shift(pos.z) * 1000;
+    return i32(shit);
   }
   
     @compute @workgroup_size(256)
@@ -293,12 +373,12 @@ function makeComputeShader(webgpu, mesh) {
          0
          );
   
-      var idx = i32(floor(shift(pos.x) * 10) + floor(shift(pos.y) * 100)  + floor(shift(pos.z) * 1000));
+      var idx = i32(hash(pos.xyz));
    
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
-    var vf = .001 * vectorFieldBuffer[idx].xyz;
+    var vf = .001 * vectorFieldBuffer[index].xyz;
       velocity[index] += .1 * vf;
   
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index], 1);
@@ -310,6 +390,9 @@ function makeComputeShader(webgpu, mesh) {
       
       //sphere
       //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+
+      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
+      ;
     }`,
   
     exec: function (state){
@@ -449,7 +532,7 @@ function writeBuffer (device, buffer, array) {
 
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
-  const particleSize = 1
+  const particleSize = 4
   const gpuBufferSize = 1e7 * particleSize
 
   const gpuBuffer = webgpu.device.createBuffer({
@@ -462,10 +545,10 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   });
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
- 
+  console.log(label)
+
   if (stuff.flat) stuff.flat()
   particlesBuffer.set(stuff)
-
   gpuBuffer.unmap();
   return gpuBuffer
 } 
@@ -659,7 +742,18 @@ for (let i = 0; i < rgb.length; i+=3) {
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
+let hello = []
+for (let i = 0; i < 1e6; i+=4) {
+  let [x,y,z] = index(i)
 
+  hello[i] = x
+  hello[i+1] = y 
+  hello[i+2] = z
+  hello[i+3] = 0
+}
+
+
+let hi = window.makeBuffer(hello, 0 , 'hi')
 const drawCube = await webgpu.initDrawCall({
   shader: {
     vertEntryPoint: 'main_vertex',
