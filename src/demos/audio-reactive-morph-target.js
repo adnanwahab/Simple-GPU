@@ -54,16 +54,18 @@ function unindex (x , y, z) {
   return hash
 }
 
-function index(index) {
-  let width = 10, height = 10, depth = 10
-  var X = (index % width) / width * 2 - 1
-  var Y = (index % width* height) / height * 2 - 1
-  Y = Math.floor(index % (width * height) / height)
-  var Z = (index % (width * height)) / depth * 2 - 1
-
-
+function index(i) {
+  // let width = 10, height = 10, depth = 10
+  // var X = (index % width) / width * 2 - 1
+  // var Y = (index % width* height) / height * 2 - 1
+  // Y = Math.floor(index % (width * height) / height)
+  // var Z = (index % (width * height)) / depth * 2 - 1
+  const width = 100;
+  const x = i % (100) / width * 2 - 1;
+  const y = Math.floor(i / 100) * 2 - 1;
+  const z = Math.floor(i / 100 / 100) * 2 -1
   //111 -.9, -.9, -.9
-  return [X, Y, Z]
+  return [x, y, z]
 }
 
 
@@ -83,6 +85,31 @@ for (var i = 0; i < 11; i++) {
 }
 
 
+let max = {
+  x: 0,
+  y: 0,
+  z: 0,
+}
+let min = {
+  x: 0,
+  y: 0,
+  z: 0,
+}
+
+for( let i = 0; i < mesh.stuff.length; i+=4) {
+  let x = mesh.stuff[i]
+  let y = mesh.stuff[i+1]
+  let z = mesh.stuff[i+2]
+  max.x = Math.max(x, max.x)
+  max.y = Math.max(y, max.y)
+  max.z = Math.max(z, max.z)
+
+  min.x = Math.min(x, max.x)
+  min.y = Math.min(y, max.y)
+  min.z = Math.min(z, max.z)
+}
+console.log('max', max, min)
+
 
 // coords.reverse().forEach((_,i) => {
 //   coords.reverse().forEach((_, j) => {
@@ -100,14 +127,31 @@ for (var i = 0; i < 11; i++) {
 //   })
 // })
 
-for (let i = 0; i < 512 * 512 * 3; i += 3) {
-  const x = i % (512 * 3) / 3;
-  const y = Math.floor(i / (512 * 3));
-  const z = Math.sin(x * 0.1) + Math.cos(y * 0.1);
-  result[i] = Math.cos(z);
-  result[i + 1] = Math.sin(z);
+//iterate through buffer
+//get x,y,z
+// if x > max - set to -x
+// if x > min - set to +x
+
+for (let i = 0; i < 10000; i += 3) {
+  const x = i % (100);
+  const y = Math.floor(i / 100);
+  const z = Math.floor(i / 100 / 100)
+  // const z = Math.sin(x * 0.1) + Math.cos(y * 0.1);
+  if (i % 2 === 0){ 
+  result[i] = -x
+  result[i + 1] = y
+  } else {
+    result[i] = x
+    result[i+1] = -y
+  }
+
   result[i + 2] = 0;
 }
+
+
+//take every position around 3d model -> draw a vector to center
+//take every position within 3d model bounding box - draw a vector to outward
+
 
 console.log(result)
 window.result = result
@@ -392,7 +436,7 @@ let coll = {}
   }
 
   fn hash (pos: vec3<f32>) -> i32 {
-    let idx = shift(pos.x) * 100 + shift(pos.y) * 100 + shift(pos.z) * 100;
+    let idx = shift(pos.x) * 10 + shift(pos.y) * 100 + shift(pos.z) * 1000;
     return i32(idx);
   }
   
@@ -417,9 +461,9 @@ let coll = {}
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
-    var vf = .01 * vectorFieldBuffer[index].xyz;
-      velocity[index] += .1 * vf;
-      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
+    var vf = vectorFieldBuffer[idx].xyz;
+      velocity[index] +=  vf;
+      buffer3[index] = vec4<f32>(pos.xyz + .001 * velocity[index],  1);
   
       //wind turbulenve
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -579,6 +623,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
     |GPUBufferUsage.COPY_SRC,
     mappedAtCreation: true,
   });
+  gpuBuffer.stuff = stuff
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
@@ -778,14 +823,15 @@ for (let i = 0; i < rgb.length; i+=3) {
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 let hello = []
-for (let i = 0; i < 1e6; i+=4) {
+for (let i = 0; i < 1e6; i++) {
   let [x,y,z] = index(i)
   
-  hello[i] = x
-  hello[i+1] = y 
-  hello[i+2] = z
-  hello[i+3] = 0
+  hello[4*i] = x
+  hello[4*i+1] = y 
+  hello[4*i+2] = z
+  hello[4*i+3] = 0
 }
+
 
 
 let hi = window.makeBuffer(hello, 0 , 'hi')
@@ -880,6 +926,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
   attributeBuffers: buffers,
   attributeBufferData: [
     //window.gridBuffer
+    //window.makeBuffer(hello, 0, 'hi')
     shapes[0]
     , quadBuffer, posBuffer, colorBuffer
   ],
