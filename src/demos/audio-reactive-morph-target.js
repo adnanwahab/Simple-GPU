@@ -407,9 +407,10 @@ function makeStagingBuffer() {
   setTimeout(function () {
 
     if (! shapes[0] || !animating) return;
-    stagingBuffer = stagingBuffer || webgpu.device.createBuffer({
-      size: 1e7,
-      usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+    //stagingBuffer ||  optimization - reusing staging buffer
+    stagingBuffer = webgpu.device.createBuffer({
+      size: 1e6,
+      usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
 
