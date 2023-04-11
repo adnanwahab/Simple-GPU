@@ -84,10 +84,10 @@ function index(i) {
   // var Y = (index % width* height) / height * 2 - 1
   // Y = Math.floor(index % (width * height) / height)
   // var Z = (index % (width * height)) / depth * 2 - 1
-  const width = 10;
+  const width = 11;
   const x = (i % 10) / width * 2 - 1;
-  const y = Math.floor(i / 10)
-  const z = 0
+  const y = ((Math.floor(i / 10) + .5 ) * 2.)
+  const z = Math.floor(i / 100)
   //x % 10
   //y / 10 % 10
   //z / 10 * 10
@@ -96,37 +96,8 @@ function index(i) {
   return [x, y, z]
 }
 
-//index = x + width * (y + height * z)
-let grid = []
-for (var i = 0; i < 100; i+=3) { 
-  //let [x,y,z] = index(i)
-  grid[i] = i % 5 < 1 ? 1 : 0
-  grid[i+1]= i % 10 < 1 ? 1 : 0
-  grid[i+2] = 0
-}
-
-for (var i = 0; i < 100; i+=3) { 
-  let x = grid[i]
-  let y = grid[i+1]
-  let z = grid[i+2]
-  let hash = unindex(x,y,z)
-  let x1 = grid[hash], y1 = grid[hash+1], z1 = grid[hash+2]
-
-  let errorMsg = 'do not work'
-  // console.assert(x === x1, "%o", {hash, x, x1, errorMsg});
-  // console.assert(y === y1, "%o", {hash, y, y1, errorMsg });
-  // console.assert(z === z1, "%o", {hash, z, z1, errorMsg });
-}
-
-//if this doesnt work use a view transform function 
-
-
-
-
-
 function makeComputeShader(webgpu, mesh, abc) {
   let device = webgpu.device
-  let result = []
   let velocityBuffer = new Float32Array(1e6)
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
@@ -134,8 +105,8 @@ function makeComputeShader(webgpu, mesh, abc) {
 
 let coords = []
 
-for (var i = 0; i < 11; i++) {
-  coords.push((i / 11 - .5) * 2)
+for (var i = 0; i < 10; i++) {
+  coords.push((i / 10 - .5) * 2)
 }
 
 
@@ -149,6 +120,22 @@ let min = {
   y: 0,
   z: 0,
 }
+
+function clipSpace(x,y, z) {
+  let width = 10, height = 10;
+  x /= width
+  y /= height
+  z /= width * height
+  x = x - .5
+  y = y - .5
+  z = z - .5
+  x *= -2
+  y *= -2
+  z *= -2
+
+  return [x,y, z]
+}
+//test with a grid
 
 // for( let i = 0; i < mesh.stuff.length; i+=4) {
 //   let x = mesh.stuff[i]
@@ -164,73 +151,74 @@ let min = {
 // }
 
 
-for (let i = 0; i < 1e6; i += 4) {
-  // const x = i % (100);
-  // const y = Math.floor(i / 100);
-  // const z = Math.floor(i / 100 / 100)
-  // const z = Math.sin(x * 0.1) + Math.cos(y * 0.1);
+let result = []
 
-  let [x,y,z] = index(i);
+for (let i = -1; i < 1; i+=.2) {
+  coords.push(i)
+}
 
-  // if (Math.abs(x) > .7) {
-  // result[i] = 1
 
-  // } else {
-  //   result[i] = -1
-  
-  // }
-  // if (Math.abs(y) > .7){
-  // result[i + 1] = 1
-  
-  // } else {
-  //   result[i+1] = -10
-  // }
+
+// let shit = []
+// coords.slice().reverse().forEach((_,i) => {
+//     coords.slice().forEach((_, k) => {
+//       //coords.forEach((_, k) => {
+//         let idx = 4 * (i + k)
+//         let x = coords[k]
+//         let y = -1 * coords[i] 
+//         let z = coords[i]
+//         shit.push([x.toPrecision(2),y.toPrecision(2)])
+//         result[idx] = -x
+//         result[idx+1] = -y
+//         result[idx+2] = 0
+//         result[idx+3] = 0
+//       //})
+//     })
+//   })
+
+result = []
+for (let i = 0; i <= 10; i++) {
+  for (let j = 0; j <= 10;j++) {
+
+
+
+
   function length (x,y) {
     return Math.sqrt(x*x + y*y)
 
   }
+  let [x, y] = clipSpace(i, j)
 
+  //console.log(x,y)
+  let idx = (i+j*10)
+  result[idx] = [-j, 0, 0, 0]
 
-  result[i] = y
-  result[i+1] = Math.sin(Math.pow(x, 2)) + Math.cos(length(x,y))
+// //  let p = {x, y}
+//   let cos = Math.cos, max = Math.max, pow = Math.pow
+//   let log = Math.log, exp = Math.pow, min = Math.min, sin = Math.sin
 
-  // result[i] = Math.cos(length(x,y) * x)
-  // result[i+1] = y + Math.sin(y)
-  let p = {x, y}
-  let cos = Math.cos, max = Math.max, pow = Math.pow
-  let log = Math.log, exp = Math.pow, min = Math.min, sin = Math.sin
-  // result[i+1] = 
+//   // let x = i;
+//   // let y = Math.floor(i * j / 10)
 
-  //   result[i+1] = 1
-  // result[i+0] = pow(x, 2) - x
-  // result[i+1] = .1 * Math.sin(i) || (log(length(p))-max(cos(exp(length(p))),sin(p.y))*min(p.x,cos(length(p))));
-  result[i+1] = 1
-  result[i+0] = pow(x, 2) - x
-  // result[i+2]=  1
+//   result[i+1] = -1
+//   result[i+0] = pow(x, 2) - x
+  // result[i+2] = 0
   // result[i+3] = 0
- 
-
-  // if ((i / 4 )% 2 === 0) {
-  // result[i+0] = -1
-  // } else 
-  // result[i+0] = 1
-
-  // result[i+1] = 0//Math.sin(y)
-  result[i+2] = 0
-  result[i+3] = 0
-//console.log(Math.cos(x) , (Math.cos(x) - .5) * 2.)
 }
+}
+ //console.log(result)
 //make magnitude of delta = distance from pa to pb
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
 //make some of the particles in a simulation a dancer
+console.log(result)
 window.result = result
 
 let count = 0
 let coll = {}
 
   
-  let gridBuffer = makeBuffer(result, 0, 'result')
+  let gridBuffer = makeBuffer(result.flat(), 0, 'result')
   window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
     size: [100, 100, 1],
@@ -500,14 +488,15 @@ if (y == 0.) { y = 1.;}
   
   
     var vf = vectorFieldBuffer[idx].xyz;
-    if (uniforms.time > 0.) {
-      //if (distance( buffer3[index], buffer1[index]) > .1) {
-      var p = (buffer1[index] - buffer3[index]).xyz;
-      vf =  (.001 * uniforms.time * curlNoise(p)) + p;
-      vf = p;
-      //vectorFieldBuffer[idx] = vec4<f32>(p, 1);
-      //}
-    }
+    // if (uniforms.time > 0.) {
+    //   //if (distance( buffer3[index], buffer1[index]) > .1) {
+     var p = (buffer1[index] - buffer3[index]).xyz;
+    //   vf =  (.001 * uniforms.time * curlNoise(p)) + p;
+    //   vf = p;
+    //   //}
+    // }
+    //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
+
     //vectorFieldBuffer[idx].xyz;
     // if (velocity[index].y < .01) {
     //   velocity[index] = vec3<f32>(-10.);
@@ -516,8 +505,8 @@ if (y == 0.) { y = 1.;}
       velocity[index] +=  .1 * vf;
      
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-  
-      //wind turbulenve
+
+      //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
       
       //sphere
@@ -537,9 +526,9 @@ if (y == 0.) { y = 1.;}
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
       
-      var p = buffer3[index];
-      if (p.x > 2.){ velocity[index].x = -1000;}
-      if (p.y > 1.) {velocity[index].y = -1000  ;}
+      //var p = buffer3[index];
+      //if (p.x > 2.){ velocity[index].x = -1000;}
+      //if (p.y > 1.) {velocity[index].y = -1000  ;}
 
 //      if (p.y > 1.) { velocity[index] = curlNoise(p.xyz);  ;}
       // if (p.z > 1.){ buffer3[index].z = -1;}
@@ -658,7 +647,6 @@ let modelType = 1
 let animating = true
 let id 
 window.addEventListener('click', function () {
-  console.log(id)
   if (! animating ) {
     let elapsed = Date.now()
     id = setTimeout(function recur() {
@@ -869,7 +857,6 @@ function getCameraViewProjMatrix() {
 
 
   const cameraViewProj = getCameraViewProjMatrix();
-console.log(cameraViewProj)
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
