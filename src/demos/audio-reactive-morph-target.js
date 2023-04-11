@@ -4,12 +4,18 @@
 //dancerA -> dancerB
 //flow field - spiral 
 //magnet
+//tween from an explosion to a dancer
 
-
-
+//make a vector field from existing point
+//use a uniform
+  //when uniform.mode === 2 {
+  //  vel.xyz =  posB[index] - posA[index]
+  // positionB
+//  } make a function which takes a mesh and produces a compute call
 //make a vector field 
 //convert model to -1 to 1 - choose 
 //add camera to compute shader 
+import {abc} from "./shader2";
 
 const mouse = [0,0]
 import * as d3 from 'd3'
@@ -110,13 +116,13 @@ for (var i = 0; i < 100; i+=3) {
 
 
 
-function makeComputeShader(webgpu, mesh) {
+function makeComputeShader(webgpu, mesh, abc) {
   let device = webgpu.device
   let result = []
   let velocityBuffer = new Float32Array(1e6)
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
-
+console.log(mesh)
 
 
 let coords = []
@@ -137,18 +143,18 @@ let min = {
   z: 0,
 }
 
-for( let i = 0; i < mesh.stuff.length; i+=4) {
-  let x = mesh.stuff[i]
-  let y = mesh.stuff[i+1]
-  let z = mesh.stuff[i+2]
-  max.x = Math.max(x, max.x)
-  max.y = Math.max(y, max.y)
-  max.z = Math.max(z, max.z)
+// for( let i = 0; i < mesh.stuff.length; i+=4) {
+//   let x = mesh.stuff[i]
+//   let y = mesh.stuff[i+1]
+//   let z = mesh.stuff[i+2]
+//   max.x = Math.max(x, max.x)
+//   max.y = Math.max(y, max.y)
+//   max.z = Math.max(z, max.z)
 
-  min.x = Math.min(x, max.x)
-  min.y = Math.min(y, max.y)
-  min.z = Math.min(z, max.z)
-}
+//   min.x = Math.min(x, max.x)
+//   min.y = Math.min(y, max.y)
+//   min.z = Math.min(z, max.z)
+// }
 
 
 for (let i = 0; i < 1e6; i += 4) {
@@ -354,16 +360,19 @@ let coll = {}
 });
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
-    code:`
+    code: abc || `
   
     struct Uniforms {
       mouse: vec2<f32>,
+      time: f32
     }
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
      @group(0) @binding(4) var myTexture: texture_2d<f32>;
+     @group(0) @binding(5) var<storage,read_write> buffer1: array<vec4<f32>>;
+
   
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
   {
@@ -556,6 +565,11 @@ let coll = {}
   
   
     var vf = vectorFieldBuffer[idx].xyz;
+    if (uniforms.time > 0.) {
+      //if (distance( buffer3[index], buffer1[index]) > .1) {
+      vf = (buffer1[index] - buffer3[index]).xyz;
+      //}
+    }
     //vectorFieldBuffer[idx].xyz;
     // if (velocity[index].y < .01) {
     //   velocity[index] = vec3<f32>(-10.);
@@ -586,8 +600,10 @@ let coll = {}
    
       
       var p = buffer3[index];
-      if (p.x > 1.){ velocity[index].x = -1000;}
+      if (p.x > 2.){ velocity[index].x = -1000;}
       if (p.y > 1.) {velocity[index].y = -1000  ;}
+
+//      if (p.y > 1.) { velocity[index] = curlNoise(p.xyz);  ;}
       // if (p.z > 1.){ buffer3[index].z = -1;}
     }`,
   
@@ -600,6 +616,12 @@ let coll = {}
   
       //console.log(mouse)
     webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
+    let timeBuffer = new Float32Array(1)
+    window.writeTime = function (dt) {
+      timeBuffer[0] = dt
+      webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
+
+    }
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
       computePass.dispatchWorkgroups(256);
@@ -626,7 +648,8 @@ let coll = {}
             // dimension: '3d',
             sampleType: 'float'
           }),
-        ], )
+          mesh
+        ].filter(d => d), )
   
       return [computeBindGroup]
     }
@@ -642,25 +665,35 @@ const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/o
 let dancer = []
 let frames = []
 
-let frameMax = 50
+let frameMax = 100
 let frameCount = [...Array(frameMax).keys()]
 
 function getFrames(model) { 
   frames[model]= []
+  
   let loaded = 0
-  frameCount.forEach(function (i) {
-    fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
-    )
-    .then((res) => res.arrayBuffer())
-    .then((buffer) => {
+  
 
-      var floatBuffer = new Float32Array(buffer)
-      frames[model][i]=floatBuffer
+  return new Promise (function (resolve) {
+    frameCount.forEach(function (i) {
+      fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
+      )
+      .then((res) => res.arrayBuffer())
+      .then((buffer) => {
+  
+        var floatBuffer = new Float32Array(buffer)
+        frames[model][i]=floatBuffer
+        loaded += 1
+        if (loaded === frameMax - 1) {
+          console.log(model)
+          resolve()
+          if (model === 2) basic()
+          setTimeout(makeStagingBuffer, 3000)
+        }
+      })
+
     })
-    loaded += 1
-    if (loaded === frameMax - 1) setTimeout(makeStagingBuffer, 3000)
   })
-
   
 }
 
@@ -669,21 +702,46 @@ fetch(obj(1)).then(d => {
 }).then((d) => {
   dancer = new Float32Array(d)
   shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-  basic()
 })
 getFrames(1)
 getFrames(2)
+getFrames(3)
+getFrames(4)
 
 let time = 0
 let stagingBuffer
 
-let choice = 1
+let modelType = 1
 
 
+
+//when click
+//if animating -> stop animation and use compute shader
+//if animation stopped - loop over time - then set animation to true
 let animating = true
 window.addEventListener('click', function () {
-  animating = ! animating
-  if (animating) makeStagingBuffer()
+  if (! animating) {
+    let elapsed = Date.now()
+    setTimeout(function recur() {
+      let dt = Date.now() - elapsed
+      window.writeTime(10000 - dt)
+      if (dt < 10000) setTimeout(recur, 16)
+      else {
+        animating = ! animating
+        modelType = modelType === 1 ? 2 : 1
+        return makeStagingBuffer()
+      }
+      
+    }, 16)
+  } else {
+    animating = ! animating
+    
+  }
+  if (animating) return makeStagingBuffer()
+
+  
+
+  //console.log(choice)
 })
 
 function makeStagingBuffer() {
@@ -698,9 +756,9 @@ function makeStagingBuffer() {
       mappedAtCreation: true,
     });
 
-    let frame = time % frames[choice].length
-    const toCopy = frames[choice][frame]
-    if (! toCopy) return console.log(toCopy, choice, frame)
+    let frame = time % frames[modelType].length
+    const toCopy = frames[modelType][frame]
+    if (! toCopy) return console.log(toCopy, modelType, frame)
     if (time === 0) window.toCopy = toCopy
 
     time += 1
@@ -755,9 +813,11 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 
-
+let computeTransitions = [0]
 async function basic () {
-  let computeTransition = makeComputeShader(webgpu, shapes[0])
+  let computeTransition = makeComputeShader(webgpu, makeBuffer(frames[1][0]))
+  let computeTransition2 = makeComputeShader(webgpu, makeBuffer(frames[2][0]), abc)
+  computeTransitions.push(computeTransition, computeTransition2)
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -898,36 +958,6 @@ function unitVector (v) {
 function vectorTo(b, a) {
   return unitVector(b) - unitVector(a)
 }
-
-let shit = bunny.positions
-let convert = function (x) {
-  //console.log(x.toPrecision(2))
-  return ((x * .1).toPrecision(2) + 1) /2
-}
-
-// for (let i = 0; i < velocityBuffer.length; i++) {
-//   let buffer = velocityBuffer;
-//   let vec = shit[i % shit.length]
-
-//   buffer[3*i] = vec[0]
-//   buffer[3*i+1] = vec[1]
-//   buffer[3*i+2] = vec[2]
-// }
-
-
-
-// for (let i = 0; i <100; i++) {
-//   for (let j = 0; j <100; j++) {
-//     for (let k = 0; k <1000; k++) {
-//       let idx = i  + j * width + k * width * height
-//       result[3 * idx] = Math.cos(i)
-//       result[3 * idx+1] = Math.sin(i)
-//       result[3 * idx+2] = 1  
-//       //if(hasColided[idx] > 1) console.log('ohnoe')
-//     } 
-//   }
-// }
-
 
 //precisely calculate line interval convolutions using 
 var rgb = new Float32Array(2e5);
@@ -1153,7 +1183,9 @@ setInterval(
     );
   
  
-    if (! animating) computeTransition()
+    if (! animating) {
+      computeTransitions[1]()
+    }
     drawCube({})
     }, 8) 
 }
