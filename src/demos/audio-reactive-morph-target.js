@@ -179,10 +179,6 @@ for (let i = -1; i < 1; i+=.2) {
 result = []
 for (let i = 0; i <= 10; i++) {
   for (let j = 0; j <= 10;j++) {
-
-
-
-
   function length (x,y) {
     return Math.sqrt(x*x + y*y)
 
@@ -191,11 +187,10 @@ for (let i = 0; i <= 10; i++) {
 
   //console.log(x,y)
   let idx = (i+j*10)
-  result[idx] = [-j, 0, 0, 0]
 
 // //  let p = {x, y}
-//   let cos = Math.cos, max = Math.max, pow = Math.pow
-//   let log = Math.log, exp = Math.pow, min = Math.min, sin = Math.sin
+
+  result[idx] = [0, Math.pow(-j, 2), 0, 0]
 
 //   // let x = i;
 //   // let y = Math.floor(i * j / 10)
@@ -459,10 +454,10 @@ let coll = {}
 //    return i32(0);
 //if (x > 1.) { x = 0.;}
 //if (y > 1.) { y = 0.;}
-if (x == 0.) { x = 1.;}
-if (y == 0.) { y = 1.;}
+// if (x == 0.) { x = 1.;}
+// if (y == 0.) { y = 1.;}
 
-    return i32(x * 10 + floor(y * 100));
+    return i32((x * 10) % 10 + floor(y * 100));
     //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
@@ -501,8 +496,8 @@ if (y == 0.) { y = 1.;}
     // if (velocity[index].y < .01) {
     //   velocity[index] = vec3<f32>(-10.);
     // }
-      velocity[index] *= .01;
-      velocity[index] +=  .1 * vf;
+      //velocity[index] *= .01;
+      velocity[index] +=  .0001 * vf;
      
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
