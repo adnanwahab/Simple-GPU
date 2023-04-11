@@ -35,6 +35,14 @@ import utils from '../../lib/utils';
 
 //3,4,5
 //Math.sqrt(9,16,25)
+
+let camera = createCamera({
+  center: [.5, 1.5, 1.8],
+  damping: 0,
+  noScroll: true,
+  renderOnDirty: true,
+  element: document.createElement('div')//webgpu.canvas
+});
  
 function magnitude (v) {
   let pow = (e) => Math.pow(e, 2)
@@ -122,7 +130,6 @@ function makeComputeShader(webgpu, mesh, abc) {
   let velocityBuffer = new Float32Array(1e6)
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
-console.log(mesh)
 
 
 let coords = []
@@ -192,135 +199,37 @@ for (let i = 0; i < 1e6; i += 4) {
   let p = {x, y}
   let cos = Math.cos, max = Math.max, pow = Math.pow
   let log = Math.log, exp = Math.pow, min = Math.min, sin = Math.sin
-  // result[i+0] = cos(length(p))*max(length(p),pow(sin(p.x), p.x));
-  // result[i+1] = (log(length(p))-max(cos(exp(length(p))),sin(p.y))*min(p.x,cos(length(p))));
+  // result[i+1] = 
 
-    result[i+1] = 1
-  result[i+0] = pow(x, 2) - x
-
-  result[i+2]=  0
-  result[i+3] = 0
-  // if (i < 10) {
-  //   result[i+1] = 100
-  // result[i] = 100
-  // }
-  // result[i+1] = -1
-  // result[i] = -1
-  
-  // result[i + 2] =  Math.random()
-  // result[i+3] = 0
-
-  // if (i > 100) {
-  //   result[i] = 1
   //   result[i+1] = 1
-  // }
-  //result[i + 3] = 0
+  // result[i+0] = pow(x, 2) - x
+  // result[i+1] = .1 * Math.sin(i) || (log(length(p))-max(cos(exp(length(p))),sin(p.y))*min(p.x,cos(length(p))));
+  result[i+1] = 1
+  result[i+0] = pow(x, 2) - x
+  // result[i+2]=  1
+  // result[i+3] = 0
+ 
 
+  // if ((i / 4 )% 2 === 0) {
+  // result[i+0] = -1
+  // } else 
+  // result[i+0] = 1
+
+  // result[i+1] = 0//Math.sin(y)
+  result[i+2] = 0
+  result[i+3] = 0
+//console.log(Math.cos(x) , (Math.cos(x) - .5) * 2.)
 }
-
+//make magnitude of delta = distance from pa to pb
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
-
+//make some of the particles in a simulation a dancer
 window.result = result
 
 let count = 0
 let coll = {}
-//  let width = 100, height = 100, depth = 100
-// for (let i = 0; i < width; i++) {
-//   for (let j = 0; j < height; j++) {
-//     for (let k = 0; k < depth; k++) {
-//       let x = ((i / 100) - .5) * 2.
-//       let y = ((j / 100) - .5) * 2.
-//       let z = ((k / 100) - .5) * 2.
+
   
-      
-//       let idx = 3 * i * j * k
-//       if (coll[[x,y,z].join(',')]) {
-//         console.log('collide')
-//       }
-//       coll[[x,y,z].join(',')] = true
-//       //.console.log(idx)
-//       result[idx] = x
-//       result[idx+1] = y
-//       result[idx+2] = z
-//       //result[idx+3] = 0
-//       //console.log(idx)
-//       count ++
-//     }
-//   }
-// }
-// console.log(result, count)
-
-//   for (let i = 0; i < 1e6; i+=4) {
-//     let [x ,y, z] = index(i);
-// //    ( Math.cos(i / 100) * i) * .0001
-// //       (Math.sin(i / 100) * i) * .0001
-//     //let x= fib(i)
-//     // result[i] = x - y +(x*x + y*y)
-//     // result[i+1] = y - x*(x*x + y*y)
-
-
-//     //    result[i] = x > .5 ? 1 : -1
-//     // result[i+1] = y > 0 ? 1 : -1
-//     // result[i+2] = z > 0 ? 1 : -1
-//     // result[i+3] = 0
-//     result[i] = Math.random() - .5
-//     result[i+1] = Math.random() - .5
-//     result[i+2] = Math.random() - .5
-//     result[i+3] = 0
-
-//     // result[i] =  -1 //-dancer[i % dancer.length]
-//     // result[i+1] = -1 //dancer[i % dancer.length + 1] 
-//     // result[i+2] = 0
-//     // result[i+3] = 0
-//     // result[i] = 1
-//     // result[i+1] =  1
-//     // result[i+2] = 0
-//     // result[i+3] = 0
-//     //if (i > dancer.length- 6) break;
-//     // let idx =  ((4 * i) % dancer.length);
-//     // try {
-//     //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7))
-//     //   let v = 
-//     //   (vec3.subtract([],  dancer.slice(idx+4, idx+7), dancer.slice(idx, idx +3)))
-//     //   //console.log(dancer.slice(idx, idx +3), dancer.slice(idx+4, idx+7));
-//     // result[i] = v[0]
-//     // result[i+1] =  v[1]
-//     // result[i+2] = v[2]
-//     // result[i+3] = 0
-//     // } catch (e) {
-//     //   //console.log(e, i)
-//     // }
-//   }
-  
-  
-// function generateSpiralVectorField(width, height, centerX, centerY, angleStep) {
-//   //const vectorField = new Float32Array(width * height * 2);
-//   for (let y = 0; y < height; y++) {
-//     for (let x = 0; x < width; x++) {
-//       const index = (y * width + x) * 2;
-//       const dx = x - centerX;
-//       const dy = y - centerY;
-//       const r = Math.sqrt(dx * dx + dy * dy);
-//       const theta = Math.atan2(dy, dx) + angleStep * r;
-//       const gradientX = Math.cos(theta);
-//       const gradientY = Math.sin(theta);
-//       result[index] = gradientX;
-//       result[index + 1] = gradientY;
-//     }
-//   }
-//   //return vectorField;
-// }
-// console.log(result)
-// // example usage
-// const width = 256;
-// const height = 256;
-// const centerX = width / 2;
-// const centerY = height / 2;
-// const angleStep = 0.2;
-// const spiralVectorField = generateSpiralVectorField(width, height, centerX, centerY, angleStep);
-//  console.log(result)
-//result = result.slice(0, 400)
   let gridBuffer = makeBuffer(result, 0, 'result')
   window.gridBuffer = gridBuffer
   let texture = webgpu.device.createTexture({
@@ -362,6 +271,26 @@ let coll = {}
     label: `predictedPosition`,
     code: abc || `
   
+  //   const matrix = [
+  //     -3.677814483642578,
+  //     0,
+  //     0,
+  //     0,
+  //     0,
+  //     -3.677814483642578,
+  //     0,
+  //     0,
+  //     0,
+  //     0,
+  //     -1.0090817213058472,
+  //     -1,
+  //     0,
+  //     0,
+  //     -0.9081735610961914,
+  //     0
+  // ];
+
+
     struct Uniforms {
       mouse: vec2<f32>,
       time: f32
@@ -537,9 +466,15 @@ let coll = {}
     var y = ((pos.y  * -1) + 1) / 2.;
     //if y > .99999 { y = 0; }
     //if x < -.5 { x = 0; }
-
+    // var x = abs(pos.x);
+    // var y = abs(pos.y);
 //    return i32(0);
-    return i32(x * 10 + y * 100);
+//if (x > 1.) { x = 0.;}
+//if (y > 1.) { y = 0.;}
+if (x == 0.) { x = 1.;}
+if (y == 0.) { y = 1.;}
+
+    return i32(x * 10 + floor(y * 100));
     //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
@@ -567,7 +502,10 @@ let coll = {}
     var vf = vectorFieldBuffer[idx].xyz;
     if (uniforms.time > 0.) {
       //if (distance( buffer3[index], buffer1[index]) > .1) {
-      vf = (buffer1[index] - buffer3[index]).xyz;
+      var p = (buffer1[index] - buffer3[index]).xyz;
+      vf =  (.001 * uniforms.time * curlNoise(p)) + p;
+      vf = p;
+      //vectorFieldBuffer[idx] = vec4<f32>(p, 1);
       //}
     }
     //vectorFieldBuffer[idx].xyz;
@@ -665,7 +603,7 @@ const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/o
 let dancer = []
 let frames = []
 
-let frameMax = 100
+let frameMax = 50
 let frameCount = [...Array(frameMax).keys()]
 
 function getFrames(model) { 
@@ -685,7 +623,6 @@ function getFrames(model) {
         frames[model][i]=floatBuffer
         loaded += 1
         if (loaded === frameMax - 1) {
-          console.log(model)
           resolve()
           if (model === 2) basic()
           setTimeout(makeStagingBuffer, 3000)
@@ -719,16 +656,19 @@ let modelType = 1
 //if animating -> stop animation and use compute shader
 //if animation stopped - loop over time - then set animation to true
 let animating = true
+let id 
 window.addEventListener('click', function () {
-  if (! animating) {
+  console.log(id)
+  if (! animating ) {
     let elapsed = Date.now()
-    setTimeout(function recur() {
+    id = setTimeout(function recur() {
       let dt = Date.now() - elapsed
-      window.writeTime(10000 - dt)
-      if (dt < 10000) setTimeout(recur, 16)
+      window.writeTime(5000 - dt)
+      if (dt < 5000) id = setTimeout(recur, 16)
       else {
         animating = ! animating
         modelType = modelType === 1 ? 2 : 1
+        id = null
         return makeStagingBuffer()
       }
       
@@ -894,6 +834,8 @@ const buffers = [
 const device = webgpu.device
 const model = mat4.identity(new Float32Array(16))
 
+
+
 function getCameraViewProjMatrix() {
   mat4.translate(model, model, vec3.fromValues(2, 2, 0));
   mat4.rotate(
@@ -927,7 +869,7 @@ function getCameraViewProjMatrix() {
 
 
   const cameraViewProj = getCameraViewProjMatrix();
-
+console.log(cameraViewProj)
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
@@ -1135,13 +1077,7 @@ function recur () {
 }
 //recur()
 
-let camera = createCamera({
-  center: [.5, 1.5, .3],
-  damping: 0,
-  noScroll: true,
-  renderOnDirty: true,
-  element: document.createElement('div')//webgpu.canvas
-});
+
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1181,7 +1117,7 @@ setInterval(
       0,
       a.byteLength
     );
-  
+     
  
     if (! animating) {
       computeTransitions[1]()
