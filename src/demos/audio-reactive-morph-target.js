@@ -1,3 +1,4 @@
+//grid of points - colored by image 
 //galaxy
 //globe
 //flower
@@ -5,6 +6,8 @@
 //flow field - spiral 
 //magnet
 //tween from an explosion to a dancer
+
+//add linked visualization
 
 //make a vector field from existing point
 //use a uniform
@@ -101,8 +104,6 @@ function makeComputeShader(webgpu, mesh, abc) {
   let velocityBuffer = new Float32Array(1e6)
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
-
-
 let coords = []
 
 for (var i = 0; i < 10; i++) {
@@ -121,19 +122,26 @@ let min = {
   z: 0,
 }
 
-function clipSpace(x,y, z) {
-  let width = 10, height = 10;
-  x /= width
+function clipSpace(x,y, z, width, height) {
+//  let width = 10, height = 10;
+  //x /= width
   y /= height
   z /= width * height
-  x = x - .5
+  //x = x - .5
   y = y - .5
   z = z - .5
-  x *= -2
+  //x *= 2
   y *= -2
   z *= -2
 
-  return [x,y, z]
+  x = (x / width) * 2 -1
+  // var x1 = (x + 1) / 2.;
+  //x = ((x + 1) / 2.) * width
+  //  x = (x * width) / 2. 
+  //   var y1 = (1. - y) / 2. = (y - .5) * 2.
+
+
+  return [x,y,z]
 }
 //test with a grid
 
@@ -177,37 +185,113 @@ for (let i = -1; i < 1; i+=.2) {
 //   })
 
 result = []
-for (let i = 0; i <= 10; i++) {
-  for (let j = 0; j <= 10;j++) {
-  function length (x,y) {
-    return Math.sqrt(x*x + y*y)
+let width = 100, height = width
+for (let i = 0; i <= width; i++) {
+  for (let j = 0; j < height;j++) {
+  let [x, y] = clipSpace(j, i, 0, width, height)
 
+ // let idx = (j+i*height)
+  //let idx = (x * width + y *  height * width) // same index as gpu hash
+  //let [x1, y1] = zeroToOne(x , y )
+  //let idx = Math.floor(x1 * width) + Math.floor(y * height * width);
+  //console.log(idx)
+  //result[idx] = [x, y, idx, 0]
+  //result.push([parseFloat(x.toPrecision(2)) , parseFloat(y.toPrecision(2)) , 0, 0])
+    let [x1, y1 ] = zeroToOne(x , y)
+    let idx = Math.round(x1 * width + y1 * width * height)
+    result[idx]= [x, y, 0, 0]
+
+  //10% of the time, the x coordinate is off by -1 or 100 by index value 
+  //precision error 
+}
+}
+console.log(result)
+
+
+function zeroToOne(x , y) {
+  var x1 = (x + 1) /2 
+  var y1 =((1. - y) / 2);
+
+  return [x1, y1]
+}
+
+//problem solving process has to be better than beefore
+function findPoint(d) {
+    let [x, y] = d
+    var x1 = ((x + 1) /2).toPrecision(2)
+    var y1 = ((1. - y) / 2).toPrecision(2) 
+  
+  
+    //if (y1 > .5) y1 -= .02
+    //var x1 = x, y1 = y;
+    //console.log(x1,y1)
+    //if (x1 % 1 === .5) x1 -= 1, y -= -1 
+    x1 *= 100;
+    y1 *= 10000;
+  
+    let index = Math.floor(x1 + y1);
+    //console.log(index, x, x1, y, y1)
+    //console.log(index, x1, y1)
+    return [result[index], index]
   }
-  let [x, y] = clipSpace(i, j)
 
-  //console.log(x,y)
-  let idx = (i+j*10)
 
-// //  let p = {x, y}
+let n = 0;
+let collided = 0
 
-  result[idx] = [0, Math.pow(-j, 2), 0, 0]
-
-//   // let x = i;
-//   // let y = Math.floor(i * j / 10)
-
-//   result[i+1] = -1
-//   result[i+0] = pow(x, 2) - x
-  // result[i+2] = 0
-  // result[i+3] = 0
+while (n < 1000)  {
+  n++
+  let point = [Math.random().toPrecision(2), Math.random().toPrecision(2)].map(parseFloat)
+  let [pt, index]= findPoint(point)
+  let lt = .1 
+  if (Math.abs(pt[0] - point[0]) > lt || Math.abs(pt[1] - point[1]) > lt) {
+    //point[1] -= .01
+    //let pt = findPoint(point)
+    console.log(pt, point, index)
+    collided += 1
+  }
 }
-}
+window.result = result
+console.log(collided, 'colided')
+
+//console.log(result)
+
+
+// let r = result.map()
+
+// console.log(r)
+// r.forEach(d => {
+//   r.index 
+// })
+
+
+
+
+// var x = (pos.x + 1) / 2.;
+// var y = (1. - (pos.y)) / 2.;
+
+
+// return i32((x * 100) + (y * 10000));
+//retur vec2<i32>(i32(x * 10), i32(y * 100));
+
+
+
+
+/////////////////////////////////
+
+//010
+///////////////////////////////
+
+
+
+
  //console.log(result)
 //make magnitude of delta = distance from pa to pb
 //take every position around 3d model -> draw a vector to center
 //take every position within 3d model bounding box - draw a vector to outward
 //make some of the particles in a simulation a dancer
-console.log(result)
-window.result = result
+//console.log(result)
+
 
 let count = 0
 let coll = {}
@@ -236,7 +320,7 @@ let coll = {}
     //   [100, 100, 1]
     // );
   
-    let ce = device.createCommandEncoder();
+  let ce = device.createCommandEncoder();
   ce.copyBufferToTexture(
     { buffer: gridBuffer },
     { texture },
@@ -446,18 +530,10 @@ let coll = {}
 
   
     var x = (pos.x + 1) / 2.;
-    var y = ((pos.y  * -1) + 1) / 2.;
-    //if y > .99999 { y = 0; }
-    //if x < -.5 { x = 0; }
-    // var x = abs(pos.x);
-    // var y = abs(pos.y);
-//    return i32(0);
-//if (x > 1.) { x = 0.;}
-//if (y > 1.) { y = 0.;}
-// if (x == 0.) { x = 1.;}
-// if (y == 0.) { y = 1.;}
+    var y = (1. - (pos.y)) / 2.;
+    //
 
-    return i32((x * 10) % 10 + floor(y * 100));
+    return i32((x * 100) + (y * 10000));
     //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
@@ -483,21 +559,35 @@ let coll = {}
   
   
     var vf = vectorFieldBuffer[idx].xyz;
-    // if (uniforms.time > 0.) {
-    //   //if (distance( buffer3[index], buffer1[index]) > .1) {
+    if (uniforms.time > 0.) {
+      if (distance( buffer3[index], buffer1[index]) > .1) {
      var p = (buffer1[index] - buffer3[index]).xyz;
-    //   vf =  (.001 * uniforms.time * curlNoise(p)) + p;
-    //   vf = p;
-    //   //}
-    // }
+      vf =  (.001 * uniforms.time * curlNoise(p)) + p;
+      vf = p;
+      }
+    }
     //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
 
     //vectorFieldBuffer[idx].xyz;
     // if (velocity[index].y < .01) {
     //   velocity[index] = vec3<f32>(-10.);
     // }
-      //velocity[index] *= .01;
-      velocity[index] +=  .0001 * vf;
+
+        // if (pos.y > 0.) {
+        //   velocity[index].y =  sin(pos.y);
+        // } else {
+        //   velocity[index].y =  sin(pos.y);
+        // }
+
+
+        // if (pos.x > 0.) {
+        //   velocity[index].x = 10 * cos(pos.x);
+        // } else {
+        //   velocity[index].x = -10 * cos(pos.x);
+        // }
+
+      velocity[index] *= .01;
+     velocity[index] += .01 * vf;
      
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
@@ -554,10 +644,6 @@ let coll = {}
   //3d vector field of spiral explosion thing
   //3d vector field to transition to 2nd model dancing
   // 2nd 3d model dancing
-
-  
-//    console.log(uniformsBuffer)
-
       const computeBindGroup =
         utils.makeBindGroup(state.device,
           computePipeline.getBindGroupLayout(0),
@@ -602,8 +688,11 @@ function getFrames(model) {
       )
       .then((res) => res.arrayBuffer())
       .then((buffer) => {
-  
+
         var floatBuffer = new Float32Array(buffer)
+        for (let i = 0; i < floatBuffer.length; i++) {
+          floatBuffer[4*i+1] -= .5;
+        }
         frames[model][i]=floatBuffer
         loaded += 1
         if (loaded === frameMax - 1) {
@@ -622,6 +711,9 @@ fetch(obj(1)).then(d => {
   return d.arrayBuffer()
 }).then((d) => {
   dancer = new Float32Array(d)
+  for (let i = 0; i < dancer.length; i++) {
+    dancer[4*i+1] -= .5;
+  }
   shapes.push(window.makeBuffer(dancer, 0,'leaf'))
 })
 getFrames(1)
@@ -640,22 +732,20 @@ let modelType = 1
 //if animating -> stop animation and use compute shader
 //if animation stopped - loop over time - then set animation to true
 let animating = true
-let id 
 window.addEventListener('click', function () {
   if (! animating ) {
     let elapsed = Date.now()
-    id = setTimeout(function recur() {
+    setTimeout(function recur() {
       let dt = Date.now() - elapsed
       window.writeTime(5000 - dt)
-      if (dt < 5000) id = setTimeout(recur, 16)
+      if (dt < 5000) setTimeout(recur, 16)
       else {
         animating = ! animating
         modelType = modelType === 1 ? 2 : 1
-        id = null
         return makeStagingBuffer()
       }
       
-    }, 16)
+    }, 8)
   } else {
     animating = ! animating
     
@@ -702,7 +792,7 @@ function makeStagingBuffer() {
     //   //waveGridStagingBuffers.push(stagingBuffer);
     // });
     if (animating) makeStagingBuffer()
-  }, 50)
+  }, 100)
 }
 
 let shapes = [
@@ -729,7 +819,8 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
-  if (stuff.flat) stuff.flat()
+  if (stuff && stuff.flat) (stuff = stuff.flat(), label)
+  
   particlesBuffer.set(stuff)
   gpuBuffer.unmap();
   return gpuBuffer
@@ -898,18 +989,18 @@ for (let i = 0; i < rgb.length; i+=3) {
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 let hello = []
-for (let i = 0; i < 1e6; i++) {
-  let [x,y,z] = index(i)
+// for (let i = 0; i < 1e6; i++) {
+//   let [x,y,z] = index(i)
   
-  hello[4*i] = x
-  hello[4*i+1] = y 
-  hello[4*i+2] = z
-  hello[4*i+3] = 0
-}
+//   hello[4*i] = x
+//   hello[4*i+1] = y 
+//   hello[4*i+2] = z
+//   hello[4*i+3] = 0
+// }
 
 
 
-let hi = window.makeBuffer(hello, 0 , 'hi')
+//let hi = window.makeBuffer(hello, 0 , 'hi')
 const drawCube = await webgpu.initDrawCall({
   shader: {
     vertEntryPoint: 'main_vertex',
@@ -995,7 +1086,8 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 
 		//Sum up the specular light factoring
 		let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-    return vec4<f32>(color.xyz, 1.);
+
+    return vec4<f32>(sin(color.xyz), 1.);
 }
 `},
   attributeBuffers: buffers,
