@@ -102,12 +102,12 @@ function index(i) {
 function makeComputeShader(webgpu, mesh, abc) {
   let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
-  for (var i = 0; i< velocityBuffer.length; i+= 3){
-    velocityBuffer[i] = Math.sin(i)
-    velocityBuffer[i+1] = Math.cos(i)
-    //velocityBuffer[i+2] = Math.random()
+  // for (var i = 0; i< velocityBuffer.length; i+= 3){
+  //   velocityBuffer[i] = Math.sin(i)
+  //   velocityBuffer[i+1] = Math.cos(i)
+  //   //velocityBuffer[i+2] = Math.random()
 
-  }
+  // }
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
 let coords = []
@@ -173,6 +173,9 @@ result = []
 let width = 100, height = width
 //const counter = {}
 
+//XVectorField in one buffer
+//Y vector Field in one buffer 
+
 function makeVectorField() {
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -189,24 +192,24 @@ for (let i = 0; i <= width; i++) {
     let idx = Math.round(x1 * width + y1 * width * height)
     //counter[idx]= 1 + (counter[idx] || 0)
     let dog = -Math.sin(x+y + Math.random())
-    let dummy =  Math.cos(x+ Math.random()) - Math.sin(y)
-    if (Math.random() > .9) dummy = Math.sin(y) -  Math.cos(x+ Math.random())
-    if (Math.random() > .9) dummy = -1
-    if (Math.random() > .5) dog = 1
-    if (Math.random() > .5) dog = -1
-    if (Math.random() > .5) dummy = -1
+    let dummy =  Math.cos(x) - Math.sin(y)
+    // if (Math.random() > .9) dummy = Math.sin(y) -  Math.cos(x+ Math.random())
+    // if (Math.random() > .9) dummy = -1
+    // if (Math.random() > .5) dog = 1
+    // if (Math.random() > .5) dog = -1
+    // if (Math.random() > .5) dummy = -1
     //x *= 100
    // y *= 100
     let sin = Math.sin, cos = Math.cos
     dog = sin(x) * Math.sqrt(Math.abs(cos(y))) / sin(y) + 7/5
 
     dummy = 2 * sin(y) + 2
-    dog = x
-    if (dog > 0) x = -1
-    else x = 1
-    dummy = -y
+    //dog = x
+    // if (dog > 0) x = -1
+    // else x = 1
+    //dummy = y
 
-    result[idx]= [Math.random(), dummy, -0, 0]
+    result[idx]= [dog, dummy, -0, 0]
 
   //10% of the time, the x coordinate is off by -1 or 100 by index value 
   //precision error 
@@ -214,12 +217,12 @@ for (let i = 0; i <= width; i++) {
 }
 return result
 }
-
 //multiple dancers and a globe and one particle swarm that becomes stuff according to the beat
 //use curl noise on CPU to interpolate the vector field according to the music
 
 // console.log(result, counter)
 makeVectorField()
+console.log('result', result)
 
 function zeroToOne(x , y) {
   var x1 = (x + 1) /2 
@@ -365,10 +368,10 @@ let coll = {}
   
     // webgpu.device.queue.writeTexture(
     //   { texture },
-    //   grid,
+    //   gridBuffer,
     //   {
     //     bytesPerRow: 400,
-    //     rowsPerImage: 100,
+    //     rowsPerImage: 400,
     //   },
     //   [100, 100, 1]
     // );
@@ -585,11 +588,11 @@ let coll = {}
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     //
-    if (y < .01) {y = 1.;}
-    if (x < .01) {x = 1.;}
-    if (y > .99) {y = 0.;}
-    if (x > .99) {x = 0.;}
-    return i32(floor(x * 10) + floor(y * 10000));
+    // if (y < .01) {y = 1.;}
+    // if (x < .01) {x = 1.;}
+    // if (y > .99) {y = 0.;}
+    // if (x > .99) {x = 0.;}
+    return i32(floor(x * 100) + floor(y * 100) * 100);
     //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
@@ -614,7 +617,7 @@ let coll = {}
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
-    var vf = vectorFieldBuffer[idx].xyz;
+    var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
     // vectorFieldBuffer[idx+1].xyz +
     // vectorFieldBuffer[idx-1].xyz +
     // vectorFieldBuffer[idx-100].xyz;
@@ -645,10 +648,10 @@ let coll = {}
         //   velocity[index].x = -10 * cos(pos.x);
         // }
 
-      //velocity[index] *= .001;
-     //velocity[index] += .1 * vf;
+      velocity[index] *= .1;
+     velocity[index] += .1 * vf;
      
-      buffer3[index] = vec4<f32>(pos.xyz + .001 * velocity[index],  1);
+      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
 
       //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -670,12 +673,12 @@ let coll = {}
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
       
-      //var p = buffer3[index];
-      //if (p.x > 2.){ velocity[index].x = -1000;}
-      //if (p.y > 1.) {velocity[index].y = -1000  ;}
+      var p = buffer3[index];
+      if (p.x > .99){ buffer3[index].x = 0;}
+      if (p.x < -0.99){ buffer3[index].x = 0;}
+      if (p.y > .99){ buffer3[index].y = 0;}
+      if (p.y < -.99){ buffer3[index].y = 0;}
 
-//      if (p.y > 1.) { velocity[index] = curlNoise(p.xyz);  ;}
-      // if (p.z > 1.){ buffer3[index].z = -1;}
     }`,
   
     exec: function (state){
@@ -1164,7 +1167,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
     , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
-  blend,
+//  blend,
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
