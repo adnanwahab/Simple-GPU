@@ -1,9 +1,35 @@
 
-//CPU Curl 
+//done from scratch - eta 2 weeks - happy bear
+// - flexibility 
+//primary criteria = amazingness of process + final result
+//rose petals 
+//particles are mirrors - reflecting environment
+//dont fight the stream - mochi
+// write words in flowing vector field -> shift it over one column at at time
+
+//bake stuff - baked lighting on particles https://www.youtube.com/watch?v=yG4ChOPyC-4&t=82s
+
+
+//mirror walls + mirror particles 
+//glowy particles
+
+//ray traced reflections on particles - 
+//stellar dancer - celestial 
+
+//electrical water - lightning = particles colliding 
+//https://www.youtube.com/watch?v=rzRf0pTxYO0
+
+//galaxy -> globe -> 
+//animation looks like zoom 
+// chromatic blur
+
+///frosted glass - transparency
+//CPU Curl - COULD end the stream
 //grid of points - colored by image 
 //galaxy
 //globe
-//flower
+//flower - vector field
+//lighting on particles
 //dancerA -> dancerB
 //flow field - spiral 
 //magnet
@@ -11,7 +37,7 @@
 //flowfield - 3d model
 //emitter field - 2nd particle sim
 //multiple dancers 
-
+// https://stemkoski.github.io/Three.js/Reflection.html
 //add linked visualization
 
 //make a vector field from existing point
@@ -23,6 +49,10 @@
 //make a vector field 
 //convert model to -1 to 1 - choose 
 //add camera to compute shader 
+
+//stream not want
+//point cloud video
+
 import {abc} from "./shader2";
 
 const mouse = [0,0]
@@ -184,13 +214,13 @@ function makeVectorField() {
 for (let i = 0; i < 5; i++) {
   if (i < 1)
   magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), 0
+    max.x + makeRand(), max.y+ makeRand(), Math.random()
   ]); else 
   // magnets.push([
   //     makeRand(), makeRand(), 0
   // ])
   magnets.push([
-        makeRand(), makeRand(), 0
+        makeRand(), makeRand(), Math.random()
     ])
   
 }
@@ -269,7 +299,7 @@ for (let i = 0; i <= width; i++) {
         //add(vec, dx.map(d => d * 1/ dist))
         ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
         //console.log(dist)
-        if (dist < .1) vec = [ -vec[1], vec[0], vec[2]]
+        if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
       })
 
 
@@ -405,12 +435,14 @@ setInterval(function () {
   stagingBuffer.unmap();
 
    // Copy the staging buffer contents to the vertex buffer.
+   //copyBufferToBuffer(source, sourceOffset, destination, destinationOffset, size)
+
   const commandEncoder = webgpu.device.createCommandEncoder({});
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 0, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 10000, velocity, 0, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 20000, velocity, 0, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 30000, velocity, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 10000, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 20000, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 30000, vf.length * 4);
 
   webgpu.device.queue.submit([commandEncoder.finish()]);
   
@@ -723,7 +755,7 @@ let coll = {}
       velocity[index] *= .1;
      velocity[index] += .01 * vf;
      
-      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
+      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
       if (uniforms.time > 0.) {
         if (distance( buffer3[index], buffer1[index]) > .1) {
@@ -1063,17 +1095,17 @@ const model = mat4.identity(new Float32Array(16))
 
 
 function getCameraViewProjMatrix() {
-  mat4.translate(model, model, vec3.fromValues(0, 0, 0));
-  // mat4.rotate(
-  //   model,
-  //   model,
-  //   1,
-  //   vec3.fromValues(
-  //     Math.sin(0),
-  //     Math.cos(1),
-  //     0
-  //   )
-  // );
+  mat4.translate(model, model, vec3.fromValues(2, 2, 0));
+  mat4.rotate(
+    model,
+    model,
+    1,
+    vec3.fromValues(
+      Math.sin(0),
+      Math.cos(1),
+      0
+    )
+  );
   //vec3.rotateY(eyePosition, eyePosition, origin, rad);
 
   let projectionMatrix = mat4.create();
@@ -1094,7 +1126,7 @@ function getCameraViewProjMatrix() {
 }
 
 
-//  const cameraViewProj = getCameraViewProjMatrix();
+ const cameraViewProj = getCameraViewProjMatrix();
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
@@ -1190,8 +1222,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-   //camera.projectionMatrix
-   //* camera.viewMatrix *  camera.modelMatrix * 
+   camera.projectionMatrix
+   * camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
