@@ -1,3 +1,5 @@
+
+//CPU Curl 
 //grid of points - colored by image 
 //galaxy
 //globe
@@ -6,6 +8,9 @@
 //flow field - spiral 
 //magnet
 //tween from an explosion to a dancer
+//flowfield - 3d model
+//emitter field - 2nd particle sim
+//multiple dancers 
 
 //add linked visualization
 
@@ -39,13 +44,10 @@ import utils from '../../lib/utils';
 //3,4,5
 //Math.sqrt(9,16,25)
 
-let camera = createCamera({
-  center: [.5, 1.5, 1.8],
-  damping: 0,
-  noScroll: true,
-  renderOnDirty: true,
-  element: document.createElement('div')//webgpu.canvas
-});
+function length (p) {
+  let [x, y]= p
+  return Math.sqrt(x*x + y*y)
+}
  
 function magnitude (v) {
   let pow = (e) => Math.pow(e, 2)
@@ -148,18 +150,18 @@ function clipSpace(x,y, z, width, height) {
 }
 //test with a grid
 
-// for( let i = 0; i < mesh.stuff.length; i+=4) {
-//   let x = mesh.stuff[i]
-//   let y = mesh.stuff[i+1]
-//   let z = mesh.stuff[i+2]
-//   max.x = Math.max(x, max.x)
-//   max.y = Math.max(y, max.y)
-//   max.z = Math.max(z, max.z)
+for( let i = 0; i < mesh.stuff.length; i+=4) {
+  let x = mesh.stuff[i]
+  let y = mesh.stuff[i+1]
+  let z = mesh.stuff[i+2]
+  max.x = Math.max(x, max.x)
+  max.y = Math.max(y, max.y)
+  max.z = Math.max(z, max.z)
 
-//   min.x = Math.min(x, max.x)
-//   min.y = Math.min(y, max.y)
-//   min.z = Math.min(z, max.z)
-// }
+  min.x = Math.min(x, max.x)
+  min.y = Math.min(y, max.y)
+  min.z = Math.min(z, max.z)
+}
 
 
 let result = []
@@ -175,44 +177,110 @@ let width = 100, height = width
 
 //XVectorField in one buffer
 //Y vector Field in one buffer 
-
+console.log(max, min)
 function makeVectorField() {
+
+  let magnets = []
+for (let i = 0; i < 5; i++) {
+  if (i < 1)
+  magnets.push([
+    max.x + makeRand(), max.y+ makeRand(), 0
+  ]); else 
+  // magnets.push([
+  //     makeRand(), makeRand(), 0
+  // ])
+  magnets.push([
+        makeRand(), makeRand(), 0
+    ])
+  
+}
+magnets.push([
+  0,0,0
+])
+//console.log(magnets)
+
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
   let [x, y] = clipSpace(j, i, 0, width, height)
-
- // let idx = (j+i*height)
-  //let idx = (x * width + y *  height * width) // same index as gpu hash
-  //let [x1, y1] = zeroToOne(x , y )
-  //let idx = Math.floor(x1 * width) + Math.floor(y * height * width);
-  //console.log(idx)
-  //result[idx] = [x, y, idx, 0]
-  //result.push([parseFloat(x.toPrecision(2)) , parseFloat(y.toPrecision(2)) , 0, 0])
     let [x1, y1 ] = zeroToOne(x , y)
     let idx = Math.round(x1 * width + y1 * width * height)
-    //counter[idx]= 1 + (counter[idx] || 0)
     let dog = -Math.sin(x+y + Math.random())
     let dummy =  Math.cos(x) - Math.sin(y)
-    // if (Math.random() > .9) dummy = Math.sin(y) -  Math.cos(x+ Math.random())
-    // if (Math.random() > .9) dummy = -1
-    // if (Math.random() > .5) dog = 1
-    // if (Math.random() > .5) dog = -1
-    // if (Math.random() > .5) dummy = -1
-    //x *= 100
-   // y *= 100
-    let sin = Math.sin, cos = Math.cos
-    dog = sin(x) * Math.sqrt(Math.abs(cos(y))) / sin(y) + 7/5
+    let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
+    // let a = dancer.slice(idx, idx+3)
+    // let b = dancer.slice(idx+4, idx+7)
+    // x *= 2
+    // y *= 2
+    let p = [x ,y, 0]
+    p.x = x 
+    p.y = y
 
-    dummy = 2 * sin(y) + 2
-    //dog = x
-    // if (dog > 0) x = -1
-    // else x = 1
-    //dummy = y
+    dog = 0
+    dummy = 0
 
-    result[idx]= [dog, dummy, -0, 0]
+  let vec = [0,0,0,0]
 
-  //10% of the time, the x coordinate is off by -1 or 100 by index value 
-  //precision error 
+    function distanceTo(b, a) {
+      
+      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
+    }
+
+    function getClosestMagnet() {
+      let idx = 0, distance = 0
+      magnets.forEach((d , i) => {
+        let dist = distanceTo(p, p)
+        if (distance > dist) return
+        distance = Math.min(dist, distance)
+        idx = i
+      })
+      return magnets[idx]
+    }
+
+    function getDist(a, b) {
+      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
+        return a + b
+      })
+    }
+
+    function add (v1, v2) {
+      return [
+        v1[0] + v2[0],
+        v1[1] + v2[1],
+        v1[2] + v2[2],
+      ]
+    }
+    
+
+      vec = [0,0,0,0]
+      let dist = getDist(p, getClosestMagnet())
+
+  
+      
+
+      // vec[0] = Math.sin(x * 180)
+      // vec[1] = Math.cos(i * 180)
+
+      magnets.forEach((mag , i) => {
+        let dist = getDist(mag, p)
+        //console.log(dist)
+        let dx = distanceTo(mag, p)
+        //vec = dx;
+        //add(vec, dx.map(d => d * 1/ dist))
+        //if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
+        //if (dist < .009) vec = [ 1, 1 , vec[2]]
+      })
+
+
+      vec[2] = 0
+    // vec.x = x1
+    // vec.y = y1
+
+    vec[0] = -x
+    vec[1] = -y
+
+    // vec[0] = x
+    // vec[1] = y
+    result[idx]= vec
 }
 }
 return result
@@ -314,14 +382,11 @@ function makeRand () {
 //make some of the particles in a simulation a dancer
 //console.log(result)
 
-function overWriteVectorField (){
-
-}
 let gridBuffer = makeBuffer(result.flat(), 0, 'result')
 
 setInterval(function () {
   let vf = makeVectorField()
-
+  window.drawVF(vf)
 
 
   let stagingBuffer = webgpu.device.createBuffer({
@@ -342,12 +407,12 @@ setInterval(function () {
   
   //const particlesBuffer = new Float32Array(gridBuffer.getMappedRange());
 
-
+//console.log(vf.flat())
   
   // particlesBuffer.set(vf.flat())
   // gpuBuffer.unmap();
 
-}, 1000)
+}, 2000)
 
 let count = 0
 let coll = {}
@@ -581,7 +646,7 @@ let coll = {}
     return (x + 1.) / 2.;
   }
 
-  fn hash (pos: vec3<f32>) -> i32 {
+  fn hash(pos: vec3<f32>) -> i32 {
     //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
 
   
@@ -592,6 +657,7 @@ let coll = {}
     // if (x < .01) {x = 1.;}
     // if (y > .99) {y = 0.;}
     // if (x > .99) {x = 0.;}
+    //return i32(floor(x * 100) + floor(y * 10000));
     return i32(floor(x * 100) + floor(y * 100) * 100);
     //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
@@ -618,16 +684,12 @@ let coll = {}
   
   
     var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
+    //+ vec3<f32>(vectorFieldBuffer[index].xyz)
+    ;
     // vectorFieldBuffer[idx+1].xyz +
     // vectorFieldBuffer[idx-1].xyz +
     // vectorFieldBuffer[idx-100].xyz;
-    if (uniforms.time > 0.) {
-      if (distance( buffer3[index], buffer1[index]) > .1) {
-     var p = (buffer1[index] - buffer3[index]).xyz;
-      vf =  (.001 * uniforms.time * curlNoise(p)) + p;
-      vf = p;
-      }
-    }
+  
     //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
 
     //vectorFieldBuffer[idx].xyz;
@@ -653,6 +715,16 @@ let coll = {}
      
       buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
 
+      if (uniforms.time > 0.) {
+        if (distance( buffer3[index], buffer1[index]) > .1) {
+      //  var p = (buffer1[index] - buffer3[index]).xyz;
+      //  //.1 * uniforms.time *
+      //   vf =  ( (.01 * curlNoise(p))) * p;
+      //   vf = p;
+      //   velocity[index] +=  .1 * vf;
+      //   buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
+        }
+      }
       //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
       
@@ -674,10 +746,10 @@ let coll = {}
    
       
       var p = buffer3[index];
-      if (p.x > .99){ buffer3[index].x = 0;}
-      if (p.x < -0.99){ buffer3[index].x = 0;}
-      if (p.y > .99){ buffer3[index].y = 0;}
-      if (p.y < -.99){ buffer3[index].y = 0;}
+      // if (p.x > .99){ buffer3[index].x = -1;}
+      // if (p.x < -0.99){ buffer3[index].x = 1;}
+      // if (p.y > .99){ buffer3[index].y = -1;}
+      //if (p.y < -.99){ buffer3[index].y = 1;}
 
     }`,
   
@@ -706,7 +778,7 @@ let coll = {}
   //3d vector field of spiral explosion thing
   //3d vector field to transition to 2nd model dancing
   // 2nd 3d model dancing
-  console.log(makeVectorField().flat())
+
       const computeBindGroup =
         utils.makeBindGroup(state.device,
           computePipeline.getBindGroupLayout(0),
@@ -806,8 +878,8 @@ window.addEventListener('click', function () {
     let elapsed = Date.now()
     setTimeout(function recur() {
       let dt = Date.now() - elapsed
-      window.writeTime(5000 - dt)
-      if (dt < 5000) setTimeout(recur, 16)
+      window.writeTime(1000 - dt)
+      if (dt < 1000) setTimeout(recur, 16)
       else {
         animating = ! animating
         modelType = modelType === 1 ? 2 : 1
@@ -980,25 +1052,25 @@ const model = mat4.identity(new Float32Array(16))
 
 
 function getCameraViewProjMatrix() {
-  mat4.translate(model, model, vec3.fromValues(2, 2, 0));
-  mat4.rotate(
-    model,
-    model,
-    1,
-    vec3.fromValues(
-      Math.sin(0),
-      Math.cos(1),
-      0
-    )
-  );
+  mat4.translate(model, model, vec3.fromValues(0, 0, 0));
+  // mat4.rotate(
+  //   model,
+  //   model,
+  //   1,
+  //   vec3.fromValues(
+  //     Math.sin(0),
+  //     Math.cos(1),
+  //     0
+  //   )
+  // );
   //vec3.rotateY(eyePosition, eyePosition, origin, rad);
 
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
-  mat4.perspectiveZO(projectionMatrix,
-    100, 500 / 500, .9, 100.0);
+  // mat4.perspectiveZO(projectionMatrix,
+  //   10, 500 / 500, .5, 10.0);
   //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
-  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+  //mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
 
   //mat4.lookAt(viewProjectionMatrix, eyePosition, origin, upVector);
 
@@ -1011,7 +1083,7 @@ function getCameraViewProjMatrix() {
 }
 
 
-  const cameraViewProj = getCameraViewProjMatrix();
+//  const cameraViewProj = getCameraViewProjMatrix();
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
@@ -1107,7 +1179,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-    // camera.projectionMatrix * camera.viewMatrix *  camera.modelMatrix * 
+   //camera.projectionMatrix
+   //* camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1156,7 +1229,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 		//Sum up the specular light factoring
 		let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
 
-    return vec4<f32>(sin(color.xyz), 1.);
+    return vec4<f32>(sin(color.xyz), .7);
 }
 `},
   attributeBuffers: buffers,
@@ -1167,7 +1240,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
     , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
-//  blend,
+  //blend,
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
@@ -1227,6 +1300,14 @@ webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[1] = e.clientX / 1000
 })
 
+let camera = createCamera({
+  center: [0, 2.5, 0],
+  damping: 0,
+  noScroll: true,
+  renderOnDirty: true,
+  element: webgpu.canvas
+});
+
 setInterval(
    function () {
     let {projection, view} = camera()
@@ -1268,3 +1349,53 @@ setInterval(
     drawCube({})
     }, 8) 
 }
+
+
+let shouldDraw = true
+let dpi = devicePixelRatio;
+var canvas = document.createElement("canvas");
+let width = innerWidth
+let height = innerHeight
+canvas.width = width * dpi;
+canvas.height = height * dpi;
+canvas.style.width = width + "px";
+var context = canvas.getContext("2d");
+context.scale(dpi, dpi);
+window.drawVF = function (vf, i) {
+  context.fillRect(0, 0, innerWidth, innerHeight);
+  //let getImageData = context.getImageData(0, 0, innerWidth, innerHeight);
+  // getImageData.data.forEach((d, i) => {
+  //   if (! shouldDraw) return
+
+  //   //console.log(getImageData.data[i])
+  //   //if (i % 3 ===0) return;
+  //   //vf[i % 100 / 100]
+  //   //getImageData.data[i] = Math.random() * 255
+  //   // getImageData.data[i] = vf[1]
+  //   // getImageData.data[i] = vf[2]
+  //   // getImageData.data[i] = vf[3]
+  // })
+  vf.forEach((vec, i) => {
+    let x = 50
+    //console.log(vec)
+    //console.log(`rgba(${vec[0] * 255}, ${vec[1] * 255}, ${(1. - vec[2]) * 255} , 1.); `)
+    //
+    context.fillStyle = i % 2 ===1 ? "orange" : "#FFFFFF";//rgb(${vec[0] * 55}, ${vec[1] * 55}
+    context.fillStyle = `rgb(${((vec[0] + 1) * 2) * 55}, ${((vec[1] +  1 )* 2) * 55}, ${vec[2] * 55})`
+    //context.fillStyle = 'purple'
+//    if (Math.random() > .99)console.log(`rgb(${vec[0] * 55}, ${vec[1] * 55}, ${vec[2] * 55})`)
+    context.fillRect(vec.x * innerWidth, vec.y * innerHeight, 10, 10);
+
+  })
+  //context.putImageData(getImageData, 0 , 0)
+}
+setTimeout(() => {
+  if (! shouldDraw) return
+  canvas.style.opacity = .5
+  canvas.style.position = 'absolute'
+  canvas.style.zIndex = '600'
+  webgpu.canvas.style.position = 'absolute'
+  webgpu.canvas.style.zIndex = '500'
+  webgpu.canvas.webgpuCompostingMode = 'alpha-blend'
+  document.body.insertBefore(canvas, webgpu.canvas)
+}, 500);
