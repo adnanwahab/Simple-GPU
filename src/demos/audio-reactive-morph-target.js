@@ -194,9 +194,9 @@ for (let i = 0; i < 5; i++) {
     ])
   
 }
-magnets.push([
-  0,0,0
-])
+// magnets.push([
+//   0,0,0
+// ])
 //console.log(magnets)
 
 for (let i = 0; i <= width; i++) {
@@ -251,7 +251,7 @@ for (let i = 0; i <= width; i++) {
     }
     
 
-      vec = [0,0,0,0]
+      vec = [0, 0,0,0]
       let dist = getDist(p, getClosestMagnet())
 
   
@@ -263,20 +263,22 @@ for (let i = 0; i <= width; i++) {
       magnets.forEach((mag , i) => {
         let dist = getDist(mag, p)
         //console.log(dist)
-        let dx = distanceTo(mag, p)
-        //vec = dx;
+        let dx = unitVector(distanceTo(mag, p))
+        //if (Math.random() * .9999)console.log(dist)
+        vec = add(vec, dx.map(d => d * 1/ dist))
         //add(vec, dx.map(d => d * 1/ dist))
-        //if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
-        //if (dist < .009) vec = [ 1, 1 , vec[2]]
+        ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
+        //console.log(dist)
+        if (dist < .1) vec = [ -vec[1], vec[0], vec[2]]
       })
 
 
-      vec[2] = 0
-    // vec.x = x1
-    // vec.y = y1
+    vec[3] = 0
+    vec.x = x1
+    vec.y = y1
 
-    vec[0] = -x
-    vec[1] = -y
+    // vec[0] = -x
+    // vec[1] = -y
 
     // vec[0] = x
     // vec[1] = y
@@ -289,6 +291,8 @@ return result
 //use curl noise on CPU to interpolate the vector field according to the music
 
 // console.log(result, counter)
+
+//vector field isnt updating 
 makeVectorField()
 console.log('result', result)
 
@@ -403,8 +407,14 @@ setInterval(function () {
    // Copy the staging buffer contents to the vertex buffer.
   const commandEncoder = webgpu.device.createCommandEncoder({});
   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 10000, velocity, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 20000, velocity, 0, vf.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 30000, velocity, 0, vf.length * 4);
+
   webgpu.device.queue.submit([commandEncoder.finish()]);
   
+
   //const particlesBuffer = new Float32Array(gridBuffer.getMappedRange());
 
 //console.log(vf.flat())
@@ -412,7 +422,7 @@ setInterval(function () {
   // particlesBuffer.set(vf.flat())
   // gpuBuffer.unmap();
 
-}, 2000)
+}, 5000)
 
 let count = 0
 let coll = {}
@@ -711,7 +721,7 @@ let coll = {}
         // }
 
       velocity[index] *= .1;
-     velocity[index] += .1 * vf;
+     velocity[index] += .01 * vf;
      
       buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index],  1);
 
@@ -734,14 +744,14 @@ let coll = {}
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
       ;
       //buffer3[index].x < 0. ||
-      var mouse = (uniforms.mouse - .5) * 2.;
-      // if (distance(buffer3[index].xy, uniforms.mouse) < .4) {
-      //   velocity[index].x = velocity[index].y;
-      //   velocity[index].y = -velocity[index].x;
-      //   buffer3[index].z += .1;
-
-      //   //velocity[index]*= .001;
-      // }
+      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
+      if (distance(buffer3[index].xy, mouse) < .1) {
+        // velocity[index].x = velocity[index].y;
+        // velocity[index].y = -velocity[index].x;
+        //buffer3[index]= vec4<f32>(buffer3[index].xy - vec2<f32>(distance(buffer3[index].xy, mouse)), 0., 1.);
+        buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
+        //velocity[index]*= .001;
+      }
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
       
@@ -760,7 +770,7 @@ let coll = {}
       const computePass = commandEncoder.beginComputePass();
       state.computePass.computePass = computePass;
   
-      //console.log(mouse)
+      
     webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
     let timeBuffer = new Float32Array(1)
     window.writeTime = function (dt) {
@@ -874,12 +884,13 @@ let modelType = 1
 //if animation stopped - loop over time - then set animation to true
 let animating = true
 window.addEventListener('click', function () {
+  let timebetween = 1000
   if (! animating ) {
     let elapsed = Date.now()
     setTimeout(function recur() {
       let dt = Date.now() - elapsed
-      window.writeTime(1000 - dt)
-      if (dt < 1000) setTimeout(recur, 16)
+      window.writeTime(timebetween - dt)
+      if (dt < timebetween) setTimeout(recur, 16)
       else {
         animating = ! animating
         modelType = modelType === 1 ? 2 : 1
@@ -1297,7 +1308,9 @@ function recur () {
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
-  mouse[1] = e.clientX / 1000
+  mouse[1] = e.clientY / 500
+  console.log(e.clientX, e.clientY)
+  console.log(mouse)
 })
 
 let camera = createCamera({
@@ -1354,11 +1367,13 @@ setInterval(
 let shouldDraw = true
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
-let width = innerWidth
-let height = innerHeight
+let width = 1000
+let height = 2000
 canvas.width = width * dpi;
 canvas.height = height * dpi;
 canvas.style.width = width + "px";
+canvas.style.height = height + "px";
+
 var context = canvas.getContext("2d");
 context.scale(dpi, dpi);
 window.drawVF = function (vf, i) {
@@ -1381,7 +1396,9 @@ window.drawVF = function (vf, i) {
     //console.log(`rgba(${vec[0] * 255}, ${vec[1] * 255}, ${(1. - vec[2]) * 255} , 1.); `)
     //
     context.fillStyle = i % 2 ===1 ? "orange" : "#FFFFFF";//rgb(${vec[0] * 55}, ${vec[1] * 55}
-    context.fillStyle = `rgb(${((vec[0] + 1) * 2) * 55}, ${((vec[1] +  1 )* 2) * 55}, ${vec[2] * 55})`
+    context.fillStyle = `rgb(${Math.abs(vec[0]) * 50}, ${Math.abs(vec[1]) * 50}, ${vec[2] * 55})`
+    //context.fillStyle = `rgb(${((vec[0] + 1) * 2) * 55}, ${((vec[1] +  1 )* 2) * 55}, ${vec[2] * 55})`
+
     //context.fillStyle = 'purple'
 //    if (Math.random() > .99)console.log(`rgb(${vec[0] * 55}, ${vec[1] * 55}, ${vec[2] * 55})`)
     context.fillRect(vec.x * innerWidth, vec.y * innerHeight, 10, 10);
@@ -1394,6 +1411,7 @@ setTimeout(() => {
   canvas.style.opacity = .5
   canvas.style.position = 'absolute'
   canvas.style.zIndex = '600'
+  canvas.style.pointerEvents = 'none'
   webgpu.canvas.style.position = 'absolute'
   webgpu.canvas.style.zIndex = '500'
   webgpu.canvas.webgpuCompostingMode = 'alpha-blend'
