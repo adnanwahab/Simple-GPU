@@ -21,9 +21,9 @@
 
 //galaxy -> globe -> 
 //animation looks like zoom 
-// chromatic blur
+// chromatic blur 
 
-///frosted glass - transparency
+///frosted glass - transparency https://twitter.com/pandrr/status/1646782946542592001
 //CPU Curl - COULD end the stream
 //grid of points - colored by image 
 //galaxy
@@ -208,7 +208,7 @@ let width = 100, height = width
 //XVectorField in one buffer
 //Y vector Field in one buffer 
 console.log(max, min)
-function makeVectorField() {
+function makeVectorField1() {
 
   let magnets = []
 for (let i = 0; i < 5; i++) {
@@ -302,11 +302,135 @@ for (let i = 0; i <= width; i++) {
         if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
       })
 
-
+    vec[2] = 0
     vec[3] = 0
     vec.x = x1
     vec.y = y1
 
+    let bounds = j < 30 || i < 30 || i > 70 || j > 70
+    // if (bounds) {
+    //   vec[0] = 200 * -x
+    //   vec[1] = 200 * -y
+    // }
+    // vec[0] = -x
+    // vec[1] = -y
+
+    // vec[0] = x
+    // vec[1] = y
+    result[idx]= vec
+}
+}
+return result
+}
+
+
+function makeVectorField() {
+
+  let magnets = []
+for (let i = 0; i < 5; i++) {
+  if (i < 1)
+  magnets.push([
+    max.x + makeRand(), max.y+ makeRand(), Math.random()
+  ]); else 
+  // magnets.push([
+  //     makeRand(), makeRand(), 0
+  // ])
+  magnets.push([
+        makeRand(), makeRand(), Math.random()
+    ])
+  
+}
+// magnets.push([
+//   0,0,0
+// ])
+//console.log(magnets)
+
+for (let i = 0; i <= width; i++) {
+  for (let j = 0; j < height;j++) {
+  let [x, y] = clipSpace(j, i, 0, width, height)
+    let [x1, y1 ] = zeroToOne(x , y)
+    let idx = Math.round(x1 * width + y1 * width * height)
+    let dog = -Math.sin(x+y + Math.random())
+    let dummy =  Math.cos(x) - Math.sin(y)
+    let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
+    // let a = dancer.slice(idx, idx+3)
+    // let b = dancer.slice(idx+4, idx+7)
+    // x *= 2
+    // y *= 2
+    let p = [x ,y, 0]
+    p.x = x 
+    p.y = y
+
+    dog = 0
+    dummy = 0
+
+  let vec = [0,0,0,0]
+
+    function distanceTo(b, a) {
+      
+      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
+    }
+
+    function getClosestMagnet() {
+      let idx = 0, distance = 0
+      magnets.forEach((d , i) => {
+        let dist = distanceTo(p, p)
+        if (distance > dist) return
+        distance = Math.min(dist, distance)
+        idx = i
+      })
+      return magnets[idx]
+    }
+
+    function getDist(a, b) {
+      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
+        return a + b
+      })
+    }
+
+    function add (v1, v2) {
+      return [
+        v1[0] + v2[0],
+        v1[1] + v2[1],
+        v1[2] + v2[2],
+      ]
+    }
+    
+
+      vec = [0, 0,0,0]
+      let dist = getDist(p, getClosestMagnet())
+
+  
+      
+
+      // vec[0] = Math.sin(x * 180)
+      // vec[1] = Math.cos(i * 180)
+
+      // magnets.forEach((mag , i) => {
+      //   let dist = getDist(mag, p)
+      //   //console.log(dist)
+      //   let dx = unitVector(distanceTo(mag, p))
+      //   //if (Math.random() * .9999)console.log(dist)
+      //   vec = add(vec, dx.map(d => d * 1/ dist))
+      //   //add(vec, dx.map(d => d * 1/ dist))
+      //   ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
+      //   //console.log(dist)
+      //   //if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
+
+      //   shapes[0]
+      // })
+    vec[0] = Math.cos(x)
+    vec[1] = Math.sin(y)
+    vec[2] = 0
+    vec[3] = 0
+    vec.x = x1
+    vec.y = y1
+
+    let bounds = j < 30 || i < 30 || i > 70 || j > 70
+    // if (bounds) {
+    //   vec[0] = 200 * -x
+    //   vec[1] = 200 * -y
+    // }
     // vec[0] = -x
     // vec[1] = -y
 
@@ -947,6 +1071,7 @@ function makeStagingBuffer() {
 
     if (! shapes[0] || !animating) return;
     //stagingBuffer ||  optimization - reusing staging buffer
+
     stagingBuffer = webgpu.device.createBuffer({
       size: 1e6,
       usage: GPUBufferUsage.COPY_SRC,
@@ -1004,7 +1129,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
   if (stuff && stuff.flat) (stuff = stuff.flat(), label)
-  
+  console.log(label)
   particlesBuffer.set(stuff)
   gpuBuffer.unmap();
   return gpuBuffer
@@ -1222,8 +1347,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-   camera.projectionMatrix
-   * camera.viewMatrix *  camera.modelMatrix * 
+  //  camera.projectionMatrix
+  //  * camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1341,8 +1466,8 @@ function recur () {
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
   mouse[1] = e.clientY / 500
-  console.log(e.clientX, e.clientY)
-  console.log(mouse)
+  // console.log(e.clientX, e.clientY)
+  // console.log(mouse)
 })
 
 let camera = createCamera({
@@ -1350,7 +1475,7 @@ let camera = createCamera({
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
-  element: webgpu.canvas
+  element: document.createElement('div') || webgpu.canvas
 });
 
 setInterval(
@@ -1396,7 +1521,7 @@ setInterval(
 }
 
 
-let shouldDraw = true
+let shouldDraw = false
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000
