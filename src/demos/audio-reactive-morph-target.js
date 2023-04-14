@@ -1396,7 +1396,7 @@ window.drawVF = function (vf, i) {
     //console.log(`rgba(${vec[0] * 255}, ${vec[1] * 255}, ${(1. - vec[2]) * 255} , 1.); `)
     //
     context.fillStyle = i % 2 ===1 ? "orange" : "#FFFFFF";//rgb(${vec[0] * 55}, ${vec[1] * 55}
-    context.fillStyle = `rgb(${Math.abs(vec[0]) * 50}, ${Math.abs(vec[1]) * 50}, ${vec[2] * 55})`
+    context.fillStyle = `rgb(${Math.abs(vec[0]) * 50},  ${vec[2] * 55}, ${Math.abs(vec[1]) * 50})`
     //context.fillStyle = `rgb(${((vec[0] + 1) * 2) * 55}, ${((vec[1] +  1 )* 2) * 55}, ${vec[2] * 55})`
 
     //context.fillStyle = 'purple'
