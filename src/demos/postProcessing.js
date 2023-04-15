@@ -107,14 +107,15 @@ fn vert_main(@builtin(vertex_index) VertexIndex : u32) -> VertexOutput {
 
 @fragment
 fn frag_main(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
+  //return vec4<f32>(1, 0., 0., 1.);
   return textureSample(myTexture, mySampler, fragUV);
 }
 `
 
 const batch = [4, 4];
 
-async function postProcessing() {
-  let webgpu = await webgpuInit()
+async function postProcessing(webgpu, texture) {
+  //let webgpu = await webgpuInit()
   let device = webgpu.device;
   let context = webgpu.context
   
@@ -129,18 +130,19 @@ async function postProcessing() {
     // });
   
     const sampler = device.createSampler({
-      magFilter: 'linear',
+    magFilter: 'linear',
       minFilter: 'linear',
     });
   
-    const img = document.createElement('img');
-    img.src = new URL(
-      '../../../data/webgpu.png',
-      import.meta.url
-    ).toString();
-    await img.decode();  
+    // const img = document.createElement('img');
+    // img.src = new URL(
+    //   '../../../data/webgpu.png',
+    //   import.meta.url
+    // ).toString();
+    // await img.decode();  
 
-    const cubeTexture = await webgpu.texture(img)
+    const cubeTexture = texture
+//     await webgpu.texture(img)
     const [srcWidth, srcHeight] = [cubeTexture.width, cubeTexture.height];
 
     const textures = [
@@ -174,7 +176,6 @@ async function postProcessing() {
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
 
-
     const compute = webgpu.initComputeCall({
       code: blurWGSL,
       uniforms: {
@@ -188,7 +189,7 @@ async function postProcessing() {
      
         const computeBindGroup0 = utils.makeBindGroup(device, 
           computePipeline.getBindGroupLayout(1),
-          [cubeTexture.texture.createView(),
+          [cubeTexture.createView(),
           textures[0].createView(),
           buffer0], 1
         )
@@ -214,10 +215,10 @@ async function postProcessing() {
         const batch = [4,4]
         const settings = {
           filterSize: 15,
-          iterations: 10
+          iterations: 1
         }
     
-        const [srcWidth, srcHeight] = [512, 512];
+        const [srcWidth, srcHeight] = [2000, 2000];
         const blockDim = tileDim - settings.filterSize;
       
         state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
@@ -278,13 +279,14 @@ async function postProcessing() {
   
     updateSettings();
 
-    function frame() {
-      compute()  
-      draw()
-
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
+  console.log(555)
+  return function frame() {
+    compute()  
+    //draw()
   }
 
-postProcessing()
+  }
+
+//postProcessing()
+
+export default postProcessing

@@ -1,5 +1,28 @@
+import postProcessing from './postProcessing'
 
-//done from scratch - eta 2 weeks - happy bear
+
+let drawCallChoice = 2
+
+let button = document.createElement('button')
+
+button.textContent = 'change draw'
+
+document.body.appendChild(button)
+
+button.addEventListener('click', function () {
+  drawCallChoice = (drawCallChoice + 1) % 3
+})
+
+//3d path finding
+//3d models
+//SDF - parametric equations - random
+//butterflies wings - artful way of transitioning between memes
+//wind 
+//https://gamedevelopment.tutsplus.com/tutorials/understanding-goal-based-vector-field-pathfinding--gamedev-9007
+
+
+
+//done from scratch - eta may 1 - happy bear
 // - flexibility 
 //primary criteria = amazingness of process + final result
 //rose petals 
@@ -89,57 +112,10 @@ function unitVector (v) {
   return v.map(d => d / l);
 }
 
-// function index(i) {
-  
-//   return [Math.floor(i / 10), Math.floor(i / 100), Math.floor(i / 1000)]
-// }
-// function index(pos) {
-//   let [x,y,z] = pos
-//   return [x * 10, y * 100 , z * 1000]
-// }
-//for each point 
-//find vector on grid
-// 
-
-function unindex (x , y, z) {
-  let width = 10, height = 10;
-  x = (1 + x) / 2
-  y = (1 + y) / 2
-  z = (1 + z) / 2
-  let hash = x * width + y * width * height ;//+ z * width * height * depth;
-
-  return hash
-}
-
-function index(i) {
-  //x goes from -1 to 1
-  //y goes from 1 to -1
-  // let width = 10, height = 10, depth = 10
-  // var X = (index % width) / width * 2 - 1
-  // var Y = (index % width* height) / height * 2 - 1
-  // Y = Math.floor(index % (width * height) / height)
-  // var Z = (index % (width * height)) / depth * 2 - 1
-  const width = 11;
-  const x = (i % 10) / width * 2 - 1;
-  const y = ((Math.floor(i / 10) + .5 ) * 2.)
-  const z = Math.floor(i / 100)
-  //x % 10
-  //y / 10 % 10
-  //z / 10 * 10
-  //const z = Math.floor(i / 100 / 100) * 2 -1
-  //111 -.9, -.9, -.9
-  return [x, y, z]
-}
-
 function makeComputeShader(webgpu, mesh, abc) {
   let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
-  // for (var i = 0; i< velocityBuffer.length; i+= 3){
-  //   velocityBuffer[i] = Math.sin(i)
-  //   velocityBuffer[i+1] = Math.cos(i)
-  //   //velocityBuffer[i+2] = Math.random()
 
-  // }
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
 
 let coords = []
@@ -180,10 +156,10 @@ function clipSpace(x,y, z, width, height) {
 }
 //test with a grid
 
-for( let i = 0; i < mesh.stuff.length; i+=4) {
-  let x = mesh.stuff[i]
-  let y = mesh.stuff[i+1]
-  let z = mesh.stuff[i+2]
+for( let i = 0; i < mesh.source.length; i+=4) {
+  let x = mesh.source[i]
+  let y = mesh.source[i+1]
+  let z = mesh.source[i+2]
   max.x = Math.max(x, max.x)
   max.y = Math.max(y, max.y)
   max.z = Math.max(z, max.z)
@@ -205,10 +181,115 @@ result = []
 let width = 100, height = width
 //const counter = {}
 
+let makeVectorField = makeVectorField1
+
 //XVectorField in one buffer
 //Y vector Field in one buffer 
-console.log(max, min)
 function makeVectorField1() {
+  let magnets = []
+  for (let i = 0; i < 5; i++) {
+    if (i < 1)
+    magnets.push([
+      max.x + makeRand(), max.y+ makeRand(), Math.random()
+    ]); else 
+    // magnets.push([
+    //     makeRand(), makeRand(), 0
+    // ])
+    magnets.push([
+          makeRand(), makeRand(), Math.random()
+      ])
+    
+  }
+
+for (let i = 0; i <= width; i++) {
+  for (let j = 0; j < height;j++) {
+  let [x, y] = clipSpace(j, i, 0, width, height)
+    let [x1, y1 ] = zeroToOne(x , y)
+    let idx = Math.round(x1 * width + y1 * width * height)
+    let dog = -Math.sin(x+y + Math.random())
+    let dummy =  Math.cos(x) - Math.sin(y)
+    let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
+    // let a = dancer.slice(idx, idx+3)
+    // let b = dancer.slice(idx+4, idx+7)
+    // x *= 2
+    // y *= 2
+    let p = [x ,y, 0]
+    p.x = x 
+    p.y = y
+
+    dog = 0
+    dummy = 0
+
+  let vec = [0,0,0,0]
+
+    function distanceTo(b, a) {
+      
+      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
+    }
+
+
+    function getDist(a, b) {
+      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
+        return a + b
+      })
+    }
+
+    function minus (v1, v2) {
+      return [
+        v1[0] - v2[0],
+        v1[1] - v2[1],
+        v1[2] - v2[2],
+      ]
+    }
+
+    function add (v1, v2) {
+      return [
+        v1[0] + v2[0],
+        v1[1] + v2[1],
+        v1[2] + v2[2],
+      ]
+    }
+    
+
+    vec = [0, 0,0,0]
+   
+    let s = shapes[0].source
+    magnets.forEach((mag , i) => {
+      let dist = getDist(mag, p)
+      //console.log(dist)
+      let dx = unitVector(distanceTo(mag, p))
+      //if (Math.random() * .9999)console.log(dist)
+      vec = add(vec, dx.map(d => d * 1/ dist))
+      //add(vec, dx.map(d => d * 1/ dist))
+      ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
+      //console.log(dist)
+      if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
+    })
+    
+    //vec[2] = 0
+    vec[3] = 0
+    vec.x = x1
+    vec.y = y1
+
+    let bounds = j < 30 || i < 30 || i > 70 || j > 70
+    // if (bounds) {
+    //   vec[0] = 200 * -x
+    //   vec[1] = 200 * -y
+    // }
+    // vec[0] = -x
+    // vec[1] = -y
+
+    // vec[0] = x
+    // vec[1] = y
+    result[idx]= vec
+}
+}
+return result
+}
+
+
+
+function makeVectorField2() {
 
   let magnets = []
 for (let i = 0; i < 5; i++) {
@@ -228,6 +309,13 @@ for (let i = 0; i < 5; i++) {
 //   0,0,0
 // ])
 //console.log(magnets)
+
+function makeParticlesMove () {
+  let i = 0;
+  for (let i = 0; i < 100; i++) {
+
+  }
+}
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -324,22 +412,9 @@ return result
 }
 
 
-function makeVectorField() {
+function makeVectorField2() {
 
-  let magnets = []
-for (let i = 0; i < 5; i++) {
-  if (i < 1)
-  magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), Math.random()
-  ]); else 
-  // magnets.push([
-  //     makeRand(), makeRand(), 0
-  // ])
-  magnets.push([
-        makeRand(), makeRand(), Math.random()
-    ])
-  
-}
+
 // magnets.push([
 //   0,0,0
 // ])
@@ -419,12 +494,60 @@ for (let i = 0; i <= width; i++) {
 
       //   shapes[0]
       // })
-    vec[0] = Math.cos(x)
-    vec[1] = Math.sin(y)
+      const angle = Math.atan2(x, y)
+      let degrees = angle * (180 / Math.PI)
+      let abs = Math.abs, sqrt = Math.sqrt
+
+   
+  
+
+
+const dot2 = (p) => {
+   let _ = dot(p, p)
+  //if (! _) return console.log(p)
+   return _
+}
+
+    const dot = ( a, b) => {
+
+      return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
+  
+    }
+    function sub (a, b) {
+      return [a[0] - b[0], a[1] - b[1]]
+    }
+
+    function circle(p) {
+      return length(p)
+    }
+
+    function sdHeart( p )
+    {
+      //console.log(p)
+        p[0] = abs(p[0]);
+        // p[0] -= .3
+        // p[1] -= .3
+        if( p[0]+p[1]>1. )
+            return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
+        return sqrt(min(dot2(sub(p,[0.00,1.00])),
+                        dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
+    }
+    let l = circle(p);
+    vec[0] = 1- l * 10
+    vec[1] = 1- l * 10
+
+    if (l < .5 && l > .4) {
+      vec[0] = y * 10.
+      vec[1] = -x * 10.
+    } 
     vec[2] = 0
     vec[3] = 0
     vec.x = x1
     vec.y = y1
+
+    //spiral
+    // vec[0] = y / (x * x) + (y * y) 
+    // vec[1] = -x / (x * x) + (y * y) 
 
     let bounds = j < 30 || i < 30 || i > 70 || j > 70
     // if (bounds) {
@@ -559,21 +682,14 @@ setInterval(function () {
   stagingBuffer.unmap();
 
    // Copy the staging buffer contents to the vertex buffer.
-   //copyBufferToBuffer(source, sourceOffset, destination, destinationOffset, size)
 
   const commandEncoder = webgpu.device.createCommandEncoder({});
   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 0, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 10000, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 20000, vf.length * 4);
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, velocity, 30000, vf.length * 4);
 
   webgpu.device.queue.submit([commandEncoder.finish()]);
   
 
   //const particlesBuffer = new Float32Array(gridBuffer.getMappedRange());
-
-//console.log(vf.flat())
   
   // particlesBuffer.set(vf.flat())
   // gpuBuffer.unmap();
@@ -1124,7 +1240,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
     |GPUBufferUsage.COPY_SRC,
     mappedAtCreation: true,
   });
-  gpuBuffer.stuff = stuff
+  gpuBuffer.source = stuff
   
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
@@ -1310,7 +1426,7 @@ let hello = []
 
 
 //let hi = window.makeBuffer(hello, 0 , 'hi')
-const drawCube = await webgpu.initDrawCall({
+let drawDescriptor = {
   shader: {
     vertEntryPoint: 'main_vertex',
     fragEntryPoint: 'main_fragment',
@@ -1433,7 +1549,193 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
       ]
   });
   }
-})
+}
+const drawCube = await webgpu.initDrawCall(drawDescriptor)
+
+const drawRosePetals =  await webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
+  vertEntryPoint: 'main_vertex',
+  fragEntryPoint: 'main_fragment',
+  code:`
+struct Uniforms {             //             align(16)  size(24)
+color: vec3<f32>,         // offset(0)   align(16)  size(16)
+spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
+};
+
+struct Camera {
+projectionMatrix : mat4x4<f32>,
+viewMatrix : mat4x4<f32>,
+modelMatrix: mat4x4<f32>,
+time: f32,
+
+}
+
+struct VSOut {
+@builtin(position) position: vec4<f32>,
+@location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+@location(1) color: vec3<f32>
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> camera : Camera;
+
+
+@vertex
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+@location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
+) -> VSOut {
+var vsOut: VSOut;
+var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+
+
+vsOut.position = 
+//  camera.projectionMatrix
+//  * camera.viewMatrix *  camera.modelMatrix * 
+
+ vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+//vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+
+vsOut.localPosition = quadCorner;
+
+vsOut.color = color;
+return vsOut;
+}
+
+@fragment
+fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
+let distanceFromCenter: f32 = length(localPosition);
+if (distanceFromCenter > 1.0) {
+    discard;
+}
+var viewDir = vec3<f32>(0,0,0);
+var lightSpecularColor = vec3<f32>(0., 0., 1.);
+var lightSpecularPower = 1.;
+var lightPosition = vec3<f32>(-1,0., 0);
+
+var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
+
+var distance = length(lightDir);
+
+lightDir = lightDir / distance; // = normalize(lightDir);
+distance = distance * distance; //This line may be optimised using Inverse square root
+
+
+
+var normal = vec3(-1.,-1., 0.);
+
+//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
+var NdotL = dot(normal, lightDir);
+var intensity = saturate(NdotL);
+
+// Calculate the diffuse light factoring in light color, power and the attenuation
+//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
+
+//Calculate the half vector between the light vector and the view vector.
+//This is typically slower than calculating the actual reflection vector
+// due to the normalize function's reciprocal square root
+var H = normalize(lightDir + viewDir);
+
+//Intensity of the specular light
+var NdotH = dot(normal, H);
+intensity = pow(saturate(NdotH), .1);
+
+//Sum up the specular light factoring
+let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
+
+return vec4<f32>(1. * col.b, .34, .74, .7);
+}
+`}}));
+
+
+const drawGold = await webgpu.initDrawCall(Object.assign(drawDescriptor , {
+  shader:{
+    vertEntryPoint: 'main_vertex',
+    fragEntryPoint: 'main_fragment',
+  code:`
+struct Uniforms {             //             align(16)  size(24)
+color: vec3<f32>,         // offset(0)   align(16)  size(16)
+spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
+};
+
+struct Camera {
+projectionMatrix : mat4x4<f32>,
+viewMatrix : mat4x4<f32>,
+modelMatrix: mat4x4<f32>,
+time: f32,
+
+}
+
+struct VSOut {
+@builtin(position) position: vec4<f32>,
+@location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+@location(1) color: vec3<f32>
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> camera : Camera;
+
+
+@vertex
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+@location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
+) -> VSOut {
+var vsOut: VSOut;
+var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+
+
+vsOut.position = 
+//  camera.projectionMatrix
+//  * camera.viewMatrix *  camera.modelMatrix * 
+
+ vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+//vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+
+vsOut.localPosition = quadCorner;
+
+vsOut.color = color;
+return vsOut;
+}
+
+@fragment
+fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
+let distanceFromCenter: f32 = length(localPosition);
+if (distanceFromCenter > 1.0) {
+    discard;
+}
+var viewDir = vec3<f32>(0,0,0);
+var lightSpecularColor = vec3<f32>(0., 0., 1.);
+var lightSpecularPower = 1.;
+var lightPosition = vec3<f32>(-1,0., 0);
+
+var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
+
+var distance = length(lightDir);
+
+lightDir = lightDir / distance; // = normalize(lightDir);
+distance = distance * distance; //This line may be optimised using Inverse square root
+var normal = vec3(1.,-1., 0.);
+
+//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
+var NdotL = dot(normal, lightDir);
+var intensity = saturate(NdotL);
+
+// Calculate the diffuse light factoring in light color, power and the attenuation
+//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
+
+//Calculate the half vector between the light vector and the view vector.
+//This is typically slower than calculating the actual reflection vector
+// due to the normalize function's reciprocal square root
+var H = normalize(lightDir + viewDir);
+
+//Intensity of the specular light
+var NdotH = dot(normal, H);
+intensity = pow(saturate(NdotH), .5);
+
+//Sum up the specular light factoring
+let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
+
+return vec4<f32>(1., col.b, .0, .1);
+}
+`}}));
 
 const a = new Float32Array(1)
 
@@ -1462,6 +1764,7 @@ function recur () {
 //recur()
 
 
+let drawCalls = [drawGold, drawRosePetals, drawCube]
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1477,6 +1780,10 @@ let camera = createCamera({
   renderOnDirty: true,
   element: document.createElement('div') || webgpu.canvas
 });
+
+let result = drawCalls[drawCallChoice]({})
+let texture = result.state.swapChainTexture
+let pp = await postProcessing(webgpu, texture);
 
 setInterval(
    function () {
@@ -1506,7 +1813,7 @@ setInterval(
 
     device.queue.writeBuffer(
       cameraUniformBuffer,
-      192,
+      192,  
       a.buffer,
       0,
       a.byteLength
@@ -1516,7 +1823,8 @@ setInterval(
     if (! animating) {
       computeTransitions[1]()
     }
-    drawCube({})
+    let result = drawCalls[drawCallChoice]({})
+    //pp()
     }, 8) 
 }
 
@@ -1534,7 +1842,7 @@ canvas.style.height = height + "px";
 var context = canvas.getContext("2d");
 context.scale(dpi, dpi);
 window.drawVF = function (vf, i) {
-  context.fillRect(0, 0, innerWidth, innerHeight);
+context.fillRect(0, 0, innerWidth, innerHeight);
   //let getImageData = context.getImageData(0, 0, innerWidth, innerHeight);
   // getImageData.data.forEach((d, i) => {
   //   if (! shouldDraw) return
@@ -1563,6 +1871,7 @@ window.drawVF = function (vf, i) {
   })
   //context.putImageData(getImageData, 0 , 0)
 }
+
 setTimeout(() => {
   if (! shouldDraw) return
   canvas.style.opacity = .5
@@ -1574,3 +1883,75 @@ setTimeout(() => {
   webgpu.canvas.webgpuCompostingMode = 'alpha-blend'
   document.body.insertBefore(canvas, webgpu.canvas)
 }, 500);
+
+
+function createMaze () {}
+
+
+let findShortestPath = (graph, startNode, endNode) => {
+ 
+  // track distances from the start node using a hash object
+    let distances = {};
+  distances[endNode] = "Infinity";
+  distances = Object.assign(distances, graph[startNode]);
+ // track paths using a hash object
+  let parents = { endNode: null };
+  for (let child in graph[startNode]) {
+   parents[child] = startNode;
+  }
+   
+  // collect visited nodes
+    let visited = [];
+ // find the nearest node
+    let node = shortestDistanceNode(distances, visited);
+  
+  // for that node:
+  while (node) {
+  // find its distance from the start node & its child nodes
+   let distance = distances[node];
+   let children = graph[node]; 
+       
+  // for each of those child nodes:
+       for (let child in children) {
+   
+   // make sure each child node is not the start node
+         if (String(child) === String(startNode)) {
+           continue;
+        } else {
+           // save the distance from the start node to the child node
+           let newdistance = distance + children[child];
+ // if there's no recorded distance from the start node to the child node in the distances object
+ // or if the recorded distance is shorter than the previously stored distance from the start node to the child node
+           if (!distances[child] || distances[child] > newdistance) {
+ // save the distance to the object
+      distances[child] = newdistance;
+ // record the path
+      parents[child] = node;
+     } 
+          }
+        }  
+       // move the current node to the visited set
+       visited.push(node);
+ // move to the nearest neighbor node
+       node = shortestDistanceNode(distances, visited);
+     }
+   
+  // using the stored paths from start node to end node
+  // record the shortest path
+  let shortestPath = [endNode];
+  let parent = parents[endNode];
+  while (parent) {
+   shortestPath.push(parent);
+   parent = parents[parent];
+  }
+  shortestPath.reverse();
+   
+  //this is the shortest path
+  let results = {
+   distance: distances[endNode],
+   path: shortestPath,
+  };
+  // return the shortest path & the end node's distance from the start node
+    return results;
+ };
+
