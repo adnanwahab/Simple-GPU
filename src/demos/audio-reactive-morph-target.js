@@ -1,5 +1,9 @@
 import postProcessing from './postProcessing'
-
+function makeRand () {
+  let x = Math.random().toPrecision(2)
+  x -= .5;
+  return x * 2
+}
 //done from scratch - eta may 1 - happy bear
 ///0 = do now, 2 = later, 3 never
 //3d path finding - 2
@@ -134,6 +138,7 @@ for (var i = 0; i < 10; i++) {
 }
 
 
+
 let max = {
   x: 0,
   y: 0,
@@ -181,7 +186,7 @@ for (let i = -1; i < 1; i+=.2) {
 result = []
 let width = 100, height = width
 
-let makeVectorField = makeVectorField3
+let makeVectorField = makeVectorField1
 // make spiral vector field 
 // dont use visualizer
 //algorithms for vector field
@@ -201,7 +206,7 @@ function makeVectorField3() {
 
 
       result[idx] = [
-        y, -x, 0, 0
+        -x, -y, 0, 1
       ]
       
       // [
@@ -231,11 +236,11 @@ for (let i = 0; i < 5; i++) {
 }
 
 function makeVectorField1() {
-  magnets.forEach(m => {
-    m[0] = makeRand()
-    m[1] = makeRand()
-    m[2] = makeRand()
-  })
+  // magnets.forEach(m => {
+  //   m[0] = makeRand()
+  //   m[1] = makeRand()
+  //   m[2] = makeRand()
+  // })
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -856,7 +861,7 @@ let coll = {}
        let life = lifetime[index];
 
       if (life < 10.) {
-        lifetime[index] =100.;
+        lifetime[index] =1000.;
         buffer3[index]= vec4<f32>(sfrand() * .1, sfrand() * .1, 0, 1.);
       } else {
         lifetime[index] -= 1.;
@@ -1100,26 +1105,75 @@ let stagingBuffer
 let modelType = 1
 
 let animating = true
+
+let particle = () =>{ return {x: 0, y: 0, z:0} }
+
+const particles = new Array(1e6).fill(0).map((d)=> particle() )
+
+
+function drawStuff () {
+  var floatBuffer = new Float32Array(1e6)
+  stagingBuffer = webgpu.device.createBuffer({
+    size: 1e6,
+    usage: GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+
+
+
+  time += 1
+
+  const vertexPositions = new Float32Array(shapes[0].size)
+
+
+
+console.log(123)
+  for (var i= 0; i < 1e6; i++) {
+    let p = particles[i]
+    p.x = makeRand()
+    p.y = makeRand()
+    p.z = makeRand()
+    vertexPositions[4*i] = 10 * Math.cos(i)
+    vertexPositions[4*i+1] = 10 * Math.sin(i);
+    vertexPositions[4*i+2] = 1.;
+    vertexPositions[4*i+3] = 0.;
+
+  }
+
+
+  vertexPositions.set(toCopy);
+  stagingBuffer.unmap();
+
+   // Copy the staging buffer contents to the vertex buffer.
+  const commandEncoder = webgpu.device.createCommandEncoder({});
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
+  webgpu.device.queue.submit([commandEncoder.finish()]);
+}
+
 window.addEventListener('click', function () {
   let timebetween = 1000
   if (! animating ) {
-    let elapsed = Date.now()
-    setTimeout(function recur() {
-      let dt = Date.now() - elapsed
-      window.writeTime(timebetween - dt)
-      if (dt < timebetween) setTimeout(recur, 16)
-      else {
-        animating = ! animating
-        modelType = modelType === 1 ? 2 : 1
-        return makeStagingBuffer()
-      }
+
+
+    drawStuff()
+    animating = ! animating
+    // let elapsed = Date.now()
+    // setTimeout(function recur() {
+    //   let dt = Date.now() - elapsed
+    //   window.writeTime(timebetween - dt)
+    //   if (dt < timebetween) setTimeout(recur, 16)
+    //   else {
+    //     animating = ! animating
+    //     modelType = modelType === 1 ? 2 : 1
+    //     return makeStagingBuffer()
+    //   }
       
-    }, 8)
+    // }, 8)
   } else {
     animating = ! animating
     
   }
-  if (animating) return makeStagingBuffer()
+  //if (animating) return makeStagingBuffer()
 
 })
 
@@ -1744,9 +1798,9 @@ setInterval(
     );
      
  
-    if (! animating) {
-      computeTransitions[1]()
-    }
+    // if (! animating) {
+    //   computeTransitions[1]()
+    // }
     let result = drawCalls[drawCallChoice]({})
     //pp()
     }, 8) 
