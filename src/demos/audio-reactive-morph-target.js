@@ -1,6 +1,44 @@
 import postProcessing from './postProcessing'
 
+//done from scratch - eta may 1 - happy bear
+///0 = do now, 2 = later, 3 never
+//3d path finding - 2
+//3d models https://www2.cs.uh.edu/~chengu/Teaching/Spring2013/Lecs/Lec9.pdf
+//SDF - parametric equations - random - 2
+//butterflies wings - artful way of transitioning between memes - 3
+//https://gamedevelopment.tutsplus.com/tutorials/understanding-goal-based-vector-field-pathfinding--gamedev-9007
 
+//primary criteria = amazingness of process + final result
+//rose petals - 2
+//particles are mirrors - reflecting environment - 1
+//dont fight the stream - mochi
+//write words in flowing vector field -> shift it over one column at at time -> 3
+
+//bake stuff - baked lighting on particles https://www.youtube.com/watch?v=yG4ChOPyC-4&t=82s
+//mirror walls + mirror particles -2 
+//glowy particles - 2
+//ray traced reflections on particles - 2
+//stellar dancer - celestial - 2
+//electrical water - lightning = particles colliding - 2
+//https://www.youtube.com/watch?v=rzRf0pTxYO0
+//animation looks like zoom - 2
+// chromatic blur - 2
+///frosted glass - transparency https://twitter.com/pandrr/status/1646782946542592001 - 3
+//CPU Curl - COULD end the stream - 3
+//grid of points - colored by image - 2 - shaders projected on it- move p articles sync w/ shader animation
+//galaxy - 2
+//globe - 2
+//flower - vector field - 2
+//lighting on particles - 2
+//dancerA -> dancerB - 2
+//flow field - spiral - 2
+//[ DONE]magnet - needs polish
+//[DONE] tween from an explosion to a dancer
+//flowfield - 3d model - 2
+//emitter field - 2nd particle sim - 2
+//multiple dancers - 2
+//add linked visualization
+//add camera to compute shader - 2
 let drawCallChoice = 2
 
 let button = document.createElement('button')
@@ -12,69 +50,6 @@ document.body.appendChild(button)
 button.addEventListener('click', function () {
   drawCallChoice = (drawCallChoice + 1) % 3
 })
-
-//3d path finding
-//3d models
-//SDF - parametric equations - random
-//butterflies wings - artful way of transitioning between memes
-//wind 
-//https://gamedevelopment.tutsplus.com/tutorials/understanding-goal-based-vector-field-pathfinding--gamedev-9007
-
-
-
-//done from scratch - eta may 1 - happy bear
-// - flexibility 
-//primary criteria = amazingness of process + final result
-//rose petals 
-//particles are mirrors - reflecting environment
-//dont fight the stream - mochi
-// write words in flowing vector field -> shift it over one column at at time
-
-//bake stuff - baked lighting on particles https://www.youtube.com/watch?v=yG4ChOPyC-4&t=82s
-
-
-//mirror walls + mirror particles 
-//glowy particles
-
-//ray traced reflections on particles - 
-//stellar dancer - celestial 
-
-//electrical water - lightning = particles colliding 
-//https://www.youtube.com/watch?v=rzRf0pTxYO0
-
-//galaxy -> globe -> 
-//animation looks like zoom 
-// chromatic blur 
-
-///frosted glass - transparency https://twitter.com/pandrr/status/1646782946542592001
-//CPU Curl - COULD end the stream
-//grid of points - colored by image 
-//galaxy
-//globe
-//flower - vector field
-//lighting on particles
-//dancerA -> dancerB
-//flow field - spiral 
-//magnet
-//tween from an explosion to a dancer
-//flowfield - 3d model
-//emitter field - 2nd particle sim
-//multiple dancers 
-// https://stemkoski.github.io/Three.js/Reflection.html
-//add linked visualization
-
-//make a vector field from existing point
-//use a uniform
-  //when uniform.mode === 2 {
-  //  vel.xyz =  posB[index] - posA[index]
-  // positionB
-//  } make a function which takes a mesh and produces a compute call
-//make a vector field 
-//convert model to -1 to 1 - choose 
-//add camera to compute shader 
-
-//stream not want
-//point cloud video
 
 import {abc} from "./shader2";
 
@@ -94,11 +69,36 @@ import utils from '../../lib/utils';
 //spiral
 //writing words
 
-//3,4,5
-//Math.sqrt(9,16,25)
+function distanceTo(b, a) {
+      
+  return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
+}
+
+
+function getDist(a, b) {
+  return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
+    return a + b
+  })
+}
+
+function minus (v1, v2) {
+  return [
+    v1[0] - v2[0],
+    v1[1] - v2[1],
+    v1[2] - v2[2],
+  ]
+}
+
+function add (v1, v2) {
+  return [
+    v1[0] + v2[0],
+    v1[1] + v2[1],
+    v1[2] + v2[2],
+  ]
+}
 
 function length (p) {
-  let [x, y]= p
+  let [x, y] = p
   return Math.sqrt(x*x + y*y)
 }
  
@@ -117,6 +117,15 @@ function makeComputeShader(webgpu, mesh, abc) {
   let velocityBuffer = new Float32Array(1e6)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
+
+
+  let particleLifetime = new Float32Array(1e6)
+  for(let i =0; i < particleLifetime.length; i++) {
+    particleLifetime[i] = Math.random() * 300
+  }
+
+
+  let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
 
 let coords = []
 
@@ -137,26 +146,19 @@ let min = {
 }
 
 function clipSpace(x,y, z, width, height) {
-//  let width = 10, height = 10;
-  //x /= width
   y /= height
   z /= width * height
-  //x = x - .5
   y = y - .5
   z = z - .5
-  //x *= 2
   y *= -2
   z *= -2
 
   x = (x / width) * 2 -1
-  
-
 
   return [x,y,z]
 }
-//test with a grid
 
-for( let i = 0; i < mesh.source.length; i+=4) {
+for(let i = 0; i < mesh.source.length; i+=4) {
   let x = mesh.source[i]
   let y = mesh.source[i+1]
   let z = mesh.source[i+2]
@@ -176,30 +178,64 @@ for (let i = -1; i < 1; i+=.2) {
   coords.push(i)
 }
 
-
 result = []
 let width = 100, height = width
-//const counter = {}
 
-let makeVectorField = makeVectorField1
+let makeVectorField = makeVectorField3
+// make spiral vector field 
+// dont use visualizer
+//algorithms for vector field
+function makeVectorField3() {
+  let dir = [
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+    [0, 1]
+  ]
+  for (let i = 0; i <= width; i++) {
+    for (let j = 0; j < height; j++) {
+      let [x, y] = clipSpace(j, i, 0, width, height)
+      let [x1, y1 ] = zeroToOne(x , y)
+      let idx = Math.round(x1 * width + y1 * width * height)
 
-//XVectorField in one buffer
-//Y vector Field in one buffer 
-function makeVectorField1() {
-  let magnets = []
-  for (let i = 0; i < 5; i++) {
-    if (i < 1)
-    magnets.push([
-      max.x + makeRand(), max.y+ makeRand(), Math.random()
-    ]); else 
-    // magnets.push([
-    //     makeRand(), makeRand(), 0
-    // ])
-    magnets.push([
-          makeRand(), makeRand(), Math.random()
-      ])
-    
+
+
+      result[idx] = [
+        y, -x, 0, 0
+      ]
+      
+      // [
+      //   x / x * x + y * y
+      //   ,
+        
+      //   y / y * y + x * x
+        
+      //   ,0,0]
+    }
   }
+
+return result
+}
+
+
+let magnets = []
+for (let i = 0; i < 5; i++) {
+  if (i < 1)
+  magnets.push([
+    max.x + makeRand(), max.y+ makeRand(), Math.random()
+  ]); else 
+  magnets.push([
+        makeRand(), makeRand(), Math.random()
+    ])
+  
+}
+
+function makeVectorField1() {
+  magnets.forEach(m => {
+    m[0] = makeRand()
+    m[1] = makeRand()
+    m[2] = makeRand()
+  })
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -209,10 +245,6 @@ for (let i = 0; i <= width; i++) {
     let dog = -Math.sin(x+y + Math.random())
     let dummy =  Math.cos(x) - Math.sin(y)
     let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
-    // let a = dancer.slice(idx, idx+3)
-    // let b = dancer.slice(idx+4, idx+7)
-    // x *= 2
-    // y *= 2
     let p = [x ,y, 0]
     p.x = x 
     p.y = y
@@ -221,37 +253,6 @@ for (let i = 0; i <= width; i++) {
     dummy = 0
 
   let vec = [0,0,0,0]
-
-    function distanceTo(b, a) {
-      
-      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
-    }
-
-
-    function getDist(a, b) {
-      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
-        return a + b
-      })
-    }
-
-    function minus (v1, v2) {
-      return [
-        v1[0] - v2[0],
-        v1[1] - v2[1],
-        v1[2] - v2[2],
-      ]
-    }
-
-    function add (v1, v2) {
-      return [
-        v1[0] + v2[0],
-        v1[1] + v2[1],
-        v1[2] + v2[2],
-      ]
-    }
-    
-
-    vec = [0, 0,0,0]
    
     let s = shapes[0].source
     magnets.forEach((mag , i) => {
@@ -272,15 +273,6 @@ for (let i = 0; i <= width; i++) {
     vec.y = y1
 
     let bounds = j < 30 || i < 30 || i > 70 || j > 70
-    // if (bounds) {
-    //   vec[0] = 200 * -x
-    //   vec[1] = 200 * -y
-    // }
-    // vec[0] = -x
-    // vec[1] = -y
-
-    // vec[0] = x
-    // vec[1] = y
     result[idx]= vec
 }
 }
@@ -297,19 +289,11 @@ for (let i = 0; i < 5; i++) {
   magnets.push([
     max.x + makeRand(), max.y+ makeRand(), Math.random()
   ]); else 
-  // magnets.push([
-  //     makeRand(), makeRand(), 0
-  // ])
   magnets.push([
         makeRand(), makeRand(), Math.random()
     ])
   
 }
-// magnets.push([
-//   0,0,0
-// ])
-//console.log(magnets)
-
 function makeParticlesMove () {
   let i = 0;
   for (let i = 0; i < 100; i++) {
@@ -325,10 +309,7 @@ for (let i = 0; i <= width; i++) {
     let dog = -Math.sin(x+y + Math.random())
     let dummy =  Math.cos(x) - Math.sin(y)
     let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
-    // let a = dancer.slice(idx, idx+3)
-    // let b = dancer.slice(idx+4, idx+7)
-    // x *= 2
-    // y *= 2
+
     let p = [x ,y, 0]
     p.x = x 
     p.y = y
@@ -338,45 +319,7 @@ for (let i = 0; i <= width; i++) {
 
   let vec = [0,0,0,0]
 
-    function distanceTo(b, a) {
-      
-      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
-    }
-
-    function getClosestMagnet() {
-      let idx = 0, distance = 0
-      magnets.forEach((d , i) => {
-        let dist = distanceTo(p, p)
-        if (distance > dist) return
-        distance = Math.min(dist, distance)
-        idx = i
-      })
-      return magnets[idx]
-    }
-
-    function getDist(a, b) {
-      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
-        return a + b
-      })
-    }
-
-    function add (v1, v2) {
-      return [
-        v1[0] + v2[0],
-        v1[1] + v2[1],
-        v1[2] + v2[2],
-      ]
-    }
-    
-
-      vec = [0, 0,0,0]
       let dist = getDist(p, getClosestMagnet())
-
-  
-      
-
-      // vec[0] = Math.sin(x * 180)
-      // vec[1] = Math.cos(i * 180)
 
       magnets.forEach((mag , i) => {
         let dist = getDist(mag, p)
@@ -571,7 +514,6 @@ return result
 
 //vector field isnt updating 
 makeVectorField()
-console.log('result', result)
 
 function zeroToOne(x , y) {
   var x1 = (x + 1) /2 
@@ -610,59 +552,6 @@ function makeRand () {
   return x * 2
 }
 
-// while (n < 2000)  {
-//   n++
-//   let point = [makeRand(), makeRand()].map(parseFloat)
-//   let [pt, index]= findPoint(point)
-//   let lt = .1 
-//   if (Math.abs(pt[0] - point[0]) > lt || Math.abs(pt[1] - point[1]) > lt) {
-//     //point[1] -= .01
-//     //let pt = findPoint(point)
-//     console.log(pt, point, index)
-//     collided += 1
-//   }
-// }
-// window.result = result
-// console.log(collided, 'colided')
-
-//console.log(result)
-
-
-// let r = result.map()
-
-// console.log(r)
-// r.forEach(d => {
-//   r.index 
-// })
-
-
-
-
-// var x = (pos.x + 1) / 2.;
-// var y = (1. - (pos.y)) / 2.;
-
-
-// return i32((x * 100) + (y * 10000));
-//retur vec2<i32>(i32(x * 10), i32(y * 100));
-
-
-
-
-/////////////////////////////////
-
-//010
-///////////////////////////////
-
-
-
-
- //console.log(result)
-//make magnitude of delta = distance from pa to pb
-//take every position around 3d model -> draw a vector to center
-//take every position within 3d model bounding box - draw a vector to outward
-//make some of the particles in a simulation a dancer
-//console.log(result)
-
 let gridBuffer = makeBuffer(result.flat(), 0, 'result')
 
 setInterval(function () {
@@ -689,10 +578,6 @@ setInterval(function () {
   webgpu.device.queue.submit([commandEncoder.finish()]);
   
 
-  //const particlesBuffer = new Float32Array(gridBuffer.getMappedRange());
-  
-  // particlesBuffer.set(vf.flat())
-  // gpuBuffer.unmap();
 
 }, 5000)
 
@@ -737,9 +622,23 @@ let coll = {}
     size: 32, 
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
+
+
+
+
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code: abc || `
+//timeStep
+//Acceleration
+//curl factor
+//colors 
+//2d : 3d
+// magnet animation formula
+//
+
+
+
   
   //   const matrix = [
   //     -3.677814483642578,
@@ -765,12 +664,14 @@ let coll = {}
       mouse: vec2<f32>,
       time: f32
     }
+
+
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
-     @group(0) @binding(4) var myTexture: texture_2d<f32>;
-     @group(0) @binding(5) var<storage,read_write> buffer1: array<vec4<f32>>;
+    @group(0) @binding(4) var myTexture: texture_2d<f32>;
+    @group(0) @binding(5) var<storage, read_write> lifetime: array<f32>;
 
   
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
@@ -946,7 +847,24 @@ let coll = {}
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+
+
+
       let index: u32 = GlobalInvocationID.x;
+
+
+       let life = lifetime[index];
+
+      if (life < 10.) {
+        lifetime[index] =100.;
+        buffer3[index]= vec4<f32>(sfrand() * .1, sfrand() * .1, 0, 1.);
+      } else {
+        lifetime[index] -= 1.;
+      }
+
+
+
+
 
       var pos = buffer3[index];
 
@@ -997,16 +915,16 @@ let coll = {}
      
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
-      if (uniforms.time > 0.) {
-        if (distance( buffer3[index], buffer1[index]) > .1) {
+      // if (uniforms.time > 0.) {
+      //   if (distance( buffer3[index], buffer1[index]) > .1) {
       //  var p = (buffer1[index] - buffer3[index]).xyz;
       //  //.1 * uniforms.time *
       //   vf =  ( (.01 * curlNoise(p))) * p;
       //   vf = p;
       //   velocity[index] +=  .1 * vf;
       //   buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-        }
-      }
+      //   }
+      // }
       //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
       
@@ -1060,37 +978,69 @@ let coll = {}
   //3d vector field of spiral explosion thing
   //3d vector field to transition to 2nd model dancing
   // 2nd 3d model dancing
-
-      const computeBindGroup =
-        utils.makeBindGroup(state.device,
-          computePipeline.getBindGroupLayout(0),
-        [ 
-          
-
-          //makeBuffer(makeVectorField().flat(), 0, 'his'),
-          gridBuffer,
-          shapes[0],
-        
-          
-          
-          uniformsBuffer,
-          velocity,
-          texture.createView({
-            // dimension: '3d',
-            sampleType: 'float'
-          }),
-          mesh
-        ].filter(d => d), )
+  // const computeBindGroup =
+  //   utils.makeBindGroup(state.device,
+  //     computePipeline.getBindGroupLayout(0),
+  //   [ 
   
+  //     gridBuffer,
+  //     shapes[0],
+  //     uniformsBuffer,
+  //     velocity,
+  //     texture.createView({
+  //       // dimension: '3d',
+  //       sampleType: 'float'
+  //     }),
+  //     lifeTimeBuffer,
+  //   ])
+
+  let computeBindGroup = state.device.createBindGroup({
+    layout: computePipeline.getBindGroupLayout(0),
+    entries: [
+      {binding: 0, resource: {buffer: gridBuffer}},
+      {binding: 1, resource: {buffer: shapes[0]}},
+      {binding: 2, resource: {buffer: uniformsBuffer}},
+      {binding: 3, resource: {buffer: velocity}},
+
+      {binding: 4, resource: texture.createView({
+        // dimension: '3d',
+        sampleType: 'float'
+      })},
+      {binding: 5, resource: {buffer: lifeTimeBuffer}}
+    ]
+  })
+
+
+
+
+
+console.log(
+  // @group(0) @binding(0) var<storage, read_write> lifetime: array<f32>;
+  // @group(0) @binding(1) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+  // @group(0) @binding(2) var<storage,read_write> buffer3: array<vec4<f32>>;
+  // @group(0) @binding(3) var<uniform> uniforms: Uniforms;
+  // @group(0) @binding(4) var<storage,read_write> velocity: array<vec3<f32>>;
+  // @group(0) @binding(5) var myTexture: texture_2d<f32>;
+
+)
+// console.log( [ 
+//           lifeTimeBuffer,
+//           gridBuffer,
+//           shapes[0],
+//           uniformsBuffer,
+//           velocity,
+//           texture.createView({
+//             // dimension: '3d',
+//             sampleType: 'float'
+//           }),
+//           mesh,
+          
+//         ])
       return [computeBindGroup]
     }
   })
   }
 
-
-
-//simplify meshes to less particles
-//chromatic motion blur
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
 
 let dancer = []
@@ -1149,11 +1099,6 @@ let stagingBuffer
 
 let modelType = 1
 
-
-
-//when click
-//if animating -> stop animation and use compute shader
-//if animation stopped - loop over time - then set animation to true
 let animating = true
 window.addEventListener('click', function () {
   let timebetween = 1000
@@ -1176,17 +1121,11 @@ window.addEventListener('click', function () {
   }
   if (animating) return makeStagingBuffer()
 
-  
-
-  //console.log(choice)
 })
 
 function makeStagingBuffer() {
- 
   setTimeout(function () {
-
     if (! shapes[0] || !animating) return;
-    //stagingBuffer ||  optimization - reusing staging buffer
 
     stagingBuffer = webgpu.device.createBuffer({
       size: 1e6,
@@ -1245,7 +1184,6 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
   if (stuff && stuff.flat) (stuff = stuff.flat(), label)
-  console.log(label)
   particlesBuffer.set(stuff)
   gpuBuffer.unmap();
   return gpuBuffer
@@ -1366,7 +1304,6 @@ function getCameraViewProjMatrix() {
   return viewProjectionMatrixHost
 }
 
-
  const cameraViewProj = getCameraViewProjMatrix();
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
@@ -1414,18 +1351,7 @@ for (let i = 0; i < rgb.length; i+=3) {
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 let hello = []
-// for (let i = 0; i < 1e6; i++) {
-//   let [x,y,z] = index(i)
-  
-//   hello[4*i] = x
-//   hello[4*i+1] = y 
-//   hello[4*i+2] = z
-//   hello[4*i+3] = 0
-// }
 
-
-
-//let hi = window.makeBuffer(hello, 0 , 'hi')
 let drawDescriptor = {
   shader: {
     vertEntryPoint: 'main_vertex',
@@ -1463,8 +1389,8 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-  //  camera.projectionMatrix
-  //  * camera.viewMatrix *  camera.modelMatrix * 
+   camera.projectionMatrix
+   * camera.viewMatrix *  camera.modelMatrix * 
 
      vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1518,13 +1444,11 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
 `},
   attributeBuffers: buffers,
   attributeBufferData: [
-    //window.gridBuffer
-    //window.makeBuffer(hello, 0, 'hi')
     shapes[0]
     , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
-  //blend,
+  blend,
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
@@ -1843,33 +1767,15 @@ var context = canvas.getContext("2d");
 context.scale(dpi, dpi);
 window.drawVF = function (vf, i) {
 context.fillRect(0, 0, innerWidth, innerHeight);
-  //let getImageData = context.getImageData(0, 0, innerWidth, innerHeight);
-  // getImageData.data.forEach((d, i) => {
-  //   if (! shouldDraw) return
 
-  //   //console.log(getImageData.data[i])
-  //   //if (i % 3 ===0) return;
-  //   //vf[i % 100 / 100]
-  //   //getImageData.data[i] = Math.random() * 255
-  //   // getImageData.data[i] = vf[1]
-  //   // getImageData.data[i] = vf[2]
-  //   // getImageData.data[i] = vf[3]
-  // })
   vf.forEach((vec, i) => {
     let x = 50
-    //console.log(vec)
-    //console.log(`rgba(${vec[0] * 255}, ${vec[1] * 255}, ${(1. - vec[2]) * 255} , 1.); `)
-    //
     context.fillStyle = i % 2 ===1 ? "orange" : "#FFFFFF";//rgb(${vec[0] * 55}, ${vec[1] * 55}
     context.fillStyle = `rgb(${Math.abs(vec[0]) * 50},  ${vec[2] * 55}, ${Math.abs(vec[1]) * 50})`
-    //context.fillStyle = `rgb(${((vec[0] + 1) * 2) * 55}, ${((vec[1] +  1 )* 2) * 55}, ${vec[2] * 55})`
 
-    //context.fillStyle = 'purple'
-//    if (Math.random() > .99)console.log(`rgb(${vec[0] * 55}, ${vec[1] * 55}, ${vec[2] * 55})`)
     context.fillRect(vec.x * innerWidth, vec.y * innerHeight, 10, 10);
 
   })
-  //context.putImageData(getImageData, 0 , 0)
 }
 
 setTimeout(() => {
@@ -1889,7 +1795,6 @@ function createMaze () {}
 
 
 let findShortestPath = (graph, startNode, endNode) => {
- 
   // track distances from the start node using a hash object
     let distances = {};
   distances[endNode] = "Infinity";
