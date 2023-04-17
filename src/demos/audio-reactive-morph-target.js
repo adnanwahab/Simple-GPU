@@ -6,8 +6,6 @@ cameraFolder.add(camera.position, 'z', 0, 10)
 cameraFolder.open()
 var person = {name: 'Sam'};
 
-gui.add(person, 'name');
-
 
 let p = {type: 45}
 gui.add(p, 'type', 0, 100)
@@ -161,16 +159,16 @@ box.prototype.render = function (grid) {
 //add camera to compute shader - 2
 let drawCallChoice = 2
 
-let button = document.createElement('button')
+// let button = document.createElement('button')
 
-button.textContent = 'change draw'
+// button.textContent = 'change draw'
 
-document.body.appendChild(button)
+// document.body.appendChild(button)
 
-button.addEventListener('click', function () {
-  drawCallChoice = (drawCallChoice + 1) % 3
+// button.addEventListener('click', function () {
+//   drawCallChoice = (drawCallChoice + 1) % 3
 
-})
+// })
 
 import {abc} from "./shader2";
 
@@ -327,26 +325,40 @@ function makeVectorField3() {
 
 return result
 }
+//if magnets have a z location, then vector field makes points fly out of 
+//camera frustum
 
-
-let magnets = []
+//when points get close to magnet they move too quickly - orbit around weakly
+let magnets
+function makeMagnets () {
+   magnets = []
 for (let i = 0; i < 5; i++) {
   if (i < 1)
   magnets.push([
     max.x + makeRand(), max.y+ makeRand(), 0
   ]); else 
   magnets.push([
-        makeRand(), makeRand(),0
+        makeRand(), makeRand(), 0
     ])
   
 }
+}
+
+function clamp (val, min, max) {
+  return Math.min(Math.max(val, min), max)
+
+}
+makeMagnets()
 
 function makeVectorField1() {
   magnets.forEach(m => {
+//    let dist = 
     m[0] += .1 * makeRand()
     m[1] += .1 * makeRand()
-    m[2] += .1 * makeRand()
+    //m[2] += .1 * makeRand()
   })
+ // makeMagnets()
+
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -371,11 +383,12 @@ for (let i = 0; i <= width; i++) {
       //console.log(dist)
       let dx = unitVector(distanceTo(mag, p))
       //if (Math.random() * .9999)console.log(dist)
-      vec = add(vec, dx.map(d => d * 1/ dist))
+      vec = add(vec, dx.map(d => d * 1/ dist) )
       //add(vec, dx.map(d => d * 1/ dist))
-      ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
-      //console.log(dist)
-      if (dist < .0001) vec = [ -vec[1], vec[0], vec[2]]
+      //, vec[2]
+      // if (dist < .01) vec = [ vec[1] , -vec[0], 0]
+      // //console.log(dist)
+      if (dist < .001) vec = [vec[1], -vec[0], 0]
     })
     
     //vec[2] = 0
@@ -399,10 +412,10 @@ function makeVectorField2() {
 for (let i = 0; i < 5; i++) {
   if (i < 1)
   magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), Math.random()
+    max.x + makeRand(), max.y+ makeRand(),0
   ]); else 
   magnets.push([
-        makeRand(), makeRand(), Math.random()
+        makeRand(), makeRand(), 0
     ])
   
 }
@@ -433,17 +446,6 @@ for (let i = 0; i <= width; i++) {
 
       let dist = getDist(p, getClosestMagnet())
 
-      magnets.forEach((mag , i) => {
-        let dist = getDist(mag, p)
-        //console.log(dist)
-        let dx = unitVector(distanceTo(mag, p))
-        //if (Math.random() * .9999)console.log(dist)
-        vec = add(vec, dx.map(d => d * 1/ dist))
-        //add(vec, dx.map(d => d * 1/ dist))
-        ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
-        //console.log(dist)
-        if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
-      })
 
     vec[2] = 0
     vec[3] = 0
@@ -967,13 +969,13 @@ let coll = {}
 
       let life = lifetime[index];
 
-      if (life < 10.) {
-        lifetime[index] = 3000.;
-        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[index]= vec4<f32>(sfrand() * 10., sfrand() * 10., 0, 1.);
-      } else {
-        lifetime[index] -= 8.;
-      }
+      // if (life < 10.) {
+      //   lifetime[index] = 3000.;
+      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+      //   buffer3[index]= vec4<f32>(sfrand() * 10., sfrand() * 10., 0, 1.);
+      // } else {
+      //   lifetime[index] -= 8.;
+      // }
 
       //decay rate has to be same as scaling factor - 1.6
 
@@ -1024,8 +1026,9 @@ let coll = {}
         // }
 
       velocity[index] *= .1;
-     velocity[index] += .01 * vf;
-     
+     //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
+     velocity[index] = velocity[index] + .01 * vf;
+
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
       // if (uniforms.time > 0.) {
@@ -1090,21 +1093,7 @@ let coll = {}
   //3d vector field of spiral explosion thing
   //3d vector field to transition to 2nd model dancing
   // 2nd 3d model dancing
-  // const computeBindGroup =
-  //   utils.makeBindGroup(state.device,
-  //     computePipeline.getBindGroupLayout(0),
-  //   [ 
-  
-  //     gridBuffer,
-  //     shapes[0],
-  //     uniformsBuffer,
-  //     velocity,
-  //     texture.createView({
-  //       // dimension: '3d',
-  //       sampleType: 'float'
-  //     }),
-  //     lifeTimeBuffer,
-  //   ])
+
 
   let computeBindGroup = state.device.createBindGroup({
     layout: computePipeline.getBindGroupLayout(0),
@@ -1121,33 +1110,6 @@ let coll = {}
       {binding: 5, resource: {buffer: lifeTimeBuffer}}
     ]
   })
-
-
-
-
-
-console.log(
-  // @group(0) @binding(0) var<storage, read_write> lifetime: array<f32>;
-  // @group(0) @binding(1) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-  // @group(0) @binding(2) var<storage,read_write> buffer3: array<vec4<f32>>;
-  // @group(0) @binding(3) var<uniform> uniforms: Uniforms;
-  // @group(0) @binding(4) var<storage,read_write> velocity: array<vec3<f32>>;
-  // @group(0) @binding(5) var myTexture: texture_2d<f32>;
-
-)
-// console.log( [ 
-//           lifeTimeBuffer,
-//           gridBuffer,
-//           shapes[0],
-//           uniformsBuffer,
-//           velocity,
-//           texture.createView({
-//             // dimension: '3d',
-//             sampleType: 'float'
-//           }),
-//           mesh,
-          
-//         ])
       return [computeBindGroup]
     }
   })
@@ -1570,7 +1532,9 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-
+    camera.projectionMatrix
+    * camera.viewMatrix *   
+    camera.modelMatrix *
     vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
     
@@ -1578,8 +1542,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
     //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 
-  //${useCamera ? 1: ''}//  camera.projectionMatrix
-  //  * camera.viewMatrix *  camera.modelMatrix * 
+  //${useCamera ? 1: ''}//  
 
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
     
@@ -1706,7 +1669,7 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
 
     vsOut.position = 
-
+    camera.projectionMatrix *
     vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
     
@@ -1714,7 +1677,9 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
 
     //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 
-  //${useCamera ? 1: ''}//  camera.projectionMatrix
+  //${useCamera ? 1: ''}
+  
+  
   //  * camera.viewMatrix *  camera.modelMatrix * 
 
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -2083,7 +2048,7 @@ setInterval(
 }
 
 
-let shouldDraw = false
+let shouldDraw = true
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000
