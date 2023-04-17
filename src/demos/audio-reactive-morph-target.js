@@ -1,3 +1,13 @@
+import * as d3 from 'd3'
+import {interpolateTurbo} from "d3-scale-chromatic";
+import createCamera from './createCamera'
+import bunny from 'bunny'
+import dragon from 'stanford-dragon'
+import { mat4, vec3 } from 'gl-matrix'
+const particlesCount = 442008 / 3 
+import simpleWebgpuInit from '../../lib/main';
+import utils from '../../lib/utils';
+
 import * as dat from 'dat.gui';
 let camera = {position: {x: 0, y: 0, z: 0} }
 const gui = new dat.GUI();
@@ -16,6 +26,25 @@ var text =
 }
 gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
 
+//if magnets have a z location, then vector field makes points fly out of 
+//camera frustum
+
+//when points get close to magnet they move too quickly - orbit around weakly
+//curl noise turbulence
+//flowing along 3d model
+//magnets
+//spiral
+//writing words
+
+// make spiral vector field 
+// dont use visualizer
+//algorithms for vector field
+ //cloud flowing in the wind
+ //magnets rotating around the center - speed up 1/4 according to beat
+ // the cloud turns into a dancer
+ //forces change due to music beats / words
+ //add reflections
+//friday
 
 //friday - try to work 12 hours a day including today
 //sophisticated vectorfield 
@@ -31,18 +60,28 @@ gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
 //put in 140 hours of work and see if its good enough
 // if not, reassess and try again but sure
 
-
-
-//good loading bar - prefetch first frame then load all frames 
 import postProcessing from './postProcessing'
 
 const useCamera = true
+
+
+function add (v1, v2) {
+  return [
+    v1[0] + v2[0],
+    v1[1] + v2[1],
+    v1[2] + v2[2],
+  ]
+}
+
 function makeRand () {
   let x = Math.random().toPrecision(2)
   x -= .5;
   return x * 2
 }
+function clamp (val, min, max) {
+  return Math.min(Math.max(val, min), max)
 
+}
 function clipSpace(x,y, z, width, height) {
   y /= height
   z /= width * height
@@ -81,15 +120,9 @@ function makeCube() {
       }
     }
   }
-  console.log(result)
   return result;
 }
 
-
-//shader on box 
-//split box in half and rotate 
-
-//
 function box() {
   this.width = 100
   this.height = 100
@@ -118,75 +151,13 @@ box.prototype.render = function (grid) {
   return render;
 }
 
-//done from scratch - eta may 1 - happy bear
-///0 = do now, 2 = later, 3 never
-//3d path finding - 2
-//3d models https://www2.cs.uh.edu/~chengu/Teaching/Spring2013/Lecs/Lec9.pdf
-//SDF - parametric equations - random - 2
-//butterflies wings - artful way of transitioning between memes - 3
-//https://gamedevelopment.tutsplus.com/tutorials/understanding-goal-based-vector-field-pathfinding--gamedev-9007
 
-//primary criteria = amazingness of process + final result
-//rose petals - 2
-//particles are mirrors - reflecting environment - 1
-//dont fight the stream - mochi
-//write words in flowing vector field -> shift it over one column at at time -> 3
-
-//bake stuff - baked lighting on particles https://www.youtube.com/watch?v=yG4ChOPyC-4&t=82s
-//mirror walls + mirror particles -2 
-//glowy particles - 2
-//ray traced reflections on particles - 2
-//stellar dancer - celestial - 2
-//electrical water - lightning = particles colliding - 2
-//https://www.youtube.com/watch?v=rzRf0pTxYO0
-//animation looks like zoom - 2
-// chromatic blur - 2
-///frosted glass - transparency https://twitter.com/pandrr/status/1646782946542592001 - 3
-//CPU Curl - COULD end the stream - 3
-//grid of points - colored by image - 2 - shaders projected on it- move p articles sync w/ shader animation
-//galaxy - 2
-//globe - 2
-//flower - vector field - 2
-//lighting on particles - 2
-//dancerA -> dancerB - 2
-//flow field - spiral - 2
-//[ DONE]magnet - needs polish
-//[DONE] tween from an explosion to a dancer
-//flowfield - 3d model - 2
-//emitter field - 2nd particle sim - 2
-//multiple dancers - 2
-//add linked visualization
-//add camera to compute shader - 2
 let drawCallChoice = 2
-
-// let button = document.createElement('button')
-
-// button.textContent = 'change draw'
-
-// document.body.appendChild(button)
-
-// button.addEventListener('click', function () {
-//   drawCallChoice = (drawCallChoice + 1) % 3
-
-// })
 
 import {abc} from "./shader2";
 
 const mouse = [0,0]
-import * as d3 from 'd3'
-import {interpolateTurbo} from "d3-scale-chromatic";
-import createCamera from './createCamera'
-import bunny from 'bunny'
-import dragon from 'stanford-dragon'
-import { mat4, vec3 } from 'gl-matrix'
-const particlesCount = 442008 / 3 
-import simpleWebgpuInit from '../../lib/main';
-import utils from '../../lib/utils';
-//curl noise turbulence
-//flowing along 3d model
-//magnets
-//spiral
-//writing words
+
 
 function distanceTo(b, a) {
       
@@ -205,14 +176,6 @@ function minus (v1, v2) {
     v1[0] - v2[0],
     v1[1] - v2[1],
     v1[2] - v2[2],
-  ]
-}
-
-function add (v1, v2) {
-  return [
-    v1[0] + v2[0],
-    v1[1] + v2[1],
-    v1[2] + v2[2],
   ]
 }
 
@@ -252,8 +215,6 @@ for (var i = 0; i < 10; i++) {
   coords.push((i / 10 - .5) * 2)
 }
 
-
-
 let max = {
   x: 0,
   y: 0,
@@ -264,8 +225,6 @@ let min = {
   y: 0,
   z: 0,
 }
-
-
 
 for(let i = 0; i < mesh.source.length; i+=4) {
   let x = mesh.source[i]
@@ -283,17 +242,10 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
 let result = []
 
-for (let i = -1; i < 1; i+=.2) {
-  coords.push(i)
-}
-
-result = []
 let width = 100, height = width
 
 let makeVectorField = makeVectorField1
-// make spiral vector field 
-// dont use visualizer
-//algorithms for vector field
+
 function makeVectorField3() {
   let dir = [
     [1, 0],
@@ -307,28 +259,15 @@ function makeVectorField3() {
       let [x1, y1 ] = zeroToOne(x , y)
       let idx = Math.round(x1 * width + y1 * width * height)
 
-
-
       result[idx] = [
         -x, -y, 0, 1
       ]
-      
-      // [
-      //   x / x * x + y * y
-      //   ,
-        
-      //   y / y * y + x * x
-        
-      //   ,0,0]
     }
   }
 
 return result
 }
-//if magnets have a z location, then vector field makes points fly out of 
-//camera frustum
 
-//when points get close to magnet they move too quickly - orbit around weakly
 let magnets
 function makeMagnets () {
    magnets = []
@@ -338,26 +277,26 @@ for (let i = 0; i < 5; i++) {
     max.x + makeRand(), max.y+ makeRand(), 0
   ]); else 
   magnets.push([
-        makeRand(), makeRand(), 0
+        min.x + makeRand(), min.y + makeRand(), 0
     ])
   
 }
 }
 
-function clamp (val, min, max) {
-  return Math.min(Math.max(val, min), max)
 
-}
 makeMagnets()
 
+let d = Date.now()
 function makeVectorField1() {
   magnets.forEach(m => {
 //    let dist = 
-    m[0] += .1 * makeRand()
-    m[1] += .1 * makeRand()
+let e = d - Date.now()
+    m[0] = .1 * Math.cos(e / 1000) + m[0]
+    m[1] = .1 * Math.sin(e / 1000) + m[1]
     //m[2] += .1 * makeRand()
   })
  // makeMagnets()
+
 
 
 for (let i = 0; i <= width; i++) {
@@ -383,12 +322,13 @@ for (let i = 0; i <= width; i++) {
       //console.log(dist)
       let dx = unitVector(distanceTo(mag, p))
       //if (Math.random() * .9999)console.log(dist)
-      vec = add(vec, dx.map(d => d * 1/ dist) )
+      vec = add(vec, dx
+        .map(d => d * Math.max(1/ dist, 1)) )
       //add(vec, dx.map(d => d * 1/ dist))
       //, vec[2]
       // if (dist < .01) vec = [ vec[1] , -vec[0], 0]
       // //console.log(dist)
-      if (dist < .001) vec = [vec[1], -vec[0], 0]
+      if (dist < .01) vec = [vec[1], -vec[0], 0]
     })
     
     //vec[2] = 0
@@ -444,7 +384,7 @@ for (let i = 0; i <= width; i++) {
 
   let vec = [0,0,0,0]
 
-      let dist = getDist(p, getClosestMagnet())
+  let dist = getDist(p, getClosestMagnet())
 
 
     vec[2] = 0
@@ -453,15 +393,7 @@ for (let i = 0; i <= width; i++) {
     vec.y = y1
 
     let bounds = j < 30 || i < 30 || i > 70 || j > 70
-    // if (bounds) {
-    //   vec[0] = 200 * -x
-    //   vec[1] = 200 * -y
-    // }
-    // vec[0] = -x
-    // vec[1] = -y
 
-    // vec[0] = x
-    // vec[1] = y
     result[idx]= vec
 }
 }
@@ -470,13 +402,6 @@ return result
 
 
 function makeVectorField2() {
-
-
-// magnets.push([
-//   0,0,0
-// ])
-//console.log(magnets)
-
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
   let [x, y] = clipSpace(j, i, 0, width, height)
@@ -514,50 +439,11 @@ for (let i = 0; i <= width; i++) {
       return magnets[idx]
     }
 
-    function getDist(a, b) {
-      return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
-        return a + b
-      })
-    }
-
-    function add (v1, v2) {
-      return [
-        v1[0] + v2[0],
-        v1[1] + v2[1],
-        v1[2] + v2[2],
-      ]
-    }
-    
-
       vec = [0, 0,0,0]
       let dist = getDist(p, getClosestMagnet())
-
-  
-      
-
-      // vec[0] = Math.sin(x * 180)
-      // vec[1] = Math.cos(i * 180)
-
-      // magnets.forEach((mag , i) => {
-      //   let dist = getDist(mag, p)
-      //   //console.log(dist)
-      //   let dx = unitVector(distanceTo(mag, p))
-      //   //if (Math.random() * .9999)console.log(dist)
-      //   vec = add(vec, dx.map(d => d * 1/ dist))
-      //   //add(vec, dx.map(d => d * 1/ dist))
-      //   ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
-      //   //console.log(dist)
-      //   //if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
-
-      //   shapes[0]
-      // })
       const angle = Math.atan2(x, y)
       let degrees = angle * (180 / Math.PI)
       let abs = Math.abs, sqrt = Math.sqrt
-
-   
-  
-
 
 const dot2 = (p) => {
    let _ = dot(p, p)
@@ -660,15 +546,12 @@ function findPoint(d) {
 let n = 0;
 let collided = 0
 
-function makeRand () {
-  let x = Math.random().toPrecision(2)
-  x -= .5;
-  return x * 2
-}
+
 
 let gridBuffer = makeBuffer(result.flat(), 0, 'result')
 
 setInterval(function () {
+  //console.time('a')//50ms
   let vf = makeVectorField()
   window.drawVF(vf)
 
@@ -691,9 +574,10 @@ setInterval(function () {
 
   webgpu.device.queue.submit([commandEncoder.finish()]);
   
+  //console.timeEnd('a')
 
 
-}, 5000)
+}, 1000)
 
 let count = 0
 let coll = {}
@@ -1215,32 +1099,32 @@ window.addEventListener('click', function () {
   if (! animating ) {
 
 
-    drawStuff()
-    animating = ! animating
+    // drawStuff()
+    // animating = ! animating
     modelType = 1 + ((modelType) % (frames.length ))
  
-    // let elapsed = Date.now()
-    // setTimeout(function recur() {
-    //   let dt = Date.now() - elapsed
-    //   window.writeTime(timebetween - dt)
-    //   if (dt < timebetween) setTimeout(recur, 16)
-    //   else {
-    //     animating = ! animating
-    //     modelType = modelType === 1 ? 2 : 1
-    //     return makeStagingBuffer()
-    //   }
+    let elapsed = Date.now()
+    setTimeout(function recur() {
+      let dt = Date.now() - elapsed
+      window.writeTime(timebetween - dt)
+      if (dt < timebetween) setTimeout(recur, 16)
+      else {
+        animating = ! animating
+        modelType = modelType === 1 ? 2 : 1
+        return makeStagingBuffer()
+      }
       
-    // }, 8)
+    }, 8)
   } else {
     animating = ! animating
     
   }
-  //if (animating) return makeStagingBuffer()
+  if (animating) return makeStagingBuffer()
 
 
-  if (animating) {
-    drawStuff()
-  }
+  // if (animating) {
+  //   drawStuff()
+  // }
 })
 
 function makeStagingBuffer() {
@@ -1901,8 +1785,8 @@ var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
 vsOut.position = 
-//  camera.projectionMatrix
-//  * camera.viewMatrix *  camera.modelMatrix * 
+ camera.projectionMatrix
+ * camera.viewMatrix *  camera.modelMatrix * 
 
  vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -2040,15 +1924,15 @@ setInterval(
  
     if (! animating) {
       computeTransitions[1]()
-    }// && drawCallChoice
+    }
     let result = drawCalls[drawCallChoice]({})
     let texture = result.state.swapChainTexture
-    //pp(texture)
+    // pp(texture)
     }, 8) 
 }
 
 
-let shouldDraw = true
+let shouldDraw = false
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000
