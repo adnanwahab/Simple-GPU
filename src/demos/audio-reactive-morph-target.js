@@ -1,13 +1,125 @@
 import * as dat from 'dat.gui';
-
+let camera = {position: {x: 0, y: 0, z: 0} }
 const gui = new dat.GUI();
+const cameraFolder = gui.addFolder('Camera')
+cameraFolder.add(camera.position, 'z', 0, 10)
+cameraFolder.open()
+var person = {name: 'Sam'};
+
+gui.add(person, 'name');
+
+
+let p = {type: 45}
+gui.add(p, 'type', 0, 100)
+
+var text =
+{
+    speed: 'someName'
+}
+gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
+
+
+//friday - try to work 12 hours a day including today
+//sophisticated vectorfield 
+//reflections ?
+//rose Petals -> gold -> 
+
+//try your best to keep it scratch - dont copy paste 
+//read stuff and learn from it 
+//write it down - fill up 100 page journal with learning
+//learning is whats important
+//learning is what preps us to face what challenges come tomorrow
+//demo is merely a stepping stone to more important creations
+//put in 140 hours of work and see if its good enough
+// if not, reassess and try again but sure
+
+
+
 //good loading bar - prefetch first frame then load all frames 
 import postProcessing from './postProcessing'
+
+const useCamera = true
 function makeRand () {
   let x = Math.random().toPrecision(2)
   x -= .5;
   return x * 2
 }
+
+function clipSpace(x,y, z, width, height) {
+  y /= height
+  z /= width * height
+  y = y - .5
+  z = z - .5
+  y *= -2
+  z *= 2
+
+  x = (x / width) * 2 -1
+
+  return [x,y,z]
+}
+
+function zeroToOne(x , y) {
+  var x1 = (x + 1) /2 
+  var y1 =((1. - y) / 2);
+
+  return [x1, y1]
+}
+
+function makeCube() {
+  let result = []
+  let width = 100, height = 100
+  for (var i = 0; i < width; i++) {
+    for (var j = 0; j < height; j++) {
+      for (var k = 0; k < height; k++) {
+
+  
+        
+        let [x, y, z] = clipSpace(k, j, i, width, height)
+
+        let [x1, y1]  = zeroToOne(x, y)
+
+
+        result.push([x, y, 0, 0])
+      }
+    }
+  }
+  console.log(result)
+  return result;
+}
+
+
+//shader on box 
+//split box in half and rotate 
+
+//
+function box() {
+  this.width = 100
+  this.height = 100
+  this.z = 100
+
+  this.origin = [0,0,0]
+  this.rotation = [];
+}
+
+box.prototype.rotate = function (x, y, z) {
+
+}
+
+box.prototype.render = function (grid) {
+  let render = []
+  for (var i = 0; i < width; i++) {
+    for (var j = 0; i < height; i++) {
+      for (var k = 0; i < height; i++) {
+        let [x, y, z] = clipSpace(i, j, k, width, height);
+
+        result.push([x, y, z, 0])
+      }
+    }
+  }
+
+  return render;
+}
+
 //done from scratch - eta may 1 - happy bear
 ///0 = do now, 2 = later, 3 never
 //3d path finding - 2
@@ -155,18 +267,7 @@ let min = {
   z: 0,
 }
 
-function clipSpace(x,y, z, width, height) {
-  y /= height
-  z /= width * height
-  y = y - .5
-  z = z - .5
-  y *= -2
-  z *= -2
 
-  x = (x / width) * 2 -1
-
-  return [x,y,z]
-}
 
 for(let i = 0; i < mesh.source.length; i+=4) {
   let x = mesh.source[i]
@@ -232,19 +333,19 @@ let magnets = []
 for (let i = 0; i < 5; i++) {
   if (i < 1)
   magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), Math.random()
+    max.x + makeRand(), max.y+ makeRand(), 0
   ]); else 
   magnets.push([
-        makeRand(), makeRand(), Math.random()
+        makeRand(), makeRand(),0
     ])
   
 }
 
 function makeVectorField1() {
   magnets.forEach(m => {
-    m[0] = makeRand()
-    m[1] = makeRand()
-    m[2] = makeRand()
+    m[0] += .1 * makeRand()
+    m[1] += .1 * makeRand()
+    m[2] += .1 * makeRand()
   })
 
 for (let i = 0; i <= width; i++) {
@@ -288,6 +389,7 @@ for (let i = 0; i <= width; i++) {
 }
 return result
 }
+
 
 
 
@@ -384,7 +486,7 @@ for (let i = 0; i <= width; i++) {
     // let a = dancer.slice(idx, idx+3)
     // let b = dancer.slice(idx+4, idx+7)
     // x *= 2
-    // y *= 2
+    // y *= 2f
     let p = [x ,y, 0]
     p.x = x 
     p.y = y
@@ -845,7 +947,7 @@ let coll = {}
   
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
-    //
+
     // if (y < .01) {y = 1.;}
     // if (x < .01) {x = 1.;}
     // if (y > .99) {y = 0.;}
@@ -955,7 +1057,6 @@ let coll = {}
       }
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
-      
       var p = buffer3[index];
       if (p.x > .99){ buffer3[index].x = -1;}
       if (p.x < -0.99){ buffer3[index].x = 1;}
@@ -1411,6 +1512,150 @@ for (let i = 0; i < rgb.length; i+=3) {
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 let hello = []
 
+
+//5 files
+// 5 draw calls
+// shader box + generate box + shaders for transitions + functions to change rotation
+// compute shader - changing poitns according to vector field - 3 of those
+//
+
+let boxDescriptor = {
+  shader: {
+    vertEntryPoint: 'main_vertex',
+    fragEntryPoint: 'main_fragment',
+    code:`
+    struct Uniforms {
+      time: f32,             //             align(16)  size(24)
+    color: vec3<f32>,         // offset(0)   align(16)  size(16)
+    spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
+};
+
+struct Camera {
+  projectionMatrix : mat4x4<f32>,
+  viewMatrix : mat4x4<f32>,
+  modelMatrix: mat4x4<f32>,
+
+
+}
+
+struct VSOut {
+    @builtin(position) position: vec4<f32>,
+    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+    @location(1) uv: vec2<f32>
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> camera : Camera;
+
+
+@vertex
+fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+ @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
+) -> VSOut {
+    var vsOut: VSOut;
+    var m = camera.modelMatrix;
+    // const uv = array(
+    //   vec2(1.0, 0.0),
+    //   vec2(1.0, 1.0),
+    //   vec2(0.0, 1.0),
+    //   vec2(1.0, 0.0),
+    //   vec2(0.0, 1.0),
+    //   vec2(0.0, 0.0),
+    // );
+
+
+
+    var t = uniforms.time;
+    //mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+
+
+    vsOut.position = 
+
+    vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+//    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
+    
+    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
+
+    //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+
+  //${useCamera ? 1: ''}//  camera.projectionMatrix
+  //  * camera.viewMatrix *  camera.modelMatrix * 
+
+   //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+    
+    vsOut.localPosition = quadCorner;
+
+    vsOut.uv = (inPosition.xy + 1.) / 2.;
+    return vsOut;
+}
+
+@fragment
+fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) uv:vec2<f32> ) -> @location(0) vec4<f32> {
+    let distanceFromCenter: f32 = length(localPosition);
+    if (distanceFromCenter > 1.0) {
+        discard;
+    }
+
+
+    var c = 0.;
+    if (uv.x > 0.) {
+      c = 1.;
+    } else {
+      c = 0.;
+    }
+
+
+    let color = vec3<f32>(uv, sin(uniforms.time));
+    
+    //120. * sin(camera.time) + 20. * sin(uv);
+    //
+
+
+    return vec4<f32>((color.xyz), .7);
+}
+`},
+  attributeBuffers: buffers,
+  attributeBufferData: [
+    shapes[0]
+    //makeBuffer(makeCube(), 0, 'cube')
+    , quadBuffer, posBuffer, colorBuffer
+  ],
+  count: 6,
+  //blend,
+  instances: particlesCount,
+  bindGroup: function ({pipeline}) {
+    const uniformsBuffer = webgpu.device.createBuffer({
+      size: 48, 
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+  });
+  let timeBuffer = new Float32Array(1);
+  window.reWriteTime = function () {
+    timeBuffer[0] = performance.now() / 1000
+    webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  timeBuffer)
+  }
+    return webgpu.device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+          {
+              binding: 0,
+              resource: {
+                  buffer: uniformsBuffer,
+              }
+          },
+          {
+            binding: 1,
+            resource: {
+            buffer: cameraUniformBuffer
+            }
+          }
+      ]
+  });
+  }
+}
+
+const drawBox = await webgpu.initDrawCall(boxDescriptor)
+
+
 let drawDescriptor = {
   shader: {
     vertEntryPoint: 'main_vertex',
@@ -1444,14 +1689,34 @@ fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2
  @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
 ) -> VSOut {
     var vsOut: VSOut;
-    var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+  
+    const uv = array(
+      vec2(1.0, 0.0),
+      vec2(1.0, 1.0),
+      vec2(0.0, 1.0),
+      vec2(1.0, 0.0),
+      vec2(0.0, 1.0),
+      vec2(0.0, 0.0),
+    );
+
+
+
+    var t = camera.time;
+    //mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
     vsOut.position = 
-   camera.projectionMatrix
-   * camera.viewMatrix *  camera.modelMatrix * 
 
-     vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+    vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+//    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
+    
+    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
+
+    //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+
+  //${useCamera ? 1: ''}//  camera.projectionMatrix
+  //  * camera.viewMatrix *  camera.modelMatrix * 
+
    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
     
     vsOut.localPosition = quadCorner;
@@ -1504,6 +1769,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
   attributeBuffers: buffers,
   attributeBufferData: [
     shapes[0]
+    //makeBuffer(makeCube(), 0, 'cube')
     , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
@@ -1514,6 +1780,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
       size: 32, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
+
     return webgpu.device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
@@ -1533,6 +1800,9 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
   });
   }
 }
+setInterval(function () {
+  reWriteTime()
+}, 8)
 const drawCube = await webgpu.initDrawCall(drawDescriptor)
 
 const drawRosePetals =  await webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
@@ -1747,7 +2017,7 @@ function recur () {
 //recur()
 
 
-let drawCalls = [drawGold, drawRosePetals, drawCube]
+let drawCalls = [drawBox, drawGold, drawRosePetals, drawCube]
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1805,7 +2075,7 @@ setInterval(
  
     if (! animating) {
       computeTransitions[1]()
-    }
+    }// && drawCallChoice
     let result = drawCalls[drawCallChoice]({})
     let texture = result.state.swapChainTexture
     //pp(texture)
@@ -1813,7 +2083,7 @@ setInterval(
 }
 
 
-let shouldDraw = true
+let shouldDraw = false
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000
