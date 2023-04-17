@@ -1,3 +1,7 @@
+import * as dat from 'dat.gui';
+
+const gui = new dat.GUI();
+//good loading bar - prefetch first frame then load all frames 
 import postProcessing from './postProcessing'
 function makeRand () {
   let x = Math.random().toPrecision(2)
@@ -53,6 +57,7 @@ document.body.appendChild(button)
 
 button.addEventListener('click', function () {
   drawCallChoice = (drawCallChoice + 1) % 3
+
 })
 
 import {abc} from "./shader2";
@@ -125,7 +130,7 @@ function makeComputeShader(webgpu, mesh, abc) {
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
-    particleLifetime[i] = Math.random() * 300
+    particleLifetime[i] = Math.random() * 3000
   }
 
 
@@ -236,11 +241,11 @@ for (let i = 0; i < 5; i++) {
 }
 
 function makeVectorField1() {
-  // magnets.forEach(m => {
-  //   m[0] = makeRand()
-  //   m[1] = makeRand()
-  //   m[2] = makeRand()
-  // })
+  magnets.forEach(m => {
+    m[0] = makeRand()
+    m[1] = makeRand()
+    m[2] = makeRand()
+  })
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -269,7 +274,7 @@ for (let i = 0; i <= width; i++) {
       //add(vec, dx.map(d => d * 1/ dist))
       ///if (dist < .1) vec = [ -vec[1] , vec[0] , vec[2]]
       //console.log(dist)
-      if (dist < .05) vec = [ -vec[1], vec[0], vec[2]]
+      if (dist < .0001) vec = [ -vec[1], vec[0], vec[2]]
     })
     
     //vec[2] = 0
@@ -391,7 +396,7 @@ for (let i = 0; i <= width; i++) {
 
     function distanceTo(b, a) {
       
-      return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
+      return [b[0] - a[0], b[1]-a[1], 0]
     }
 
     function getClosestMagnet() {
@@ -858,16 +863,17 @@ let coll = {}
       let index: u32 = GlobalInvocationID.x;
 
 
-       let life = lifetime[index];
+      let life = lifetime[index];
 
       if (life < 10.) {
-        lifetime[index] =1000.;
-        buffer3[index]= vec4<f32>(sfrand() * .1, sfrand() * .1, 0, 1.);
+        lifetime[index] = 3000.;
+        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        buffer3[index]= vec4<f32>(sfrand() * 10., sfrand() * 10., 0, 1.);
       } else {
-        lifetime[index] -= 1.;
+        lifetime[index] -= 8.;
       }
 
-
+      //decay rate has to be same as scaling factor - 1.6
 
 
 
@@ -951,10 +957,10 @@ let coll = {}
    
       
       var p = buffer3[index];
-      // if (p.x > .99){ buffer3[index].x = -1;}
-      // if (p.x < -0.99){ buffer3[index].x = 1;}
-      // if (p.y > .99){ buffer3[index].y = -1;}
-      //if (p.y < -.99){ buffer3[index].y = 1;}
+      if (p.x > .99){ buffer3[index].x = -1;}
+      if (p.x < -0.99){ buffer3[index].x = 1;}
+      if (p.y > .99){ buffer3[index].y = -1;}
+      if (p.y < -.99){ buffer3[index].y = 1;}
 
     }`,
   
@@ -1118,15 +1124,10 @@ function drawStuff () {
     mappedAtCreation: true,
   });
 
-
-
   time += 1
 
-  const vertexPositions = new Float32Array(stagingBuffer)
+  const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-
-
-console.log(shapes[0].size, ' shit')
   for (var i= 0; i < 1e6; i++) {
     let p = particles[i]
     p.x = makeRand()
@@ -1136,9 +1137,7 @@ console.log(shapes[0].size, ' shit')
     vertexPositions[4*i+1] = 10 * Math.sin(i);
     vertexPositions[4*i+2] = 1.;
     vertexPositions[4*i+3] = 0.;
-
   }
-
 
   stagingBuffer.unmap();
 
@@ -1155,6 +1154,8 @@ window.addEventListener('click', function () {
 
     drawStuff()
     animating = ! animating
+    modelType = 1 + ((modelType) % (frames.length ))
+ 
     // let elapsed = Date.now()
     // setTimeout(function recur() {
     //   let dt = Date.now() - elapsed
@@ -1173,6 +1174,10 @@ window.addEventListener('click', function () {
   }
   //if (animating) return makeStagingBuffer()
 
+
+  if (animating) {
+    drawStuff()
+  }
 })
 
 function makeStagingBuffer() {
@@ -1184,11 +1189,13 @@ function makeStagingBuffer() {
       usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
-
+   
     let frame = time % frames[modelType].length
     const toCopy = frames[modelType][frame]
     if (! toCopy) return console.log(toCopy, modelType, frame)
     if (time === 0) window.toCopy = toCopy
+
+
 
     time += 1
 
@@ -1801,12 +1808,12 @@ setInterval(
     }
     let result = drawCalls[drawCallChoice]({})
     let texture = result.state.swapChainTexture
-//    pp(texture)
+    //pp(texture)
     }, 8) 
 }
 
 
-let shouldDraw = false
+let shouldDraw = true
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000

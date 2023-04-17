@@ -767,6 +767,11 @@ d3@^7.8.2:
     d3-transition "3"
     d3-zoom "3"
 
+dat.gui@^0.7.9:
+  version "0.7.9"
+  resolved "https://registry.npmjs.org/dat.gui/-/dat.gui-0.7.9.tgz"
+  integrity sha512-sCNc1OHobc+Erc1HqiswYgHdVNpSJUlk/Hz8vzOCsER7rl+oF/4+v8GXFUyCgtXpoCX6+bnmg07DedLvBLwYKQ==
+
 data-uri-to-buffer@^4.0.0:
   version "4.0.1"
   resolved "https://registry.npmjs.org/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz"
