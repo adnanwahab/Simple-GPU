@@ -1,3 +1,9 @@
+//https://github.com/facebookresearch/dinov2
+//3d box-3d to control magnets  -> gravity and water -> 
+//https://stripe.com/sessions - scroll to see vector field to change
+//https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/do-more-with-tunnels/trycloudflare/
+//generative AI - vector field
+//https://refikanadol.com/works/unsupervised/
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
@@ -26,6 +32,35 @@ var text =
 }
 gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
 
+const dot2 = (p) => {
+  let _ = dot(p, p)
+  return _
+}
+
+const dot = ( a, b) => {
+
+return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
+
+}
+function sub (a, b) {
+return [a[0] - b[0], a[1] - b[1]]
+}
+
+function circle(p) {
+return length(p)
+}
+
+function sdHeart( p )
+{
+//console.log(p)
+  p[0] = abs(p[0]);
+  // p[0] -= .3
+  // p[1] -= .3
+  if( p[0]+p[1]>1. )
+      return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
+  return sqrt(min(dot2(sub(p,[0.00,1.00])),
+                  dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
+}
 //if magnets have a z location, then vector field makes points fly out of 
 //camera frustum
 
@@ -108,14 +143,8 @@ function makeCube() {
   for (var i = 0; i < width; i++) {
     for (var j = 0; j < height; j++) {
       for (var k = 0; k < height; k++) {
-
-  
-        
         let [x, y, z] = clipSpace(k, j, i, width, height)
-
         let [x1, y1]  = zeroToOne(x, y)
-
-
         result.push([x, y, 0, 0])
       }
     }
@@ -262,6 +291,11 @@ function makeVectorField3() {
       result[idx] = [
         -x, -y, 0, 1
       ]
+
+
+
+
+
     }
   }
 
@@ -274,10 +308,14 @@ function makeMagnets () {
 for (let i = 0; i < 5; i++) {
   if (i < 1)
   magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), 0
+    max.x + makeRand(), max.y+ makeRand(), 
+    //max.z + makeRand()
+    0
   ]); else 
   magnets.push([
-        min.x + makeRand(), min.y + makeRand(), 0
+        min.x + makeRand(), min.y + makeRand(),
+        //min.z + makeRand()
+        0
     ])
   
 }
@@ -319,19 +357,15 @@ for (let i = 0; i <= width; i++) {
     let s = shapes[0].source
     magnets.forEach((mag , i) => {
       let dist = getDist(mag, p)
-      //console.log(dist)
       let dx = unitVector(distanceTo(mag, p))
-      //if (Math.random() * .9999)console.log(dist)
+      //dist = Math.max(dist, 1)
+      //if (dist < 1) dist = 1
       vec = add(vec, dx
-        .map(d => d * Math.max(1/ dist, 1)) )
-      //add(vec, dx.map(d => d * 1/ dist))
-      //, vec[2]
-      // if (dist < .01) vec = [ vec[1] , -vec[0], 0]
-      // //console.log(dist)
-      if (dist < .01) vec = [vec[1], -vec[0], 0]
+        .map(d => d * 1/ dist) )
+
+      //if (dist < .02) vec = [vec[1], -vec[0], 0]
     })
     
-    //vec[2] = 0
     vec[3] = 0
     vec.x = x1
     vec.y = y1
@@ -342,64 +376,6 @@ for (let i = 0; i <= width; i++) {
 }
 return result
 }
-
-
-
-
-function makeVectorField2() {
-
-  let magnets = []
-for (let i = 0; i < 5; i++) {
-  if (i < 1)
-  magnets.push([
-    max.x + makeRand(), max.y+ makeRand(),0
-  ]); else 
-  magnets.push([
-        makeRand(), makeRand(), 0
-    ])
-  
-}
-function makeParticlesMove () {
-  let i = 0;
-  for (let i = 0; i < 100; i++) {
-
-  }
-}
-
-for (let i = 0; i <= width; i++) {
-  for (let j = 0; j < height;j++) {
-  let [x, y] = clipSpace(j, i, 0, width, height)
-    let [x1, y1 ] = zeroToOne(x , y)
-    let idx = Math.round(x1 * width + y1 * width * height)
-    let dog = -Math.sin(x+y + Math.random())
-    let dummy =  Math.cos(x) - Math.sin(y)
-    let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
-
-    let p = [x ,y, 0]
-    p.x = x 
-    p.y = y
-
-    dog = 0
-    dummy = 0
-
-  let vec = [0,0,0,0]
-
-  let dist = getDist(p, getClosestMagnet())
-
-
-    vec[2] = 0
-    vec[3] = 0
-    vec.x = x1
-    vec.y = y1
-
-    let bounds = j < 30 || i < 30 || i > 70 || j > 70
-
-    result[idx]= vec
-}
-}
-return result
-}
-
 
 function makeVectorField2() {
 for (let i = 0; i <= width; i++) {
@@ -445,36 +421,7 @@ for (let i = 0; i <= width; i++) {
       let degrees = angle * (180 / Math.PI)
       let abs = Math.abs, sqrt = Math.sqrt
 
-const dot2 = (p) => {
-   let _ = dot(p, p)
-  //if (! _) return console.log(p)
-   return _
-}
-
-    const dot = ( a, b) => {
-
-      return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
   
-    }
-    function sub (a, b) {
-      return [a[0] - b[0], a[1] - b[1]]
-    }
-
-    function circle(p) {
-      return length(p)
-    }
-
-    function sdHeart( p )
-    {
-      //console.log(p)
-        p[0] = abs(p[0]);
-        // p[0] -= .3
-        // p[1] -= .3
-        if( p[0]+p[1]>1. )
-            return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
-        return sqrt(min(dot2(sub(p,[0.00,1.00])),
-                        dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
-    }
     let l = circle(p);
     vec[0] = 1- l * 10
     vec[1] = 1- l * 10
@@ -488,20 +435,8 @@ const dot2 = (p) => {
     vec.x = x1
     vec.y = y1
 
-    //spiral
-    // vec[0] = y / (x * x) + (y * y) 
-    // vec[1] = -x / (x * x) + (y * y) 
-
     let bounds = j < 30 || i < 30 || i > 70 || j > 70
-    // if (bounds) {
-    //   vec[0] = 200 * -x
-    //   vec[1] = 200 * -y
-    // }
-    // vec[0] = -x
-    // vec[1] = -y
 
-    // vec[0] = x
-    // vec[1] = y
     result[idx]= vec
 }
 }
@@ -552,8 +487,14 @@ let gridBuffer = makeBuffer(result.flat(), 0, 'result')
 
 setInterval(function () {
   //console.time('a')//50ms
-  let vf = makeVectorField()
-  window.drawVF(vf)
+  let vf //makeVectorField()
+  let rand = Math.random() 
+  if 
+   (rand > .3 && rand < .66) vf =  makeVectorField()
+   else if (rand > .66)
+    vf = makeVectorField2()
+    else vf = makeVectorField3()
+  //window.drawVF(vf)
 
 
   let stagingBuffer = webgpu.device.createBuffer({
@@ -577,45 +518,11 @@ setInterval(function () {
   //console.timeEnd('a')
 
 
-}, 1000)
+}, 3000)
 
 let count = 0
 let coll = {}
 
-  
-
-  window.gridBuffer = gridBuffer
-  let texture = webgpu.device.createTexture({
-    size: [100, 100, 1],
-    format:  "rgba8unorm",
-    dimension: "2d",
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.STORAGE_BINDING |
-      GPUTextureUsage.COPY_SRC,
-  });
-  
-    // webgpu.device.queue.writeTexture(
-    //   { texture },
-    //   gridBuffer,
-    //   {
-    //     bytesPerRow: 400,
-    //     rowsPerImage: 400,
-    //   },
-    //   [100, 100, 1]
-    // );
-  
-  let ce = device.createCommandEncoder();
-  ce.copyBufferToTexture(
-    { buffer: gridBuffer },
-    { texture },
-    { width: 100, height: 00, depthOrArrayLayers: 1, bytesPerRow: 400 },
-    { offset: 0, bytesPerRow: 400, rowsPerImage: 100 }
-  );
-  
-  device.queue.submit([ce.finish()]);
-  
   const uniformsBuffer = webgpu.device.createBuffer({
     size: 32, 
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
@@ -624,6 +531,12 @@ let coll = {}
 
 
 
+//make it reconsitute the 3d model
+//particle rebirth in shape of dancer
+//multiple dancers
+//1million particles
+//use particle batches 
+// line drawing 
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code: abc || `
@@ -668,8 +581,8 @@ let coll = {}
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
-    @group(0) @binding(4) var myTexture: texture_2d<f32>;
-    @group(0) @binding(5) var<storage, read_write> lifetime: array<f32>;
+    @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
+    @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
 
   
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
@@ -852,14 +765,14 @@ let coll = {}
 
 
       let life = lifetime[index];
-
-      // if (life < 10.) {
-      //   lifetime[index] = 3000.;
-      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-      //   buffer3[index]= vec4<f32>(sfrand() * 10., sfrand() * 10., 0, 1.);
-      // } else {
-      //   lifetime[index] -= 8.;
-      // }
+      let r = reset[index];
+      if (life < 10.) {
+        lifetime[index] = 3000.;
+//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        buffer3[index]= r;
+      } else {
+        lifetime[index] -= 8.;
+      }
 
       //decay rate has to be same as scaling factor - 1.6
 
@@ -871,14 +784,7 @@ let coll = {}
 
       //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
       var idx = hash(pos.xyz);
-      var stuff =  textureLoad(myTexture,
-        vec2<i32>(idx),
-         //vec3<i32>(i32(shift(pos.x) * 100), i32(shift(pos.y * 255), i32(pos.z * 255)), 
-         0
-         );
-  
-      
-   
+    
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
   
   
@@ -979,21 +885,25 @@ let coll = {}
   // 2nd 3d model dancing
 
 
-  let computeBindGroup = state.device.createBindGroup({
+  const reset = makeBuffer(frames[1][1], 0, 'reset')
+
+
+
+  const pop = {
     layout: computePipeline.getBindGroupLayout(0),
     entries: [
       {binding: 0, resource: {buffer: gridBuffer}},
       {binding: 1, resource: {buffer: shapes[0]}},
       {binding: 2, resource: {buffer: uniformsBuffer}},
       {binding: 3, resource: {buffer: velocity}},
+      {binding: 4, resource: {buffer: lifeTimeBuffer}},
+      {binding: 5, resource: {buffer: reset }}
 
-      {binding: 4, resource: texture.createView({
-        // dimension: '3d',
-        sampleType: 'float'
-      })},
-      {binding: 5, resource: {buffer: lifeTimeBuffer}}
     ]
-  })
+  }
+  console.log(pop)
+
+  let computeBindGroup = state.device.createBindGroup(pop)
       return [computeBindGroup]
     }
   })
@@ -1932,7 +1842,7 @@ setInterval(
 }
 
 
-let shouldDraw = false
+let shouldDraw = true
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
 let width = 1000
