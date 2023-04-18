@@ -377,6 +377,45 @@ for (let i = 0; i <= width; i++) {
 return result
 }
 
+function findPoint(d) {
+  let [x, y] = d
+  var x1 = ((x + 1) /2).toPrecision(2)
+  var y1 = ((1. - y) / 2).toPrecision(2) 
+
+  x1 *= 100;
+  y1 *= 10000;
+  console.log()
+
+  let index = Math.floor(x1 + y1);
+  return [result[index], index]
+}
+
+
+function makeModelIndex() {
+  let result = []
+  let model = shapes[0].source
+
+
+  for (let i = 0; i <= width; i++) {
+    for (let j = 0; j < height;j++) {
+      let [x, y] = clipSpace(j, i, 0, width, height)
+      let [x1, y1 ] = zeroToOne(x , y)
+      let idx = Math.round(x1 * width + y1 * width * height)
+      result[idx] = [0, 0, 0, 0]
+    }
+  }
+
+  console.log(model)
+  for (let i = 0; i < model.length; i+=4) {
+    let pt = model.slice(i, i + 2)
+    //console.log(pt)
+    let [_, idx] = findPoint(pt)
+    result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
+  }
+
+  return result
+}
+
 function makeVectorField2() {
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
@@ -386,10 +425,7 @@ for (let i = 0; i <= width; i++) {
     let dog = -Math.sin(x+y + Math.random())
     let dummy =  Math.cos(x) - Math.sin(y)
     let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
-    // let a = dancer.slice(idx, idx+3)
-    // let b = dancer.slice(idx+4, idx+7)
-    // x *= 2
-    // y *= 2f
+
     let p = [x ,y, 0]
     p.x = x 
     p.y = y
@@ -398,25 +434,6 @@ for (let i = 0; i <= width; i++) {
     dummy = 0
 
   let vec = [0,0,0,0]
-
-    function distanceTo(b, a) {
-      
-      return [b[0] - a[0], b[1]-a[1], 0]
-    }
-
-    function getClosestMagnet() {
-      let idx = 0, distance = 0
-      magnets.forEach((d , i) => {
-        let dist = distanceTo(p, p)
-        if (distance > dist) return
-        distance = Math.min(dist, distance)
-        idx = i
-      })
-      return magnets[idx]
-    }
-
-      vec = [0, 0,0,0]
-      let dist = getDist(p, getClosestMagnet())
       const angle = Math.atan2(x, y)
       let degrees = angle * (180 / Math.PI)
       let abs = Math.abs, sqrt = Math.sqrt
@@ -457,27 +474,6 @@ function zeroToOne(x , y) {
   return [x1, y1]
 }
 
-//problem solving process has to be better than beefore
-function findPoint(d) {
-    let [x, y] = d
-    var x1 = ((x + 1) /2).toPrecision(2)
-    var y1 = ((1. - y) / 2).toPrecision(2) 
-  
-  
-    //if (y1 > .5) y1 -= .02
-    //var x1 = x, y1 = y;
-    //console.log(x1,y1)
-    //if (x1 % 1 === .5) x1 -= 1, y -= -1 
-    x1 *= 100;
-    y1 *= 10000;
-  
-    let index = Math.floor(x1 + y1);
-    //console.log(index, x, x1, y, y1)
-    //console.log(index, x1, y1)
-    return [result[index], index]
-  }
-
-
 let n = 0;
 let collided = 0
 
@@ -485,18 +481,24 @@ let collided = 0
 
 let gridBuffer = makeBuffer(result.flat(), 0, 'result')
 
+//build index of 3d model = place vertex in vector field from model
+//if pos of vector field coincides with 3d model, then set to position of index in next frame
+
+
+
+let pickVF = function () {
+  //weight each one differently 
+  let list = [
+    makeVectorField1, makeVectorField2, makeVectorField3, 
+    makeModelIndex
+  ]
+
+  return list[(Math.random() * list.length) | 0 ]()
+}
+
 setInterval(function () {
-  //console.time('a')//50ms
-  let vf //makeVectorField()
-  let rand = Math.random() 
-  if 
-   (rand > .3 && rand < .66) vf =  makeVectorField()
-   else if (rand > .66)
-    vf = makeVectorField2()
-    else vf = makeVectorField3()
-  //window.drawVF(vf)
-
-
+  let vf = pickVF() 
+//add 2 vector fields
   let stagingBuffer = webgpu.device.createBuffer({
     size: 1e6,
     usage: GPUBufferUsage.COPY_SRC,
@@ -815,10 +817,15 @@ let coll = {}
         //   velocity[index].x = -10 * cos(pos.x);
         // }
 
+    
       velocity[index] *= .1;
      //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
      velocity[index] = velocity[index] + .01 * vf;
-
+     var p = buffer3[index];
+     if (p.x > .9){ velocity[index] *= -1;}
+     if (p.x < -0.9){ velocity[index] *= -1;}
+     if (p.y > .9){ velocity[index] *= -1;}
+     if (p.y < -.9){ velocity[index] *= -1;}
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
       // if (uniforms.time > 0.) {
@@ -850,11 +857,6 @@ let coll = {}
       }
       // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
    
-      var p = buffer3[index];
-      if (p.x > .99){ buffer3[index].x = -1;}
-      if (p.x < -0.99){ buffer3[index].x = 1;}
-      if (p.y > .99){ buffer3[index].y = -1;}
-      if (p.y < -.99){ buffer3[index].y = 1;}
 
     }`,
   
