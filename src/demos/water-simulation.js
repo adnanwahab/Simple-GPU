@@ -124,13 +124,17 @@ import utils from '../../lib/utils';
 import { mat4, vec3 } from 'gl-matrix'
 
 const COMMON_SHADER_FUNCS = `
-fn bucketHash (p:vec3<i32>) -> u32 {
+fn bucketHash (p:vec3<f32>) -> u32 {
   // var grid_res = 100;
   // var result = p.x * grid_res * grid_res
   // + p.y * grid_res
   // + p.z;
   // return u32(result);
 
+
+  //dancer combined with water simulation could end stream by friday
+  //improve dancer to have some more stuff
+  return u32(p.x * 100. + floor(p.y * 100) * 100 + floor(p.z * 100) * 100 * 100);
 
   // return u32((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791));
   var h = (p.x * ${HASH_VEC[0]}) + (p.y * ${HASH_VEC[1]}) + (p.z * ${HASH_VEC[2]});
@@ -146,7 +150,7 @@ fn particleBucket (p:vec3<f32>) -> vec3<i32> {
 }
 
 fn particleHash (p:vec3<f32>) -> u32 {
-  return bucketHash(particleBucket(p));
+  return bucketHash(p);
 }
 `
 
@@ -186,7 +190,7 @@ fn getNeighbors (centerId:  u32) -> BucketContents {
 
   var p = particlesStorage[centerId].xyz;
   var grid = ${GRID_SPACING};
-  var pos = bucketHash(vec3(i32(p.x), i32(p.y), i32(p.z)));
+  var pos = bucketHash(p);
     for (var i = -1; i < 2; i = i + 1) {
         for (var j = -1; j < 2; j = j + 1) {
           for (var k = -1; k < 2; k = k + 1) {
