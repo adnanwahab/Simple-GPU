@@ -284,28 +284,10 @@ let width = 100, height = width, zspace = 100
 let makeVectorField = makeVectorField4
 
 function makeVectorField3() {
-  let dir = [
-    [1, 0],
-    [0, -1],
-    [-1, 0],
-    [0, 1]
-  ]
-  for (let i = 0; i <= width; i++) {
-    for (let j = 0; j < height; j++) {
-      let [x, y] = clipSpace(j, i, 0, width, height)
-      let [x1, y1 ] = zeroToOne(x , y)
-      let idx = Math.round(x1 * width + y1 * width * height)
-
-      result[idx] = [
-        -x, -y, 0, 1
-      ]
-
-
-
-
-
-    }
-  }
+  result[idx] = 
+  makeVectorFieldGeneric(function (x,y,z) {
+    return [ -x, -y, -z, 1]
+  })
 
 return result
 }
@@ -427,7 +409,6 @@ function findPoint(d) {
 
   x1 *= 100;
   y1 *= 10000;
-  console.log()
 
   let index = Math.floor(x1 + y1);
   return [result[index], index]
@@ -459,47 +440,19 @@ function makeModelIndex() {
 }
 
 function makeVectorField2() {
-for (let i = 0; i <= width; i++) {
-  for (let j = 0; j < height;j++) {
-  let [x, y] = clipSpace(j, i, 0, width, height)
-    let [x1, y1 ] = zeroToOne(x , y)
-    let idx = Math.round(x1 * width + y1 * width * height)
-    let dog = -Math.sin(x+y + Math.random())
-    let dummy =  Math.cos(x) - Math.sin(y)
-    let sin = Math.sin, cos = Math.cos, max = Math.max, pow = Math.pow, min = Math.min
-
-    let p = [x ,y, 0]
-    p.x = x 
-    p.y = y
-
-    dog = 0
-    dummy = 0
-
-  let vec = [0,0,0,0]
-      const angle = Math.atan2(x, y)
-      let degrees = angle * (180 / Math.PI)
-      let abs = Math.abs, sqrt = Math.sqrt
-
+    result[idx]= makeVectorFieldGeneric(function (x,y,z) {
+      let l = circle(p);
+      vec[0] = 1- l * 10
+      vec[1] = 1- l * 10
   
-    let l = circle(p);
-    vec[0] = 1- l * 10
-    vec[1] = 1- l * 10
+      if (l < .5 && l > .4) {
+        vec[0] = y * 10.
+        vec[1] = -x * 10.
+      } 
+      return [ -x, -y, -z, 1]
+    })
 
-    if (l < .5 && l > .4) {
-      vec[0] = y * 10.
-      vec[1] = -x * 10.
-    } 
-    vec[2] = 0
-    vec[3] = 0
-    vec.x = x1
-    vec.y = y1
-
-    let bounds = j < 30 || i < 30 || i > 70 || j > 70
-
-    result[idx]= vec
-}
-}
-return result
+  return result
 }
 //multiple dancers and a globe and one particle swarm that becomes stuff according to the beat
 //use curl noise on CPU to interpolate the vector field according to the music
@@ -531,37 +484,42 @@ let pickVF = function () {
   return list[(Math.random() * list.length) | 0 ]()
 }
 
-// setInterval(function () {
-//  // console.time('a')
-//   let vf =
+setInterval(function () {
+ // console.time('a')
+  let vf =
   
-//   //pickVF() 
-//   makeVectorField4()
-//   //console.log(vf)
-// //add 2 vector fields
-//   let stagingBuffer = webgpu.device.createBuffer({
-//     size: 5.4e7,
-//     label: 'vectorField',
-//     usage: GPUBufferUsage.COPY_SRC,
-//     mappedAtCreation: true,
-//   });
-
-//   const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
-
-//   vertexPositions.set(vf.flat())
-//   stagingBuffer.unmap();
-
-//    // Copy the staging buffer contents to the vertex buffer.
-
-//   const commandEncoder = webgpu.device.createCommandEncoder({});
-//   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
-
-//   webgpu.device.queue.submit([commandEncoder.finish()]);
-  
-// // console.timeEnd('a')
+  //pickVF() 
+  makeVectorField4()
 
 
-// }, 3000)
+  for (let i = 0; i < 100; i++) {
+    let fract = i / 100, fractB = (i+1) / 100 
+    let slice = vf.slice(fract * vf.length, fractB * vf.length)
+
+
+    setTimeout(function () {
+      console.log(slice.length- 1)
+      let stagingBuffer = webgpu.device.createBuffer({
+        size: slice.length * 4 * 4,
+        label: 'vectorField',
+        usage: GPUBufferUsage.COPY_SRC,
+        mappedAtCreation: true,
+      });
+    
+      const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
+    
+      vertexPositions.set(slice.flat())
+      stagingBuffer.unmap();
+    
+       // Copy the staging buffer contents to the vertex buffer.
+    
+      const commandEncoder = webgpu.device.createCommandEncoder({});
+      commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, slice.length * 4 * 4);
+    
+      webgpu.device.queue.submit([commandEncoder.finish()]);
+    }, i * 100)
+  }
+}, 10000)
 
 let count = 0
 let coll = {}
@@ -1840,7 +1798,7 @@ webgpu.canvas.addEventListener('mousemove', function (e) {
 //make it take differetn shapes - 
 //draw shape with function 
 // at least as sophisticated and cool as water simulation
-//
+//accelerate at an cubic easing rate so that the animation is front loaded - 0-80% happens in first second and 80-100% happens in last 3 seconds
 
 let camera = createCamera({
   center: [0, 2.5, 0],
