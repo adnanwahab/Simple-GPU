@@ -126,7 +126,7 @@ function clamp (val, min, max) {
 }
 function clipSpace(x,y, z, width, height) {
   y /= height
-  z /= width * height
+  z /= width
   y = y - .5
   z = z - .5
   y *= -2
@@ -137,11 +137,12 @@ function clipSpace(x,y, z, width, height) {
   return [x,y,z]
 }
 
-function zeroToOne(x , y) {
-  var x1 = (x + 1) /2 
+function zeroToOne(x , y, z) {
+  var x1 = (x + 1) / 2 
   var y1 =((1. - y) / 2);
+  var z1 = (z + 1) / 2
 
-  return [x1, y1]
+  return [x1, y1, z1]
 }
 
 function makeCube() {
@@ -151,7 +152,7 @@ function makeCube() {
     for (var j = 0; j < height; j++) {
       for (var k = 0; k < height; k++) {
         let [x, y, z] = clipSpace(k, j, i, width, height)
-        let [x1, y1]  = zeroToOne(x, y)
+        let [x1, y1, z1]  = zeroToOne(x, y, z)
         result.push([x, y, 0, 0])
       }
     }
@@ -311,36 +312,35 @@ return result
 
 
 function makeVectorField4() {
-  let dir = [
-    [1, 0],
-    [0, -1],
-    [-1, 0],
-    [0, 1]
-  ]
+       makeVectorFieldGeneric(function (x,y,z) {
+        return [ Math.cos(-10 * y + x), Math.sin(10 * x + y), 
+          10 * Math.atan(x, y), 1]
+       })
+
+return result
+}
+
+
+
+function makeVectorFieldGeneric(cb) {
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
-      let [x, y] = clipSpace(j, i, 0, width, height)
-      let [x1, y1 ] = zeroToOne(x , y)
-      let idx = Math.round(x1 * width + y1 * width * height)
+      for (let k = 0; k < zspace; k++) {
 
-      result[idx] = [
-       Math.cos(-10 * y + x), Math.sin(10 * x + y), 0, 1
-      ]
+      let [x, y, z] = clipSpace(j, i, k, width, height)
 
-      //0 goes left 
-      //1 goes right
-      // if (x > .5 && i % 3 === 0) {
-      //   result[idx][0] = 0
-      //   result[idx][1] = -1
-      // }
-
-
-
+      let [x1, y1, z1] = zeroToOne(x , y, z)
+      let idx = Math.round(x1 * width + y1 * width * height + z1 * width * width * width)
+      
+      result[idx] = cb(x, y, z)
+  
+      }
     }
   }
 
 return result
 }
+
 
 
 let magnets
@@ -509,13 +509,6 @@ return result
 //vector field isnt updating 
 makeVectorField()
 
-function zeroToOne(x , y) {
-  var x1 = (x + 1) /2 
-  var y1 =((1. - y) / 2);
-
-  return [x1, y1]
-}
-
 let n = 0;
 let collided = 0
 
@@ -538,34 +531,37 @@ let pickVF = function () {
   return list[(Math.random() * list.length) | 0 ]()
 }
 
-setInterval(function () {
-  let vf =
+// setInterval(function () {
+//  // console.time('a')
+//   let vf =
   
-  //pickVF() 
-  makeVectorField4()
-//add 2 vector fields
-  let stagingBuffer = webgpu.device.createBuffer({
-    size: 1e6,
-    usage: GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
+//   //pickVF() 
+//   makeVectorField4()
+//   //console.log(vf)
+// //add 2 vector fields
+//   let stagingBuffer = webgpu.device.createBuffer({
+//     size: 5.4e7,
+//     label: 'vectorField',
+//     usage: GPUBufferUsage.COPY_SRC,
+//     mappedAtCreation: true,
+//   });
 
-  const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
+//   const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-  vertexPositions.set(vf.flat())
-  stagingBuffer.unmap();
+//   vertexPositions.set(vf.flat())
+//   stagingBuffer.unmap();
 
-   // Copy the staging buffer contents to the vertex buffer.
+//    // Copy the staging buffer contents to the vertex buffer.
 
-  const commandEncoder = webgpu.device.createCommandEncoder({});
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
+//   const commandEncoder = webgpu.device.createCommandEncoder({});
+//   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
 
-  webgpu.device.queue.submit([commandEncoder.finish()]);
+//   webgpu.device.queue.submit([commandEncoder.finish()]);
   
-  //console.timeEnd('a')
+// // console.timeEnd('a')
 
 
-}, 3000)
+// }, 3000)
 
 let count = 0
 let coll = {}
@@ -948,7 +944,6 @@ let coll = {}
 
     ]
   }
-  console.log(pop)
 
   let computeBindGroup = state.device.createBindGroup(pop)
       return [computeBindGroup]
@@ -1139,7 +1134,8 @@ function writeBuffer (device, buffer, array) {
 
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   const particleSize = 4
-  const gpuBufferSize = 1e7 * particleSize
+                        //1000100
+  const gpuBufferSize = 134217728
 
   const gpuBuffer = webgpu.device.createBuffer({
     label,
@@ -1259,10 +1255,10 @@ function getCameraViewProjMatrix() {
 
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
-  // mat4.perspectiveZO(projectionMatrix,
-  //   10, 500 / 500, .5, 10.0);
+  mat4.perspectiveZO(projectionMatrix,
+    10, 500 / 500, .5, 10.0);
   //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
-  //mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
 
   //mat4.lookAt(viewProjectionMatrix, eyePosition, origin, upVector);
 
@@ -1416,7 +1412,7 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) uv:vec2<f32
     }
 
 
-    let color = vec3<f32>(uv, sin(uniforms.time));
+    let color = vec3<f32>(uv, 1);
     
     //120. * sin(camera.time) + 20. * sin(uv);
     //
@@ -1654,8 +1650,8 @@ var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
 vsOut.position = 
-//  camera.projectionMatrix
-//  * camera.viewMatrix *  camera.modelMatrix * 
+ camera.projectionMatrix
+ * camera.viewMatrix *  camera.modelMatrix * 
 
  vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1707,6 +1703,7 @@ intensity = pow(saturate(NdotH), .1);
 //Sum up the specular light factoring
 let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
 
+//sin(camera.time)
 return vec4<f32>(1. * col.b, .34, .74, .7);
 }
 `}}));
@@ -1850,9 +1847,13 @@ let camera = createCamera({
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
-  element: document.createElement('div') || webgpu.canvas
+  element: webgpu.canvas
+  //document.createElement('div') || 
 });
-
+let zoom = 10
+webgpu.canvas.addEventListener('mousewheel', function (e) {
+  camera.zoom(zoom = zoom + .1 * e.deltaY)
+})
 let result = drawCalls[drawCallChoice]({})
 let texture = result.state.swapChainTexture
 //let pp = await postProcessing(webgpu, texture);

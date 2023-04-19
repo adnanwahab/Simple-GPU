@@ -58,6 +58,7 @@ function createCamera (props_) {
     }
 
     mouseChange(source, function (buttons, x, y) {
+
       if (buttons & 1) {
         var dx = (x - prevX) / getWidth()
         var dy = (y - prevY) / getHeight()
@@ -167,6 +168,9 @@ function createCamera (props_) {
       projection: cameraState.projection,
       view: cameraState.view
     }
+  }
+  setupCamera.zoom = function (x) {
+    cameraState.distance = x
   }
   return setupCamera
 }
