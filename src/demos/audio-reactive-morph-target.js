@@ -4,6 +4,13 @@
 //https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/do-more-with-tunnels/trycloudflare/
 //generative AI - vector field
 //https://refikanadol.com/works/unsupervised/
+//generative adverserial networks
+
+//make vf 3d
+//rotate vf 
+//add 2nd vf to shader = interpolate between fields as a function of time 
+//generate 3-5 more interesting vector fields
+//work on visuals / post processing 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
@@ -271,9 +278,9 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
 let result = []
 
-let width = 100, height = width
+let width = 100, height = width, zspace = 100
 
-let makeVectorField = makeVectorField1
+let makeVectorField = makeVectorField4
 
 function makeVectorField3() {
   let dir = [
@@ -301,6 +308,40 @@ function makeVectorField3() {
 
 return result
 }
+
+
+function makeVectorField4() {
+  let dir = [
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+    [0, 1]
+  ]
+  for (let i = 0; i <= width; i++) {
+    for (let j = 0; j < height; j++) {
+      let [x, y] = clipSpace(j, i, 0, width, height)
+      let [x1, y1 ] = zeroToOne(x , y)
+      let idx = Math.round(x1 * width + y1 * width * height)
+
+      result[idx] = [
+       Math.cos(-10 * y + x), Math.sin(10 * x + y), 0, 1
+      ]
+
+      //0 goes left 
+      //1 goes right
+      // if (x > .5 && i % 3 === 0) {
+      //   result[idx][0] = 0
+      //   result[idx][1] = -1
+      // }
+
+
+
+    }
+  }
+
+return result
+}
+
 
 let magnets
 function makeMagnets () {
@@ -339,6 +380,7 @@ let e = d - Date.now()
 
 for (let i = 0; i <= width; i++) {
   for (let j = 0; j < height;j++) {
+    //for (let k = 0; k < zspace; k++) {
   let [x, y] = clipSpace(j, i, 0, width, height)
     let [x1, y1 ] = zeroToOne(x , y)
     let idx = Math.round(x1 * width + y1 * width * height)
@@ -372,7 +414,8 @@ for (let i = 0; i <= width; i++) {
 
     let bounds = j < 30 || i < 30 || i > 70 || j > 70
     result[idx]= vec
-}
+    //}
+  }
 }
 return result
 }
@@ -405,7 +448,6 @@ function makeModelIndex() {
     }
   }
 
-  console.log(model)
   for (let i = 0; i < model.length; i+=4) {
     let pt = model.slice(i, i + 2)
     //console.log(pt)
@@ -497,7 +539,10 @@ let pickVF = function () {
 }
 
 setInterval(function () {
-  let vf = pickVF() 
+  let vf =
+  
+  //pickVF() 
+  makeVectorField4()
 //add 2 vector fields
   let stagingBuffer = webgpu.device.createBuffer({
     size: 1e6,
@@ -768,13 +813,13 @@ let coll = {}
 
       let life = lifetime[index];
       let r = reset[index];
-      if (life < 10.) {
-        lifetime[index] = 3000.;
-//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[index]= r;
-      } else {
-        lifetime[index] -= 8.;
-      }
+//       if (life < 10.) {
+//         lifetime[index] = 3000.;
+// //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+//         buffer3[index]= r;
+//       } else {
+//         lifetime[index] -= 8.;
+//       }
 
       //decay rate has to be same as scaling factor - 1.6
 
@@ -978,47 +1023,54 @@ const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
 function drawStuff () {
   stagingBuffer = webgpu.device.createBuffer({
-    size: 1e6,
-    usage: GPUBufferUsage.COPY_SRC,
+    size: 1e5,
+    usage: GPUBufferUsage.MAP_WRITE |GPUBufferUsage.COPY_SRC,
     mappedAtCreation: true,
   });
 
   time += 1
 
+  let abc = []
+
   const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-  for (var i= 0; i < 1e6; i++) {
+  for (var i= 0; i < 1e4; i++) {
     let p = particles[i]
     p.x = makeRand()
     p.y = makeRand()
     p.z = makeRand()
-    vertexPositions[4*i] = 10 * Math.cos(i)
-    vertexPositions[4*i+1] = 10 * Math.sin(i);
+    vertexPositions[4*i] =  Math.cos(i)
+    vertexPositions[4*i+1] =  Math.sin(i);
     vertexPositions[4*i+2] = 1.;
     vertexPositions[4*i+3] = 0.;
   }
 
+  webgpu.device.queue.writeBuffer(shapes[0], 0 , vertexPositions.buffer, 0 ,vertexPositions.length);
+
   stagingBuffer.unmap();
 
-   // Copy the staging buffer contents to the vertex buffer.
+
+  //  // Copy the staging buffer contents to the vertex buffer.
   const commandEncoder = webgpu.device.createCommandEncoder({});
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, vertexPositions.length * 4);
+  commandEncoder.copyBufferToBuffer(stagingBuffer, 100, shapes[0], 100, vertexPositions.length * 4 * 4);
   webgpu.device.queue.submit([commandEncoder.finish()]);
 }
 
 window.addEventListener('click', function () {
   let timebetween = 1000
+  // animating = false
+  // return drawStuff()
   if (! animating ) {
 
+    animating = ! animating
 
-    // drawStuff()
-    // animating = ! animating
+    //return drawStuff()
     modelType = 1 + ((modelType) % (frames.length ))
  
     let elapsed = Date.now()
     setTimeout(function recur() {
       let dt = Date.now() - elapsed
-      window.writeTime(timebetween - dt)
+      //window.writeTime(timebetween - dt)
       if (dt < timebetween) setTimeout(recur, 16)
       else {
         animating = ! animating
@@ -1787,6 +1839,12 @@ webgpu.canvas.addEventListener('mousemove', function (e) {
   // console.log(mouse)
 })
 
+//make particles rainbow and colored from 0-100k
+//make it take differetn shapes - 
+//draw shape with function 
+// at least as sophisticated and cool as water simulation
+//
+
 let camera = createCamera({
   center: [0, 2.5, 0],
   damping: 0,
@@ -1797,7 +1855,7 @@ let camera = createCamera({
 
 let result = drawCalls[drawCallChoice]({})
 let texture = result.state.swapChainTexture
-let pp = await postProcessing(webgpu, texture);
+//let pp = await postProcessing(webgpu, texture);
 
 setInterval(
    function () {
@@ -1815,7 +1873,7 @@ setInterval(
       64,
       view.buffer,
       view.byteOffset,
-      view.byteLength
+      view.byteLength 
     );
      device.queue.writeBuffer(
       cameraUniformBuffer,
