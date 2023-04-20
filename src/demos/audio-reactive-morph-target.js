@@ -7,7 +7,7 @@ let pickVF = function () {
 
 
     makeVectorField9,
-    makeVectorField1, 
+    //makeVectorField1, 
    makeVectorField2, 
     
     makeVectorField3, 
@@ -92,35 +92,41 @@ for (let i = 0; i < 5; i++) {
 }
 }
 
-
+//getDist(mag, )
 makeMagnets()
 
 let d = Date.now()
-function makeVectorField1() {
-  magnets.forEach(m => {
-//    let dist = 
-let e = d - Date.now()
-    m[0] = .1 * Math.cos(e / 1000) + m[0]
-    m[1] = .1 * Math.sin(e / 1000) + m[1]
-    m[2] = 0
-    //.1 * Math.atan(e / 1000) + m[2]
-  })
-    makeVectorFieldGeneric(function (x,y,z) {
-      let vec = [0,0,0,0]
-      let p = [x,y,0]
-      magnets.forEach((mag , i) => {
-        let dist = getDist(mag, p)
-        let dx = unitVector(distanceTo(mag, p))
 
-        vec = add(vec, dx
-          .map(d => d * 1/ dist) )
-      })
-      vec[2] = 0
-      return vec
-   })
+//draw particles w/o fields
+//
 
-return result
-}
+//draw lines between particles
+//draw lines not particles
+// function makeVectorField1() {
+//   magnets.forEach(m => {
+// //    let dist = 
+// let e = d - Date.now()
+//     m[0] = .1 * Math.cos(e / 1000) + m[0]
+//     m[1] = .1 * Math.sin(e / 1000) + m[1]
+//     m[2] = 0
+//     //.1 * Math.atan(e / 1000) + m[2]
+//   })
+//     makeVectorFieldGeneric(function (x,y,z) {
+//       let vec = [0,0,0,0]
+//       let p = [x,y,0]
+//       magnets.forEach((mag , i) => {
+//         let dist = getDist(mag, p)
+//         let dx = unitVector(distanceTo(mag, p))
+
+//         vec = add(vec, dx
+//           .map(d => d * 1/ dist) )
+//       })
+//       vec[2] = 0
+//       return vec
+//    })
+
+// return result
+// }
 
 function findPoint(d) {
   let [x, y] = d
@@ -367,7 +373,7 @@ box.prototype.render = function (grid) {
 }
 
 
-let drawCallChoice = 2
+let drawCallChoice = 0
 
 import {abc} from "./shader2";
 
@@ -959,6 +965,70 @@ window.addEventListener('click', function () {
   // }
 })
 
+
+
+
+let particleMesh = []
+
+function initParticles () {
+  for (let i = 0; i < 3e5; i++) {
+    particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
+  }
+  console.log(particleMesh)
+}
+initParticles()
+
+//tween(p.x, 0, time)
+
+//make mandala of moving radius w/ shader - and then when shader lines up - shiny
+// let keyframeFunctions = [
+//   function down(p) {
+//     p.y -= .01
+//   }, 
+//   function windshieldWiper (p, i, time) {
+//     let t = time
+//     p.x = .1 * i * Math.cos(t * 360 * Math.PI / 180)
+//     p.y = .1 * i * Math.sin(t * 360 * Math.PI / 180)
+//   },
+
+//   function (p, i) {
+//     p.x += .01;
+//   }
+// ]
+
+
+let keyframeFunctions = [
+  function windshieldWiper (p, i, time) {
+    let t = time
+    //t += 10 * Math.floor(i  % 10)
+    t += (i / 1000);
+    i = i % 10;
+    p.x = .01 * i * Math.cos(t * 360 * Math.PI / 180)
+    p.y = .01 * i * Math.sin(t * 360 * Math.PI / 180)
+  },
+]
+
+
+function tween (a, b, i) {
+  return a - ((a - b) * i) / (b - a)
+}
+
+let count = 0
+function moveParticles () {
+  count += 1
+  let fn = keyframeFunctions[Math.floor(count / 100)]
+  if (! fn)fn = function (i){ 
+    count = 0; 
+    particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
+  }
+  //console.log(fn)
+  for (let i = 0; i < 2e5; i++) {
+  let pt = particleMesh[i]
+   fn(pt, i, (count % 100) / 100)
+  }
+}
+
+let drawParticles = true
 function makeStagingBuffer() {
   setTimeout(function () {
     if (! shapes[0] || !animating) return;
@@ -977,10 +1047,23 @@ function makeStagingBuffer() {
 
 
     time += 1
-
+    if (drawParticles) moveParticles()
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-    vertexPositions.set(toCopy)
+
+    if (drawParticles)
+    for (let i = 0; i < vertexPositions.length; i++){
+      let idx = 4* i
+      let p = particleMesh[i]
+      vertexPositions[idx] = p.x
+      vertexPositions[idx+1] = p.y
+      vertexPositions[idx+2] = p.z
+      vertexPositions[idx+3] = 1
+
+    } else 
+      vertexPositions.set(toCopy)
+    //console.log(vertexPositions)
+    //vertexPositions.set(toCopy)
     stagingBuffer.unmap();
 
      // Copy the staging buffer contents to the vertex buffer.
@@ -1529,8 +1612,8 @@ var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
 vsOut.position = 
- camera.projectionMatrix
- * camera.viewMatrix *  camera.modelMatrix * 
+//  camera.projectionMatrix
+//  * camera.viewMatrix *  camera.modelMatrix * 
 
  vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1587,98 +1670,6 @@ return vec4<f32>(1. * col.b, .34, .74, .7);
 }
 `}}));
 
-
-const drawGold = await webgpu.initDrawCall(Object.assign(drawDescriptor , {
-  shader:{
-    vertEntryPoint: 'main_vertex',
-    fragEntryPoint: 'main_fragment',
-  code:`
-struct Uniforms {             //             align(16)  size(24)
-color: vec3<f32>,         // offset(0)   align(16)  size(16)
-spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
-};
-
-struct Camera {
-projectionMatrix : mat4x4<f32>,
-viewMatrix : mat4x4<f32>,
-modelMatrix: mat4x4<f32>,
-time: f32,
-
-}
-
-struct VSOut {
-@builtin(position) position: vec4<f32>,
-@location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-@location(1) color: vec3<f32>
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<uniform> camera : Camera;
-
-
-@vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
-@location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
-) -> VSOut {
-var vsOut: VSOut;
-var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-
-
-vsOut.position = 
-//  camera.projectionMatrix
-//  * camera.viewMatrix *  camera.modelMatrix * 
-
- vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-//vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
-
-vsOut.localPosition = quadCorner;
-
-vsOut.color = color;
-return vsOut;
-}
-
-@fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
-let distanceFromCenter: f32 = length(localPosition);
-if (distanceFromCenter > 1.0) {
-    discard;
-}
-var viewDir = vec3<f32>(0,0,0);
-var lightSpecularColor = vec3<f32>(0., 0., 1.);
-var lightSpecularPower = 1.;
-var lightPosition = vec3<f32>(-1,0., 0);
-
-var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
-
-var distance = length(lightDir);
-
-lightDir = lightDir / distance; // = normalize(lightDir);
-distance = distance * distance; //This line may be optimised using Inverse square root
-var normal = vec3(1.,-1., 0.);
-
-//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
-var NdotL = dot(normal, lightDir);
-var intensity = saturate(NdotL);
-
-// Calculate the diffuse light factoring in light color, power and the attenuation
-//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
-
-//Calculate the half vector between the light vector and the view vector.
-//This is typically slower than calculating the actual reflection vector
-// due to the normalize function's reciprocal square root
-var H = normalize(lightDir + viewDir);
-
-//Intensity of the specular light
-var NdotH = dot(normal, H);
-intensity = pow(saturate(NdotH), .5);
-
-//Sum up the specular light factoring
-let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-
-return vec4<f32>(1., col.b, .0, .1);
-}
-`}}));
-
 const a = new Float32Array(1)
 
 let choice = false
@@ -1706,7 +1697,7 @@ function recur () {
 //recur()
 
 
-let drawCalls = [drawBox, drawGold, drawRosePetals, drawCube]
+let drawCalls = [drawRosePetals]
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
