@@ -4,7 +4,10 @@ let result = []
 let pickVF = function () {
   //weight each one differently 
   let list = [
-    //makeVectorField1, 
+
+
+    makeVectorField9,
+    makeVectorField1, 
    makeVectorField2, 
     
     makeVectorField3, 
@@ -12,8 +15,17 @@ let pickVF = function () {
    makeVectorField4
   ]
   let idx = (Math.random() * list.length) | 0 
-
+console.log(idx)
+idx = 1
   return [list[idx](), idx]
+}
+
+function makeVectorField9() {
+  makeVectorFieldGeneric(function (x,y,z) {
+    return [ 10 * (Math.pow(x, 2) + Math.sin(x)) , Math.pow(y, 2) , Math.pow(z, 2) , 1]
+  })
+
+return result
 }
 
 function makeVectorField3() {
@@ -39,18 +51,19 @@ return result
 function makeVectorFieldGeneric(cb) {
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
-      for (let k = 0; k < zspace; k++) {
+      //for (let k = 0; k < zspace; k++) {
 
-      let [x, y, z] = clipSpace(j, i, k, width, height)
+      let [x, y, z] = clipSpace(j, i, 0, width, height)
 
-      let [x1, y1, z1] = zeroToOne(x , y, z)
-      let idx = Math.round(x1 * width + y1 * width * height + z1 * width * width * width)
+      let [x1, y1, z1] = zeroToOne(x , y, 0)
+      // z1 * width * width * width
+      let idx = Math.round(x1 * width + y1 * width * height + 0 )
       
       result[idx] = cb(x, y, z)
       result[idx].x1 = x1
       result[idx].y1 = y1
 
-      }
+      //}
     }
   }
 
@@ -94,6 +107,7 @@ let e = d - Date.now()
   })
     makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
+      let p = [x,y,0]
       magnets.forEach((mag , i) => {
         let dist = getDist(mag, p)
         let dx = unitVector(distanceTo(mag, p))
@@ -101,6 +115,7 @@ let e = d - Date.now()
         vec = add(vec, dx
           .map(d => d * 1/ dist) )
       })
+      vec[2] = 0
       return vec
    })
 
@@ -728,10 +743,10 @@ for(let i = 0; i < mesh.source.length; i+=4) {
      //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
      velocity[index] = velocity[index] + .01 * vf;
      var p = buffer3[index];
-     if (p.x > .9){ velocity[index] *= -1;}
-     if (p.x < -0.9){ velocity[index] *= -1;}
-     if (p.y > .9){ velocity[index] *= -1;}
-     if (p.y < -.9){ velocity[index] *= -1;}
+    //  if (p.x > .9){ velocity[index] *= -1;}
+    //  if (p.x < -0.9){ velocity[index] *= -1;}
+    //  if (p.y > .9){ velocity[index] *= -1;}
+    //  if (p.y < -.9){ velocity[index] *= -1;}
       buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
       // if (uniforms.time > 0.) {
@@ -1610,8 +1625,8 @@ var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
 vsOut.position = 
- camera.projectionMatrix
- * camera.viewMatrix *  camera.modelMatrix * 
+//  camera.projectionMatrix
+//  * camera.viewMatrix *  camera.modelMatrix * 
 
  vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1711,8 +1726,9 @@ let camera = createCamera({
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
-  element: webgpu.canvas
-  //document.createElement('div') || 
+  element:
+  document.createElement('div') || 
+  webgpu.canvas
 });
 let zoom = 10
 webgpu.canvas.addEventListener('mousewheel', function (e) {
