@@ -1,3 +1,161 @@
+let makeVectorField = makeVectorField4
+let width = 100, height = width, zspace = 100
+let result = []
+let pickVF = function () {
+  //weight each one differently 
+  let list = [
+    makeVectorField1, 
+   // makeVectorField2, 
+    
+    //makeVectorField3, 
+   // makeModelIndex, 
+   // makeVectorField4
+  ]
+  let idx = (Math.random() * list.length) | 0 
+
+  return [list[idx](), idx]
+}
+
+function makeVectorField3() {
+  makeVectorFieldGeneric(function (x,y,z) {
+    return [ -x, -y, -z, 1]
+  })
+
+return result
+}
+
+
+function makeVectorField4() {
+       makeVectorFieldGeneric(function (x,y,z) {
+        return [ Math.cos(-10 * y + x), Math.sin(10 * x + y), 
+          10 * Math.atan(x, y), 1]
+       })
+
+return result
+}
+
+
+
+function makeVectorFieldGeneric(cb) {
+  for (let i = 0; i <= width; i++) {
+    for (let j = 0; j < height; j++) {
+      for (let k = 0; k < zspace; k++) {
+
+      let [x, y, z] = clipSpace(j, i, k, width, height)
+
+      let [x1, y1, z1] = zeroToOne(x , y, z)
+      let idx = Math.round(x1 * width + y1 * width * height + z1 * width * width * width)
+      
+      result[idx] = cb(x, y, z)
+      result[idx].x1 = x1
+      result[idx].y1 = y1
+
+      }
+    }
+  }
+
+return result
+}
+
+
+
+let magnets
+function makeMagnets () {
+   magnets = []
+for (let i = 0; i < 5; i++) {
+  magnets.push([makeRand(), makeRand(), makeRand()])
+  // if (i < 1)
+  // magnets.push([
+  //   max.x + makeRand(), max.y+ makeRand(), 
+  //   max.z + makeRand()
+    
+  // ]); else 
+  // magnets.push([
+  //       min.x + makeRand(), min.y + makeRand(),
+  //       min.z + makeRand()
+        
+  //   ])
+  
+}
+}
+
+
+makeMagnets()
+
+let d = Date.now()
+function makeVectorField1() {
+  magnets.forEach(m => {
+//    let dist = 
+let e = d - Date.now()
+    m[0] = .1 * Math.cos(e / 1000) + m[0]
+    m[1] = .1 * Math.sin(e / 1000) + m[1]
+    m[2] += .1 * Math.atan(e / 1000) + m[2]
+  })
+    makeVectorFieldGeneric(function (x,y,z) {
+      let vec = [0,0,0,0]
+      magnets.forEach((mag , i) => {
+        let dist = getDist(mag, p)
+        let dx = unitVector(distanceTo(mag, p))
+
+        vec = add(vec, dx
+          .map(d => d * 1/ dist) )
+      })
+      return vec
+   })
+
+return result
+}
+
+function findPoint(d) {
+  let [x, y] = d
+  var x1 = ((x + 1) /2).toPrecision(2)
+  var y1 = ((1. - y) / 2).toPrecision(2) 
+
+  x1 *= 100;
+  y1 *= 10000;
+
+  let index = Math.floor(x1 + y1);
+  return [result[index], index]
+}
+
+
+function makeModelIndex() {
+  let result = []
+  let model = shapes[0].source
+
+  makeVectorFieldGeneric(function (x,y,z) {
+     return [0, 0, 0, 0]
+  })
+
+  // for (let i = 0; i < model.length; i+=4) {
+  //   let pt = model.slice(i, i + 2)
+  //   //console.log(pt)
+  //   let [_, idx] = findPoint(pt)
+  //   result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
+  // }
+
+  return result
+}
+
+function makeVectorField2() {
+    makeVectorFieldGeneric(function (x,y,z) {
+      let vec = [0,0,0,0]
+      let p = [x ,y, 0]
+      let l = circle(p);
+      vec[0] = 1- l * 10
+      vec[1] = 1- l * 10
+  
+      if (l < .5 && l > .4) {
+        vec[0] = y * 10.
+        vec[1] = -x * 10.
+      } 
+      return vec
+    })
+
+  return result
+}
+
+
 //AABB - web worker - zero copy - camera frustum tween
 
 
@@ -235,11 +393,12 @@ function unitVector (v) {
   return v.map(d => d / l);
 }
 
-function makeComputeShader(webgpu, mesh, abc) {
+function makeComputeShader(webgpu, mesh, vf) {
   let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
+  let gridBuffer = makeBuffer(vf.flat(), 0, 'result')
 
 
   let particleLifetime = new Float32Array(1e6)
@@ -281,188 +440,20 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 }
 
 
-let result = []
-
-let width = 100, height = width, zspace = 100
-
-let makeVectorField = makeVectorField4
-
-function makeVectorField3() {
-  makeVectorFieldGeneric(function (x,y,z) {
-    return [ -x, -y, -z, 1]
-  })
-
-return result
-}
-
-
-function makeVectorField4() {
-       makeVectorFieldGeneric(function (x,y,z) {
-        return [ Math.cos(-10 * y + x), Math.sin(10 * x + y), 
-          10 * Math.atan(x, y), 1]
-       })
-
-return result
-}
-
-
-
-function makeVectorFieldGeneric(cb) {
-  for (let i = 0; i <= width; i++) {
-    for (let j = 0; j < height; j++) {
-      for (let k = 0; k < zspace; k++) {
-
-      let [x, y, z] = clipSpace(j, i, k, width, height)
-
-      let [x1, y1, z1] = zeroToOne(x , y, z)
-      let idx = Math.round(x1 * width + y1 * width * height + z1 * width * width * width)
-      
-      result[idx] = cb(x, y, z)
-      result[idx].x1 = x1
-      result[idx].y1 = y1
-
-      }
-    }
-  }
-
-return result
-}
-
-
-
-let magnets
-function makeMagnets () {
-   magnets = []
-for (let i = 0; i < 5; i++) {
-  if (i < 1)
-  magnets.push([
-    max.x + makeRand(), max.y+ makeRand(), 
-    max.z + makeRand()
-    
-  ]); else 
-  magnets.push([
-        min.x + makeRand(), min.y + makeRand(),
-        min.z + makeRand()
-        
-    ])
-  
-}
-}
-
-
-makeMagnets()
-
-let d = Date.now()
-function makeVectorField1() {
-  magnets.forEach(m => {
-//    let dist = 
-let e = d - Date.now()
-    m[0] = .1 * Math.cos(e / 1000) + m[0]
-    m[1] = .1 * Math.sin(e / 1000) + m[1]
-    m[2] += .1 * Math.atan(e / 1000) + m[2]
-  })
-    makeVectorFieldGeneric(function (x,y,z) {
-      let vec = [0,0,0,0]
-      magnets.forEach((mag , i) => {
-        let dist = getDist(mag, p)
-        let dx = unitVector(distanceTo(mag, p))
-
-        vec = add(vec, dx
-          .map(d => d * 1/ dist) )
-      })
-      return vec
-   })
-
-return result
-}
-
-function findPoint(d) {
-  let [x, y] = d
-  var x1 = ((x + 1) /2).toPrecision(2)
-  var y1 = ((1. - y) / 2).toPrecision(2) 
-
-  x1 *= 100;
-  y1 *= 10000;
-
-  let index = Math.floor(x1 + y1);
-  return [result[index], index]
-}
-
-
-function makeModelIndex() {
-  let result = []
-  let model = shapes[0].source
-
-  makeVectorFieldGeneric(function (x,y,z) {
-     return [0, 0, 0, 0]
-  })
-
-  // for (let i = 0; i < model.length; i+=4) {
-  //   let pt = model.slice(i, i + 2)
-  //   //console.log(pt)
-  //   let [_, idx] = findPoint(pt)
-  //   result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
-  // }
-
-  return result
-}
-
-function makeVectorField2() {
-    makeVectorFieldGeneric(function (x,y,z) {
-      let vec = [0,0,0,0]
-      let p = [x ,y, 0]
-      let l = circle(p);
-      vec[0] = 1- l * 10
-      vec[1] = 1- l * 10
-  
-      if (l < .5 && l > .4) {
-        vec[0] = y * 10.
-        vec[1] = -x * 10.
-      } 
-      return vec
-    })
-
-  return result
-}
-//multiple dancers and a globe and one particle swarm that becomes stuff according to the beat
-//use curl noise on CPU to interpolate the vector field according to the music
-
-// console.log(result, counter)
-
-//vector field isnt updating 
-makeVectorField()
-
 let n = 0;
 let collided = 0
 
 
 
-let gridBuffer = makeBuffer(result.flat(), 0, 'result')
-
-//build index of 3d model = place vertex in vector field from model
-//if pos of vector field coincides with 3d model, then set to position of index in next frame
 
 
 
-let pickVF = function () {
-  //weight each one differently 
-  let list = [
-    makeVectorField1, 
-   // makeVectorField2, 
-    
-    //makeVectorField3, 
-   // makeModelIndex, 
-   // makeVectorField4
-  ]
-  let idx = (Math.random() * list.length) | 0 
-
-  return [list[idx](), idx]
-}
 
 
 //just make a new draw call and a new compute call 
 //garbage collect the previous ones
 setInterval(async function () {
+  return
  // console.time('a')
   let [vf, idx] = pickVF()
   console.log(idx)
@@ -541,7 +532,7 @@ let coll = {}
 // line drawing 
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
-    code: abc || `
+    code:  `
 //timeStep
 //Acceleration
 //curl factor
@@ -1114,12 +1105,11 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 
-let computeTransitions = [0]
 async function basic () {
   // let computeTransition = makeComputeShader(webgpu, makeBuffer(frames[1][0]))
   // let computeTransition2 = makeComputeShader(webgpu, makeBuffer(frames[2][0]), abc)
   // computeTransitions.push(computeTransition, computeTransition2)
-  computeTransitions = makeComputeShader(webgpu, makeBuffer(frames[2][0]))
+  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), makeVectorField4())
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -1854,7 +1844,7 @@ setInterval(
  
     if (! animating) {
       //computeTransitions[1]()
-      computeTransitions()
+      computeTransition()
     }
     let result = drawCalls[drawCallChoice]({})
     let texture = result.state.swapChainTexture
@@ -1866,12 +1856,11 @@ setInterval(
 let shouldDraw = true
 let dpi = devicePixelRatio;
 var canvas = document.createElement("canvas");
-let width = 1000
-let height = 2000
+
 canvas.width = width * dpi;
 canvas.height = height * dpi;
-canvas.style.width = width + "px";
-canvas.style.height = height + "px";
+canvas.style.width = 1000 + "px";
+canvas.style.height = 2000 + "px";
 
 var context = canvas.getContext("2d");
 context.scale(dpi, dpi);
