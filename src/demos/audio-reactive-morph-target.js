@@ -971,12 +971,28 @@ window.addEventListener('click', function () {
 let particleMesh = []
 
 function initParticles () {
-  for (let i = 0; i < 3e5; i++) {
+  for (let i = 0; i < 1e6; i++) {
     particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
   }
   console.log(particleMesh)
 }
 initParticles()
+
+
+//draw in cube mesh - 1 particle at a time 
+//draw lines around dancer
+//draw fireworks around dancer
+
+//use a pointMesh Pool
+// new Shape = allocate from pool
+//circle on every pixel - 1000 x 1000 grid
+//flip them in cascades using rotation matrix array - 
+//
+
+//project shader onto circles
+//index of dot + time = synchronize = glowy
+
+//have to make the best shader + line particle drawings ever 
 
 //tween(p.x, 0, time)
 
