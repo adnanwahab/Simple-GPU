@@ -1,15 +1,15 @@
 let makeVectorField = makeVectorField4
-let width = 100, height = width, zspace = 100
+let width = 100, height = width, zspace = 10
 let result = []
 let pickVF = function () {
   //weight each one differently 
   let list = [
-    makeVectorField1, 
-   // makeVectorField2, 
+    //makeVectorField1, 
+   makeVectorField2, 
     
-    //makeVectorField3, 
-   // makeModelIndex, 
-   // makeVectorField4
+    makeVectorField3, 
+   //makeModelIndex, 
+   makeVectorField4
   ]
   let idx = (Math.random() * list.length) | 0 
 
@@ -89,7 +89,8 @@ function makeVectorField1() {
 let e = d - Date.now()
     m[0] = .1 * Math.cos(e / 1000) + m[0]
     m[1] = .1 * Math.sin(e / 1000) + m[1]
-    m[2] += .1 * Math.atan(e / 1000) + m[2]
+    m[2] = 0
+    //.1 * Math.atan(e / 1000) + m[2]
   })
     makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
@@ -438,98 +439,12 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   min.y = Math.min(y, max.y)
   min.z = Math.min(z, max.z)
 }
-
-
-let n = 0;
-let collided = 0
-
-
-
-
-
-
-
-
-//just make a new draw call and a new compute call 
-//garbage collect the previous ones
-setInterval(async function () {
-  return
- // console.time('a')
-  let [vf, idx] = pickVF()
-  console.log(idx)
-
-
-  console.log(vf.length)
-  //makeVectorField4()
-  //console.time('a')
-  let stagingBuffer = webgpu.device.createBuffer({
-        size: vf.length * 4 * 4,
-        label: 'vectorField',
-        usage: GPUBufferUsage.COPY_SRC,
-        mappedAtCreation: true,
-      });
-    
-      const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
-    
-      vertexPositions.set(vf.flat())
-      stagingBuffer.unmap();
-    
-       // Copy the staging buffer contents to the vertex buffer.
-       //await gridBuffer.mapAsync(GPUMapMode.WRITE, 0 , vf.length)
-       //webgpu.device.queue.writeBuffer(gridBuffer, 0,  vf, 0, vf.length * 4 * 4)
-       //gridBuffer.unmap()
-      const commandEncoder = webgpu.device.createCommandEncoder({});
-      commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, 0, vf.length * 4 * 4);
-    
-      webgpu.device.queue.submit([commandEncoder.finish()]);
-
-  // for (let i = 0; i < 100; i++) {
-  //   let fract = i / 100, fractB = (i+1) / 100 
-  //   let slice = vf.slice(fract * vf.length, fractB * vf.length)
-
-
-    // setTimeout(function () {
-    //   console.time('abc')
-    //   let stagingBuffer = webgpu.device.createBuffer({
-    //     size: slice.length * 4 * 4,
-    //     label: 'vectorField',
-    //     usage: GPUBufferUsage.COPY_SRC,
-    //     mappedAtCreation: true,
-    //   });
-    
-    //   const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
-    
-    //   vertexPositions.set(slice.flat())
-    //   stagingBuffer.unmap();
-    
-    //    // Copy the staging buffer contents to the vertex buffer.
-    
-    //   const commandEncoder = webgpu.device.createCommandEncoder({});
-    //   commandEncoder.copyBufferToBuffer(stagingBuffer, 0, gridBuffer, slice.length, slice.length * 4 * 4);
-    
-    //   webgpu.device.queue.submit([commandEncoder.finish()]);
-    //   console.timeEnd('abc')
-    // }, i * 8)
-  //}
-}, 10000)
-
-let count = 0
-let coll = {}
-
   const uniformsBuffer = webgpu.device.createBuffer({
     size: 32, 
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
 
-
-
-//make it reconsitute the 3d model
-//particle rebirth in shape of dancer
-//multiple dancers
-//1million particles
-//use particle batches 
-// line drawing 
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code:  `
@@ -872,15 +787,8 @@ let coll = {}
       computePass.end();
     },
     bindGroups: function (state, computePipeline) {
-  //dancing
-  //3d vector field of spiral explosion thing
-  //3d vector field to transition to 2nd model dancing
-  // 2nd 3d model dancing
-
 
   const reset = makeBuffer(frames[1][1], 0, 'reset')
-
-
 
   const pop = {
     layout: computePipeline.getBindGroupLayout(0),
@@ -1106,10 +1014,17 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 
 async function basic () {
-  // let computeTransition = makeComputeShader(webgpu, makeBuffer(frames[1][0]))
-  // let computeTransition2 = makeComputeShader(webgpu, makeBuffer(frames[2][0]), abc)
-  // computeTransitions.push(computeTransition, computeTransition2)
-  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), makeVectorField4())
+  setInterval(function () {
+console.time('a')
+   let vf =  pickVF()
+    console.timeEnd('a')
+
+    computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf)
+  }, 10000)
+  let vf =  pickVF()
+
+  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf)
+
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
