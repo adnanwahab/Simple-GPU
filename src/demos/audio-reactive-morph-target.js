@@ -1,6 +1,6 @@
 //https://www.shadertoy.com/view/ms3XWl
 let width = 100, height = width, zspace = 10
-
+//https://www.shadertoy.com/view/cs3XzS
 
 function makeGrid () {
   makeVectorFieldGeneric(function (x, y, z) {
@@ -24,7 +24,6 @@ let pickVF = function () {
 
 
     makeVectorField9,
-    //makeVectorField1, 
    makeVectorField2, 
     
     makeVectorField3, 
@@ -38,7 +37,7 @@ console.log(idx)
 }
 
 function makeVectorField9() {
-  makeVectorFieldGeneric(function (x,y,z) {
+  return makeVectorFieldGeneric(function (x,y,z) {
     let pos = [x, y, z]
     let a = x - y
     let length = length2(pos)
@@ -46,11 +45,11 @@ function makeVectorField9() {
     return [ length, length ,length , 1]
   })
 
-return result
+ 
 }
 
 function makeVectorField3() {
-  makeVectorFieldGeneric(function (x,y,z) {
+  return makeVectorFieldGeneric(function (x,y,z) {
     return [ -x, -y, -z, 1]
   })
 
@@ -59,12 +58,10 @@ return result
 
 
 function makeVectorField4() {
-       makeVectorFieldGeneric(function (x,y,z) {
+  return makeVectorFieldGeneric(function (x,y,z) {
         return [ Math.cos(-10 * y + x), Math.sin(10 * x + y), 
           10 * Math.atan(x, y), 1]
        })
-
-return result
 }
 
 
@@ -164,27 +161,28 @@ function findPoint(d) {
 
 
 function makeModelIndex() {
-  let result = []
+  //let result = []
   let model = shapes[0].source
 
   makeVectorFieldGeneric(function (x,y,z) {
      return [0, 0, 0, 0]
   })
 
-  // for (let i = 0; i < model.length; i+=4) {
-  //   let pt = model.slice(i, i + 2)
-  //   //console.log(pt)
-  //   let [_, idx] = findPoint(pt)
-  //   result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
-  // }
+  for (let i = 0; i < model.length; i+=4) {
+    let pt = model.slice(i, i + 2)
+    //console.log(pt)
+    let [_, idx] = findPoint(pt)
+    result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
+  }
 
   return result
 }
 
 function makeVectorField2() {
-    makeVectorFieldGeneric(function (x,y,z) {
+    return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
+      //sdheart
       let l = circle(p);
       vec[0] = 1- l * 10
       vec[1] = 1- l * 10
@@ -196,7 +194,6 @@ function makeVectorField2() {
       return vec
     })
 
-  return result
 }
 
 
@@ -223,7 +220,7 @@ import createCamera from './createCamera'
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
 import { mat4, vec3 } from 'gl-matrix'
-const particlesCount = 442008 / 3 
+const particlesCount = 442008
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 
@@ -265,10 +262,9 @@ return length2(p)
 
 function sdHeart( p )
 {
-//console.log(p)
-  p[0] = abs(p[0]);
-  // p[0] -= .3
-  // p[1] -= .3
+
+  p[0] = Math.abs(p[0]);
+  let sqrt = Math.sqrt, min = Math.min;
   if( p[0]+p[1]>1. )
       return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
   return sqrt(min(dot2(sub(p,[0.00,1.00])),
@@ -1016,35 +1012,83 @@ initParticles()
 //tween(p.x, 0, time)
 
 //make mandala of moving radius w/ shader - and then when shader lines up - shiny
+
+//draw cool shapes -> deform into vector field -> index after 100k
+//draw lines around dancer
+
+//sphere
+//Math.cos()
+//Math.sin
+//radius = 0, z = -1
+//radius = 1, z = 1
 let keyframeFunctions = [
+  function (p, i, t) {
+    let idx = i / 100
+    let radius = 2
+    let z = (i / 1e5) * 10
+    p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180) 
+    p.z = z
+  },
+  function (p, i, t) {
+    //i *= 1. - t
+    //butterfly equation 
+    p.x = (i / 1000)
+    p.y = Math.round(i / 50) / 200
+
+  },
+  function (p, i, t) {
+    //i *= 1. - t
+    //butterfly equation 
+    p.x = i / 1000
+    p.y = (i % 100) / 10
+
+  },
+  function (p, i, t) {
+    i *= 1. - t
+    p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180) 
+    p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180) 
+
+  },
+
   function down(p) {
     p.y -= .01
   }, 
   function windshieldWiper (p, i, time) {
+    //console.log('123')
     let t = time
-    p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180)
-    p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180)
+    p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180) 
+    p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180) 
   },
 
   function (p, i) {
     p.x += .01;
+  },
+
+  function (p, i, t) {
+    t = 1. - t
+    p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180) 
+    p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180) 
+  },
+  function windshieldWiper (p, i, time) {
+    let t = time
+    //t += 10 * Math.floor(i  % 10)
+    t += (i / 1000);
+    let idx = i % 10;
+    p.x = .01 * idx * Math.cos(t * 360 * Math.PI / 180)
+    p.y = .01 * idx * Math.sin(t * 360 * Math.PI / 180)
+    for (let n =0; n < 10; n++)
+      if (i > n * 1000)  
+        p.x += n * .2
+  },
+
+  function (p, i, t) {
+    p.x = Math.tan(t * 360 * Math.PI / 180)
+    p.y = Math.tan(t * 360 * Math.PI / 180)
+
   }
 ]
 
-
-// let keyframeFunctions = [
-//   function windshieldWiper (p, i, time) {
-//     let t = time
-//     //t += 10 * Math.floor(i  % 10)
-//     t += (i / 1000);
-//     let idx = i % 10;
-//     p.x = .01 * idx * Math.cos(t * 360 * Math.PI / 180)
-//     p.y = .01 * idx * Math.sin(t * 360 * Math.PI / 180)
-//     for (let n =0; n < 10; n++)
-//       if (i > n * 1000)  
-//         p.x += n * .2
-//   },
-// ]
 
 //make pixel grid out of circles
 //colorize in resonating waves
@@ -1058,13 +1102,16 @@ function tween (a, b, i) {
 let count = 0
 function moveParticles () {
   count += 1
-  let fn = keyframeFunctions[Math.floor(count / 100)]
+  //count = 0
+  let i = Math.floor(count / 100)
+  let fn = keyframeFunctions[0]
+  //console.log(fn)
   if (! fn)fn = function (i){ 
     count = 0; 
-    particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
+    //particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
   }
   //console.log(fn)
-  for (let i = 0; i < 2e5; i++) {
+  for (let i = 0; i < 1e5; i++) {
   let pt = particleMesh[i]
    fn(pt, i, (count % 100) / 100)
   }
@@ -1098,17 +1145,18 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
     //40ms to update mesh
-    if (drawParticles)
+    vertexPositions.set(toCopy)
+    //console.log(toCopy.length)
     for (let i = 0; i < 1e5; i++){
-      let idx = 4* i
+      let idx = 4*i//+(toCopy.length)
       let p = particleMesh[i]
       vertexPositions[idx] = p.x
       vertexPositions[idx+1] = p.y
-      vertexPositions[idx+2] = 0
+      vertexPositions[idx+2] = p.z
       vertexPositions[idx+3] = 1
 
-    } else 
-      vertexPositions.set(toCopy)
+    } 
+      
     //console.log(vertexPositions)
     //vertexPositions.set(toCopy)
     stagingBuffer.unmap();
@@ -1126,7 +1174,7 @@ function makeStagingBuffer() {
     if (animating) makeStagingBuffer()
     
 
-  }, 100)
+  }, 8)
 }
 
 let shapes = [
@@ -1319,10 +1367,10 @@ for (let i = 0; i < rgb.length; i++) {
   let color = d3.rgb( interpolateTurbo(stuff));
 
 
-  rgb[3*i] = color.r / 255 / 2
-  rgb[3*i+1] = color.g / 255 /2 
+  rgb[3*i] = color.r / 255 / 2 + .5
+  rgb[3*i+1] = color.g / 255 /2 + .5
 
-  rgb[3*i+2] = color.b / 255 /2
+  rgb[3*i+2] = color.b / 255 /2 + .5
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
@@ -1336,10 +1384,13 @@ let hello = []
 // compute shader - changing poitns according to vector field - 3 of those
 //
 let img = new Image();
-img.src = './data/test.png'
+img.src = './data/webgpu.png'
 document.body.appendChild(img)
-let texture = await webgpu.texture(img)
-console.log('hello', texture)
+
+
+await img.decode();
+let bitmap = await createImageBitmap(img);
+
 let drawDescriptor = {
   attributeBuffers: buffers,
   attributeBufferData: [
@@ -1356,8 +1407,9 @@ let drawDescriptor = {
       size: 32, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
-console.log(123)
-    return webgpu.device.createBindGroup({
+let texture = webgpu.texture(bitmap)
+  let desc = {
+    label: Math.random(),
       layout: pipeline.getBindGroupLayout(0),
       entries: [
           {
@@ -1381,11 +1433,14 @@ console.log(123)
             resource: texture.texture.createView(),
           },
       ]
-  });
+  }
+//console.log(desc.label)
+
+    return webgpu.device.createBindGroup(desc);
   }
 }
 
-const drawRosePetals =  await webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
+const drawRosePetals =  webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
   vertEntryPoint: 'main_vertex',
   fragEntryPoint: 'main_fragment',
   code:`
@@ -1426,8 +1481,8 @@ var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
 
 
 vsOut.position = 
-//  camera.projectionMatrix
-//  * camera.viewMatrix *  camera.modelMatrix * 
+ camera.projectionMatrix
+ * camera.viewMatrix *  camera.modelMatrix * 
 
  vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
 //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
@@ -1480,7 +1535,8 @@ intensity = pow(saturate(NdotH), .1);
 let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
 let m = textureSample(myTexture, mySampler, localPosition);
 //sin(camera.time)
-return vec4<f32>(color.rgb, .7);
+//
+return vec4<f32>(color.rgb+m.rgb, .7);
 }
 `}}));
 
@@ -1531,23 +1587,23 @@ let camera = createCamera({
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
-  element:
-  document.createElement('div') || 
-  webgpu.canvas
+  element: webgpu.canvas || false ||
+  document.createElement('div') || false
+ 
 });
 let zoom = 10
 webgpu.canvas.addEventListener('mousewheel', function (e) {
   camera.zoom(zoom = zoom + .1 * e.deltaY)
 })
-let result = drawCalls[drawCallChoice]({})
-//let texture = result.state.swapChainTexture
+let result = drawCalls[drawCallChoice]()
+//let texture = 
 //let pp = await postProcessing(webgpu, texture);
 
 
-
+let swapChainTexture = result.state.swapChainTexture
 
 setInterval(
-   function () {
+async function () {
     let {projection, view} = camera()
     device.queue.writeBuffer(
       cameraUniformBuffer,
@@ -1588,9 +1644,11 @@ setInterval(
 
 
     let result = drawCalls[drawCallChoice]({
-      texture
+      texture: bitmap
     })
-    //let texture = result.state.swapChainTexture
+
+    bitmap = result.state.swapChainTexture
+
     // pp(texture)
     }, 8) 
 }

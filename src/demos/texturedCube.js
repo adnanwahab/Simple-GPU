@@ -83,7 +83,9 @@ let img = new Image();
 img.src = './data/webgpu.png'
 document.body.appendChild(img)
 
+
 await img.decode();
+const bitmap = await createImageBitmap(img);
 //1/4, shader abstraction might get it to 1/10 or 1/5
 //goal: 10x easier than native w/ shader abstraction
 //15% way to full framework - last 2 months well spent 
@@ -126,7 +128,7 @@ frag: `
   },
   uniforms: {
     modelViewProjectionMatrix: getTransformationMatrix,
-   texture: webgpu.texture(img),
+   texture: webgpu.texture(bitmap),
   },
   count: 36
 })
@@ -134,7 +136,7 @@ frag: `
 setInterval(
   function () {
     drawCube({
-      texture: webgpu.texture(img)
+      texture: webgpu.texture(bitmap)
     })
   }, 50
 )
