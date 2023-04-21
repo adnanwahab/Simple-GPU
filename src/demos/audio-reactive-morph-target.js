@@ -1,8 +1,25 @@
-let makeVectorField = makeVectorField4
+//https://www.shadertoy.com/view/ms3XWl
 let width = 100, height = width, zspace = 10
+
+
+function makeGrid () {
+  makeVectorFieldGeneric(function (x, y, z) {
+    return [x, y, z , 1]
+  })
+}
+
+let gridBuffer = makeGrid()
+
+
+function length2 (p) {
+  let [x, y] = p
+  return Math.sqrt(x*x + y*y)
+}//ant simulation
+
+let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
-  //weight each one differently 
+  //weight each one differently  https://www.youtube.com/watch?v=lX6JcybgDFo           b']"""""""""""]l;p-"
   let list = [
 
 
@@ -11,18 +28,22 @@ let pickVF = function () {
    makeVectorField2, 
     
     makeVectorField3, 
-   //makeModelIndex, 
+   makeModelIndex, 
    makeVectorField4
   ]
   let idx = (Math.random() * list.length) | 0 
 console.log(idx)
-idx = 1
+//idx = 1
   return [list[idx](), idx]
 }
 
 function makeVectorField9() {
   makeVectorFieldGeneric(function (x,y,z) {
-    return [ 10 * (Math.pow(x, 2) + Math.sin(x)) , Math.pow(y, 2) , Math.pow(z, 2) , 1]
+    let pos = [x, y, z]
+    let a = x - y
+    let length = length2(pos)
+    
+    return [ length, length ,length , 1]
   })
 
 return result
@@ -49,6 +70,7 @@ return result
 
 
 function makeVectorFieldGeneric(cb) {
+  var result = []
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
       //for (let k = 0; k < zspace; k++) {
@@ -238,7 +260,7 @@ return [a[0] - b[0], a[1] - b[1]]
 }
 
 function circle(p) {
-return length(p)
+return length2(p)
 }
 
 function sdHeart( p )
@@ -400,10 +422,7 @@ function minus (v1, v2) {
   ]
 }
 
-function length (p) {
-  let [x, y] = p
-  return Math.sqrt(x*x + y*y)
-}
+
  
 function magnitude (v) {
   let pow = (e) => Math.pow(e, 2)
@@ -997,33 +1016,40 @@ initParticles()
 //tween(p.x, 0, time)
 
 //make mandala of moving radius w/ shader - and then when shader lines up - shiny
-// let keyframeFunctions = [
-//   function down(p) {
-//     p.y -= .01
-//   }, 
-//   function windshieldWiper (p, i, time) {
-//     let t = time
-//     p.x = .1 * i * Math.cos(t * 360 * Math.PI / 180)
-//     p.y = .1 * i * Math.sin(t * 360 * Math.PI / 180)
-//   },
-
-//   function (p, i) {
-//     p.x += .01;
-//   }
-// ]
-
-
 let keyframeFunctions = [
+  function down(p) {
+    p.y -= .01
+  }, 
   function windshieldWiper (p, i, time) {
     let t = time
-    //t += 10 * Math.floor(i  % 10)
-    t += (i / 1000);
-    i = i % 10;
-    p.x = .01 * i * Math.cos(t * 360 * Math.PI / 180)
-    p.y = .01 * i * Math.sin(t * 360 * Math.PI / 180)
+    p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180)
+    p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180)
   },
+
+  function (p, i) {
+    p.x += .01;
+  }
 ]
 
+
+// let keyframeFunctions = [
+//   function windshieldWiper (p, i, time) {
+//     let t = time
+//     //t += 10 * Math.floor(i  % 10)
+//     t += (i / 1000);
+//     let idx = i % 10;
+//     p.x = .01 * idx * Math.cos(t * 360 * Math.PI / 180)
+//     p.y = .01 * idx * Math.sin(t * 360 * Math.PI / 180)
+//     for (let n =0; n < 10; n++)
+//       if (i > n * 1000)  
+//         p.x += n * .2
+//   },
+// ]
+
+//make pixel grid out of circles
+//colorize in resonating waves
+//reflections from scratch
+//glow post processing 
 
 function tween (a, b, i) {
   return a - ((a - b) * i) / (b - a)
@@ -1044,13 +1070,15 @@ function moveParticles () {
   }
 }
 
+//attribute buffer with - translate, rotate scale
+
 let drawParticles = true
 function makeStagingBuffer() {
   setTimeout(function () {
     if (! shapes[0] || !animating) return;
 
     stagingBuffer = webgpu.device.createBuffer({
-      size: 1e6,
+      size: 4e6,
       usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
@@ -1063,17 +1091,20 @@ function makeStagingBuffer() {
 
 
     time += 1
+    //console.time('a')
+
     if (drawParticles) moveParticles()
+    //120ms to move particles
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
-
+    //40ms to update mesh
     if (drawParticles)
-    for (let i = 0; i < vertexPositions.length; i++){
+    for (let i = 0; i < 1e5; i++){
       let idx = 4* i
       let p = particleMesh[i]
       vertexPositions[idx] = p.x
       vertexPositions[idx+1] = p.y
-      vertexPositions[idx+2] = p.z
+      vertexPositions[idx+2] = 0
       vertexPositions[idx+3] = 1
 
     } else 
@@ -1081,7 +1112,7 @@ function makeStagingBuffer() {
     //console.log(vertexPositions)
     //vertexPositions.set(toCopy)
     stagingBuffer.unmap();
-
+    //console.timeEnd('a')
      // Copy the staging buffer contents to the vertex buffer.
     const commandEncoder = webgpu.device.createCommandEncoder({});
     commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
@@ -1093,6 +1124,8 @@ function makeStagingBuffer() {
     //   //waveGridStagingBuffers.push(stagingBuffer);
     // });
     if (animating) makeStagingBuffer()
+    
+
   }, 100)
 }
 
@@ -1126,12 +1159,10 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   return gpuBuffer
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
-
 async function basic () {
   setInterval(function () {
-console.time('a')
    let vf =  pickVF()
-    console.timeEnd('a')
+   
 
     computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf)
   }, 10000)
@@ -1281,19 +1312,21 @@ function vectorTo(b, a) {
 }
 
 //precisely calculate line interval convolutions using 
-var rgb = new Float32Array(2e5);
-for (let i = 0; i < rgb.length; i+=3) {
-  let stuff = (i / rgb.length) * 1000 % 1000
+var rgb = new Float32Array(1e5);
+for (let i = 0; i < rgb.length; i++) {
+  let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
-  let color = d3.rgb( interpolateTurbo(interval));
+  let color = d3.rgb( interpolateTurbo(stuff));
 
-  rgb[i] = color.r / 255 / 2
-  rgb[i+1] = color.g / 255 / 2
 
-  rgb[i+2] = color.b / 255 / 2
+  rgb[3*i] = color.r / 255 / 2
+  rgb[3*i+1] = color.g / 255 /2 
+
+  rgb[3*i+2] = color.b / 255 /2
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
+
 let hello = []
 
 
@@ -1302,106 +1335,16 @@ let hello = []
 // shader box + generate box + shaders for transitions + functions to change rotation
 // compute shader - changing poitns according to vector field - 3 of those
 //
-
-let boxDescriptor = {
-  shader: {
-    vertEntryPoint: 'main_vertex',
-    fragEntryPoint: 'main_fragment',
-    code:`
-    struct Uniforms {
-      time: f32,             //             align(16)  size(24)
-    color: vec3<f32>,         // offset(0)   align(16)  size(16)
-    spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
-};
-
-struct Camera {
-  projectionMatrix : mat4x4<f32>,
-  viewMatrix : mat4x4<f32>,
-  modelMatrix: mat4x4<f32>,
-
-
-}
-
-struct VSOut {
-    @builtin(position) position: vec4<f32>,
-    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-    @location(1) uv: vec2<f32>
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<uniform> camera : Camera;
-
-
-@vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
- @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
-) -> VSOut {
-    var vsOut: VSOut;
-    var m = camera.modelMatrix;
-    // const uv = array(
-    //   vec2(1.0, 0.0),
-    //   vec2(1.0, 1.0),
-    //   vec2(0.0, 1.0),
-    //   vec2(1.0, 0.0),
-    //   vec2(0.0, 1.0),
-    //   vec2(0.0, 0.0),
-    // );
-
-
-
-    var t = uniforms.time;
-    //mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-
-
-    vsOut.position = 
-    camera.projectionMatrix
-    * camera.viewMatrix *   
-    camera.modelMatrix *
-    vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-//    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
-    
-    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
-
-    //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-
-  //${useCamera ? 1: ''}//  
-
-   //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
-    
-    vsOut.localPosition = quadCorner;
-
-    vsOut.uv = (inPosition.xy + 1.) / 2.;
-    return vsOut;
-}
-
-@fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) uv:vec2<f32> ) -> @location(0) vec4<f32> {
-    let distanceFromCenter: f32 = length(localPosition);
-    if (distanceFromCenter > 1.0) {
-        discard;
-    }
-
-
-    var c = 0.;
-    if (uv.x > 0.) {
-      c = 1.;
-    } else {
-      c = 0.;
-    }
-
-
-    let color = vec3<f32>(uv, 1);
-    
-    //120. * sin(camera.time) + 20. * sin(uv);
-    //
-
-
-    return vec4<f32>((color.xyz), .7);
-}
-`},
+let img = new Image();
+img.src = './data/test.png'
+document.body.appendChild(img)
+let texture = await webgpu.texture(img)
+console.log('hello', texture)
+let drawDescriptor = {
   attributeBuffers: buffers,
   attributeBufferData: [
     shapes[0]
+    //makeBuffer(gridBuffer, 0, 'cube'),
     //makeBuffer(makeCube(), 0, 'cube')
     , quadBuffer, posBuffer, colorBuffer
   ],
@@ -1410,169 +1353,15 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) uv:vec2<f32
   instances: particlesCount,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
-      size: 48, 
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-  });
-  let timeBuffer = new Float32Array(1);
-  window.reWriteTime = function () {
-    timeBuffer[0] = performance.now() / 1000
-    webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  timeBuffer)
-  }
-    return webgpu.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-          {
-              binding: 0,
-              resource: {
-                  buffer: uniformsBuffer,
-              }
-          },
-          {
-            binding: 1,
-            resource: {
-            buffer: cameraUniformBuffer
-            }
-          }
-      ]
-  });
-  }
-}
-
-const drawBox = await webgpu.initDrawCall(boxDescriptor)
-
-
-let drawDescriptor = {
-  shader: {
-    vertEntryPoint: 'main_vertex',
-    fragEntryPoint: 'main_fragment',
-    code:`
-    struct Uniforms {             //             align(16)  size(24)
-    color: vec3<f32>,         // offset(0)   align(16)  size(16)
-    spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
-};
-
-struct Camera {
-  projectionMatrix : mat4x4<f32>,
-  viewMatrix : mat4x4<f32>,
-  modelMatrix: mat4x4<f32>,
-  time: f32,
-
-}
-
-struct VSOut {
-    @builtin(position) position: vec4<f32>,
-    @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-    @location(1) color: vec3<f32>
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<uniform> camera : Camera;
-
-
-@vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
- @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
-) -> VSOut {
-    var vsOut: VSOut;
-  
-    const uv = array(
-      vec2(1.0, 0.0),
-      vec2(1.0, 1.0),
-      vec2(0.0, 1.0),
-      vec2(1.0, 0.0),
-      vec2(0.0, 1.0),
-      vec2(0.0, 0.0),
-    );
-
-
-
-    var t = camera.time;
-    //mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-
-
-    vsOut.position = 
-    camera.projectionMatrix *
-    vec4<f32>(inPosition.xy + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-//    vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
-    
-    //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.)), 1.);
-
-    //vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-
-  //${useCamera ? 1: ''}
-  
-  
-  //  * camera.viewMatrix *  camera.modelMatrix * 
-
-   //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
-    
-    vsOut.localPosition = quadCorner;
-
-    vsOut.color = color;
-    return vsOut;
-}
-
-@fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
-    let distanceFromCenter: f32 = length(localPosition);
-    if (distanceFromCenter > 1.0) {
-        discard;
-    }
-    var viewDir = vec3<f32>(0,0,0);
-    var lightSpecularColor = vec3<f32>(0., 0., 1.);
-    var lightSpecularPower = 1.;
-    var lightPosition = vec3<f32>(-1,0., 0);
-
-    var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
-
-		var distance = length(lightDir);
-
-		lightDir = lightDir / distance; // = normalize(lightDir);
-		distance = distance * distance; //This line may be optimised using Inverse square root
-    var normal = vec3(-1.,-1., 0.);
-
-		//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
-		var NdotL = dot(normal, lightDir);
-		var intensity = saturate(NdotL);
-
-		// Calculate the diffuse light factoring in light color, power and the attenuation
-		//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
-
-		//Calculate the half vector between the light vector and the view vector.
-		//This is typically slower than calculating the actual reflection vector
-		// due to the normalize function's reciprocal square root
-		var H = normalize(lightDir + viewDir);
-
-		//Intensity of the specular light
-		var NdotH = dot(normal, H);
-		intensity = pow(saturate(NdotH), .1);
-
-		//Sum up the specular light factoring
-		let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-
-    return vec4<f32>(sin(color.xyz), .7);
-}
-`},
-  attributeBuffers: buffers,
-  attributeBufferData: [
-    shapes[0]
-    //makeBuffer(makeCube(), 0, 'cube')
-    , quadBuffer, posBuffer, colorBuffer
-  ],
-  count: 6,
-  blend,
-  instances: particlesCount,
-  bindGroup: function ({pipeline}) {
-    const uniformsBuffer = webgpu.device.createBuffer({
       size: 32, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
-
+console.log(123)
     return webgpu.device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
           {
-              binding: 0,
+               binding: 0,
               resource: {
                   buffer: uniformsBuffer,
               }
@@ -1582,15 +1371,19 @@ fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<
             resource: {
             buffer: cameraUniformBuffer
             }
-          }
+          },
+          {
+            binding: 2,
+            resource: texture.sampler,
+          },
+          {
+            binding: 3,
+            resource: texture.texture.createView(),
+          },
       ]
   });
   }
 }
-setInterval(function () {
-  reWriteTime()
-}, 8)
-const drawCube = await webgpu.initDrawCall(drawDescriptor)
 
 const drawRosePetals =  await webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
   vertEntryPoint: 'main_vertex',
@@ -1617,6 +1410,11 @@ struct VSOut {
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<uniform> camera : Camera;
+@group(0) @binding(2) var mySampler: sampler;
+@group(0) @binding(3) var myTexture: texture_2d<f32>;
+
+
+
 
 
 @vertex
@@ -1680,9 +1478,9 @@ intensity = pow(saturate(NdotH), .1);
 
 //Sum up the specular light factoring
 let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-
+let m = textureSample(myTexture, mySampler, localPosition);
 //sin(camera.time)
-return vec4<f32>(1. * col.b, .34, .74, .7);
+return vec4<f32>(color.rgb, .7);
 }
 `}}));
 
@@ -1742,8 +1540,11 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
   camera.zoom(zoom = zoom + .1 * e.deltaY)
 })
 let result = drawCalls[drawCallChoice]({})
-let texture = result.state.swapChainTexture
+//let texture = result.state.swapChainTexture
 //let pp = await postProcessing(webgpu, texture);
+
+
+
 
 setInterval(
    function () {
@@ -1784,8 +1585,12 @@ setInterval(
       //computeTransitions[1]()
       computeTransition()
     }
-    let result = drawCalls[drawCallChoice]({})
-    let texture = result.state.swapChainTexture
+
+
+    let result = drawCalls[drawCallChoice]({
+      texture
+    })
+    //let texture = result.state.swapChainTexture
     // pp(texture)
     }, 8) 
 }
