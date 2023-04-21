@@ -1023,9 +1023,9 @@ initParticles()
 //radius = 1, z = 1
 let keyframeFunctions = [
   function (p, i, t) {
-    let idx = i / 100
+    let idx = i / 1000
     let radius = 2
-    let z = (i / 1e5) * 10
+    let z = 1- (i / 1e5) * 10
     p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
     p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180) 
     p.z = z
@@ -1385,7 +1385,7 @@ let hello = []
 //
 let img = new Image();
 img.src = './data/webgpu.png'
-document.body.appendChild(img)
+//document.body.appendChild(img)
 
 
 await img.decode();
