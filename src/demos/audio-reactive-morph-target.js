@@ -115,41 +115,9 @@ for (let i = 0; i < 5; i++) {
 }
 }
 
-//getDist(mag, )
 makeMagnets()
 
 let d = Date.now()
-
-//draw particles w/o fields
-//
-
-//draw lines between particles
-//draw lines not particles
-// function makeVectorField1() {
-//   magnets.forEach(m => {
-// //    let dist = 
-// let e = d - Date.now()
-//     m[0] = .1 * Math.cos(e / 1000) + m[0]
-//     m[1] = .1 * Math.sin(e / 1000) + m[1]
-//     m[2] = 0
-//     //.1 * Math.atan(e / 1000) + m[2]
-//   })
-//     makeVectorFieldGeneric(function (x,y,z) {
-//       let vec = [0,0,0,0]
-//       let p = [x,y,0]
-//       magnets.forEach((mag , i) => {
-//         let dist = getDist(mag, p)
-//         let dx = unitVector(distanceTo(mag, p))
-
-//         vec = add(vec, dx
-//           .map(d => d * 1/ dist) )
-//       })
-//       vec[2] = 0
-//       return vec
-//    })
-
-// return result
-// }
 
 function findPoint(d) {
   let [x, y] = d
