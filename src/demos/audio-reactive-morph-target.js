@@ -1,11 +1,8 @@
 //add more particles
-
-
-//https://www.shadertoy.com/view/ms3XWl
 let width = 100, height = width, zspace = 10
-//https://www.shadertoy.com/view/cs3XzS
+const mouse = [0,0]
+let drawCallChoice = 0
 
-//at different z depth, x = -, y = -
 function makeGrid () {
   makeVectorFieldGeneric(function (x, y, z) {
     return [x, y, z , 1]
@@ -13,7 +10,6 @@ function makeGrid () {
 }
 
 let gridBuffer = makeGrid()
-
 
 function length2 (p) {
   let [x, y] = p
@@ -23,10 +19,7 @@ function length2 (p) {
 let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
-  //weight each one differently  https://www.youtube.com/watch?v=lX6JcybgDFo           b']"""""""""""]l;p-"
   let list = [
-
-
     makeVectorField9,
    makeVectorField2, 
     
@@ -36,7 +29,6 @@ let pickVF = function () {
   ]
   let idx = (Math.random() * list.length) | 0 
 console.log(idx)
-//idx = 1
   return [list[idx](), idx]
 }
 
@@ -47,9 +39,7 @@ function makeVectorField9() {
     let length = length2(pos)
     
     return [ length, length ,length , 1]
-  })
-
- 
+  }) 
 }
 
 function makeVectorField3() {
@@ -57,7 +47,6 @@ function makeVectorField3() {
     return [ -x, -y, -z, 1]
   })
 
-return result
 }
 
 
@@ -92,30 +81,6 @@ function makeVectorFieldGeneric(cb) {
 
 return result
 }
-
-
-
-let magnets
-function makeMagnets () {
-   magnets = []
-for (let i = 0; i < 5; i++) {
-  magnets.push([makeRand(), makeRand(), makeRand()])
-  // if (i < 1)
-  // magnets.push([
-  //   max.x + makeRand(), max.y+ makeRand(), 
-  //   max.z + makeRand()
-    
-  // ]); else 
-  // magnets.push([
-  //       min.x + makeRand(), min.y + makeRand(),
-  //       min.z + makeRand()
-        
-  //   ])
-  
-}
-}
-
-makeMagnets()
 
 let d = Date.now()
 
@@ -363,11 +328,10 @@ box.prototype.render = function (grid) {
 }
 
 
-let drawCallChoice = 0
 
 import {abc} from "./shader2";
 
-const mouse = [0,0]
+
 
 
 function distanceTo(b, a) {
@@ -390,8 +354,6 @@ function minus (v1, v2) {
   ]
 }
 
-
- 
 function magnitude (v) {
   let pow = (e) => Math.pow(e, 2)
   return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]))
