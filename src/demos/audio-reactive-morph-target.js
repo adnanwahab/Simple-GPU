@@ -438,9 +438,9 @@ function makeComputeShader(webgpu, mesh, vf) {
   let gridBuffer = makeBuffer(vf.flat(), 0, 'result')
 
 
-  let particleLifetime = new Float32Array(1e6)
+  let particleLifetime = new Float32Array(1e5)
   for(let i =0; i < particleLifetime.length; i++) {
-    particleLifetime[i] = Math.random() * 3000
+    particleLifetime[i] = 300000 * (i / 1e5)
   }
 
 
@@ -835,10 +835,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       {binding: 3, resource: {buffer: velocity}},
       {binding: 4, resource: {buffer: lifeTimeBuffer}},
       {binding: 5, resource: {buffer: reset }}
-
     ]
   }
-
   let computeBindGroup = state.device.createBindGroup(pop)
       return [computeBindGroup]
     }
@@ -1023,9 +1021,19 @@ initParticles()
 //radius = 1, z = 1
 let keyframeFunctions = [
   function (p, i, t) {
-    let idx = i / 1000
+    let idx = i / 100
+    let radius = 1 
+    let z = radius - (i / 1e5) * 100
+    if (z < 0) radius *= -1
+    p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180) 
+    p.z = z
+  },
+  function spiral(p, i, t) {
+    //if (! t > i) return
+    let idx = i / 100
     let radius = 2
-    let z = 1- (i / 1e5) * 10
+    let z = 1- (i / 1e5) * 100
     p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
     p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180) 
     p.z = z
@@ -1122,6 +1130,7 @@ function moveParticles () {
 let drawParticles = true
 function makeStagingBuffer() {
   setTimeout(function () {
+    return
     if (! shapes[0] || !animating) return;
 
     stagingBuffer = webgpu.device.createBuffer({
@@ -1174,7 +1183,7 @@ function makeStagingBuffer() {
     if (animating) makeStagingBuffer()
     
 
-  }, 8)
+  }, 1000)
 }
 
 let shapes = [
