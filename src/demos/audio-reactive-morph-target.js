@@ -970,7 +970,7 @@ function makeStagingBuffer() {
     if (animating) makeStagingBuffer()
     
 
-  }, 8)
+  }, 1000)
 }
 
 let shapes = [
