@@ -908,6 +908,28 @@ let particle = () =>{ return {x: 0, y: 0, z:0} }
 const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
 
+let pointBuffer = new Float32Array(1e5)
+let indexPool = new Array(1e5).fill(1).map((d, i) => i)
+
+function line() {
+  this.x1 = x1
+  this.y1 = y1
+  this.x2 = x2
+  this.y2 = y2
+  this.indices = []
+  this.array = pointBuffer
+}
+
+
+
+line.prototype.draw = function () {
+  if (! this.indices.length) {
+    this.indices.push(...indexPool.alloc(4))
+  }
+
+}
+
+
 function drawStuff () {
   stagingBuffer = webgpu.device.createBuffer({
     size: 1e5,
