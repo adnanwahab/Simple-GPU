@@ -1,3 +1,16 @@
+import * as d3 from 'd3'
+import {interpolateTurbo} from "d3-scale-chromatic";
+import createCamera from './createCamera'
+import bunny from 'bunny'
+import dragon from 'stanford-dragon'
+import { mat4, vec3 } from 'gl-matrix'
+const particlesCount = 442008
+import simpleWebgpuInit from '../../lib/main';
+import utils from '../../lib/utils';
+import * as dat from 'dat.gui';
+import postProcessing from './postProcessing'
+
+
 //add more particles
 let width = 100, height = width, zspace = 10
 const mouse = [0,0]
@@ -28,7 +41,6 @@ let pickVF = function () {
    makeVectorField4
   ]
   let idx = (Math.random() * list.length) | 0 
-console.log(idx)
   return [list[idx](), idx]
 }
 
@@ -96,9 +108,7 @@ function findPoint(d) {
   return [result[index], index]
 }
 
-
 function makeModelIndex() {
-  //let result = []
   let model = shapes[0].source
 
   makeVectorFieldGeneric(function (x,y,z) {
@@ -107,7 +117,6 @@ function makeModelIndex() {
 
   for (let i = 0; i < model.length; i+=4) {
     let pt = model.slice(i, i + 2)
-    //console.log(pt)
     let [_, idx] = findPoint(pt)
     result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
   }
@@ -133,35 +142,8 @@ function makeVectorField2() {
 
 }
 
-
-//AABB - web worker - zero copy - camera frustum tween
-
-
-//https://github.com/facebookresearch/dinov2
-//3d box-3d to control magnets  -> gravity and water -> 
-//https://stripe.com/sessions - scroll to see vector field to change
-//https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/do-more-with-tunnels/trycloudflare/
-//generative AI - vector field
-//https://refikanadol.com/works/unsupervised/
-//generative adverserial networks
-
-//make vf 3d
-//rotate vf 
-//add 2nd vf to shader = interpolate between fields as a function of time 
-//generate 3-5 more interesting vector fields
-//work on visuals / post processing 
 let computeTransition
-import * as d3 from 'd3'
-import {interpolateTurbo} from "d3-scale-chromatic";
-import createCamera from './createCamera'
-import bunny from 'bunny'
-import dragon from 'stanford-dragon'
-import { mat4, vec3 } from 'gl-matrix'
-const particlesCount = 442008
-import simpleWebgpuInit from '../../lib/main';
-import utils from '../../lib/utils';
 
-import * as dat from 'dat.gui';
 let camera = {position: {x: 0, y: 0, z: 0} }
 const gui = new dat.GUI();
 const cameraFolder = gui.addFolder('Camera')
@@ -179,90 +161,27 @@ var text =
 }
 gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
 
-const dot2 = (p) => {
-  let _ = dot(p, p)
-  return _
-}
+
 
 const dot = ( a, b) => {
 
 return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
 
 }
-function sub (a, b) {
-return [a[0] - b[0], a[1] - b[1]]
-}
+
 
 function circle(p) {
-return length2(p)
+  return length2(p)
 }
-
-function sdHeart( p )
-{
-
-  p[0] = Math.abs(p[0]);
-  let sqrt = Math.sqrt, min = Math.min;
-  if( p[0]+p[1]>1. )
-      return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
-  return sqrt(min(dot2(sub(p,[0.00,1.00])),
-                  dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
-}
-//if magnets have a z location, then vector field makes points fly out of 
-//camera frustum
-
-//when points get close to magnet they move too quickly - orbit around weakly
-//curl noise turbulence
-//flowing along 3d model
-//magnets
-//spiral
-//writing words
-
-// make spiral vector field 
-// dont use visualizer
-//algorithms for vector field
- //cloud flowing in the wind
- //magnets rotating around the center - speed up 1/4 according to beat
- // the cloud turns into a dancer
- //forces change due to music beats / words
- //add reflections
-//friday
-
-//friday - try to work 12 hours a day including today
-//sophisticated vectorfield 
-//reflections ?
-//rose Petals -> gold -> 
-
-//try your best to keep it scratch - dont copy paste 
-//read stuff and learn from it 
-//write it down - fill up 100 page journal with learning
-//learning is whats important
-//learning is what preps us to face what challenges come tomorrow
-//demo is merely a stepping stone to more important creations
-//put in 140 hours of work and see if its good enough
-// if not, reassess and try again but sure
-
-import postProcessing from './postProcessing'
 
 const useCamera = true
-
-
-function add (v1, v2) {
-  return [
-    v1[0] + v2[0],
-    v1[1] + v2[1],
-    v1[2] + v2[2],
-  ]
-}
 
 function makeRand () {
   let x = Math.random().toPrecision(2)
   x -= .5;
   return x * 2
 }
-function clamp (val, min, max) {
-  return Math.min(Math.max(val, min), max)
 
-}
 function clipSpace(x,y, z, width, height) {
   y /= height
   z /= width
@@ -284,85 +203,9 @@ function zeroToOne(x , y, z) {
   return [x1, y1, z1]
 }
 
-function makeCube() {
-  let result = []
-  let width = 100, height = 100
-  for (var i = 0; i < width; i++) {
-    for (var j = 0; j < height; j++) {
-      for (var k = 0; k < height; k++) {
-        let [x, y, z] = clipSpace(k, j, i, width, height)
-        let [x1, y1, z1]  = zeroToOne(x, y, z)
-        result.push([x, y, 0, 0])
-      }
-    }
-  }
-  return result;
-}
-
-function box() {
-  this.width = 100
-  this.height = 100
-  this.z = 100
-
-  this.origin = [0,0,0]
-  this.rotation = [];
-}
-
-box.prototype.rotate = function (x, y, z) {
-
-}
-
-box.prototype.render = function (grid) {
-  let render = []
-  for (var i = 0; i < width; i++) {
-    for (var j = 0; i < height; i++) {
-      for (var k = 0; i < height; i++) {
-        let [x, y, z] = clipSpace(i, j, k, width, height);
-
-        result.push([x, y, z, 0])
-      }
-    }
-  }
-
-  return render;
-}
 
 
 
-import {abc} from "./shader2";
-
-
-
-
-function distanceTo(b, a) {
-      
-  return [b[0] - a[0], b[1]-a[1], b[2] - a[2]]
-}
-
-
-function getDist(a, b) {
-  return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
-    return a + b
-  })
-}
-
-function minus (v1, v2) {
-  return [
-    v1[0] - v2[0],
-    v1[1] - v2[1],
-    v1[2] - v2[2],
-  ]
-}
-
-function magnitude (v) {
-  let pow = (e) => Math.pow(e, 2)
-  return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]))
-}
-
-function unitVector (v) {
-  let l = magnitude(v)
-  return v.map(d => d / l);
-}
 
 function makeComputeShader(webgpu, mesh, vf) {
   let device = webgpu.device
@@ -376,7 +219,6 @@ function makeComputeShader(webgpu, mesh, vf) {
   for(let i =0; i < particleLifetime.length; i++) {
     particleLifetime[i] = Math.random() * 3000
   }
-
 
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
 
@@ -418,43 +260,10 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code:  `
-//timeStep
-//Acceleration
-//curl factor
-//colors 
-//2d : 3d
-// magnet animation formula
-//
-
-
-
-  
-  //   const matrix = [
-  //     -3.677814483642578,
-  //     0,
-  //     0,
-  //     0,
-  //     0,
-  //     -3.677814483642578,
-  //     0,
-  //     0,
-  //     0,
-  //     0,
-  //     -1.0090817213058472,
-  //     -1,
-  //     0,
-  //     0,
-  //     -0.9081735610961914,
-  //     0
-  // ];
-
-
     struct Uniforms {
       mouse: vec2<f32>,
       time: f32
     }
-
-
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
@@ -619,42 +428,25 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   }
 
   fn hash(pos: vec3<f32>) -> i32 {
-    //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
-
-  
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
-
-    // if (y < .01) {y = 1.;}
-    // if (x < .01) {x = 1.;}
-    // if (y > .99) {y = 0.;}
-    // if (x > .99) {x = 0.;}
-    //return i32(floor(x * 100) + floor(y * 10000));
     return i32(floor(x * 100) + floor(y * 100) * 100);
-    //return vec2<i32>(i32(x * 10), i32(y * 100));
   }
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-
-
-
       let index: u32 = GlobalInvocationID.x;
 
 
       let life = lifetime[index];
       let r = reset[index];
-//       if (life < 10.) {
-//         lifetime[index] = 3000.;
-// //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-//         buffer3[index]= r;
-//       } else {
-//         lifetime[index] -= 8.;
-//       }
-
-      //decay rate has to be same as scaling factor - 1.6
-
-
+      if (life < 10.) {
+        lifetime[index] = 3000.;
+//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        buffer3[index]= r;
+      } else {
+        lifetime[index] -= 8.;
+      }
 
       var pos = buffer3[index];
 
@@ -843,9 +635,6 @@ let particle = () =>{ return {x: 0, y: 0, z:0} }
 
 const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
-
-
-
 let pointBuffer = new Float32Array(1e5)
 
 let indexPool = new Array(1e5 / 4).fill(1).map((d, i) => i)
@@ -889,8 +678,7 @@ line.prototype.draw = function () {
     this.indices.push(...indexPool.alloc(this.points.length))
   }
 
-  
-console.log(this.points, this.indices)
+
   this.indices.forEach((d, i) => {
     let idx = d * 4
     console.log(d, i)
@@ -909,9 +697,7 @@ let rhomboid = function (origin, side, skew) {
   let c = [origin[0] + side,  origin[1] - side] // bottom right
   let d = [origin[0] - side, origin[1] - side] // bottom left
   let lines = [new line(a, b), new line(a, c), new line(c, d), new line(d, b)]
-  console.log(a,b,c,d)
   lines.forEach( line => line.draw() )
-  console.log(pointBuffer)
 }
 
 // rhomboid([0,0], .5, 1.)
@@ -1154,9 +940,9 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
     //40ms to update mesh
-    //vertexPositions.set(toCopy)
+    vertexPositions.set(toCopy)
     //console.log(toCopy.length)
-    vertexPositions.set(pointBuffer, 0);
+    //vertexPositions.set(pointBuffer, 0);
     // for (let i = 0; i < 1e5; i++){
     //   let idx = 4*i//+(toCopy.length)
     //   let p = particleMesh[i]
@@ -1444,8 +1230,6 @@ let texture = webgpu.texture(bitmap)
           },
       ]
   }
-//console.log(desc.label)
-
     return webgpu.device.createBindGroup(desc);
   }
 }
@@ -1555,42 +1339,12 @@ const a = new Float32Array(1)
 let choice = false
 let i = 0
 
-function recur () {
-  i = (i + 1) % (shapes.length)
-
-  choice = ! choice;
-  let swap = drawCube.state.options.attributeBufferData[
-    choice ? 0 : 2
-  ]
-  drawCube.state.options.attributeBufferData[
-    choice ? 0 : 2
-  ] = shapes[i]
-  d3.transition().duration(3 * 1000)
-  .ease(d3.easeCubic)
-  .attrTween('animation', function () {
-    return function (t) {
-      if (choice) t = 1.0 - t
-      a.forEach((d, i) => a[i] = t)
-    }
-  }).on('end', recur)
-}
-//recur()
-
-
 let drawCalls = [drawRosePetals]
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
   mouse[1] = e.clientY / 500
-  // console.log(e.clientX, e.clientY)
-  // console.log(mouse)
 })
-
-//make particles rainbow and colored from 0-100k
-//make it take differetn shapes - 
-//draw shape with function 
-// at least as sophisticated and cool as water simulation
-//accelerate at an cubic easing rate so that the animation is front loaded - 0-80% happens in first second and 80-100% happens in last 3 seconds
 
 let camera = createCamera({
   center: [0, 2.5, 0],
@@ -1663,40 +1417,4 @@ async function () {
     }, 8) 
 }
 
-
-let shouldDraw = true
-let dpi = devicePixelRatio;
-var canvas = document.createElement("canvas");
-
-canvas.width = width * dpi;
-canvas.height = height * dpi;
-canvas.style.width = 1000 + "px";
-canvas.style.height = 2000 + "px";
-
-var context = canvas.getContext("2d");
-context.scale(dpi, dpi);
-window.drawVF = function (vf, i) {
-context.fillRect(0, 0, innerWidth, innerHeight);
-
-  vf.forEach((vec, i) => {
-    let x = 50
-    context.fillStyle = i % 2 ===1 ? "orange" : "#FFFFFF";//rgb(${vec[0] * 55}, ${vec[1] * 55}
-    context.fillStyle = `rgb(${Math.abs(vec[0]) * 50},  ${vec[2] * 55}, ${Math.abs(vec[1]) * 50})`
-
-    context.fillRect(vec.x * innerWidth, vec.y * innerHeight, 10, 10);
-
-  })
-}
-
-setTimeout(() => {
-  if (! shouldDraw) return
-  canvas.style.opacity = .5
-  canvas.style.position = 'absolute'
-  canvas.style.zIndex = '600'
-  canvas.style.pointerEvents = 'none'
-  webgpu.canvas.style.position = 'absolute'
-  webgpu.canvas.style.zIndex = '500'
-  webgpu.canvas.webgpuCompostingMode = 'alpha-blend'
-  document.body.insertBefore(canvas, webgpu.canvas)
-}, 500);
 
