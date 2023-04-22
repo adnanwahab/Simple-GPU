@@ -910,6 +910,44 @@ let particle = () =>{ return {x: 0, y: 0, z:0} }
 const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
 
+
+
+let pointBuffer = new Float32Array(1e5)
+let indexPool = new Array(1e5).fill(1).map((d, i) => i)
+
+function line(a, b) {
+  this.x1 = a[0]
+  this.y1 = a[1]
+  this.x2 = b[0]
+  this.y2 = b[1]
+  this.indices = []
+  this.array = pointBuffer
+}
+
+
+
+line.prototype.draw = function () {
+  if (! this.indices.length) {
+    this.indices.push(...indexPool.alloc(4))
+  }
+
+}
+
+
+let triangle = function (origin, radius) {
+  //left corner = half radius left + down
+  //6 left, 4 down
+  let a = []
+  let b = [origin, origin + radius]
+  let c = []
+  
+  let lines = [new line(a, b), new line(a, b), new line(a, b)]
+
+
+}
+
+
+
 function drawStuff () {
   stagingBuffer = webgpu.device.createBuffer({
     size: 1e5,
@@ -1024,8 +1062,8 @@ initParticles()
 let keyframeFunctions = [
   function (p, i, t) {
     let idx = i / 100
-    let radius = 2
-    let z = (i / 1e5) * 10
+    let radius = 1
+    let z = (i / 1e5) * 100
     p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
     p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180) 
     p.z = z
