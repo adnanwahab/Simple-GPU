@@ -1,7 +1,11 @@
+//add more particles
+
+
 //https://www.shadertoy.com/view/ms3XWl
 let width = 100, height = width, zspace = 10
 //https://www.shadertoy.com/view/cs3XzS
 
+//at different z depth, x = -, y = -
 function makeGrid () {
   makeVectorFieldGeneric(function (x, y, z) {
     return [x, y, z , 1]
@@ -710,13 +714,13 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
       let life = lifetime[index];
       let r = reset[index];
-      if (life < 10.) {
-        lifetime[index] = 3000.;
-//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[index]= r;
-      } else {
-        lifetime[index] -= 8.;
-      }
+//       if (life < 10.) {
+//         lifetime[index] = 3000.;
+// //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+//         buffer3[index]= r;
+//       } else {
+//         lifetime[index] -= 8.;
+//       }
 
       //decay rate has to be same as scaling factor - 1.6
 
@@ -913,7 +917,18 @@ const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
 
 let pointBuffer = new Float32Array(1e5)
-let indexPool = new Array(1e5).fill(1).map((d, i) => i)
+
+let indexPool = new Array(1e5 / 4).fill(1).map((d, i) => i)
+indexPool.alloc = function (n) {
+  let i = 0
+
+  let result = []
+  while (i < n) {
+    result.push(this.shift())
+    i++
+  }
+  return result;
+}
 
 function line(a, b) {
   this.x1 = a[0]
@@ -921,31 +936,57 @@ function line(a, b) {
   this.x2 = b[0]
   this.y2 = b[1]
   this.indices = []
+  this.points = [];
   this.array = pointBuffer
+  this.subdivide = function (resolution) {
+    // dont use the proper technique - bresenhams - cpu rasterizer 
+    let {x1, y1, y2, x2}= this;
+    let dy = y2 - y1;
+    let dx = x2 - x1;
+    let points = new Array(resolution).fill(0).map((d, i) => {
+      return [x1 + (dx / resolution * i), 
+              y1 + (dy / resolution * i) ]
+    })
+    this.points = points;
+  }
 }
 
 
 
 line.prototype.draw = function () {
+  this.subdivide(50)
   if (! this.indices.length) {
-    this.indices.push(...indexPool.alloc(4))
+    this.indices.push(...indexPool.alloc(this.points.length))
   }
 
+  
+console.log(this.points, this.indices)
+  this.indices.forEach((d, i) => {
+    let idx = d * 4
+    console.log(d, i)
+    this.array[idx] = this.points[i][0]
+    this.array[idx+1] = this.points[i][1]
+    //points are quad-tuples
+  })
 }
 
 
-let triangle = function (origin, radius) {
+let rhomboid = function (origin, side, skew) {
   //left corner = half radius left + down
   //6 left, 4 down
-  let a = []
-  let b = [origin, origin + radius]
-  let c = []
-  
-  let lines = [new line(a, b), new line(a, b), new line(a, b)]
-
-
+  let a = [origin[0]+side + skew,  origin[1] + side] //top right
+  let b = [origin[0] - side + skew,  origin[1] + side] // top left
+  let c = [origin[0] + side,  origin[1] - side] // bottom right
+  let d = [origin[0] - side, origin[1] - side] // bottom left
+  let lines = [new line(a, b), new line(a, c), new line(c, d), new line(d, b)]
+  console.log(a,b,c,d)
+  lines.forEach( line => line.draw() )
+  console.log(pointBuffer)
 }
 
+// rhomboid([0,0], .5, 1.)
+
+// rhomboid([0,0], .9, 1.)
 
 
 function drawStuff () {
@@ -1183,17 +1224,18 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
 
     //40ms to update mesh
-    vertexPositions.set(toCopy)
+    //vertexPositions.set(toCopy)
     //console.log(toCopy.length)
-    for (let i = 0; i < 1e5; i++){
-      let idx = 4*i//+(toCopy.length)
-      let p = particleMesh[i]
-      vertexPositions[idx] = p.x
-      vertexPositions[idx+1] = p.y
-      vertexPositions[idx+2] = p.z
-      vertexPositions[idx+3] = 1
+    vertexPositions.set(pointBuffer, 0);
+    // for (let i = 0; i < 1e5; i++){
+    //   let idx = 4*i//+(toCopy.length)
+    //   let p = particleMesh[i]
+    //   vertexPositions[idx] = p.x
+    //   vertexPositions[idx+1] = p.y
+    //   vertexPositions[idx+2] = p.z
+    //   vertexPositions[idx+3] = 1
 
-    } 
+    // } 
       
     //console.log(vertexPositions)
     //vertexPositions.set(toCopy)
