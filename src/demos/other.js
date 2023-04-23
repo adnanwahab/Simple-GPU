@@ -134,10 +134,5 @@ function add (v1, v2) {
 }
 
 
-const dot2 = (p) => {
-    let _ = dot(p, p)
-    return _
-  }
-  function sub (a, b) {
-    return [a[0] - b[0], a[1] - b[1]]
-    }
+
+ 

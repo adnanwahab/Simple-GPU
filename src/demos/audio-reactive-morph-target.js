@@ -159,11 +159,28 @@ function makeModelIndex() {
   return result
 }
 
+function sdHeart( p ){
+  p[0] = Math.abs(p[0]);
+  let sqrt = Math.sqrt, min = Math.min;
+  if( p[0]+p[1]>1. )
+      return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
+  return sqrt(min(dot2(sub(p,[0.00,1.00])),
+                  dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
+}
+const dot2 = (p) => {
+  let _ = dot(p, p)
+  return _
+}
+
+function sub (a, b) {
+  return [a[0] - b[0], a[1] - b[1]]
+  }
+
 function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
-      let l = circle(p);
+      let l = sdHeart(p);
       vec[0] = 1- l * 10
       vec[1] = 1- l * 10
   
@@ -468,7 +485,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
       var abc = buffer3[index];
 
-      //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
+      buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
       var idx = hash(pos.xyz);
     
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -622,9 +639,9 @@ getFrames(2)
 getFrames(3)
 getFrames(4)
 
-let pointBuffer = new Float32Array(1e5)
+let pointBuffer = new Float32Array(1e6)
 
-let indexPool = new Array(1e5 / 4).fill(1).map((d, i) => i)
+let indexPool = new Array(1e6 / 4).fill(1).map((d, i) => i)
 indexPool.alloc = function (n) {
   let i = 0
 
@@ -683,20 +700,18 @@ let rhomboid = function (origin, side, skew) {
 }
 
 setInterval(function ( ) {
-  //rhomboid([makeRand(), makeRand()], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
 
 }, 1000)
 
 window.addEventListener('click', function () {
   let timebetween = 1000
-  // animating = false
-  // return drawStuff()
-  console.log(animating)
   if (! animating ) {
-
-    //animating = ! animating
-
-    //return drawStuff()
     modelType = 1 + ((modelType) % (frames.length ))
  
     let elapsed = Date.now()
@@ -887,22 +902,21 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   return gpuBuffer
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
+let list = pointBuffer
+for( let i = 0; i < list.length; i+=4){
+  list[i]= makeRand() * 2
+  list[i+1]= makeRand() * 2
+
+  list[i+2]=  makeRand() * 2
+
+  list[i+3]= 0
+
+}
+
 async function basic () {
   setInterval(function () {
    let vf =  pickVF()
    
-
-
-    let list = new Float32Array(1e6)
-    for( let i = 0; i < list.length; i+=4){
-      list[i]= Math.random()
-      list[i+1]= Math.random()
-
-      list[i+2]= Math.random()
-
-      list[i+3]= 0
-
-    }
   let happyBear = makeBuffer(list, 0, 'bear')
 
     computeTransition = makeComputeShader(webgpu, happyBear, vf)
@@ -1007,7 +1021,7 @@ function vectorTo(b, a) {
 }
 
 //precisely calculate line interval convolutions using 
-var rgb = new Float32Array(1e5);
+var rgb = new Float32Array(1e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
@@ -1074,113 +1088,14 @@ let texture = webgpu.texture(bitmap)
   }
 }
 
-const drawRosePetals =  webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
-  vertEntryPoint: 'main_vertex',
-  fragEntryPoint: 'main_fragment',
-  code:`
-struct Uniforms {             //             align(16)  size(24)
-color: vec3<f32>,         // offset(0)   align(16)  size(16)
-spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
-};
-
-struct Camera {
-projectionMatrix : mat4x4<f32>,
-viewMatrix : mat4x4<f32>,
-modelMatrix: mat4x4<f32>,
-time: f32,
-
-}
-
-struct VSOut {
-@builtin(position) position: vec4<f32>,
-@location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-@location(1) color: vec3<f32>
-};
-
-@group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<uniform> camera : Camera;
-@group(0) @binding(2) var mySampler: sampler;
-@group(0) @binding(3) var myTexture: texture_2d<f32>;
-
-
-
-
-
-@vertex
-fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
-@location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
-) -> VSOut {
-var vsOut: VSOut;
-var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-
-
-vsOut.position = 
- camera.projectionMatrix
- * camera.viewMatrix *  camera.modelMatrix * 
-
- vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-//vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
-
-vsOut.localPosition = quadCorner;
-
-vsOut.color = color;
-return vsOut;
-}
-
-@fragment
-fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
-let distanceFromCenter: f32 = length(localPosition);
-if (distanceFromCenter > 1.0) {
-    discard;
-}
-var viewDir = vec3<f32>(0,0,0);
-var lightSpecularColor = vec3<f32>(0., 0., 1.);
-var lightSpecularPower = 1.;
-var lightPosition = vec3<f32>(-1,0., 0);
-
-var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
-
-var distance = length(lightDir);
-
-lightDir = lightDir / distance; // = normalize(lightDir);
-distance = distance * distance; //This line may be optimised using Inverse square root
-
-
-
-var normal = vec3(-1.,-1., 0.);
-
-//Intensity of the diffuse light. Saturate to keep within the 0-1 range.
-var NdotL = dot(normal, lightDir);
-var intensity = saturate(NdotL);
-
-// Calculate the diffuse light factoring in light color, power and the attenuation
-//OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
-
-//Calculate the half vector between the light vector and the view vector.
-//This is typically slower than calculating the actual reflection vector
-// due to the normalize function's reciprocal square root
-var H = normalize(lightDir + viewDir);
-
-//Intensity of the specular light
-var NdotH = dot(normal, H);
-intensity = pow(saturate(NdotH), .1);
-
-//Sum up the specular light factoring
-let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
-let m = textureSample(myTexture, mySampler, localPosition);
-//sin(camera.time)
-//
-return vec4<f32>(color.rgb+m.rgb, .7);
-}
-`}}));
 
 const a = new Float32Array(1)
 
 let choice = false
 let i = 0
 
-//let drawCalls = [drawRosePetals]
-drawScreen = drawRosePetals
+drawScreen = drawScreen = makeDrawCall(shapes[0], drawDescriptor) 
+
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1245,7 +1160,6 @@ async function () {
  
     if (! animating) {
       //computeTransitions[1]()
-      console.log(animating)
       computeTransition()
     }
 
@@ -1271,52 +1185,6 @@ async function () {
 
 function makeDrawCall (buffer, drawDescriptor) {
   drawDescriptor.attributeBufferData[0] = buffer
-  // let drawDescriptor = {
-  //   attributeBuffers: buffers,
-  //   attributeBufferData: [
-  //     buffer || shapes[0]
-  //     //makeBuffer(gridBuffer, 0, 'cube'),
-  //     //makeBuffer(makeCube(), 0, 'cube')
-  //     , quadBuffer, posBuffer, colorBuffer
-  //   ],
-  //   count: 6,
-  //   //blend,
-  //   instances: 4e5,
-  //   bindGroup: function ({pipeline}) {
-  //     const uniformsBuffer = webgpu.device.createBuffer({
-  //       size: 32, 
-  //       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-  //   });
-  // let texture = webgpu.texture(bitmap)
-  //   let desc = {
-  //     label: Math.random(),
-  //       layout: pipeline.getBindGroupLayout(0),
-  //       entries: [
-  //           {
-  //                binding: 0,
-  //               resource: {
-  //                   buffer: uniformsBuffer,
-  //               }
-  //           },
-  //           {
-  //             binding: 1,
-  //             resource: {
-  //             buffer: cameraUniformBuffer
-  //             }
-  //           },
-  //           {
-  //             binding: 2,
-  //             resource: texture.sampler,
-  //           },
-  //           {
-  //             binding: 3,
-  //             resource: texture.texture.createView(),
-  //           },
-  //       ]
-  //   }
-  //     return webgpu.device.createBindGroup(desc);
-  //   }
-  // }
   
   const drawRosePetals =  webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
     vertEntryPoint: 'main_vertex',
@@ -1414,7 +1282,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   let m = textureSample(myTexture, mySampler, localPosition);
   //sin(camera.time)
   //
-  return vec4<f32>(color.rgb+m.rgb, .7);
+  return vec4<f32>(color.rgb, .7);
   }
   `}}));
   return drawRosePetals
