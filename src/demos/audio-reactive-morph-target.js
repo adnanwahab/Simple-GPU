@@ -1,3 +1,11 @@
+//make the dancer modulate the edges  with the vector field -> wave patterns 
+// make the dancer - reset buffer 
+//compute shader should always run but shouldnt change first 100,000 particles
+//sin wave of 100,000 particles fly around on interval before resetting every 30 seconds
+//use lifetime to animate first 100,000 particles ?? or index 
+
+//make the vector field dance and then reset to a position based on index - cube ??
+
 //make camera parameters a function of audio waveform 
 //make particles smoothly interpolate in using lifetime
 //make particle colors revolve around dancer
@@ -52,14 +60,14 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeGrid
-  //  makeVectorField9,
-  //  makeVectorField2, 
+    makeGrid,
+   makeVectorField9,
+   makeVectorField2, 
     
-  //   makeVectorField3, 
-  //  makeModelIndex, 
-  //  makeVectorField4,
-  //  makeVectorField5
+    makeVectorField3, 
+   makeModelIndex, 
+   makeVectorField4,
+   makeVectorField5
 
   ]
   let idx = (Math.random() * list.length) | 0 
@@ -224,7 +232,11 @@ console.log(vf1)
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
+    if (i < 1e5)
+    particleLifetime[i] = -3000000
+  else 
     particleLifetime[i] = Math.random() * 300000
+
   }
 
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
@@ -451,12 +463,14 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
       let life = lifetime[index];
       let r = reset[index]; 
-      if (life < 10.) {
+      if (life < -2000000) {
+        buffer3[(index)]= r;
+      } else if (life < 0) {
         lifetime[index] = 3000.;
-//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
         buffer3[(index)]= r;
       } else {
-        lifetime[index] -= 8.;
+        lifetime[index] -= 1.;
       }
       //start as block
       //if lifetime === -10000
@@ -559,7 +573,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     },
     bindGroups: function (state, computePipeline) {
 
-  const reset = makeBuffer(frames[1][1], 0, 'reset')
+  const reset = makeBuffer(dancer, 0, 'reset')
 
   const descriptor = {
     layout: computePipeline.getBindGroupLayout(0),
@@ -835,6 +849,7 @@ function makeStagingBuffer() {
    
     let frame = time % frames[modelType].length
     const toCopy = frames[modelType][frame]
+    dancer = toCopy
     if (! toCopy) return console.log(toCopy, modelType, frame)
     if (time === 0) window.toCopy = toCopy
     time += 1
@@ -843,36 +858,36 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
     //let yourCopy = vertexPositions.slice(0, 1e5)
 
-    for (let i = 0; i < 9; i++) {
-      let idx = i * 4;
-      let yourCopy = new Float32Array(1e5)
-      for (let j = 0; j < toCopy.length; j+=4){
-       // let idx = 4 * j
-        yourCopy[j] = toCopy[j] + i * .111
-        yourCopy[j+1] = toCopy[j+1] + .2 * Math.floor(i / 3)
-        yourCopy[j+2] = toCopy[j+2]
-        yourCopy[j+3] = toCopy[j+3]
-      }
-      // vertexPositions[idx] = yourCopy[idx]
-      // vertexPositions[idx+1] = yourCopy[idx+1]
-      // vertexPositions[idx+2] = yourCopy[idx+2]
-      // vertexPositions[idx+3] = 1
-      vertexPositions.set(yourCopy, 1e5 * i)
-    }
+    // for (let i = 0; i < 9; i++) {
+    //   let idx = i * 4;
+    //   let yourCopy = new Float32Array(1e5)
+    //   for (let j = 0; j < toCopy.length; j+=4){
+    //    // let idx = 4 * j
+    //     yourCopy[j] = toCopy[j] + i * .111
+    //     yourCopy[j+1] = toCopy[j+1] + .2 * Math.floor(i / 3)
+    //     yourCopy[j+2] = toCopy[j+2]
+    //     yourCopy[j+3] = toCopy[j+3]
+    //   }
+    //   // vertexPositions[idx] = yourCopy[idx]
+    //   // vertexPositions[idx+1] = yourCopy[idx+1]
+    //   // vertexPositions[idx+2] = yourCopy[idx+2]
+    //   // vertexPositions[idx+3] = 1
+    //   vertexPositions.set(yourCopy, 1e5 * i)
+    // }
     //console.log(Date.now())
     // vertexPositions.forEach(function (d, i) {
     //   vertexPositions[i]=toCopy[i % toCopy.length] + .2
     // })
 
-    //vertexPositions.set(test)
+    vertexPositions.set(toCopy)
     stagingBuffer.unmap();
     // Copy the staging buffer contents to the vertex buffer.
     const commandEncoder = webgpu.device.createCommandEncoder({});
-    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, vertexPositions.length * 4);
+    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
     webgpu.device.queue.submit([commandEncoder.finish()]);
     if (animating) makeStagingBuffer()
     //console.log(animating)
-  }, 1000)
+  }, 20)
 }
 
 let shapes = []
@@ -928,7 +943,7 @@ async function basic () {
     computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
     //drawScreen.swapAttributeBuffer(0, happyBear)
     drawScreen = makeDrawCall(happyBear, drawDescriptor) 
-  }, 10000)
+  }, 1000)
 
 
   computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
@@ -1051,7 +1066,22 @@ let img = new Image();
 img.src = './data/webgpu.png'
 await img.decode();
 let bitmap = await createImageBitmap(img);
+const uniformsBuffer = webgpu.device.createBuffer({
+  size: 48, 
+  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+});
+let abc = new Float32Array(1)
 
+setInterval(function () {
+  abc[0] = performance.now() 
+  device.queue.writeBuffer(
+    uniformsBuffer,
+    0,
+    abc.buffer,
+    abc.byteOffset,
+    abc.byteLength
+  );
+}, 8)
 let drawDescriptor = {
   attributeBuffers: buffers,
   attributeBufferData: [
@@ -1064,23 +1094,7 @@ let drawDescriptor = {
   //blend,
   instances: 1e6 / 4,
   bindGroup: function ({pipeline}) {
-    const uniformsBuffer = webgpu.device.createBuffer({
-      size: 48, 
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-  });
-  let abc = new Float32Array(1)
 
-  //setInterval(function () {
-    // if (Math.random() > .999)console.log(Date.now() )
-    // abc[0] = Date.now() 
-    // device.queue.writeBuffer(
-    //   uniformsBuffer,
-    //   0,
-    //   abc.buffer,
-    //   abc.byteOffset,
-    //   abc.byteLength
-    // );
-  //}, 8)
   
 let texture = webgpu.texture(bitmap)
   let desc = {
@@ -1181,9 +1195,9 @@ async function () {
     
      
  
-    if (! animating) {
+    //if (! animating) {
       computeTransition()
-    }
+    //}
 
 
     // let result = drawCalls[drawCallChoice]({
@@ -1241,16 +1255,13 @@ function makeDrawCall (buffer, drawDescriptor) {
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
   @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
   ) -> VSOut {
-  var vsOut: VSOut;
-  var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(uniforms.time));
-  
-  
+  var vsOut: VSOut;  
+
   vsOut.position = 
    camera.projectionMatrix
    * camera.viewMatrix *  camera.modelMatrix * 
   
-   vec4<f32>(stuff + (.01) * quadCorner, inPosition.z, 1.);
-  //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   
@@ -1278,7 +1289,8 @@ return c * c * (3 - 2 * c);
     let aspect = iResolution.x/iResolution.y;
     let position = (fragCoord.xy) * aspect;
     let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
-    let offset=uniforms.time * 000.001;
+    let offset=(uniforms.time) * 0.01;
+    let shit = uniforms.time;
     let conv=4.;
     let v=dist*4.-offset;
     let ringr=floor(v);
