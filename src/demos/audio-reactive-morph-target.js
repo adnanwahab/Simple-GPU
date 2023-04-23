@@ -31,12 +31,12 @@ let time = 0
 let stagingBuffer
 let modelType = 1
 let animating = true
-let width = 100, height = width, zspace = 10
+let width = 100, height = width, zspace = 1
 const mouse = [0,0]
 let drawCallChoice = 0
 
 function makeGrid () {
-  makeVectorFieldGeneric(function (x, y, z) {
+  return makeVectorFieldGeneric(function (x, y, z) {
     return [x, y, z , 1]
   })
 }
@@ -52,18 +52,19 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-   // makeVectorField9,
-   makeVectorField2, 
+    makeGrid
+  //  makeVectorField9,
+  //  makeVectorField2, 
     
-    makeVectorField3, 
-   makeModelIndex, 
-   makeVectorField4,
-   makeVectorField5
+  //   makeVectorField3, 
+  //  makeModelIndex, 
+  //  makeVectorField4,
+  //  makeVectorField5
 
   ]
   let idx = (Math.random() * list.length) | 0 
   console.log(idx)
-  return [list[idx](), idx]
+  return list[idx]()
 }
 
 function makeVectorField9() {
@@ -103,24 +104,23 @@ function makeVectorFieldGeneric(cb, buffer ) {
   var result = buffer || []
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
-      for (let k = 0; k < zspace; k++) {
+      //for (let k = 0; k < zspace; k++) {
 
       let [x, y, z] = clipSpace(j, i, 0, width, height)
 
       let [x1, y1, z1] = zeroToOne(x , y, 0)
-      // z1 * width * width * width
-      let idx = Math.round(x1 * width + y1 * width * height + 0 )
+//+  z1 * width * width * width
+      let idx = Math.round(x1 * width + y1 * width * height )
       
-      result[idx] = cb(x, y, z)
-      result[idx].x1 = x1
-      result[idx].y1 = y1
-      }
+      //result[idx] = cb(x, y, z)
+      result[idx] = (cb(x,y,z))
+      // result[idx].x1 = x1
+      // result[idx].y1 = y1
+      //}
     }
   }
   return result
 }
-
-let d = Date.now()
 
 function findPoint(d) {
   let [x, y] = d
@@ -149,23 +149,6 @@ function makeModelIndex() {
   return result
 }
 
-function sdHeart( p ){
-  p[0] = Math.abs(p[0]);
-  let sqrt = Math.sqrt, min = Math.min;
-  if( p[0]+p[1]>1. )
-      return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
-  return sqrt(min(dot2(sub(p,[0.00,1.00])),
-                  dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
-}
-const dot2 = (p) => {
-  let _ = dot(p, p)
-  return _
-}
-
-function sub (a, b) {
-  return [a[0] - b[0], a[1] - b[1]]
-  }
-
 function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
@@ -184,7 +167,6 @@ function makeVectorField2() {
 
 //make vector field that infinitely randomly generates lots of variety and detail every few seconds
 //make dancer in center -> overwrite particles in first 1e5 coordinates 
-
 
 let computeTransition
 let camera = {position: {x: 0, y: 0, z: 0} }
@@ -205,8 +187,6 @@ function circle(p) {
   return length2(p)
 }
 
-const useCamera = true
-
 function makeRand () {
   let x = Math.random().toPrecision(2)
   x -= .5;
@@ -219,7 +199,7 @@ function clipSpace(x,y, z, width, height) {
   y = y - .5
   z = z - .5
   y *= -2
-  z *= 2
+  z *= -2
 
   x = (x / width) * 2 -1
 
@@ -229,19 +209,18 @@ function clipSpace(x,y, z, width, height) {
 function zeroToOne(x , y, z) {
   var x1 = (x + 1) / 2 
   var y1 =((1. - y) / 2);
-  var z1 = (z + 1) / 2
+  var z1 = ((1. - z) / 2);
 
   return [x1, y1, z1]
 }
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
-
+console.log(vf1)
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
@@ -452,13 +431,17 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   fn hash(pos: vec3<f32>) -> i32 {
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
+    var z = (1. - (pos.z)) / 2.;
+
     x *= .5;
     y *= .5;
+    z *= .5;
+
     if (x > 1.){ x = .5; } 
     if (y > 1.){ y = .5; } 
     if (y < 0.){ y = .5; } 
     if (x < 0.){ x = .5; } 
-    return i32(floor(x * 100) + floor(y * 100) * 100);
+    return i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
   }
   
     @compute @workgroup_size(256)
@@ -956,7 +939,7 @@ const cameraUniformBuffer = webgpu.device.createBuffer({
 });
 
 const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
-
+1
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
 shapes.push(dragonBuffer)
@@ -1082,9 +1065,23 @@ let drawDescriptor = {
   instances: 1e6 / 4,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
-      size: 32, 
+      size: 48, 
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
   });
+  let abc = new Float32Array(1)
+
+  //setInterval(function () {
+    // if (Math.random() > .999)console.log(Date.now() )
+    // abc[0] = Date.now() 
+    // device.queue.writeBuffer(
+    //   uniformsBuffer,
+    //   0,
+    //   abc.buffer,
+    //   abc.byteOffset,
+    //   abc.byteLength
+    // );
+  //}, 8)
+  
 let texture = webgpu.texture(bitmap)
   let desc = {
     label: Math.random(),
@@ -1181,6 +1178,7 @@ async function () {
       0,
       a.byteLength
     );
+    
      
  
     if (! animating) {
@@ -1214,7 +1212,8 @@ function makeDrawCall (buffer, drawDescriptor) {
     vertEntryPoint: 'main_vertex',
     fragEntryPoint: 'main_fragment',
     code:`
-  struct Uniforms {             //             align(16)  size(24)
+  struct Uniforms {
+    time: f32,             //             align(16)  size(24)
   color: vec3<f32>,         // offset(0)   align(16)  size(16)
   spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
   };
@@ -1223,7 +1222,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   projectionMatrix : mat4x4<f32>,
   viewMatrix : mat4x4<f32>,
   modelMatrix: mat4x4<f32>,
-  time: f32,
+
   
   }
   
@@ -1243,14 +1242,14 @@ function makeDrawCall (buffer, drawDescriptor) {
   @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
   ) -> VSOut {
   var vsOut: VSOut;
-  var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+  var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(uniforms.time));
   
   
   vsOut.position = 
    camera.projectionMatrix
    * camera.viewMatrix *  camera.modelMatrix * 
   
-   vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(stuff + (.01) * quadCorner, inPosition.z, 1.);
   //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
   
   vsOut.localPosition = quadCorner;
@@ -1258,7 +1257,60 @@ function makeDrawCall (buffer, drawDescriptor) {
   vsOut.color = color;
   return vsOut;
   }
-  
+
+
+
+  const size = 4.0;
+
+  const b = 0.3;//size of the smoothed border
+
+fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
+if (x < edge0) {return 0.;}
+
+if (x >= edge1) {return 1.;}
+
+let c = (x - edge0) / (edge1 - edge0);
+
+return c * c * (3 - 2 * c);
+}
+
+  fn mainImage(fragCoord: vec2<f32>, iResolution: vec2<f32>) -> vec4<f32> {
+    let aspect = iResolution.x/iResolution.y;
+    let position = (fragCoord.xy) * aspect;
+    let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
+    let offset=uniforms.time * 000.001;
+    let conv=4.;
+    let v=dist*4.-offset;
+    let ringr=floor(v);
+    
+    var stuff = 0.;
+    if (v % 3. > .5) {
+      stuff = 0.;
+    }
+
+var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
+    if (ringr % 2. ==1.) {
+     color=2.-color;
+    }
+
+  let distToMouseX = distance(1., fragCoord.x);
+  let distToMouseY = distance(2., fragCoord.y);
+
+  return vec4<f32>(
+    color, 
+    color, 
+    color, 
+   1.,
+    );
+};
+
+fn main(uv: vec2<f32>) -> vec4<f32> {
+  let fragCoord = vec2<f32>(uv.x, uv.y);
+  var base = vec4<f32>(cos(uniforms.time * .1), .5, sin(uniforms.time * 0.000001), 1.);
+  //let dist = distance( fragCoord, vec2<f32>(u.mouseX,  u.mouseY));
+  return mainImage(fragCoord, vec2<f32>(1000., 1000.));
+}
+
   @fragment
   fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
   let distanceFromCenter: f32 = length(localPosition);
@@ -1302,7 +1354,10 @@ function makeDrawCall (buffer, drawDescriptor) {
   let m = textureSample(myTexture, mySampler, localPosition);
   //sin(camera.time)
   //
-  return vec4<f32>(color.rgb, .7);
+
+  var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
+  //color.rgb +
+  return vec4<f32>( c.rgb, .7);
   }
   `}}));
   return drawRosePetals

@@ -135,4 +135,19 @@ function add (v1, v2) {
 
 
 
- 
+function sdHeart( p ){
+    p[0] = Math.abs(p[0]);
+    let sqrt = Math.sqrt, min = Math.min;
+    if( p[0]+p[1]>1. )
+        return sqrt(dot2(sub(p,[0.25,0.75]))) - sqrt(2.0)/4.0;
+    return sqrt(min(dot2(sub(p,[0.00,1.00])),
+                    dot2(p.map(d => d -0.5*Math.max(p[0]+p[1],0.0))))) * (p[0]-p[1] > 0 ? 1 : -1);
+  }
+  const dot2 = (p) => {
+    let _ = dot(p, p)
+    return _
+  }
+  
+  function sub (a, b) {
+    return [a[0] - b[0], a[1] - b[1]]
+    }
