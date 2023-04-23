@@ -1243,7 +1243,9 @@ function makeDrawCall (buffer, drawDescriptor) {
   struct VSOut {
   @builtin(position) position: vec4<f32>,
   @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-  @location(1) color: vec3<f32>
+  @location(1) color: vec3<f32>,
+  @location(2) globalPosition: vec2<f32>, // in {-1, +1}^2,
+
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -1264,6 +1266,8 @@ function makeDrawCall (buffer, drawDescriptor) {
    vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
+  vsOut.globalPosition = inPosition.xy;
+
   
   vsOut.color = color;
   return vsOut;
@@ -1285,9 +1289,10 @@ let c = (x - edge0) / (edge1 - edge0);
 return c * c * (3 - 2 * c);
 }
 
-  fn mainImage(fragCoord: vec2<f32>, iResolution: vec2<f32>) -> vec4<f32> {
+  fn mainImage(globalPosition: vec2<f32>, iResolution: vec2<f32>
+    ) -> vec4<f32> {
     let aspect = iResolution.x/iResolution.y;
-    let position = (fragCoord.xy) * aspect;
+    let position = (globalPosition.xy) * aspect;
     let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
     let offset=(uniforms.time) * 0.01;
     let shit = uniforms.time;
@@ -1305,8 +1310,8 @@ var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
      color=2.-color;
     }
 
-  let distToMouseX = distance(1., fragCoord.x);
-  let distToMouseY = distance(2., fragCoord.y);
+  let distToMouseX = distance(1., globalPosition.x);
+  let distToMouseY = distance(2., globalPosition.y);
 
   return vec4<f32>(
     color, 
@@ -1324,7 +1329,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
 }
 
   @fragment
-  fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
+  fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32>,  @location(2) globalPosition:vec2<f32>) -> @location(0) vec4<f32> {
   let distanceFromCenter: f32 = length(localPosition);
   if (distanceFromCenter > 1.0) {
       discard;
@@ -1369,7 +1374,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
 
   var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
   //color.rgb +
-  return vec4<f32>( c.rgb, .7);
+  return vec4<f32>(color.rgb * c.rgb, 1.);
   }
   `}}));
   return drawRosePetals
