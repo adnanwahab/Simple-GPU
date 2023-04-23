@@ -1,3 +1,4 @@
+//make camera parameters a function of audio waveform 
 //make particles smoothly interpolate in using lifetime
 //make particle colors revolve around dancer
 //make a cube of 27 cubes
@@ -46,34 +47,6 @@ function length2 (p) {
   let [x, y] = p
   return Math.sqrt(x*x + y*y)
 }//ant simulation
-
-function AntSimulation(
-) {
-
-  this.ants = []
-  this.food = [[0,0]]
-
-
-  this.step = function () {
-    this.ants.forEach(ant => ant.findFood())
-  }
-}
-
-function ant () {
-  if (! this.hasFood) findFood()
-  else this.returnToHome()
-  
-  return {
-    pos: {x: 0, y: 0},
-    returnToHome: function () {
-
-    },
-    findFood: function () {
-      let dx = this.pos.x - this.findClosestFood().x
-      let dy = this.pos.y - this.findClosestFood().y
-    }
-  }
-}
 
 let makeVectorField = makeVectorField4
 let result = []
@@ -272,16 +245,10 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
-    particleLifetime[i] = Math.random() * 3000
+    particleLifetime[i] = Math.random() * 300000
   }
 
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
-
-let coords = []
-
-for (var i = 0; i < 10; i++) {
-  coords.push((i / 10 - .5) * 2)
-}
 
 let max = {
   x: 0,
@@ -548,7 +515,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
         // }
       velocity[index] *= .1;
      //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
-     velocity[index] = velocity[index] + .01 * vf;
+     velocity[index] = velocity[index] + .1 * vf;
      var p = buffer3[index];
     //  if (p.x > .9){ velocity[index] *= -1;}
     //  if (p.x < -0.9){ velocity[index] *= -1;}
@@ -1011,11 +978,12 @@ quadBuffer.unmap();
 
 
 const device = webgpu.device
-const model = mat4.identity(new Float32Array(16))
 
 
-
+let model = mat4.identity(new Float32Array(16))
+let cosCounter = 0
 function getCameraViewProjMatrix() {
+  let m  = mat4.identity(new Float32Array(16))
   mat4.translate(model, model, vec3.fromValues(2, 2, 0));
   mat4.rotate(
     model,
@@ -1023,10 +991,12 @@ function getCameraViewProjMatrix() {
     1,
     vec3.fromValues(
       Math.sin(0),
+      //Math.cos((cosCounter += 1) * .001),
       Math.cos(1),
       0
     )
   );
+//  model = m
   //vec3.rotateY(eyePosition, eyePosition, origin, rad);
 
   let projectionMatrix = mat4.create();
@@ -1047,7 +1017,9 @@ function getCameraViewProjMatrix() {
 }
 
  const cameraViewProj = getCameraViewProjMatrix();
-
+// setInterval(function () {
+//    getCameraViewProjMatrix()
+// }, 10)
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const blend = {
   color: {
@@ -1147,10 +1119,7 @@ let texture = webgpu.texture(bitmap)
 
 const a = new Float32Array(1)
 
-let choice = false
-let i = 0
-
-drawScreen = drawScreen = makeDrawCall(shapes[0], drawDescriptor) 
+drawScreen = makeDrawCall(shapes[0], drawDescriptor) 
 
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
@@ -1215,7 +1184,6 @@ async function () {
      
  
     if (! animating) {
-      //computeTransitions[1]()
       computeTransition()
     }
 
@@ -1269,10 +1237,6 @@ function makeDrawCall (buffer, drawDescriptor) {
   @group(0) @binding(1) var<uniform> camera : Camera;
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
-  
-  
-  
-  
   
   @vertex
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
