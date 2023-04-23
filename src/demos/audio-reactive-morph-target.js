@@ -19,6 +19,7 @@ import postProcessing from './postProcessing'
 //set lifetime of dancer particles to -1000 -> if negative <1000 - dont apply velocity 
 //dancer appears ->  immune to vector field for a few seconds before disappearing 
 //make all variables in one obj -> link up to sliders if and only if necessary
+let drawScreen
 let time = 0
 let stagingBuffer
 let modelType = 1
@@ -441,6 +442,10 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   fn hash(pos: vec3<f32>) -> i32 {
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
+    if (x > 1.){ x = .5; } 
+    if (y > 1.){ y = .5; } 
+    if (y < 0.){ y = .5; } 
+    if (x < 0.){ x = .5; } 
     return i32(floor(x * 100) + floor(y * 100) * 100);
   }
   
@@ -557,7 +562,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     layout: computePipeline.getBindGroupLayout(0),
     entries: [
       {binding: 0, resource: {buffer: gridBuffer}},
-      {binding: 1, resource: {buffer: shapes[0]}},
+      {binding: 1, resource: {buffer: mesh || shapes[0]}},
       {binding: 2, resource: {buffer: uniformsBuffer}},
       {binding: 3, resource: {buffer: velocity}},
       {binding: 4, resource: {buffer: lifeTimeBuffer}},
@@ -674,7 +679,7 @@ let rhomboid = function (origin, side, skew) {
   let d = [origin[0] - side, origin[1] - side] // bottom left
   let lines = [new line(a, b), new line(a, c), new line(c, d), new line(d, b)]
   lines.forEach( line => line.draw() )
-  console.log(a)
+  //console.log(a)
 }
 
 setInterval(function ( ) {
@@ -686,9 +691,10 @@ window.addEventListener('click', function () {
   let timebetween = 1000
   // animating = false
   // return drawStuff()
+  console.log(animating)
   if (! animating ) {
 
-    animating = ! animating
+    //animating = ! animating
 
     //return drawStuff()
     modelType = 1 + ((modelType) % (frames.length ))
@@ -699,7 +705,7 @@ window.addEventListener('click', function () {
       //window.writeTime(timebetween - dt)
       if (dt < timebetween) setTimeout(recur, 16)
       else {
-        animating = ! animating
+        animating = true
         modelType = modelType === 1 ? 2 : 1
         return makeStagingBuffer()
       }
@@ -801,12 +807,14 @@ function moveParticles () {
 }
 
 let drawParticles = true
+
+let test = new Array(250000).fill(0).map(Math.random)
 function makeStagingBuffer() {
   setTimeout(function () {
     if (! shapes[0] || !animating) return;
 
     stagingBuffer = webgpu.device.createBuffer({
-      size: 2e6,
+      size: 1e7,
       usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
@@ -821,44 +829,35 @@ function makeStagingBuffer() {
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
     //let yourCopy = vertexPositions.slice(0, 1e5)
 
-    for (let i = 0; i < vertexPositions.length; i++) {
-      //console.log(i, toCopy.length)
+    for (let i = 0; i < 9; i++) {
       let idx = i * 4;
-      // for (let j = 0; j < toCopy.length; j+=4){
-      //  // let idx = 4 * j
-      //   yourCopy[j] = toCopy[j] + i * .111
-      //   yourCopy[j+1] = toCopy[j+1]
-      //   yourCopy[j+2] = toCopy[j+2]
-      //   yourCopy[j+3] = toCopy[j+3]
-      // }
-      // toCopy.forEach((d, i) => {
-      //   yourCopy[i] = toCopy[i] + .1
-      // })
-      // console.log(i * toCopy.length)
-      // if (i === 1) console.log(yourCopy)
-      // console.log(i, toCopy.length)
-      //  vertexPositions.set(yourCopy, i * toCopy.length)
-      //  vertexPositions[i] = Math.random()
-      vertexPositions[idx] = Math.random()
-      vertexPositions[idx+1] = Math.random()
-      vertexPositions[idx+2] = 0
-      vertexPositions[idx+3] = 1
-
+      let yourCopy = new Float32Array(1e5)
+      for (let j = 0; j < toCopy.length; j+=4){
+       // let idx = 4 * j
+        yourCopy[j] = toCopy[j] + i * .111
+        yourCopy[j+1] = toCopy[j+1] + .2 * Math.floor(i / 3)
+        yourCopy[j+2] = toCopy[j+2]
+        yourCopy[j+3] = toCopy[j+3]
+      }
+      // vertexPositions[idx] = yourCopy[idx]
+      // vertexPositions[idx+1] = yourCopy[idx+1]
+      // vertexPositions[idx+2] = yourCopy[idx+2]
+      // vertexPositions[idx+3] = 1
+      vertexPositions.set(yourCopy, 1e5 * i)
     }
-    console.log(vertexPositions)
+    //console.log(Date.now())
     // vertexPositions.forEach(function (d, i) {
     //   vertexPositions[i]=toCopy[i % toCopy.length] + .2
     // })
 
-    //vertexPositions.set(toCopy)
-
+    //vertexPositions.set(test)
     stagingBuffer.unmap();
     // Copy the staging buffer contents to the vertex buffer.
     const commandEncoder = webgpu.device.createCommandEncoder({});
-    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
+    commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, vertexPositions.length * 4);
     webgpu.device.queue.submit([commandEncoder.finish()]);
     if (animating) makeStagingBuffer()
-
+    //console.log(animating)
   }, 1000)
 }
 
@@ -893,7 +892,22 @@ async function basic () {
    let vf =  pickVF()
    
 
-    computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf)
+
+    let list = new Float32Array(1e6)
+    for( let i = 0; i < list.length; i+=4){
+      list[i]= Math.random()
+      list[i+1]= Math.random()
+
+      list[i+2]= Math.random()
+
+      list[i+3]= 0
+
+    }
+  let happyBear = makeBuffer(list, 0, 'bear')
+
+    computeTransition = makeComputeShader(webgpu, happyBear, vf)
+    //drawScreen.swapAttributeBuffer(0, happyBear)
+    drawScreen = makeDrawCall(happyBear, drawDescriptor) 
   }, 10000)
   let vf =  pickVF()
 
@@ -909,7 +923,6 @@ const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'b
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
 shapes.push(dragonBuffer)
-
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
   usage: GPUBufferUsage.VERTEX,
@@ -921,56 +934,11 @@ new Float32Array(quadBuffer.getMappedRange()).set([
 ]);
 quadBuffer.unmap();
 
+
 //convert each point in buffer to a vector to next point
 
 
-const buffers = [
-  {
-      attributes: [
-          {
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x4",
-          }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-      stepMode: "instance",
-  },
-  {
-      attributes: [
-          {
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x2",
-          }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-      stepMode: "vertex",
-  },
-  {
-    attributes: [
-        {
-            shaderLocation: 2,
-            offset: 0,
-            format: "float32x4",
-        }
-    ],
-    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-    stepMode: "instance",
-},
 
-{
-  attributes: [
-      {
-          shaderLocation: 3,
-          offset: 0,
-          format: "float32x3",
-      }
-  ],
-  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-  stepMode: "instance",
-},
-]
 
 const device = webgpu.device
 const model = mat4.identity(new Float32Array(16))
@@ -1069,7 +1037,7 @@ let drawDescriptor = {
   ],
   count: 6,
   //blend,
-  instances: particlesCount,
+  instances: 4e5,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
       size: 32, 
@@ -1211,7 +1179,8 @@ const a = new Float32Array(1)
 let choice = false
 let i = 0
 
-let drawCalls = [drawRosePetals]
+//let drawCalls = [drawRosePetals]
+drawScreen = drawRosePetals
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1231,7 +1200,8 @@ let zoom = 10
 webgpu.canvas.addEventListener('mousewheel', function (e) {
   camera.zoom(zoom = zoom + .1 * e.deltaY)
 })
-let result = drawCalls[drawCallChoice]()
+
+let result = drawScreen()
 //let texture = 
 //let pp = await postProcessing(webgpu, texture);
 
@@ -1275,18 +1245,226 @@ async function () {
  
     if (! animating) {
       //computeTransitions[1]()
+      console.log(animating)
       computeTransition()
     }
 
 
-    let result = drawCalls[drawCallChoice]({
-      texture: bitmap
-    })
+    // let result = drawCalls[drawCallChoice]({
+    //   texture: bitmap
+    // })
 
-    bitmap = result.state.swapChainTexture
+    // bitmap = result.state.swapChainTexture
 
     // pp(texture)
+    drawScreen()
     }, 8) 
 }
 
 
+
+
+
+
+
+
+
+function makeDrawCall (buffer, drawDescriptor) {
+  drawDescriptor.attributeBufferData[0] = buffer
+  // let drawDescriptor = {
+  //   attributeBuffers: buffers,
+  //   attributeBufferData: [
+  //     buffer || shapes[0]
+  //     //makeBuffer(gridBuffer, 0, 'cube'),
+  //     //makeBuffer(makeCube(), 0, 'cube')
+  //     , quadBuffer, posBuffer, colorBuffer
+  //   ],
+  //   count: 6,
+  //   //blend,
+  //   instances: 4e5,
+  //   bindGroup: function ({pipeline}) {
+  //     const uniformsBuffer = webgpu.device.createBuffer({
+  //       size: 32, 
+  //       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+  //   });
+  // let texture = webgpu.texture(bitmap)
+  //   let desc = {
+  //     label: Math.random(),
+  //       layout: pipeline.getBindGroupLayout(0),
+  //       entries: [
+  //           {
+  //                binding: 0,
+  //               resource: {
+  //                   buffer: uniformsBuffer,
+  //               }
+  //           },
+  //           {
+  //             binding: 1,
+  //             resource: {
+  //             buffer: cameraUniformBuffer
+  //             }
+  //           },
+  //           {
+  //             binding: 2,
+  //             resource: texture.sampler,
+  //           },
+  //           {
+  //             binding: 3,
+  //             resource: texture.texture.createView(),
+  //           },
+  //       ]
+  //   }
+  //     return webgpu.device.createBindGroup(desc);
+  //   }
+  // }
+  
+  const drawRosePetals =  webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
+    vertEntryPoint: 'main_vertex',
+    fragEntryPoint: 'main_fragment',
+    code:`
+  struct Uniforms {             //             align(16)  size(24)
+  color: vec3<f32>,         // offset(0)   align(16)  size(16)
+  spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
+  };
+  
+  struct Camera {
+  projectionMatrix : mat4x4<f32>,
+  viewMatrix : mat4x4<f32>,
+  modelMatrix: mat4x4<f32>,
+  time: f32,
+  
+  }
+  
+  struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
+  @location(1) color: vec3<f32>
+  };
+  
+  @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+  @group(0) @binding(1) var<uniform> camera : Camera;
+  @group(0) @binding(2) var mySampler: sampler;
+  @group(0) @binding(3) var myTexture: texture_2d<f32>;
+  
+  
+  
+  
+  
+  @vertex
+  fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
+  @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
+  ) -> VSOut {
+  var vsOut: VSOut;
+  var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
+  
+  
+  vsOut.position = 
+   camera.projectionMatrix
+   * camera.viewMatrix *  camera.modelMatrix * 
+  
+   vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
+  //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+  
+  vsOut.localPosition = quadCorner;
+  
+  vsOut.color = color;
+  return vsOut;
+  }
+  
+  @fragment
+  fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
+  let distanceFromCenter: f32 = length(localPosition);
+  if (distanceFromCenter > 1.0) {
+      discard;
+  }
+  var viewDir = vec3<f32>(0,0,0);
+  var lightSpecularColor = vec3<f32>(0., 0., 1.);
+  var lightSpecularPower = 1.;
+  var lightPosition = vec3<f32>(-1,0., 0);
+  
+  var lightDir = lightPosition - vec3<f32>(localPosition, 1.); //3D position in space of the surface
+  
+  var distance = length(lightDir);
+  
+  lightDir = lightDir / distance; // = normalize(lightDir);
+  distance = distance * distance; //This line may be optimised using Inverse square root
+  
+  
+  
+  var normal = vec3(-1.,-1., 0.);
+  
+  //Intensity of the diffuse light. Saturate to keep within the 0-1 range.
+  var NdotL = dot(normal, lightDir);
+  var intensity = saturate(NdotL);
+  
+  // Calculate the diffuse light factoring in light color, power and the attenuation
+  //OUT.Diffuse = intensity * light.diffuseColor * light.diffusePower / distance;
+  
+  //Calculate the half vector between the light vector and the view vector.
+  //This is typically slower than calculating the actual reflection vector
+  // due to the normalize function's reciprocal square root
+  var H = normalize(lightDir + viewDir);
+  
+  //Intensity of the specular light
+  var NdotH = dot(normal, H);
+  intensity = pow(saturate(NdotH), .1);
+  
+  //Sum up the specular light factoring
+  let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
+  let m = textureSample(myTexture, mySampler, localPosition);
+  //sin(camera.time)
+  //
+  return vec4<f32>(color.rgb+m.rgb, .7);
+  }
+  `}}));
+  return drawRosePetals
+}
+
+
+const buffers = [
+  {
+      attributes: [
+          {
+              shaderLocation: 0,
+              offset: 0,
+              format: "float32x4",
+          }
+      ],
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+      stepMode: "instance",
+  },
+  {
+      attributes: [
+          {
+              shaderLocation: 1,
+              offset: 0,
+              format: "float32x2",
+          }
+      ],
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+      stepMode: "vertex",
+  },
+  {
+    attributes: [
+        {
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x4",
+        }
+    ],
+    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+    stepMode: "instance",
+},
+
+{
+  attributes: [
+      {
+          shaderLocation: 3,
+          offset: 0,
+          format: "float32x3",
+      }
+  ],
+  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+  stepMode: "instance",
+},
+]
