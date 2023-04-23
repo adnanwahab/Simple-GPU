@@ -1,3 +1,5 @@
+//https://en.wikipedia.org/wiki/Transformation_matrix
+//linear algebra from scratch
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
@@ -9,9 +11,18 @@ import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 import * as dat from 'dat.gui';
 import postProcessing from './postProcessing'
-
-
+//make a draw call visualizer - draw 3d lines or arrows with triangles
+//convert to custom railway camera -> make a tool to tune it -> tour through gigantic vectorfield -> show lots of detail and scale 
 //add more particles
+//cloud of flying particles -> 10% forms into dancer -> 
+//hardcode - dancer index into shader
+//set lifetime of dancer particles to -1000 -> if negative <1000 - dont apply velocity 
+//dancer appears ->  immune to vector field for a few seconds before disappearing 
+//make all variables in one obj -> link up to sliders if and only if necessary
+let time = 0
+let stagingBuffer
+let modelType = 1
+let animating = true
 let width = 100, height = width, zspace = 10
 const mouse = [0,0]
 let drawCallChoice = 0
@@ -28,6 +39,34 @@ function length2 (p) {
   let [x, y] = p
   return Math.sqrt(x*x + y*y)
 }//ant simulation
+
+function AntSimulation(
+) {
+
+  this.ants = []
+  this.food = [[0,0]]
+
+
+  this.step = function () {
+    this.ants.forEach(ant => ant.findFood())
+  }
+}
+
+function ant () {
+  if (! this.hasFood) findFood()
+  else this.returnToHome()
+  
+  return {
+    pos: {x: 0, y: 0},
+    returnToHome: function () {
+
+    },
+    findFood: function () {
+      let dx = this.pos.x - this.findClosestFood().x
+      let dy = this.pos.y - this.findClosestFood().y
+    }
+  }
+}
 
 let makeVectorField = makeVectorField4
 let result = []
@@ -69,13 +108,11 @@ function makeVectorField4() {
        })
 }
 
-
-
 function makeVectorFieldGeneric(cb) {
   var result = []
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
-      //for (let k = 0; k < zspace; k++) {
+      for (let k = 0; k < zspace; k++) {
 
       let [x, y, z] = clipSpace(j, i, 0, width, height)
 
@@ -86,12 +123,10 @@ function makeVectorFieldGeneric(cb) {
       result[idx] = cb(x, y, z)
       result[idx].x1 = x1
       result[idx].y1 = y1
-
-      //}
+      }
     }
   }
-
-return result
+  return result
 }
 
 let d = Date.now()
@@ -120,7 +155,6 @@ function makeModelIndex() {
     let [_, idx] = findPoint(pt)
     result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
   }
-
   return result
 }
 
@@ -128,7 +162,6 @@ function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
-      //sdheart
       let l = circle(p);
       vec[0] = 1- l * 10
       vec[1] = 1- l * 10
@@ -139,36 +172,22 @@ function makeVectorField2() {
       } 
       return vec
     })
-
 }
 
 let computeTransition
-
 let camera = {position: {x: 0, y: 0, z: 0} }
 const gui = new dat.GUI();
 const cameraFolder = gui.addFolder('Camera')
 cameraFolder.add(camera.position, 'z', 0, 10)
 cameraFolder.open()
 var person = {name: 'Sam'};
-
-
 let p = {type: 45}
 gui.add(p, 'type', 0, 100)
-
-var text =
-{
-    speed: 'someName'
-}
+var text = { speed: 'someName' }
 gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
-
-
-
 const dot = ( a, b) => {
-
-return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
-
+  return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
 }
-
 
 function circle(p) {
   return length2(p)
@@ -203,17 +222,12 @@ function zeroToOne(x , y, z) {
   return [x1, y1, z1]
 }
 
-
-
-
-
 function makeComputeShader(webgpu, mesh, vf) {
   let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf.flat(), 0, 'result')
-
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
@@ -256,7 +270,6 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code:  `
@@ -264,6 +277,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       mouse: vec2<f32>,
       time: f32
     }
+
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
@@ -271,16 +285,13 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
 
-  
-  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
-  {
+  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
     return 1.79284291400159 - 0.85373472095314 * r;
   }
   
-  fn snoise( v: vec3<f32>) -> f32
-    {
-      var  C = vec2(1.0/6.0, 1.0/3.0) ;
-      var  D = vec4(0.0, 0.5, 1.0, 2.0);
+  fn snoise( v: vec3<f32>) -> f32 {
+    var  C = vec2(1.0/6.0, 1.0/3.0) ;
+    var  D = vec4(0.0, 0.5, 1.0, 2.0);
   
   // First corner
   var i = floor(v + dot(v, C.yyy) );
@@ -394,7 +405,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     return normalize( vec3( x , y , z ) * divisor );
   }
   
-   fn mod289( x: vec3<f32>) -> vec3<f32> {
+   fn mod289( x: vec3<f32>)  -> vec3<f32> {
     return x - floor(x * (1.0 / 289.0)) * 289.0;
   }
   
@@ -439,14 +450,14 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
 
       let life = lifetime[index];
-      let r = reset[index];
-      if (life < 10.) {
-        lifetime[index] = 3000.;
-//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[index]= r;
-      } else {
-        lifetime[index] -= 8.;
-      }
+      let r = reset[index]; 
+//       if (life < 10.) {
+//         lifetime[index] = 3000.;
+// //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+//         buffer3[(index % 100000)]= r;
+//       } else {
+//         lifetime[index] -= 8.;
+//       }
 
       var pos = buffer3[index];
 
@@ -456,36 +467,27 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       var idx = hash(pos.xyz);
     
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-  
-  
     var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
     //+ vec3<f32>(vectorFieldBuffer[index].xyz)
     ;
     // vectorFieldBuffer[idx+1].xyz +
     // vectorFieldBuffer[idx-1].xyz +
     // vectorFieldBuffer[idx-100].xyz;
-  
     //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
-
     //vectorFieldBuffer[idx].xyz;
     // if (velocity[index].y < .01) {
     //   velocity[index] = vec3<f32>(-10.);
     // }
-
         // if (pos.y > 0.) {
         //   velocity[index].y =  sin(pos.y);
         // } else {
         //   velocity[index].y =  sin(pos.y);
         // }
-
-
         // if (pos.x > 0.) {
         //   velocity[index].x = 10 * cos(pos.x);
         // } else {
         //   velocity[index].x = -10 * cos(pos.x);
         // }
-
-    
       velocity[index] *= .1;
      //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
      velocity[index] = velocity[index] + .01 * vf;
@@ -534,7 +536,6 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   
       const computePass = commandEncoder.beginComputePass();
       state.computePass.computePass = computePass;
-  
       
     webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
     let timeBuffer = new Float32Array(1)
@@ -545,14 +546,14 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     }
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-      computePass.dispatchWorkgroups(256);
+      computePass.dispatchWorkgroups(1000);
       computePass.end();
     },
     bindGroups: function (state, computePipeline) {
 
   const reset = makeBuffer(frames[1][1], 0, 'reset')
 
-  const pop = {
+  const descriptor = {
     layout: computePipeline.getBindGroupLayout(0),
     entries: [
       {binding: 0, resource: {buffer: gridBuffer}},
@@ -561,11 +562,10 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       {binding: 3, resource: {buffer: velocity}},
       {binding: 4, resource: {buffer: lifeTimeBuffer}},
       {binding: 5, resource: {buffer: reset }}
-
     ]
   }
 
-  let computeBindGroup = state.device.createBindGroup(pop)
+  let computeBindGroup = state.device.createBindGroup(descriptor)
       return [computeBindGroup]
     }
   })
@@ -581,10 +581,7 @@ let frameCount = [...Array(frameMax).keys()]
 
 function getFrames(model) { 
   frames[model]= []
-  
   let loaded = 0
-  
-
   return new Promise (function (resolve) {
     frameCount.forEach(function (i) {
       fetch(`https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
@@ -604,15 +601,11 @@ function getFrames(model) {
           setTimeout(makeStagingBuffer, 3000)
         }
       })
-
     })
   })
-  
 }
 
-fetch(obj(1)).then(d => {
-  return d.arrayBuffer()
-}).then((d) => {
+fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
   dancer = new Float32Array(d)
   for (let i = 0; i < dancer.length; i++) {
     dancer[4*i+1] -= .5;
@@ -623,17 +616,6 @@ getFrames(1)
 getFrames(2)
 getFrames(3)
 getFrames(4)
-
-let time = 0
-let stagingBuffer
-
-let modelType = 1
-
-let animating = true
-
-let particle = () =>{ return {x: 0, y: 0, z:0} }
-
-const particles = new Array(1e6).fill(0).map((d)=> particle() )
 
 let pointBuffer = new Float32Array(1e5)
 
@@ -670,24 +652,18 @@ function line(a, b) {
   }
 }
 
-
-
 line.prototype.draw = function () {
   this.subdivide(50)
   if (! this.indices.length) {
     this.indices.push(...indexPool.alloc(this.points.length))
   }
 
-
   this.indices.forEach((d, i) => {
     let idx = d * 4
-    console.log(d, i)
     this.array[idx] = this.points[i][0]
     this.array[idx+1] = this.points[i][1]
-    //points are quad-tuples
   })
 }
-
 
 let rhomboid = function (origin, side, skew) {
   //left corner = half radius left + down
@@ -698,47 +674,13 @@ let rhomboid = function (origin, side, skew) {
   let d = [origin[0] - side, origin[1] - side] // bottom left
   let lines = [new line(a, b), new line(a, c), new line(c, d), new line(d, b)]
   lines.forEach( line => line.draw() )
+  console.log(a)
 }
 
-// rhomboid([0,0], .5, 1.)
+setInterval(function ( ) {
+  //rhomboid([makeRand(), makeRand()], .9, 1.)
 
-// rhomboid([0,0], .9, 1.)
-
-
-function drawStuff () {
-  stagingBuffer = webgpu.device.createBuffer({
-    size: 1e5,
-    usage: GPUBufferUsage.MAP_WRITE |GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
-
-  time += 1
-
-  let abc = []
-
-  const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
-
-  for (var i= 0; i < 1e4; i++) {
-    let p = particles[i]
-    p.x = makeRand()
-    p.y = makeRand()
-    p.z = makeRand()
-    vertexPositions[4*i] =  Math.cos(i)
-    vertexPositions[4*i+1] =  Math.sin(i);
-    vertexPositions[4*i+2] = 1.;
-    vertexPositions[4*i+3] = 0.;
-  }
-
-  webgpu.device.queue.writeBuffer(shapes[0], 0 , vertexPositions.buffer, 0 ,vertexPositions.length);
-
-  stagingBuffer.unmap();
-
-
-  //  // Copy the staging buffer contents to the vertex buffer.
-  const commandEncoder = webgpu.device.createCommandEncoder({});
-  commandEncoder.copyBufferToBuffer(stagingBuffer, 100, shapes[0], 100, vertexPositions.length * 4 * 4);
-  webgpu.device.queue.submit([commandEncoder.finish()]);
-}
+}, 1000)
 
 window.addEventListener('click', function () {
   let timebetween = 1000
@@ -761,22 +703,13 @@ window.addEventListener('click', function () {
         modelType = modelType === 1 ? 2 : 1
         return makeStagingBuffer()
       }
-      
     }, 8)
   } else {
     animating = ! animating
-    
+
   }
   if (animating) return makeStagingBuffer()
-
-
-  // if (animating) {
-  //   drawStuff()
-  // }
 })
-
-
-
 
 let particleMesh = []
 
@@ -784,38 +717,9 @@ function initParticles () {
   for (let i = 0; i < 1e6; i++) {
     particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
   }
-  console.log(particleMesh)
 }
 initParticles()
 
-
-//draw in cube mesh - 1 particle at a time 
-//draw lines around dancer
-//draw fireworks around dancer
-
-//use a pointMesh Pool
-// new Shape = allocate from pool
-//circle on every pixel - 1000 x 1000 grid
-//flip them in cascades using rotation matrix array - 
-//
-
-//project shader onto circles
-//index of dot + time = synchronize = glowy
-
-//have to make the best shader + line particle drawings ever 
-
-//tween(p.x, 0, time)
-
-//make mandala of moving radius w/ shader - and then when shader lines up - shiny
-
-//draw cool shapes -> deform into vector field -> index after 100k
-//draw lines around dancer
-
-//sphere
-//Math.cos()
-//Math.sin
-//radius = 0, z = -1
-//radius = 1, z = 1
 let keyframeFunctions = [
   function (p, i, t) {
     let idx = i / 100
@@ -826,15 +730,11 @@ let keyframeFunctions = [
     p.z = z
   },
   function (p, i, t) {
-    //i *= 1. - t
-    //butterfly equation 
     p.x = (i / 1000)
     p.y = Math.round(i / 50) / 200
 
   },
   function (p, i, t) {
-    //i *= 1. - t
-    //butterfly equation 
     p.x = i / 1000
     p.y = (i % 100) / 10
 
@@ -850,7 +750,6 @@ let keyframeFunctions = [
     p.y -= .01
   }, 
   function windshieldWiper (p, i, time) {
-    //console.log('123')
     let t = time
     p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180) 
     p.y = .1 * i * Math.sin(t * 90 * Math.PI / 180) 
@@ -859,7 +758,6 @@ let keyframeFunctions = [
   function (p, i) {
     p.x += .01;
   },
-
   function (p, i, t) {
     t = 1. - t
     p.x = .1 * i * Math.cos(t * 90 * Math.PI / 180) 
@@ -876,19 +774,12 @@ let keyframeFunctions = [
       if (i > n * 1000)  
         p.x += n * .2
   },
-
   function (p, i, t) {
     p.x = Math.tan(t * 360 * Math.PI / 180)
     p.y = Math.tan(t * 360 * Math.PI / 180)
-
   }
 ]
 
-
-//make pixel grid out of circles
-//colorize in resonating waves
-//reflections from scratch
-//glow post processing 
 
 function tween (a, b, i) {
   return a - ((a - b) * i) / (b - a)
@@ -900,19 +791,14 @@ function moveParticles () {
   //count = 0
   let i = Math.floor(count / 100)
   let fn = keyframeFunctions[0]
-  //console.log(fn)
   if (! fn)fn = function (i){ 
     count = 0; 
-    //particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
   }
-  //console.log(fn)
   for (let i = 0; i < 1e5; i++) {
   let pt = particleMesh[i]
    fn(pt, i, (count % 100) / 100)
   }
 }
-
-//attribute buffer with - translate, rotate scale
 
 let drawParticles = true
 function makeStagingBuffer() {
@@ -920,7 +806,7 @@ function makeStagingBuffer() {
     if (! shapes[0] || !animating) return;
 
     stagingBuffer = webgpu.device.createBuffer({
-      size: 4e6,
+      size: 2e6,
       usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
@@ -929,61 +815,60 @@ function makeStagingBuffer() {
     const toCopy = frames[modelType][frame]
     if (! toCopy) return console.log(toCopy, modelType, frame)
     if (time === 0) window.toCopy = toCopy
-
-
-
     time += 1
-    //console.time('a')
+    //if (drawParticles) moveParticles()
 
-    if (drawParticles) moveParticles()
-    //120ms to move particles
     const vertexPositions = new Float32Array(stagingBuffer.getMappedRange())
+    //let yourCopy = vertexPositions.slice(0, 1e5)
 
-    //40ms to update mesh
-    vertexPositions.set(toCopy)
-    //console.log(toCopy.length)
-    //vertexPositions.set(pointBuffer, 0);
-    // for (let i = 0; i < 1e5; i++){
-    //   let idx = 4*i//+(toCopy.length)
-    //   let p = particleMesh[i]
-    //   vertexPositions[idx] = p.x
-    //   vertexPositions[idx+1] = p.y
-    //   vertexPositions[idx+2] = p.z
-    //   vertexPositions[idx+3] = 1
+    for (let i = 0; i < vertexPositions.length; i++) {
+      //console.log(i, toCopy.length)
+      let idx = i * 4;
+      // for (let j = 0; j < toCopy.length; j+=4){
+      //  // let idx = 4 * j
+      //   yourCopy[j] = toCopy[j] + i * .111
+      //   yourCopy[j+1] = toCopy[j+1]
+      //   yourCopy[j+2] = toCopy[j+2]
+      //   yourCopy[j+3] = toCopy[j+3]
+      // }
+      // toCopy.forEach((d, i) => {
+      //   yourCopy[i] = toCopy[i] + .1
+      // })
+      // console.log(i * toCopy.length)
+      // if (i === 1) console.log(yourCopy)
+      // console.log(i, toCopy.length)
+      //  vertexPositions.set(yourCopy, i * toCopy.length)
+      //  vertexPositions[i] = Math.random()
+      vertexPositions[idx] = Math.random()
+      vertexPositions[idx+1] = Math.random()
+      vertexPositions[idx+2] = 0
+      vertexPositions[idx+3] = 1
 
-    // } 
-      
-    //console.log(vertexPositions)
+    }
+    console.log(vertexPositions)
+    // vertexPositions.forEach(function (d, i) {
+    //   vertexPositions[i]=toCopy[i % toCopy.length] + .2
+    // })
+
     //vertexPositions.set(toCopy)
+
     stagingBuffer.unmap();
-    //console.timeEnd('a')
-     // Copy the staging buffer contents to the vertex buffer.
+    // Copy the staging buffer contents to the vertex buffer.
     const commandEncoder = webgpu.device.createCommandEncoder({});
     commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
     webgpu.device.queue.submit([commandEncoder.finish()]);
-
-    // Immediately after copying, re-map the buffer. Push onto the list of staging buffers when the
-    // mapping completes.
-    // stagingBuffer.mapAsync(GPUMapMode.WRITE).then(() => {
-    //   //waveGridStagingBuffers.push(stagingBuffer);
-    // });
     if (animating) makeStagingBuffer()
-    
 
   }, 1000)
 }
 
-let shapes = [
-
-]
+let shapes = []
 function writeBuffer (device, buffer, array) {
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
-
 window.makeBuffer = function makeBuffer (stuff, flag, label) {
   const particleSize = 4
-                        //1000100
   const gpuBufferSize = 134217728
 
   const gpuBuffer = webgpu.device.createBuffer({
@@ -1138,10 +1023,8 @@ const blend = {
     operation: 'add',
   },
 }
-
 //compute shader = transition from one mesh to another
 //vertex -> fragment = simple display + lighting
-
 function magnitude (v) {
   return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2])
 }
@@ -1161,29 +1044,18 @@ for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
   let color = d3.rgb( interpolateTurbo(stuff));
-
-
   rgb[3*i] = color.r / 255 / 2 + .5
   rgb[3*i+1] = color.g / 255 /2 + .5
-
   rgb[3*i+2] = color.b / 255 /2 + .5
 }
-
 const colorBuffer = makeBuffer(rgb, 0, 'color')
-
 let hello = []
-
-
 //5 files
 // 5 draw calls
 // shader box + generate box + shaders for transitions + functions to change rotation
 // compute shader - changing poitns according to vector field - 3 of those
-//
 let img = new Image();
 img.src = './data/webgpu.png'
-document.body.appendChild(img)
-
-
 await img.decode();
 let bitmap = await createImageBitmap(img);
 
