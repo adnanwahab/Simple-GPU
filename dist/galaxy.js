@@ -97,16 +97,15 @@
   };
 
   // lib/Texture.js
-  var makeImgTexture = async (state2) => {
-    const img = document.createElement("img");
-    const source = img;
-    source.width = innerWidth;
-    source.height = innerHeight;
-    img.src = state2.data.texture;
-    await img.decode();
-    return await createImageBitmap(img);
-  };
-  async function makeTexture(device, textureData, options = {}) {
+  var count = 0;
+  function makeTexture(device, textureData, options = {}) {
+    if (textureData instanceof GPUTexture)
+      return {
+        id: count++,
+        texture: textureData,
+        width: textureData.width,
+        height: textureData.height
+      };
     if (Array.isArray(textureData)) {
       return {
         width: textureData[0],
@@ -121,11 +120,8 @@
         })
       };
     }
-    if (HTMLImageElement === textureData.constructor) {
-      let img = textureData;
-      await img.decode();
-      await createImageBitmap(img);
-      let imageBitmap = await createImageBitmap(img);
+    if (ImageBitmap === textureData.constructor) {
+      let imageBitmap = textureData;
       let texture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         mipLevelCount: options.mipLevelCount,
@@ -144,26 +140,18 @@
         height: imageBitmap.height
       };
     } else if ("string" === typeof textureData) {
-      let texture = device.createTexture({
-        size: [900, 500, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      let imageBitmap = await makeImgTexture(state);
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      return texture;
     } else if (typeof textureData === "object") {
-      console.log(textureData.format);
       let texture = device.createTexture({
         size: [textureData.width, textureData.height, 1],
         format: textureData.format,
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
       });
-      return { texture, width: textureData.width, height: textureData.height };
+      return {
+        id: count++,
+        texture,
+        width: textureData.width,
+        height: textureData.height
+      };
     }
   }
 
@@ -222,44 +210,32 @@
     });
     return [uniformBuffer, uniforms];
   }
-  async function makeBindGroup2(state2, options) {
+  function makeBindGroup2(state2, options) {
     let { device, pipeline } = state2;
     [state2.uniformBuffer, state2.uniforms] = bindUniforms(state2, options, device);
     state2.bindGroupDescriptor = state2.options.bindGroupDescriptor || {
       layout: pipeline.getBindGroupLayout(0),
       entries: [
-        {
-          binding: 0,
-          resource: { buffer: state2.uniformBuffer }
-        }
+        // {
+        //   binding: 0,
+        //   resource: { buffer: state.uniformBuffer },
+        // },
       ]
     };
-    if (state2.options?.uniforms?.texture) {
-      let texture = await state2.options.uniforms.texture;
-      state2.bindGroupDescriptor.entries.push(
-        {
-          binding: 1,
-          resource: texture.sampler
-        },
-        {
-          binding: 2,
-          resource: texture.texture.createView()
-        }
-      );
-    }
-    return options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+    let result = options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+    return result;
   }
-  async function createRenderPasses(state2, options) {
+  function createRenderPasses(state2, options) {
     let device = state2.device;
     const mainRenderPass = {
       renderPassDescriptor: state2.renderPassDescriptor,
       texture: state2.texture,
-      pipeline: state2.pipeline = await makePipeline(state2, options),
+      pipeline: state2.pipeline = makePipeline(state2, options),
       attributes: [],
       type: "draw"
     };
     if (options.uniforms || options.bindGroup) {
-      mainRenderPass.bindGroup = await makeBindGroup2(state2, options);
+      mainRenderPass.bindGroup = makeBindGroup2(state2, options);
     }
     if (options.indices) {
       mainRenderPass.indices = options.indices;
@@ -295,7 +271,7 @@
     }
     return utils_default.makeBuffer(device, cubeVertexArray.byteLength, "VERTEX", cubeVertexArray, Float32Array);
   }
-  var recordRenderPass = async function(state2, newScope = {}, CE) {
+  var recordRenderPass = function(state2, newScope = {}, CE) {
     let { device, renderPassDescriptor } = state2;
     const swapChainTexture = state2.context.getCurrentTexture();
     if (state2.options.renderPassDescriptor) {
@@ -339,14 +315,33 @@
       passEncoder.draw(state2?.options?.count || 6, state2?.options?.instances || 1, 0, 0);
     }
     passEncoder.end();
-    if (state2?.options?.postRender)
+    if (true) {
+      state2.wtf = "true";
+      const cubeTexture = state2.swapChainTexture || device.createTexture({
+        size: [2e3, 2e3],
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      commandEncoder.copyTextureToTexture(
+        {
+          texture: swapChainTexture
+        },
+        {
+          texture: cubeTexture
+        },
+        [2e3, 2e3]
+      );
+      state2.swapChainTexture = cubeTexture;
+    }
+    if (state2?.options?.postRender) {
       state2?.options?.postRender(commandEncoder, swapChainTexture);
+    }
     if (!newScope.noSubmit) {
       device.queue.submit([commandEncoder.finish()]);
       delete state2.ctx.commandEncoder;
     }
   };
-  async function makePipeline(state2) {
+  function makePipeline(state2) {
     let { device } = state2;
     let pipelineDesc = {
       layout: state2.options.layout || "auto",
@@ -415,7 +410,7 @@
       colorAttachments: [
         {
           view: void 0,
-          clearValue: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
           loadOp: "clear",
           storeOp: "store"
         }
@@ -461,17 +456,18 @@
     context.configure({
       device,
       format: presentationFormat,
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC | GPUTextureUsage.TEXTURE_BINDING,
       alphaMode: "opaque"
     });
-    async function texture(img, options2) {
+    function texture(img, options2) {
       const sampler = device.createSampler({
         magFilter: "linear",
         minFilter: "linear",
         mipmapFilter: "nearest"
       });
-      const texture2 = await makeTexture(device, img, options2);
+      const texture2 = makeTexture(device, img, options2);
       return {
+        id: texture2.id,
         data: img,
         texture: texture2.texture,
         sampler,
@@ -528,19 +524,23 @@
         requestAnimationFrame(recur);
       });
     }
-    async function initDrawCall(options2) {
+    function initDrawCall(options2) {
       let localState = Object.assign(
         Object.create(state2),
         {
           options: options2,
           device,
-          renderPasses: []
+          renderPasses: [],
+          wtf: true
         }
       );
-      await createRenderPasses(localState, options2);
-      function draw(newScope, commandEncoder) {
+      createRenderPasses(localState, options2);
+      function draw(newScope = {}, commandEncoder) {
         if (Array.isArray(newScope))
           return newScope.map((scope) => draw(scope));
+        if (true) {
+          localState.renderPasses[0].bindGroup = makeBindGroup2(localState, options2);
+        }
         recordRenderPass(localState, newScope, commandEncoder);
         return draw;
       }
@@ -551,6 +551,9 @@
       draw.state = localState;
       draw.draw = draw;
       draw.state = localState;
+      draw.swapAttributeBuffer = function(data, i) {
+        localState.options.attributeBufferData[i] = data;
+      };
       return draw;
     }
   }
@@ -704,8 +707,8 @@
   var e10 = Math.sqrt(50);
   var e5 = Math.sqrt(10);
   var e2 = Math.sqrt(2);
-  function tickSpec(start2, stop, count) {
-    const step = (stop - start2) / Math.max(0, count), power = Math.floor(Math.log10(step)), error = step / Math.pow(10, power), factor = error >= e10 ? 10 : error >= e5 ? 5 : error >= e2 ? 2 : 1;
+  function tickSpec(start2, stop, count2) {
+    const step = (stop - start2) / Math.max(0, count2), power = Math.floor(Math.log10(step)), error = step / Math.pow(10, power), factor = error >= e10 ? 10 : error >= e5 ? 5 : error >= e2 ? 2 : 1;
     let i1, i2, inc;
     if (power < 0) {
       inc = Math.pow(10, -power) / factor;
@@ -725,17 +728,17 @@
       if (i2 * inc > stop)
         --i2;
     }
-    if (i2 < i1 && 0.5 <= count && count < 2)
-      return tickSpec(start2, stop, count * 2);
+    if (i2 < i1 && 0.5 <= count2 && count2 < 2)
+      return tickSpec(start2, stop, count2 * 2);
     return [i1, i2, inc];
   }
-  function ticks(start2, stop, count) {
-    stop = +stop, start2 = +start2, count = +count;
-    if (!(count > 0))
+  function ticks(start2, stop, count2) {
+    stop = +stop, start2 = +start2, count2 = +count2;
+    if (!(count2 > 0))
       return [];
     if (start2 === stop)
       return [start2];
-    const reverse = stop < start2, [i1, i2, inc] = reverse ? tickSpec(stop, start2, count) : tickSpec(start2, stop, count);
+    const reverse = stop < start2, [i1, i2, inc] = reverse ? tickSpec(stop, start2, count2) : tickSpec(start2, stop, count2);
     if (!(i2 >= i1))
       return [];
     const n = i2 - i1 + 1, ticks2 = new Array(n);
@@ -756,13 +759,13 @@
     }
     return ticks2;
   }
-  function tickIncrement(start2, stop, count) {
-    stop = +stop, start2 = +start2, count = +count;
-    return tickSpec(start2, stop, count)[2];
+  function tickIncrement(start2, stop, count2) {
+    stop = +stop, start2 = +start2, count2 = +count2;
+    return tickSpec(start2, stop, count2)[2];
   }
-  function tickStep(start2, stop, count) {
-    stop = +stop, start2 = +start2, count = +count;
-    const reverse = stop < start2, inc = reverse ? tickIncrement(stop, start2, count) : tickIncrement(start2, stop, count);
+  function tickStep(start2, stop, count2) {
+    stop = +stop, start2 = +start2, count2 = +count2;
+    const reverse = stop < start2, inc = reverse ? tickIncrement(stop, start2, count2) : tickIncrement(start2, stop, count2);
     return (reverse ? -1 : 1) * (inc < 0 ? 1 / -inc : inc);
   }
 
@@ -4864,8 +4867,8 @@
   }
 
   // node_modules/d3-scale/src/tickFormat.js
-  function tickFormat(start2, stop, count, specifier) {
-    var step = tickStep(start2, stop, count), precision;
+  function tickFormat(start2, stop, count2, specifier) {
+    var step = tickStep(start2, stop, count2), precision;
     specifier = formatSpecifier(specifier == null ? ",f" : specifier);
     switch (specifier.type) {
       case "s": {
@@ -4896,17 +4899,17 @@
   // node_modules/d3-scale/src/linear.js
   function linearish(scale) {
     var domain = scale.domain;
-    scale.ticks = function(count) {
+    scale.ticks = function(count2) {
       var d = domain();
-      return ticks(d[0], d[d.length - 1], count == null ? 10 : count);
+      return ticks(d[0], d[d.length - 1], count2 == null ? 10 : count2);
     };
-    scale.tickFormat = function(count, specifier) {
+    scale.tickFormat = function(count2, specifier) {
       var d = domain();
-      return tickFormat(d[0], d[d.length - 1], count == null ? 10 : count, specifier);
+      return tickFormat(d[0], d[d.length - 1], count2 == null ? 10 : count2, specifier);
     };
-    scale.nice = function(count) {
-      if (count == null)
-        count = 10;
+    scale.nice = function(count2) {
+      if (count2 == null)
+        count2 = 10;
       var d = domain();
       var i0 = 0;
       var i1 = d.length - 1;
@@ -4920,7 +4923,7 @@
         step = i0, i0 = i1, i1 = step;
       }
       while (maxIter-- > 0) {
-        step = tickIncrement(start2, stop, count);
+        step = tickIncrement(start2, stop, count2);
         if (step === prestep) {
           d[i0] = start2;
           d[i1] = stop;

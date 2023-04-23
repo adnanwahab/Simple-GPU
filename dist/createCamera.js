@@ -1778,6 +1778,9 @@
         view: cameraState.view
       };
     }
+    setupCamera.zoom = function(x) {
+      cameraState.distance = x;
+    };
     return setupCamera;
   }
   var createCamera_default = createCamera;

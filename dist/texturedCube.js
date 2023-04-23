@@ -103,16 +103,15 @@
   };
 
   // lib/Texture.js
-  var makeImgTexture = async (state2) => {
-    const img = document.createElement("img");
-    const source = img;
-    source.width = innerWidth;
-    source.height = innerHeight;
-    img.src = state2.data.texture;
-    await img.decode();
-    return await createImageBitmap(img);
-  };
-  async function makeTexture(device, textureData, options = {}) {
+  var count = 0;
+  function makeTexture(device, textureData, options = {}) {
+    if (textureData instanceof GPUTexture)
+      return {
+        id: count++,
+        texture: textureData,
+        width: textureData.width,
+        height: textureData.height
+      };
     if (Array.isArray(textureData)) {
       return {
         width: textureData[0],
@@ -127,11 +126,8 @@
         })
       };
     }
-    if (HTMLImageElement === textureData.constructor) {
-      let img = textureData;
-      await img.decode();
-      await createImageBitmap(img);
-      let imageBitmap = await createImageBitmap(img);
+    if (ImageBitmap === textureData.constructor) {
+      let imageBitmap = textureData;
       let texture = device.createTexture({
         size: [imageBitmap.width, imageBitmap.height, 1],
         mipLevelCount: options.mipLevelCount,
@@ -150,26 +146,18 @@
         height: imageBitmap.height
       };
     } else if ("string" === typeof textureData) {
-      let texture = device.createTexture({
-        size: [900, 500, 1],
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
-      });
-      let imageBitmap = await makeImgTexture(state);
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-      return texture;
     } else if (typeof textureData === "object") {
-      console.log(textureData.format);
       let texture = device.createTexture({
         size: [textureData.width, textureData.height, 1],
         format: textureData.format,
         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
       });
-      return { texture, width: textureData.width, height: textureData.height };
+      return {
+        id: count++,
+        texture,
+        width: textureData.width,
+        height: textureData.height
+      };
     }
   }
 
@@ -228,44 +216,32 @@
     });
     return [uniformBuffer, uniforms];
   }
-  async function makeBindGroup2(state2, options) {
+  function makeBindGroup2(state2, options) {
     let { device, pipeline } = state2;
     [state2.uniformBuffer, state2.uniforms] = bindUniforms(state2, options, device);
     state2.bindGroupDescriptor = state2.options.bindGroupDescriptor || {
       layout: pipeline.getBindGroupLayout(0),
       entries: [
-        {
-          binding: 0,
-          resource: { buffer: state2.uniformBuffer }
-        }
+        // {
+        //   binding: 0,
+        //   resource: { buffer: state.uniformBuffer },
+        // },
       ]
     };
-    if (state2.options?.uniforms?.texture) {
-      let texture = await state2.options.uniforms.texture;
-      state2.bindGroupDescriptor.entries.push(
-        {
-          binding: 1,
-          resource: texture.sampler
-        },
-        {
-          binding: 2,
-          resource: texture.texture.createView()
-        }
-      );
-    }
-    return options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+    let result = options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+    return result;
   }
-  async function createRenderPasses(state2, options) {
+  function createRenderPasses(state2, options) {
     let device = state2.device;
     const mainRenderPass = {
       renderPassDescriptor: state2.renderPassDescriptor,
       texture: state2.texture,
-      pipeline: state2.pipeline = await makePipeline(state2, options),
+      pipeline: state2.pipeline = makePipeline(state2, options),
       attributes: [],
       type: "draw"
     };
     if (options.uniforms || options.bindGroup) {
-      mainRenderPass.bindGroup = await makeBindGroup2(state2, options);
+      mainRenderPass.bindGroup = makeBindGroup2(state2, options);
     }
     if (options.indices) {
       mainRenderPass.indices = options.indices;
@@ -301,7 +277,7 @@
     }
     return utils_default.makeBuffer(device, cubeVertexArray2.byteLength, "VERTEX", cubeVertexArray2, Float32Array);
   }
-  var recordRenderPass = async function(state2, newScope = {}, CE) {
+  var recordRenderPass = function(state2, newScope = {}, CE) {
     let { device, renderPassDescriptor } = state2;
     const swapChainTexture = state2.context.getCurrentTexture();
     if (state2.options.renderPassDescriptor) {
@@ -345,14 +321,33 @@
       passEncoder.draw(state2?.options?.count || 6, state2?.options?.instances || 1, 0, 0);
     }
     passEncoder.end();
-    if (state2?.options?.postRender)
+    if (true) {
+      state2.wtf = "true";
+      const cubeTexture = state2.swapChainTexture || device.createTexture({
+        size: [2e3, 2e3],
+        format: navigator.gpu.getPreferredCanvasFormat(),
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      commandEncoder.copyTextureToTexture(
+        {
+          texture: swapChainTexture
+        },
+        {
+          texture: cubeTexture
+        },
+        [2e3, 2e3]
+      );
+      state2.swapChainTexture = cubeTexture;
+    }
+    if (state2?.options?.postRender) {
       state2?.options?.postRender(commandEncoder, swapChainTexture);
+    }
     if (!newScope.noSubmit) {
       device.queue.submit([commandEncoder.finish()]);
       delete state2.ctx.commandEncoder;
     }
   };
-  async function makePipeline(state2) {
+  function makePipeline(state2) {
     let { device } = state2;
     let pipelineDesc = {
       layout: state2.options.layout || "auto",
@@ -421,7 +416,7 @@
       colorAttachments: [
         {
           view: void 0,
-          clearValue: { r: 0.5, g: 0.5, b: 0.5, a: 1 },
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
           loadOp: "clear",
           storeOp: "store"
         }
@@ -467,17 +462,18 @@
     context.configure({
       device,
       format: presentationFormat,
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC | GPUTextureUsage.TEXTURE_BINDING,
       alphaMode: "opaque"
     });
-    async function texture(img, options2) {
+    function texture(img, options2) {
       const sampler = device.createSampler({
         magFilter: "linear",
         minFilter: "linear",
         mipmapFilter: "nearest"
       });
-      const texture2 = await makeTexture(device, img, options2);
+      const texture2 = makeTexture(device, img, options2);
       return {
+        id: texture2.id,
         data: img,
         texture: texture2.texture,
         sampler,
@@ -534,19 +530,23 @@
         requestAnimationFrame(recur);
       });
     }
-    async function initDrawCall(options2) {
+    function initDrawCall(options2) {
       let localState = Object.assign(
         Object.create(state2),
         {
           options: options2,
           device,
-          renderPasses: []
+          renderPasses: [],
+          wtf: true
         }
       );
-      await createRenderPasses(localState, options2);
-      function draw(newScope, commandEncoder) {
+      createRenderPasses(localState, options2);
+      function draw(newScope = {}, commandEncoder) {
         if (Array.isArray(newScope))
           return newScope.map((scope) => draw(scope));
+        if (true) {
+          localState.renderPasses[0].bindGroup = makeBindGroup2(localState, options2);
+        }
         recordRenderPass(localState, newScope, commandEncoder);
         return draw;
       }
@@ -557,6 +557,9 @@
       draw.state = localState;
       draw.draw = draw;
       draw.state = localState;
+      draw.swapAttributeBuffer = function(data, i) {
+        localState.options.attributeBufferData[i] = data;
+      };
       return draw;
     }
   }
@@ -2215,7 +2218,7 @@
   var sqrLen = squaredLength;
   var forEach = function() {
     var vec = create2();
-    return function(a, stride, offset, count, fn, arg) {
+    return function(a, stride, offset, count2, fn, arg) {
       var i, l;
       if (!stride) {
         stride = 3;
@@ -2223,8 +2226,8 @@
       if (!offset) {
         offset = 0;
       }
-      if (count) {
-        l = Math.min(count * stride + offset, a.length);
+      if (count2) {
+        l = Math.min(count2 * stride + offset, a.length);
       } else {
         l = a.length;
       }
@@ -2308,6 +2311,7 @@
     img.src = "./data/webgpu.png";
     document.body.appendChild(img);
     await img.decode();
+    const bitmap = await createImageBitmap(img);
     const drawCube = await webgpu.initDrawCall({
       frag: `
   @group(0) @binding(1) var mySampler: sampler;
@@ -2347,14 +2351,14 @@
       },
       uniforms: {
         modelViewProjectionMatrix: getTransformationMatrix,
-        texture: webgpu.texture(img)
+        texture: webgpu.texture(bitmap)
       },
       count: 36
     });
     setInterval(
       function() {
         drawCube({
-          texture: webgpu.texture(img)
+          texture: webgpu.texture(bitmap)
         });
       },
       50
