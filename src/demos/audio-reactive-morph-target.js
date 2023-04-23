@@ -1,3 +1,9 @@
+//make particles smoothly interpolate in using lifetime
+//make particle colors revolve around dancer
+//make a cube of 27 cubes
+//tween between different patterns - two vector field slots ??? 
+//make vector fields continuous - AI or something 
+//https://www.youtube.com/watch?v=tRSbwUGySxA
 //https://en.wikipedia.org/wiki/Transformation_matrix
 //linear algebra from scratch
 import * as d3 from 'd3'
@@ -73,14 +79,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeVectorField9,
+   // makeVectorField9,
    makeVectorField2, 
     
     makeVectorField3, 
    makeModelIndex, 
-   makeVectorField4
+   makeVectorField4,
+   makeVectorField5
+
   ]
   let idx = (Math.random() * list.length) | 0 
+  console.log(idx)
   return [list[idx](), idx]
 }
 
@@ -109,8 +118,16 @@ function makeVectorField4() {
        })
 }
 
-function makeVectorFieldGeneric(cb) {
-  var result = []
+function makeVectorField5() {
+  return makeVectorFieldGeneric(function (x,y,z) {
+        return [ 1  / Math.cos(-10 * y + x), 1 / Math.sin(10 * x + y), 
+          1 / 10 * Math.atan(x, y), 1]
+       })
+}
+
+
+function makeVectorFieldGeneric(cb, buffer ) {
+  var result = buffer || []
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
       for (let k = 0; k < zspace; k++) {
@@ -154,7 +171,7 @@ function makeModelIndex() {
   for (let i = 0; i < model.length; i+=4) {
     let pt = model.slice(i, i + 2)
     let [_, idx] = findPoint(pt)
-    result[idx] = [100 * pt[0], 100 * pt[1], 0, 0]
+    result[idx] = [10 * pt[0], 10 * pt[1], 0, 0]
   }
   return result
 }
@@ -180,7 +197,7 @@ function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
-      let l = sdHeart(p);
+      let l = circle(p);
       vec[0] = 1- l * 10
       vec[1] = 1- l * 10
   
@@ -191,6 +208,10 @@ function makeVectorField2() {
       return vec
     })
 }
+
+//make vector field that infinitely randomly generates lots of variety and detail every few seconds
+//make dancer in center -> overwrite particles in first 1e5 coordinates 
+
 
 let computeTransition
 let camera = {position: {x: 0, y: 0, z: 0} }
@@ -240,12 +261,14 @@ function zeroToOne(x , y, z) {
   return [x1, y1, z1]
 }
 
-function makeComputeShader(webgpu, mesh, vf) {
+function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let device = webgpu.device
   let velocityBuffer = new Float32Array(1e6)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
-  let gridBuffer = makeBuffer(vf.flat(), 0, 'result')
+  let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
+  let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
+
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
@@ -302,6 +325,9 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
+    @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
+
+
 
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
     return 1.79284291400159 - 0.85373472095314 * r;
@@ -459,6 +485,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   fn hash(pos: vec3<f32>) -> i32 {
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
+    x *= .5;
+    y *= .5;
     if (x > 1.){ x = .5; } 
     if (y > 1.){ y = .5; } 
     if (y < 0.){ y = .5; } 
@@ -473,23 +501,31 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
       let life = lifetime[index];
       let r = reset[index]; 
-//       if (life < 10.) {
-//         lifetime[index] = 3000.;
-// //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-//         buffer3[(index % 100000)]= r;
-//       } else {
-//         lifetime[index] -= 8.;
-//       }
+      if (life < 10.) {
+        lifetime[index] = 3000.;
+//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        buffer3[(index)]= r;
+      } else {
+        lifetime[index] -= 8.;
+      }
+      //start as block
+      //if lifetime === -10000
+      //deform according to mesh
+      //look like dancer 
 
       var pos = buffer3[index];
 
       var abc = buffer3[index];
 
-      buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
+      //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
       var idx = hash(pos.xyz);
     
       //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
+    var vf = vec3<f32>(vectorFieldBuffer[idx].xyz) + 
+    vec3<f32>(vectorFieldBuffer2[idx].xyz);
+    if (pos.z < 0.) {
+      vf *= vec3<f32>(-1, -1, 1.);
+    }
     //+ vec3<f32>(vectorFieldBuffer[index].xyz)
     ;
     // vectorFieldBuffer[idx+1].xyz +
@@ -518,7 +554,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     //  if (p.x < -0.9){ velocity[index] *= -1;}
     //  if (p.y > .9){ velocity[index] *= -1;}
     //  if (p.y < -.9){ velocity[index] *= -1;}
-      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
+     buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
       // if (uniforms.time > 0.) {
       //   if (distance( buffer3[index], buffer1[index]) > .1) {
@@ -583,7 +619,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       {binding: 2, resource: {buffer: uniformsBuffer}},
       {binding: 3, resource: {buffer: velocity}},
       {binding: 4, resource: {buffer: lifeTimeBuffer}},
-      {binding: 5, resource: {buffer: reset }}
+      {binding: 5, resource: {buffer: reset }},
+      {binding: 6, resource: {buffer: gridBuffer2 }},
     ]
   }
 
@@ -699,13 +736,25 @@ let rhomboid = function (origin, side, skew) {
   //console.log(a)
 }
 
+let triangle = function (origin, side) {
+  let a = [origin[0],  origin[1] + side] //top right
+  let b = [origin[0]- side,  origin[1]-side] // top left
+  let c = [origin[0]+side,  origin[1]-side] // bottom right
+  let lines = [new line(a, b), new line(a, c), new line(c, b)]
+  lines.forEach( line => line.draw() )
+}
+
 setInterval(function ( ) {
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
 
 }, 1000)
 
@@ -912,20 +961,27 @@ for( let i = 0; i < list.length; i+=4){
   list[i+3]= 0
 
 }
+// makeVectorFieldGeneric(function (x, y, z) {
+//   return [x, y, z]
+// }, pointBuffer)
+
 
 async function basic () {
+  let vf1 =  pickVF(), vf2 = pickVF()
   setInterval(function () {
-   let vf =  pickVF()
+  vf1 = vf2
+  vf2 =  pickVF()
+  
    
   let happyBear = makeBuffer(list, 0, 'bear')
 
-    computeTransition = makeComputeShader(webgpu, happyBear, vf)
+    computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
     //drawScreen.swapAttributeBuffer(0, happyBear)
     drawScreen = makeDrawCall(happyBear, drawDescriptor) 
   }, 10000)
-  let vf =  pickVF()
 
-  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf)
+
+  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
 
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
@@ -1051,7 +1107,7 @@ let drawDescriptor = {
   ],
   count: 6,
   //blend,
-  instances: 4e5,
+  instances: 1e6 / 4,
   bindGroup: function ({pipeline}) {
     const uniformsBuffer = webgpu.device.createBuffer({
       size: 32, 
