@@ -1,3 +1,16 @@
+//make vector field more continuous 
+// spiral patterns 
+// concentric circles
+// organize compute shader and all code
+// make thing to draw vector fields and export them -> key frame 
+// make cubes - shiny
+// use lifetime to tween patterns
+//
+//cube = 8 points, 12 lines 
+
+
+
+
 //make the dancer modulate the edges  with the vector field -> wave patterns 
 // make the dancer - reset buffer 
 //compute shader should always run but shouldnt change first 100,000 particles
@@ -228,7 +241,6 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
-console.log(vf1)
 
   let particleLifetime = new Float32Array(1e6)
   for(let i =0; i < particleLifetime.length; i++) {
@@ -268,6 +280,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     size: 32, 
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
+
+uniformsBuffer
 
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
@@ -455,6 +469,12 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     if (x < 0.){ x = .5; } 
     return i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
   }
+
+
+
+fn applyVF() -> vec3<f32> {
+  return vec3<f32>(1.);
+}
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -472,73 +492,29 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       } else {
         lifetime[index] -= 1.;
       }
-      //start as block
-      //if lifetime === -10000
-      //deform according to mesh
-      //look like dancer 
 
       var pos = buffer3[index];
 
       var abc = buffer3[index];
 
-      //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
       var idx = hash(pos.xyz);
     
-      //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    var vf = vec3<f32>(vectorFieldBuffer[idx].xyz) + 
-    vec3<f32>(vectorFieldBuffer2[idx].xyz);
-    if (pos.z < 0.) {
-      vf *= vec3<f32>(-1, -1, 1.);
-    }
-    //+ vec3<f32>(vectorFieldBuffer[index].xyz)
-    ;
-    // vectorFieldBuffer[idx+1].xyz +
-    // vectorFieldBuffer[idx-1].xyz +
-    // vectorFieldBuffer[idx-100].xyz;
-    //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
-    //vectorFieldBuffer[idx].xyz;
-    // if (velocity[index].y < .01) {
-    //   velocity[index] = vec3<f32>(-10.);
-    // }
-        // if (pos.y > 0.) {
-        //   velocity[index].y =  sin(pos.y);
-        // } else {
-        //   velocity[index].y =  sin(pos.y);
-        // }
-        // if (pos.x > 0.) {
-        //   velocity[index].x = 10 * cos(pos.x);
-        // } else {
-        //   velocity[index].x = -10 * cos(pos.x);
-        // }
+    var vf = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
+    vec3<f32>(vectorFieldBuffer2[idx].xyz), uniforms.time / 3000);
+
+
       velocity[index] *= .1;
-     //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
      velocity[index] = velocity[index] + .1 * vf;
      var p = buffer3[index];
-    //  if (p.x > .9){ velocity[index] *= -1;}
-    //  if (p.x < -0.9){ velocity[index] *= -1;}
-    //  if (p.y > .9){ velocity[index] *= -1;}
-    //  if (p.y < -.9){ velocity[index] *= -1;}
+
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
 
-      // if (uniforms.time > 0.) {
-      //   if (distance( buffer3[index], buffer1[index]) > .1) {
-      //  var p = (buffer1[index] - buffer3[index]).xyz;
-      //  //.1 * uniforms.time *
-      //   vf =  ( (.01 * curlNoise(p))) * p;
-      //   vf = p;
-      //   velocity[index] +=  .1 * vf;
-      //   buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-      //   }
-      // }
       //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-      
       //sphere
       //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
-      ;
-      //buffer3[index].x < 0. ||
+
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
       if (distance(buffer3[index].xy, mouse) < .1) {
         // velocity[index].x = velocity[index].y;
@@ -547,9 +523,6 @@ for(let i = 0; i < mesh.source.length; i+=4) {
         buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
         //velocity[index]*= .001;
       }
-      // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
-   
-
     }`,
   
     exec: function (state){
@@ -942,8 +915,9 @@ async function basic () {
 
     computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
     //drawScreen.swapAttributeBuffer(0, happyBear)
-    drawScreen = makeDrawCall(happyBear, drawDescriptor) 
-  }, 1000)
+    drawScreen = makeDrawCall(happyBear, drawDescriptor)
+    
+  }, 10000)
 
 
   computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
@@ -1072,6 +1046,8 @@ const uniformsBuffer = webgpu.device.createBuffer({
 });
 let abc = new Float32Array(1)
 
+
+let elapsed = Date.now()
 setInterval(function () {
   abc[0] = performance.now() 
   device.queue.writeBuffer(
@@ -1081,6 +1057,10 @@ setInterval(function () {
     abc.byteOffset,
     abc.byteLength
   );
+  if (window.writeTime) {
+    elapsed = Date.now() % 3000
+    window.writeTime(elapsed)
+  } 
 }, 8)
 let drawDescriptor = {
   attributeBuffers: buffers,
@@ -1147,15 +1127,12 @@ let camera = createCamera({
   document.createElement('div') || false
  
 });
-let zoom = 10
+let zoom = 1
 webgpu.canvas.addEventListener('mousewheel', function (e) {
   camera.zoom(zoom = zoom + .1 * e.deltaY)
 })
 
 let result = drawScreen()
-//let texture = 
-//let pp = await postProcessing(webgpu, texture);
-
 
 let swapChainTexture = result.state.swapChainTexture
 
@@ -1193,13 +1170,7 @@ async function () {
       a.byteLength
     );
     
-     
- 
-    //if (! animating) {
-      computeTransition()
-    //}
-
-
+    computeTransition()
     // let result = drawCalls[drawCallChoice]({
     //   texture: bitmap
     // })
