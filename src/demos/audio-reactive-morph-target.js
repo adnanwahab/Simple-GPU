@@ -1,11 +1,9 @@
 //make vector field more continuous 
 // spiral patterns 
 // concentric circles
-// organize compute shader and all code
-// make thing to draw vector fields and export them -> key frame 
+// [CHECK] organize compute shader and all code
 // make cubes - shiny
-// use lifetime to tween patterns
-//
+// [CHECK] use lifetime to tween patterns
 //cube = 8 points, 12 lines 
 
 
@@ -52,7 +50,7 @@ let time = 0
 let stagingBuffer
 let modelType = 1
 let animating = true
-let width = 100, height = width, zspace = 1
+let width = 100, height = width, zspace = 100
 const mouse = [0,0]
 let drawCallChoice = 0
 
@@ -67,25 +65,45 @@ let gridBuffer = makeGrid()
 function length2 (p) {
   let [x, y] = p
   return Math.sqrt(x*x + y*y)
-}//ant simulation
+}
 
 let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeGrid,
-   makeVectorField9,
-   makeVectorField2, 
+    makeVectorField10,
+  //   makeGrid,
+  //  makeVectorField9,
+  //  makeVectorField2, 
     
-    makeVectorField3, 
-   makeModelIndex, 
-   makeVectorField4,
-   makeVectorField5
+  //   makeVectorField3, 
+  //  //makeModelIndex, 
+  //  makeVectorField4,
+  //  makeVectorField5
 
   ]
   let idx = (Math.random() * list.length) | 0 
-  console.log(idx)
-  return list[idx]()
+  let ret =  list[idx]()
+  console.log(ret)
+  return ret
+}
+
+function makeVectorField10() {
+  let vf =  makeVectorFieldGeneric(function (x,y,z) {
+   return [-x ,- y,z * .1,1]
+    // x *= 2
+    // y *= 3
+    let x1 = Math.sin(y + x)
+    y =Math.sin(x - y)
+
+    return [ x1, y , z , 1]
+  }) 
+
+  // for (let i = 0; i< vf.length; i++) {
+  //   vf[i] = [Math.random(), Math.random(), Math.random(), 1];
+  // }
+
+  return vf 
 }
 
 function makeVectorField9() {
@@ -129,12 +147,14 @@ function makeVectorFieldGeneric(cb, buffer ) {
 
       let [x, y, z] = clipSpace(j, i, 0, width, height)
 
-      let [x1, y1, z1] = zeroToOne(x , y, 0)
-//+  z1 * width * width * width
-      let idx = Math.round(x1 * width + y1 * width * height )
+      let [x1, y1, z1] = zeroToOne(x , y, z) 
+      //
+      let idx = Math.round(x1 * width + y1 * width * height 
+         //+  z1 * width * width * width
+         )
       
-      //result[idx] = cb(x, y, z)
-      result[idx] = (cb(x,y,z))
+      result[idx] = cb(x, y, 0)
+      //result[idx] = (cb(x,y,z))
       // result[idx].x1 = x1
       // result[idx].y1 = y1
       //}
@@ -175,8 +195,8 @@ function makeVectorField2() {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
       let l = circle(p);
-      vec[0] = 1- l * 10
-      vec[1] = 1- l * 10
+      vec[0] = - l * 10
+      vec[1] = - l * 10
   
       if (l < .5 && l > .4) {
         vec[0] = y * 10.
@@ -454,19 +474,24 @@ uniformsBuffer
     return (x + 1.) / 2.;
   }
 
-  fn hash(pos: vec3<f32>) -> i32 {
+  fn hash(p: vec3<f32>) -> i32 {
+    var pos = p * .1;
+
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
 
-    x *= .5;
-    y *= .5;
-    z *= .5;
 
-    if (x > 1.){ x = .5; } 
-    if (y > 1.){ y = .5; } 
-    if (y < 0.){ y = .5; } 
-    if (x < 0.){ x = .5; } 
+    // x += 1;
+    // y += 1;
+    // z += 1;
+
+  
+    
+    // if (x > 1.){ x = .5; } 
+    // if (y > 1.){ y = 1.; } 
+    // if (y < 0.){ y = 1.; } 
+    // if (x < 0.){ x = .5; } 
     return i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
   }
 
@@ -483,31 +508,35 @@ fn applyVF() -> vec3<f32> {
 
       let life = lifetime[index];
       let r = reset[index]; 
-      if (life < -2000000) {
-        buffer3[(index)]= r;
-      } else if (life < 0) {
-        lifetime[index] = 3000.;
-        //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[(index)]= r;
-      } else {
-        lifetime[index] -= 1.;
-      }
+      // if (life < -2000000) {
+      //   buffer3[(index)]= r;
+      // } else if (life < 0) {
+      //   lifetime[index] = 3000.;
+      //   //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+      //   buffer3[(index)]= r;
+      // } else {
+      //   lifetime[index] -= 1.;
+      // }
 
       var pos = buffer3[index];
 
       var abc = buffer3[index];
 
       var idx = hash(pos.xyz);
+
+      let t = uniforms.time;
+      var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
+
     
-    var vf = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
-    vec3<f32>(vectorFieldBuffer2[idx].xyz), uniforms.time / 3000);
+    // var vf = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
+    //             vec3<f32>(vectorFieldBuffer2[idx].xyz), 
+    //             uniforms.time / 3000);
 
+      var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-      velocity[index] *= .1;
+     velocity[index] *= .1;
      velocity[index] = velocity[index] + .1 * vf;
-     var p = buffer3[index];
-
-     buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
+     buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
 
       //wind turbulence
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
@@ -891,10 +920,10 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 let list = pointBuffer
 for( let i = 0; i < list.length; i+=4){
-  list[i]= makeRand() * 2
-  list[i+1]= makeRand() * 2
+  list[i]= makeRand() * 10
+  list[i+1]= makeRand() * 10
 
-  list[i+2]=  makeRand() * 2
+  list[i+2]=  makeRand() * 10
 
   list[i+3]= 0
 
@@ -1265,7 +1294,7 @@ return c * c * (3 - 2 * c);
     let aspect = iResolution.x/iResolution.y;
     let position = (globalPosition.xy) * aspect;
     let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
-    let offset=(uniforms.time) * 0.01;
+    let offset=(uniforms.time) * 0.001;
     let shit = uniforms.time;
     let conv=4.;
     let v=dist*4.-offset;
