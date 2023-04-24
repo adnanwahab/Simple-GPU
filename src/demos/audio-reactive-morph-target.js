@@ -72,17 +72,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeGrid
-  //   makeVectorField10,
-  //   makeGrid,
-  //  makeVectorField9,
-  //  makeVectorField2, 
+    makeGrid,
+    makeVectorField10,
+    makeGrid,
+   makeVectorField9,
+   makeVectorField2, 
     
-  //   makeVectorField3, 
-  //  //makeModelIndex, 
-  //  makeVectorField4,
-  //  makeVectorField5,
-  //  makeVectorField6
+    makeVectorField3, 
+   //makeModelIndex, 
+   makeVectorField4,
+   makeVectorField5,
+   makeVectorField6
 
   ]
   let idx = (Math.random() * list.length) | 0 
@@ -512,7 +512,7 @@ uniformsBuffer
     // if (idx < 0) {
     //   return vec3<f32>(-x, -y, 0);
     // }
-    // if (idx > 10000) {
+    // if (idx > 1000000) {
     //   return vec3<f32>(-x, -y, 0);
     // }
 
@@ -949,15 +949,16 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 let list = pointBuffer
-for( let i = 0; i < list.length; i+=4){
-  list[i]= makeRand() * 2
-  list[i+1]= makeRand() * 2
+// for( let i = 0; i < list.length; i+=4){
+//   list[i]= makeRand() * 2
+//   list[i+1]= makeRand() * 2
 
-  list[i+2]=  makeRand() * 2
+//   list[i+2]=  makeRand() * 2
 
-  list[i+3]= 0
+//   list[i+3]= 0
 
-}
+// }
+list = makeGrid().map(d => d)
 // makeVectorFieldGeneric(function (x, y, z) {
 //   return [x, y, z]
 // }, pointBuffer)
