@@ -67,6 +67,8 @@ function length2 (p) {
   return Math.sqrt(x*x + y*y)
 }
 
+//butterfly turning into wind 
+
 let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
@@ -79,13 +81,28 @@ let pickVF = function () {
     makeVectorField3, 
    //makeModelIndex, 
    makeVectorField4,
-   makeVectorField5
+   makeVectorField5,
+   makeVectorField6
 
   ]
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
-  console.log(ret)
+  console.log(idx)
   return ret
+}
+
+function makeVectorField6() {
+  let vf =  makeVectorFieldGeneric(function (x,y,z) {
+   if (y > 0) z = -1
+    else z = 1
+    return [ 0, y , z , 1]
+  }) 
+
+  // for (let i = 0; i< vf.length; i++) {
+  //   vf[i] = [Math.random(), Math.random(), Math.random(), 1];
+  // }
+
+  return vf 
 }
 
 function makeVectorField10() {
@@ -175,20 +192,6 @@ function findPoint(d) {
   return [result[index], index]
 }
 
-function makeModelIndex() {
-  let model = shapes[0].source
-
-  makeVectorFieldGeneric(function (x,y,z) {
-     return [0, 0, 0, 0]
-  })
-
-  for (let i = 0; i < model.length; i+=4) {
-    let pt = model.slice(i, i + 2)
-    let [_, idx] = findPoint(pt)
-    result[idx] = [10 * pt[0], 10 * pt[1], 0, 0]
-  }
-  return result
-}
 
 function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
@@ -494,16 +497,20 @@ uniformsBuffer
     var z = pos.z;
   //if uniforms.mode == 2 ?
     if (idx < 0) {
-      return vec3<f32>(-x, -y, -z);
+      return vec3<f32>(-x, -y, 0);
     }
     if (idx > 10000) {
-      return vec3<f32>(-x, -y, -z);
+      return vec3<f32>(-x, -y, 0);
     }
 
     let vf = vectorFieldBuffer[idx];
+    //vectorFieldBuffer[idx] += cos(vf);
     let vf1 = vectorFieldBuffer2[idx];
+    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
+                vec3<f32>(vectorFieldBuffer2[idx].xyz), 
+                uniforms.time / 3000);
 
-    return vectorFieldBuffer[idx].xyz;
+    return vt;
   }
 
 
@@ -539,9 +546,7 @@ fn applyVF() -> vec3<f32> {
       //var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
 
     
-    // var vf = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
-    //             vec3<f32>(vectorFieldBuffer2[idx].xyz), 
-    //             uniforms.time / 3000);
+  
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
