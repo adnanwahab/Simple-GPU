@@ -52,11 +52,10 @@ let modelType = 1
 let animating = true
 let width = 100, height = width, zspace = 100
 const mouse = [0,0]
-let drawCallChoice = 0
 
 function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
-    return [x, y, z , 1]
+    return [-x * 1, -y * 1, -z * 1 , 1]
   })
 }
 
@@ -73,21 +72,22 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeVectorField10,
-    makeGrid,
-   makeVectorField9,
-   makeVectorField2, 
+    makeGrid
+  //   makeVectorField10,
+  //   makeGrid,
+  //  makeVectorField9,
+  //  makeVectorField2, 
     
-    makeVectorField3, 
-   //makeModelIndex, 
-   makeVectorField4,
-   makeVectorField5,
-   makeVectorField6
+  //   makeVectorField3, 
+  //  //makeModelIndex, 
+  //  makeVectorField4,
+  //  makeVectorField5,
+  //  makeVectorField6
 
   ]
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
-  console.log(idx)
+  //console.log(ret)
   return ret
 }
 
@@ -160,38 +160,51 @@ function makeVectorFieldGeneric(cb, buffer ) {
   var result = buffer || []
   for (let i = 0; i <= width; i++) {
     for (let j = 0; j < height; j++) {
-      //for (let k = 0; k < zspace; k++) {
+      for (let k = 0; k < zspace; k++) {
 
-      let [x, y, z] = clipSpace(j, i, 0, width, height)
+      let [x, y, z] = clipSpace(j, i, k, width, height)
 
       let [x1, y1, z1] = zeroToOne(x , y, z) 
       //
       let idx = Math.round(x1 * width + y1 * width * height 
-         //+  z1 * width * width * width
+         +  z1 * width * width * width
          )
       
-      result[idx] = cb(x, y, 0)
-      //result[idx] = (cb(x,y,z))
-      // result[idx].x1 = x1
-      // result[idx].y1 = y1
-      //}
+      result[idx] = cb(x, y, z)
+   
+      }
     }
   }
   return result
 }
 
+result = makeVectorFieldGeneric(function (x, y, z ) {
+  return [x,y,z, 1]
+},)
+
 function findPoint(d) {
-  let [x, y] = d
+  let [x, y, z] = d
   var x1 = ((x + 1) /2).toPrecision(2)
   var y1 = ((1. - y) / 2).toPrecision(2) 
+  var z1 = ((1. - z) / 2).toPrecision(2) 
 
   x1 *= 100;
   y1 *= 10000;
+  z1 *= 1000000;
 
-  let index = Math.floor(x1 + y1);
-  return [result[index], index]
+
+  let index = Math.floor(x1 + y1 + z1);
+  return [result[index], index, result]
 }
 
+
+let counter = 0 ;
+while (counter < 100) {
+  let pt = [makeRand(), makeRand(), makeRand()]
+  let [point, index, result] = findPoint(pt)
+  //console.log(pt, point, index)
+  counter++
+}
 
 function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
@@ -484,24 +497,24 @@ uniformsBuffer
     var z = (1. - (pos.z)) / 2.;
     
     
-    var idx = i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
+    var idx = i32(floor(x * 100) + floor(y * 100) * 100 + floor(floor(z * 100) * 100) * 100);
     return idx;
   }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p;
+    var pos = p * .5;
     let idx = hashPosition(pos);
 
     var x = pos.x;
     var y = pos.y;
     var z = pos.z;
   //if uniforms.mode == 2 ?
-    if (idx < 0) {
-      return vec3<f32>(-x, -y, 0);
-    }
-    if (idx > 10000) {
-      return vec3<f32>(-x, -y, 0);
-    }
+    // if (idx < 0) {
+    //   return vec3<f32>(-x, -y, 0);
+    // }
+    // if (idx > 10000) {
+    //   return vec3<f32>(-x, -y, 0);
+    // }
 
     let vf = vectorFieldBuffer[idx];
     //vectorFieldBuffer[idx] += cos(vf);
@@ -510,7 +523,8 @@ uniformsBuffer
                 vec3<f32>(vectorFieldBuffer2[idx].xyz), 
                 uniforms.time / 3000);
 
-    return vt;
+                //return vec3<f32>(-x, -y, -z);
+    return vf.xyz;
   }
 
 
@@ -936,10 +950,10 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 let list = pointBuffer
 for( let i = 0; i < list.length; i+=4){
-  list[i]= makeRand() * 10
-  list[i+1]= makeRand() * 10
+  list[i]= makeRand() * 2
+  list[i+1]= makeRand() * 2
 
-  list[i+2]=  makeRand() * 10
+  list[i+2]=  makeRand() * 2
 
   list[i+3]= 0
 
@@ -955,7 +969,7 @@ async function basic () {
   vf1 = vf2
   vf2 =  pickVF()
   
-   
+   console.log(vf2)
   let happyBear = makeBuffer(list, 0, 'bear')
 
     computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
