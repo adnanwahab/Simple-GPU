@@ -72,14 +72,14 @@ let result = []
 let pickVF = function () {
   let list = [
     makeVectorField10,
-  //   makeGrid,
-  //  makeVectorField9,
-  //  makeVectorField2, 
+    makeGrid,
+   makeVectorField9,
+   makeVectorField2, 
     
-  //   makeVectorField3, 
-  //  //makeModelIndex, 
-  //  makeVectorField4,
-  //  makeVectorField5
+    makeVectorField3, 
+   //makeModelIndex, 
+   makeVectorField4,
+   makeVectorField5
 
   ]
   let idx = (Math.random() * list.length) | 0 
@@ -90,13 +90,13 @@ let pickVF = function () {
 
 function makeVectorField10() {
   let vf =  makeVectorFieldGeneric(function (x,y,z) {
-   return [-x ,- y,z * .1,1]
-    // x *= 2
-    // y *= 3
+   //return [-x ,- y,z * .1,1]
+    x *= .1
+    y *= .1
     let x1 = Math.sin(y + x)
-    y =Math.sin(x - y)
+    let y1 =Math.sin(x - y)
 
-    return [ x1, y , z , 1]
+    return [ x1, y1 , z , 1]
   }) 
 
   // for (let i = 0; i< vf.length; i++) {
@@ -474,25 +474,36 @@ uniformsBuffer
     return (x + 1.) / 2.;
   }
 
-  fn hash(p: vec3<f32>) -> i32 {
-    var pos = p * .1;
 
+  fn hashPosition(pos: vec3<f32>) ->  i32{
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
-
-
-    // x += 1;
-    // y += 1;
-    // z += 1;
-
-  
     
-    // if (x > 1.){ x = .5; } 
-    // if (y > 1.){ y = 1.; } 
-    // if (y < 0.){ y = 1.; } 
-    // if (x < 0.){ x = .5; } 
-    return i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
+    
+    var idx = i32(floor(x * 100) + floor(y * 100) * 100);// + floor(z * 100) * 100 * 100);
+    return idx;
+  }
+
+  fn hash(p: vec3<f32>) -> vec3<f32> {
+    var pos = p;
+    let idx = hashPosition(pos);
+
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+  //if uniforms.mode == 2 ?
+    if (idx < 0) {
+      return vec3<f32>(-x, -y, -z);
+    }
+    if (idx > 10000) {
+      return vec3<f32>(-x, -y, -z);
+    }
+
+    let vf = vectorFieldBuffer[idx];
+    let vf1 = vectorFieldBuffer2[idx];
+
+    return vectorFieldBuffer[idx].xyz;
   }
 
 
@@ -522,17 +533,17 @@ fn applyVF() -> vec3<f32> {
 
       var abc = buffer3[index];
 
-      var idx = hash(pos.xyz);
+      var vf = hash(pos.xyz);
 
       let t = uniforms.time;
-      var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
+      //var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
 
     
     // var vf = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
     //             vec3<f32>(vectorFieldBuffer2[idx].xyz), 
     //             uniforms.time / 3000);
 
-      var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
+      //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
      velocity[index] *= .1;
      velocity[index] = velocity[index] + .1 * vf;
