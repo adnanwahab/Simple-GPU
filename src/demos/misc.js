@@ -95,6 +95,11 @@ function recur () {
     ]
   }
   
+  function getDist(a, b) {
+    return [a[0] - b[0], a[1]-b[1], a[2] - b[2], 0].map(d => Math.pow(d , 2)).reduce((a, b) => {
+      return a + b
+    })
+  }
   function unitVector (v) {
     let l = magnitude(v)
     return v.map(d => d / l);

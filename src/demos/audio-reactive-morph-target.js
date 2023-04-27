@@ -1,3 +1,4 @@
+//data cube
 //make vector field more continuous 
 // spiral patterns 
 // concentric circles
@@ -5,9 +6,145 @@
 // make cubes - shiny
 // [CHECK] use lifetime to tween patterns
 //cube = 8 points, 12 lines 
+//each vector field has different parameters for the simulation
+
+//wind simulation
+//gpu mesh detection -> do a GPU quad tree - collision with dancer 
+//add dragon to quad tree
 
 
 
+//quad tree 
+//tree particles
+//leaves
+
+function buildQuadTree(dancer) {
+  let tree = {}
+  let id = 0
+
+  function pop () {
+    return id++
+  }
+
+  //tree.leaf = 
+  //maximum id = 4 trillion -> split that into 6 numbers 
+
+  //leaf = [left, right, minBound, maxBound]
+
+
+
+  let calcBounds = function (x,y,z) {
+    return z * 1e6 + y * 1e4 + x * 1e2
+  }
+
+  let idxToBounds = function (idx) {
+    let z = (idx / 1e6).toPrecision(2);
+    idx -= z;
+    let y = (idx / 1e4).toPrecision(2)
+    idx -= y;
+    let x = (idx / 1e2).toPrecision(2);
+    return [x, y, z]
+  }
+
+  let childNodes = function (min, max) {
+    let dimensions = [(max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2, ]
+
+    return [min + dimensions[0], min + dimensions[1], min + dimensions[2]]
+  }
+
+  tree[pop()] = [pop(), pop(), calcBounds(-1, -1, -1), calcBounds(1,1,1)]
+
+  function atMaxCapacity (node) {
+    return node[0] < 0 && node[1] < 0;
+  }
+
+  function contains(node, point ) {
+    let min = idxToBounds(node[2])
+    let max = idxToBounds(node[2])
+
+    return point[0] > min[0] &&
+    point[1] > min[1] &&
+    point[2] > min[2] &&
+    point[0] < max[0] &&
+    point[1] < max[1] &&
+    point[2] < max[2] 
+  }
+
+  function addPoint(point) {
+
+    let [x,y,z]= point
+
+    let root = tree[0]
+
+    while (atMaxCapacity(root)) {
+      let left = root[0]
+      let right = root[1]
+      if (contains(left, point)) root = left
+      else root = right
+    }
+
+    let leaf=  tree[id]
+    if (leaf.length < 4)
+      tree[id].push(point)
+      else {
+        tree[id] = [pop(), pop(), min, max]
+
+
+      }
+
+
+      //tree root = 4 ids of next leaves and their bounds
+    //on collision show sparks
+    //record collisions in a buffer 
+    //one buffer to hold bounds
+    
+    //leaf id has min, max bottom left and top right
+    //bottom left and top right
+    // when a leaf has more than 4 points -> create 4 new leaves and put those points and rebalance
+
+
+    //add point to bucket
+    //split space into 4 
+    //top left= -1,-,1,-1 to 0,0,0 0 to 1
+    //bottom left = -1
+    //add points to leaf
+    //if leaf has more than 8 points -> split leaf into more
+    //if 
+
+
+    //buffer = id
+    //buffer = holds points or index to next bucket
+    //one buffer holds 
+
+    // buffer holds vec4
+    //vec4 holds 4 indexes or if a terminal leaf then 
+
+
+
+    /// buffer
+    ////  | | | | 
+    //   / 
+    //  /
+    // /
+    // A
+    // / | | \
+    // 1 2 3 4 
+    // 100,000 points = 25,000 leaves or vec4
+
+  }
+
+  dancer.forEach(addPoint)
+}
+
+function getDist(a, b) {
+  let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
+  return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a, b) => {
+    return a + b
+  }))
+}
+
+
+let {cos, sin, } = Math
 
 //make the dancer modulate the edges  with the vector field -> wave patterns 
 // make the dancer - reset buffer 
@@ -55,7 +192,7 @@ const mouse = [0,0]
 
 function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
-    return [-x * 1, -y * 1, -z * 1 , 1]
+    return [x * 1, y * 1, z , 1]
   })
 }
 
@@ -67,51 +204,409 @@ function length2 (p) {
 }
 
 //butterfly turning into wind 
-
+//start with a cube
 let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeGrid,
-    makeVectorField10,
-    makeGrid,
-   makeVectorField9,
-   makeVectorField2, 
-    
-    makeVectorField3, 
-   //makeModelIndex, 
-   makeVectorField4,
-   makeVectorField5,
-   makeVectorField6
+   magnet
 
-  ]
+
+//     stream2,
+//     makeVectorField8,
+//     makeVectorField8, // good job 5/10 sphere
+//     makeVectorField10,
+//    makeVectorField2, // no good - circle SDF
+//     makeVectorField4,
+//    makeVectorField5,//needs improvement  // spiral grid
+//  makeVectorField8 //good- make better
+
+
+
+     //makeVectorField1, needs improvement
+
+  ]; //make these better
+
+
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
-  //console.log(ret)
+  console.log(idx, ret)
   return ret
 }
 
-function makeVectorField6() {
-  let vf =  makeVectorFieldGeneric(function (x,y,z) {
-   if (y > 0) z = -1
-    else z = 1
-    return [ 0, y , z , 1]
-  }) 
+function magnet() {
 
-  // for (let i = 0; i< vf.length; i++) {
-  //   vf[i] = [Math.random(), Math.random(), Math.random(), 1];
-  // }
+  let pt = [makeRand(), makeRand(), -1]
 
+
+
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [x,y,z,1]
+  })
+
+  let i = 0;
+  //for (let i = 0; i< vf.length; i++ ) {
+    
+    let [x,y,z] = vf[i]
+
+  //}
+  return vf
+} 
+
+function shit2() {
+  return makeVectorFieldGeneric(function (x, y, z) {
+    ///if (Math.random () > .999) console.log(x)
+    if (Math.abs(x) > .3) 
+    return [y, x, 0, 1]
+    if (Math.abs(x) > .6)
+    return [z, 0, x, 1] 
+     else 
+     return [0, z, y, 1]
+
+     //return [0, z, -y, 1]
+
+  })
+}
+
+function stream2() {
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [x,y,z , 1]
+  })
+
+  for (let i = 0; i < vf.length; i++) {
+    let [x,y,z] = vf[i]
+    vf[i] = [
+      1 / Math.tan(z) * y, 
+      1 / Math.cos(z) * x,
+      1 / Math.cos(i * z) * z,
+      1
+    ]
+    // p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    // p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180)
+  }
+  return vf
+}
+
+function stream() {
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [x,y,z , 1]
+  })
+
+  for (let i = 0; i < vf.length; i++) {
+    let [x,y,z] = vf[i]
+    vf[i] = [
+      1 / Math.tan(z) * y, 
+      y,
+      1 / Math.cos(i * z) * z,
+      1
+    ]
+    // p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    // p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180)
+  }
+  return vf
+}
+
+function shit3() {
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [x,y,z , 1]
+  })
+
+  for (let i = 0; i < vf.length; i++) {
+    let [x,y,z] = vf[i]
+    vf[i] = [
+      Math.tan(z) * y, 
+       Math.cos(z) * x,
+      Math.cos(i * z),
+      1
+    ]
+    // p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    // p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180)
+  }
+  return vf
+}
+
+
+function shit4() {
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [0,0,0 , 1]
+    // let a = Math.random(), b= Math.random()
+    // if (Math.abs(x) > (a > b? b : a)) 
+    // return [y, x, 0, 1]
+    // if (Math.abs(x) > (a > b? a : b))
+    // return [z, 0, x, 1] 
+    //  else 
+    //  return [0, z, y, 1]
+
+     //return [0, z, -y, 1]
+
+  })
+
+  let visited = 0;
+  let movedX = 0
+  
+  let dirZ = 1
+  let moveZ = (i) => { 
+   
+    movedX = 0
+    return  i + 1e4 * dirZ
+  }
+  var dir =moveZ 
+
+  let moveY = (i) => i + 1e2
+
+  let moveX = (i) =>{ 
+    
+    movedX += 1
+    if (movedX > 5) {
+      dir = moveZ
+      dirZ *= -1
+    }
+    return i + 1
+  }
+  let i = 0
+  moveX.nim = 'x'
+  moveZ.nim = 'Z'
+  //if has move 5 spaces in X, change dir to moveZ-
+  while (visited < 1000){
+    
+    if (i > 9e5) dir = moveX
+
+    let cell = vf[i=dir(i)]
+    console.log(i, dir.nim, dirZ)
+    if (dir === moveZ) cell[2] = 10
+    else cell[0] = 10
+    visited +=1
+  } 
+return vf
+}
+
+function shit () {
+  let range = [...Array(5).keys()].map(d => [makeRand(),makeRand(),makeRand()])
+
+ 
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    // let idx = range.map(d => getDist(d, [x,y,z])).sort(function (a, b) {
+    //   return a - b
+    // })
+    
+    // let origin = range[idx]
+    // let pt = [x,y,z]
+    // let originDist = dist(pt, origin);
+    // if (Math.random() > 1)
+    // return [y, -x, 0, 1]
+    // else 
+    // return [0, z, -y, 1]
+   //return unitVector([x,y,z]).concat(1)
+let maxDist = Infinity
+let origin
+let pt = [x,y,z]
+    for (let i = 0; i < range.length; i++) {
+      let dist = getDist(pt, range[i])
+      if (dist < maxDist) {
+        maxDist = dist 
+        origin = range[i]
+      }
+    }
+  //if (Math.random () > .999)console.log(maxDist)
+    if (maxDist < .25) {
+      return distanceTo(origin, pt)
+    } else if (maxDist < 1.) {
+      return[y, -x, -z, 1]
+    } else {
+      return [-x, -y, -z, 1]
+    } 
+  })
+
+  let origin = [1,1,1]
+  let destination = [-1,-1,-1]
+  for (var i = 0; i < vf.length; i++ ) {
+    let pt = vf[i];
+    let [x,y,z]= pt;
+    let originDist = dist(pt, origin);
+    let destinationDist = dist(pt, destination);
+    //negative = converge, positive = diverge
+    if (originDist < .25) {
+      vf[i] = [x,y,z, 1]
+    } else if (originDist < .5) {
+      vf[i] = [y, -x, -z, 1]
+    } else {
+      vf[i] = [-x, -y, -z, 1]
+    } 
+    // vf[i]= [0,0,0,0]
+  
+  
+  }
   return vf 
 }
+
+function multiply (a, b) {
+  if (! Array.isArray(b)) {
+    return a.map(d => d * b)
+  } else 
+  return [a[0] * b[0],a[1] * b[1],a[2] * b[2]]
+}
+
+function add (a, b) {
+  if (! Array.isArray(b)) {
+    return a.map(d => d + b)
+  } else 
+  return [a[0] + b[0],a[1] + b[1],a[2] + b[2]]
+}
+
+function dist(a, b) {
+  let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
+  return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a, b) => {
+    return a + b
+  }))
+}
+
+
+function helloWorld() {
+  let rotationVector = unitVector([Math.random(), Math.random(), Math.random()])
+  let k = rotationVector
+
+  let rotatedVector = function (v, theta) {
+let a= multiply(k, Math.cos(theta))
+let b = multiply(multiply(k, v), Math.sin(theta))
+//if (Math.random() > .9999) console.log(a, b)
+
+    let ir = add(a,b)
+    return add(ir, multiply(multiply(k, dot(k,v)), Math.cos(theta)) )
+    
+    
+    //add(multiply(v, Math.cos(theta)), multiply(multiply(k, v), Math.sin(theta)) + 
+    //multiply(multiply(k, dot(k, v)), 1 - Math.cos(theta))
+  }
+
+  function dist(a, b) {
+    let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
+    return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a, b) => {
+      return a + b
+    }))
+  }
+  let theta = Math.random() * Math.PI / 180
+
+  function matrixMultVec(m, v) {
+    return v.map((d, i) => {
+      return d * m[i][0] + d * m[i][1] + d * m[i][2]
+      // d * m[1][0] + d * m[1][1] + d * m[1][2],
+      // d * m[2][0] + d * m[2][1] + d * m[2][2]
+    
+    })
+  }
+
+  function rotatePointAroundAxis(theta, pt) {
+    let xRotation = [[1, 0, 0], [0, cos(theta), -sin(theta)], [0, sin(theta), cos(theta)]]
+
+    let yRotation = [[cos(theta), 0,  (theta)], [0, 1, 0], [-sin(theta), 0, cos(theta)]]
+
+    let zRotation = [[cos(theta), -sin(theta),  0], [sin(theta), cos(theta), 0], [0, 0, 1]]
+
+    return matrixMultVec(zRotation, pt)
+  }
+
+  function minus (v1, v2) {
+    return [
+      v1[0] - v2[0],
+      v1[1] - v2[1],
+      v1[2] - v2[2],
+    ]
+  }
+  let range = [...Array(5).keys()].map(d => [makeRand(),makeRand(),makeRand()])
+
+
+
+  return makeVectorFieldGeneric(function (x, y, z ) {
+     x = 10 *Math.cos(x)
+    return [x,y,z, 1]
+
+    let rotation = rotatePointAroundAxis(90, [x, y, z]).concat(1)
+
+    return minus(rotation, [x,y ,z]).concat(1)
+    //distanceTo([x,y,z], rotatedVector([x,y,z], theta).concat(1)).concat(1)
+  },)
+}
+  
+
+function unitVector (v) {
+function magnitude (v) {
+  let pow = (e) => Math.pow(e, 2)
+  return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]))
+}
+  let l = magnitude(v)
+  return v.map(d => d / l);
+}
+
+
+function makeVectorField8() {
+let controlPoints = [...Array(5).keys()].map( d => [
+  Math.random(), Math.random(), Math.random()
+])
+
+
+
+  let vf =  makeVectorFieldGeneric(function (x,y,z) {
+        return [ x,y,z, 0]
+       })
+       //do stuff like this
+//if dist < 1 for origin -> go toward origin
+//if dist < 1 for destination -> rotate then go toward orign
+//else go toward midpoint between origin + destination
+//if in midpoint of origin + destination -> go toward destination
+let origin = controlPoints[0]
+let destination = controlPoints[1]
+let x = origin[0] * 100 | 0;
+  let y = origin[1] * 10000 | 0;
+  let z = origin[2] * 1000000 | 0;
+  let idx = x + y + z;
+  //console.log(idx)
+  let distance = distanceTo(origin, destination)
+  //vf[idx] = [distance[0],distance[1],distance[2],0]
+  //vf[0] = [0,0,0,0]
+
+  origin = [0,0,0];
+
+for (var i = 0; i < vf.length; i++ ) {
+  let pt = vf[i];
+  let [x,y,z]= pt;
+  let originDist = dist(pt, origin);
+  let destinationDist = dist(pt, destination);
+  //negative = converge, positive = diverge
+  if (originDist < .25) {
+    vf[i] = [x,y,z, 1]
+  } else if (originDist < .5) {
+    vf[i] = [y, -x, -z, 1]
+  } else {
+    vf[i] = [-x, -y, -z, 1]
+  } 
+  // vf[i]= [0,0,0,0]
+
+
+}
+  
+  return vf
+}
+
+function distanceTo(b, a) {
+        
+  return [b[0] - a[0], b[1]-a[1], b[2] - a[2],]
+}
+
+function makeVectorField7() {
+  return makeVectorFieldGeneric(function (x,y,z) {
+        return [ Math.cos(-10 * y + x), Math.sin(10 * x + y), 
+          0, 1]
+       })
+}
+
 
 function makeVectorField10() {
   let vf =  makeVectorFieldGeneric(function (x,y,z) {
    //return [-x ,- y,z * .1,1]
-    x *= .1
-    y *= .1
-    let x1 = Math.sin(y + x)
-    let y1 =Math.sin(x - y)
+    x *= 10
+    y *= 10
+    let x1 = .1 *  Math.sin(y + x)
+    let y1 = .1 * Math.sin(x - y)
 
     return [ x1, y1 , z , 1]
   }) 
@@ -133,7 +628,7 @@ function makeVectorField9() {
   }) 
 }
 
-function makeVectorField3() {
+function convergence() {
   return makeVectorFieldGeneric(function (x,y,z) {
     return [ -x, -y, -z, 1]
   })
@@ -182,6 +677,13 @@ result = makeVectorFieldGeneric(function (x, y, z ) {
   return [x,y,z, 1]
 },)
 
+function findIndex (idx) {
+  let z = idx / 1e6;
+  let y = idx / z;
+  let x = idx / y;
+}
+
+
 function findPoint(d) {
   let [x, y, z] = d
   var x1 = ((x + 1) /2).toPrecision(2)
@@ -206,15 +708,64 @@ while (counter < 100) {
   counter++
 }
 
+let magnets
+function makeMagnets () {
+   magnets = []
+for (let i = 0; i < 5; i++) {
+  magnets.push([makeRand(), makeRand(), makeRand()])
+  if (i < 1)
+  magnets.push([
+    makeRand(),  makeRand(), 
+    makeRand()
+    
+  ]); else 
+  magnets.push([
+         makeRand(),  makeRand(),
+       + makeRand()
+        
+    ])
+  
+}
+}
+
+makeMagnets()
+
+let d = Date.now()
+function makeVectorField1() {
+  magnets.forEach(m => {
+//    let dist = 
+let e = d - Date.now()
+    m[0] = .1 * Math.cos(e / 1000) + m[0]
+    m[1] = .1 * Math.sin(e / 1000) + m[1]
+    m[2] = 0
+    //.1 * Math.atan(e / 1000) + m[2]
+  })
+    makeVectorFieldGeneric(function (x,y,z) {
+      let vec = [0,0,0,0]
+      let p = [x,y,0]
+      magnets.forEach((mag , i) => {
+        let dist = getDist(mag, p)
+        let dx = unitVector(distanceTo(mag, p))
+
+        vec = add(vec, dx
+          .map(d => d * 1/ dist) )
+      })
+      vec[2] = 0
+      return vec
+   })
+
+return result
+}
+
 function makeVectorField2() {
     return makeVectorFieldGeneric(function (x,y,z) {
       let vec = [0,0,0,0]
       let p = [x ,y, 0]
       let l = circle(p);
-      vec[0] = - l * 10
-      vec[1] = - l * 10
+      vec[0] = - x * 2
+      vec[1] = - y * 2
   
-      if (l < .5 && l > .4) {
+      if (l < .6 && l > .3) {
         vec[0] = y * 10.
         vec[1] = -x * 10.
       } 
@@ -495,7 +1046,7 @@ uniformsBuffer
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
-    
+    if (z < .1) {z = .9;}
     
     var idx = i32(floor(x * 100) + floor(y * 100) * 100 + floor(floor(z * 100) * 100) * 100);
     return idx;
@@ -510,10 +1061,10 @@ uniformsBuffer
     var z = pos.z;
   //if uniforms.mode == 2 ?
     // if (idx < 0) {
-    //   return vec3<f32>(-x, -y, 0);
+    //   //return vec3<f32>(-x, -y, 0);
     // }
     // if (idx > 1000000) {
-    //   return vec3<f32>(-x, -y, 0);
+    //   //return vec3<f32>(-x, -y, 0);
     // }
 
     let vf = vectorFieldBuffer[idx];
@@ -537,6 +1088,8 @@ fn applyVF() -> vec3<f32> {
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
 
+      //if magnitude > 1 -> revert to center 
+      //fly into position -> by index offset duration
 
       let life = lifetime[index];
       let r = reset[index]; 
@@ -565,7 +1118,8 @@ fn applyVF() -> vec3<f32> {
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
      velocity[index] *= .1;
-     velocity[index] = velocity[index] + .1 * vf;
+     //velocity[index] = velocity[index] + .1 * vf;
+     velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
 
       //wind turbulence
@@ -579,7 +1133,7 @@ fn applyVF() -> vec3<f32> {
         // velocity[index].x = velocity[index].y;
         // velocity[index].y = -velocity[index].x;
         //buffer3[index]= vec4<f32>(buffer3[index].xy - vec2<f32>(distance(buffer3[index].xy, mouse)), 0., 1.);
-        buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
+        //buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
         //velocity[index]*= .001;
       }
     }`,
@@ -878,6 +1432,7 @@ function makeStagingBuffer() {
       usage: GPUBufferUsage.COPY_SRC,
       mappedAtCreation: true,
     });
+
    
     let frame = time % frames[modelType].length
     const toCopy = frames[modelType][frame]
@@ -966,18 +1521,21 @@ list = makeGrid().map(d => d)
 
 async function basic () {
   let vf1 =  pickVF(), vf2 = pickVF()
-  setInterval(function () {
-  vf1 = vf2
-  vf2 =  pickVF()
+  function vfPicker() {
+    //console.log(vf2)
+//    vf2.destroy()
+    vf1 = pickVF()
+    vf2 =  vf2
+      
+    let happyBear = makeBuffer(list, 0, 'bear')
   
-   console.log(vf2)
-  let happyBear = makeBuffer(list, 0, 'bear')
-
-    computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
-    //drawScreen.swapAttributeBuffer(0, happyBear)
-    drawScreen = makeDrawCall(happyBear, drawDescriptor)
-    
-  }, 10000)
+      computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+      //drawScreen.swapAttributeBuffer(0, happyBear)
+      drawScreen = makeDrawCall(happyBear, drawDescriptor)
+      
+    }
+    setTimeout(vfPicker, 10000)
+  setInterval(vfPicker, 300000)
 
 
   computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
