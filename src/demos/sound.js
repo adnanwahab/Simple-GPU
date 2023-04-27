@@ -1,7 +1,38 @@
 import simpleWebgpuInit from '../../lib/main';
 
+function inBetween(particle, line) {
+    let [x,y,z,] = particle
+    let min = line[0]
+    let max = line[1]
+
+    let minX = min[0] < max[0] ? min[0] : max[0]
+    let minY = min[0] < max[0] ? min[0] : max[0]
+    let minZ = min[0] < max[0] ? min[0] : max[0]
+
+    let manX = min[0] < max[0] ? min[0] : max[0]
+    let manY = min[0] < max[0] ? min[0] : max[0]
+    let manZ = min[0] < max[0] ? min[0] : max[0]
+
+    let eps = .0001;
+
+    return x - line[0][0] <= eps && x - line[1][0] < eps && 
+    y - line[0][1] <= eps && y - line[1][1] < eps && 
+    z - line[0][2] <= eps && z - line[1][2] < eps
+}
+
+function collision(particle, index, surfaces, velocity) {
+    surfaces.forEach(function (line) {
+        if (inBetween(particle, line)) {
+            console.log(particle)
+            let [x,y,z] = velocity[index]
+            velocity[index] = [y, -x , z]
+            //cross(unitVector(velocity), )
+        }
+    })
+}
 
 test()
+
 
 async function test() {
     console.log(123)
@@ -15,39 +46,75 @@ async function test() {
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
-    for (let i = 0; i < 1e3; i++) {
-        let idx = (i % 180) * Math.PI / 180;
-        let radius 
-        let particle = [Math.cos(idx),Math.sin(idx),0,0]
+    for (let i = 0; i < 1e5; i++) {
+        let idx = (i % 180) ;
+        let radius = i % 18
+        let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
+        let y = radius * Math.sin((idx-90)* Math.PI / 180) * .01 
+        let particle = [
+            x- .5, y- .5 ,0,0]
         particles.push(particle)
+        velocity.push(
+            [ x * .1, y * .1,0,0]
+            // [0,0,0,0]
+            )
     }
 
-    function reflect (collision) {
-        //normal
-    }
+ 
+}
 
-    function step () {
-        particles.forEach((particle, index) => {
-            particle[0] += velocity[index][0]
-            particle[1] += velocity[index][1]
-            particle[2] += velocity[index][2]
-            velocity[index][0] *= .99
-            velocity[index][1] *= .99
-            velocity[index][2] *= .99
-            //does sound lose amplitude over time? or does it lower velocity 
-            //sound is air compression waves
-            let collision = collision(particle, surfaces)
-            if (collision) {
-                velocity[index] = reflect(collision, velocity)
-            }
-        })
-    }
+function magnitude(v) {
+    let [x,y,z] = v
+    return Math.sqrt(x * x, y * y, z * z);
+}
+
+function unitVector (v) {
+    let l = magnitude(v)
+    return v.map(n => n / l)
+}
+
+function reflect (collision) {
+    //normal
+}
+
+
+let surfaces = [
+    //0, 1, 1
+    [[-1,1,0,], [1,1,0]], //top 
+
+    [[-1,1,0,], [-1,-1,0]], //left
+
+    [[1,1,0,], [1,-1,0]], //right
+
+    [[-1,-1,0,], [1,-1,0]], //bottom
+]
+
+function step () {
+    particles.forEach((particle, index) => {
+        particle[0] += velocity[index][0]
+        particle[1] += velocity[index][1]
+        particle[2] += velocity[index][2]
+        // velocity[index][0] *= .99
+        // velocity[index][1] *= .99
+        // velocity[index][2] *= .99
+        // does sound lose amplitude over time? or does it lower velocity 
+        // sound is air compression waves
+        let coll = collision(particle, index, surfaces, velocity)
+        if (coll) {
+            velocity[index] = reflect(collision, velocity)
+        }
+    })
 }
 
     let webgpu = await simpleWebgpuInit();
-    let draw = makeDrawCall(webgpu)
     
-    draw()
+    onClick()
+    setInterval(function () {
+        step()
+        let draw = makeDrawCall(webgpu, particles.flat())
+        draw()
+
+    }, 16)
 
 
     
@@ -61,25 +128,25 @@ function onClick () {
     //finish = web audio = play sound in buffer
 }
 
-function makeDrawCall (webgpu) {
-    let positionList = []
+function makeDrawCall (webgpu, particleList) {
+    // let positionList = []
 
-    for (let i = 0; i < 1000; i++) {
-        positionList[i*4] = Math.random()
-        positionList[i*4+1] = Math.random()
-        positionList[i*4+2] = Math.random()
-        positionList[i*4+3] = 0
-    }
+    // for (let i = 0; i < 1000; i++) {
+    //     positionList[i*4] = Math.random()
+    //     positionList[i*4+1] = Math.random()
+    //     positionList[i*4+2] = Math.random()
+    //     positionList[i*4+3] = 0
+    // }
 
     let positionBuffer = webgpu.device.createBuffer({
-        size: Float32Array.BYTES_PER_ELEMENT * positionList.length,
+        size: Float32Array.BYTES_PER_ELEMENT * particleList.length,
         usage: GPUBufferUsage.VERTEX,
         mappedAtCreation: true
     })
 
-    new Float32Array(positionBuffer.getMappedRange()).set(positionList)
+    new Float32Array(positionBuffer.getMappedRange()).set(particleList)
     positionBuffer.unmap()
-console.log(positionList)
+
     let colorList = []
 
     for (let i = 0; i < 1000; i++) {
