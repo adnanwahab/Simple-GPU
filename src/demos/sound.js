@@ -13,7 +13,7 @@ function inBetween(particle, line) {
     let manY = min[0] < max[0] ? min[0] : max[0]
     let manZ = min[0] < max[0] ? min[0] : max[0]
 
-    let eps = .0001;
+    let eps = .0000000001;
 
     return x - line[0][0] <= eps && x - line[1][0] < eps && 
     y - line[0][1] <= eps && y - line[1][1] < eps && 
@@ -23,7 +23,7 @@ function inBetween(particle, line) {
 function collision(particle, index, surfaces, velocity) {
     surfaces.forEach(function (line) {
         if (inBetween(particle, line)) {
-            console.log(particle)
+            //console.log(particle)
             let [x,y,z] = velocity[index]
             velocity[index] = [y, -x , z]
             //cross(unitVector(velocity), )
@@ -47,7 +47,7 @@ async function test() {
     //represent sound using particles or quad 
 function onClick () {
     for (let i = 0; i < 1e5; i++) {
-        let idx = (i % 180) ;
+        let idx = (i % 360) ;
         let radius = i % 18
         let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
         let y = radius * Math.sin((idx-90)* Math.PI / 180) * .01 
@@ -80,13 +80,13 @@ function reflect (collision) {
 
 let surfaces = [
     //0, 1, 1
-    [[-1,1,0,], [1,1,0]], //top 
+   [[-1,1,0,], [1,1,0]], //top 
 
-    [[-1,1,0,], [-1,-1,0]], //left
+   // [[-1,1,0,], [-1,-1,0]], //left
 
-    [[1,1,0,], [1,-1,0]], //right
+    //[[1,1,0,], [1,-1,0]], //right
 
-    [[-1,-1,0,], [1,-1,0]], //bottom
+   //s [[-1,-.8,0,], [1,-.8,0]], //bottom
 ]
 
 function step () {
