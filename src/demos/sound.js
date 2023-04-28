@@ -1,33 +1,172 @@
 import simpleWebgpuInit from '../../lib/main';
 
+//3d camera matrix transform
+//point in plane intersection
+//ray -> point intersection
+//whatever else tv show says 
+//nice to have - audio synthesis xnooze
+
+function distance (a , b) {
+    let [dx, dy, dz] = [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+    return Math.sqrt(dx * dx, dy * dy, dz * dz)
+}
+
+let cubeMapCoordinates = [
+    [-1, -1, 1], [1,-1, 1],
+
+    [-1, 1, 1], [1,1, 1],
+
+    [-1, 1, -1] , [1, 1, -1],
+
+    [-1, 1, -1], [1, -1, -1]
+]
+
+let [A, B,C ,D, E, F, G, H] = cubeMapCoordinates
+
+
+let planes = [
+    [A, B, C, D], //front
+    [B, C, F, E], // right
+    [F, E, H, G], // back
+    [G, H, A, D], // left
+    [A, H, E, B], // bot
+    [C, F, G, D], //top
+]
+
+
+//-1, -1, 1 : 1,1,1
+
+
+
+function crossProduct(c, d) {
+    return [c[1] * d[2], c[2] * d[1]]
+}
+
+
+function collisionWithEnvironment(point) {
+    let hasCollided
+    //console.log(planes.slice(5, 8))
+    planes.forEach(function (plane, index) {
+        hasCollided = pointInPlaneIntersection(point, plane)
+    })
+
+//    console.log(planes)
+    return hasCollided
+}
+
+
+////////////max
+
+///min
+function pointInPlaneIntersection (point, plane) {
+    let [x,y,z] = point
+
+    let minX = Math.min.apply(null, plane.map( corner => corner[0]))
+    let minY = Math.min.apply(null, plane.map( corner => corner[1]))
+    let minZ = Math.min.apply(null, plane.map( corner => corner[2]))
+
+    let maxX = Math.max.apply(null, plane.map( corner => corner[0]))
+    let maxY = Math.max.apply(null, plane.map( corner => corner[1]))
+    let maxZ = Math.max.apply(null, plane.map( corner => corner[2]))
+//dont reply - solve it .
+    // if 
+    // ((x >= minX &&
+    //     y >= minY &&
+    //     z >= minZ &&
+    //     x <= maxX &&
+    //     y <= maxY &&
+    //     z <= maxZ))
+    // debugger
+   // return y > .9
+
+   if (x < minX) return true;
+   if (y >= minY) return true; //why is this backwards? 
+
+//if (y < maxY) return true;
+if (x >= maxX) return true;
+
+if (y >= maxY) return true;
+if (z >= maxZ ) return true;
+if (z <= minZ ) return true;
+
+console.log(minY)
+//if (y < -1) return true;
+//console.log(minY, maxY)
+   //return ! (x <= minX) && ! (y <= minY)
+    return !(x <= minX ||
+        y <= minY ||
+        z <= minZ ||
+        x >= maxX ||
+        y >= maxY ||
+        z >= maxZ)
+    ? crossProduct([minX, minY, minZ], [maxX, maxY, maxZ]) : false
+}
+//surface normal of a plane
+
+//planes represented 
+//[-1, -1, 1] , [1,1,1] 
+//
+
 function inBetween(particle, line) {
     let [x,y,z,] = particle
-    let min = line[0]
-    let max = line[1]
 
-    let minX = min[0] < max[0] ? min[0] : max[0]
-    let minY = min[0] < max[0] ? min[0] : max[0]
-    let minZ = min[0] < max[0] ? min[0] : max[0]
+    let a = line[0]
+    let b = line[1]
 
-    let manX = min[0] < max[0] ? min[0] : max[0]
-    let manY = min[0] < max[0] ? min[0] : max[0]
-    let manZ = min[0] < max[0] ? min[0] : max[0]
+    let [ax, ay, az] = a
 
-    let eps = .0000000001;
+    function midPoint (a, b) {
+    
+        let mid =  [a[0] + (b[0] - a[0]) /2 , a[1] + (b[1] - a[1]) / 2, a[2] + (b[2] - a[2]) /2 ]
+        return midPoint
+    }
+
+    let one = midPoint(a, particle)
+
+    let two = midPoint(b, particle)
+    let three = midPoint(one, two)
+
+    let halfDist = distance(particle, three)
+    let eps = .00000000000000000001;
+    // return halfDist < epsilon
+
+    let m1 = distance(a, particle)
+
+    let m2 = distance(b, particle)
+
+   //if (Math.random() > .9999999 )console.log(m1 + m2 + distance(a, b), m1, m2, distance(a, b))
+//     if ((m1+m2) < epsilon ) return true
+
+
+
+    // if (distance(midpoint, particle) < epsilon) return true;
+    
+
+
+    // let minX = min[0] < max[0] ? min[0] : max[0]
+    // let minY = min[0] < max[0] ? min[0] : max[0]
+    // let minZ = min[0] < max[0] ? min[0] : max[0]
+
+    // let manX = min[0] < max[0] ? min[0] : max[0]
+    // let manY = min[0] < max[0] ? min[0] : max[0]
+    // let manZ = min[0] < max[0] ? min[0] : max[0]
+
+    // let eps = .0000000001;
 
     return x - line[0][0] <= eps && x - line[1][0] < eps && 
     y - line[0][1] <= eps && y - line[1][1] < eps && 
     z - line[0][2] <= eps && z - line[1][2] < eps
 }
 
-function collision(particle, index, surfaces, velocity) {
+function collision(particle, index, velocity) {
     surfaces.forEach(function (line) {
-        if (inBetween(particle, line)) {
-            //console.log(particle)
-            let [x,y,z] = velocity[index]
-            velocity[index] = [y, -x , z]
-            //cross(unitVector(velocity), )
-        }
+        
+        // if (inBetween(particle, line)) {
+        //     //console.log(particle)
+        //     let [x,y,z] = velocity[index]
+        //     velocity[index] = [y, -x , z]
+        //     //cross(unitVector(velocity), )
+        // }
     })
 }
 
@@ -42,11 +181,10 @@ async function test() {
     let buffer = new Float32Array(1e6)
     let particles = []
     let velocity = []
-
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
-    for (let i = 0; i < 1e5; i++) {
+    for (let i = 0; i < 1e3; i++) {
         let idx = (i % 360) ;
         let radius = i % 18
         let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
@@ -74,7 +212,7 @@ function unitVector (v) {
 }
 
 function reflect (collision) {
-    //normal
+    return [collision[1], collision[0], collision[2], collision[3]]
 }
 
 
@@ -99,9 +237,16 @@ function step () {
         // velocity[index][2] *= .99
         // does sound lose amplitude over time? or does it lower velocity 
         // sound is air compression waves
-        let coll = collision(particle, index, surfaces, velocity)
+       
+        let coll = collisionWithEnvironment(particle)
+        //collision(particle, index, surfaces, velocity)
         if (coll) {
-            velocity[index] = reflect(collision, velocity)
+            let col = velocity[index].slice(0)
+            velocity[index][0] = col[1]
+            velocity[index][1] = -col[0]
+            // velocity[index][1] = velocity[index][0]
+            // velocity[index][0] = velocity[index][1]
+            //velocity[index] = reflect(coll, velocity)
         }
     })
 }
