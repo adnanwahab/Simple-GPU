@@ -230,19 +230,23 @@ async function test() {
 
     //draw waves using a quad 
     //represent sound using particles or quad 
+
+    function makeRadius (i) {
+        return i / 1e5
+    }
 function onClick () {
     for (let i = 0; i < 1e6; i++) {
-        let idx = (i % 360) * 1.5 ;
-        let radius = (i % 6)* .1
+        let idx = (i % 360)* 1.5 ;
+        let radius = makeRadius(i)
         let x = radius * Math.cos((idx)* Math.PI / 180)
         let y = radius * Math.sin((idx)* Math.PI / 180) 
         let z = radius * Math.tan((idx)* Math.PI / 180) 
-        z = 0
-        let particle = [
-            x, y , z,0]
+        z = 0//Math.random()
+        let particle = 
+        [x, y , z,0]
         particles.push(particle)
         velocity.push(
-            ([ x, y ,0 
+            ([ x , y ,0 , 0
                 //z * .1,0
             ])
             // [0,0,0,0]
@@ -306,12 +310,27 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
         vec4(1., 1., 0., 1.),
       );
 
+      fn hasCollided (p: vec3<f32>)-> bool {
+        var minX = -1; 
+        if (p.x < -2) {return true;}
+       if (p.y <= -2) {return true;} //why is this backwards? 
+            if (p.x >= 2) {return true;}
+            if (p.y >= 2) {return true;}
+            if (p.z <= -2 ) {return true;}
+            if (p.z >= 2 ){ return true;}
+            return false;
+      }
+
     @compute @workgroup_size(256)
     fn main (@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         let index: u32 = GlobalInvocationID.x;
 
-       
-        pos[index] = pos[index] + velocity[index] * .1;
+        
+        pos[index] = pos[index] + velocity[index] * .01;
+        if (hasCollided(pos[index].xyz)) {
+            var vel = velocity[index];
+            velocity[index] = vec4<f32>(vel.y, - vel.x, vel.z, 1.);
+        }
     }
     `},
      )
@@ -407,6 +426,7 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
     let velocityBuffer = makeBuffer(webgpu, velocity)
 
     let compute =   initComputeCall(webgpu, particleBuffer, velocityBuffer)
+    let draw = makeDrawCall(webgpu, particleBuffer)
 
     setInterval(function () {
         let {projection, view} = camera()
@@ -445,7 +465,6 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
         }
 
        //step()
-        let draw = makeDrawCall(webgpu, particleBuffer)
         draw()
         compute()
 
@@ -476,7 +495,7 @@ function makeDrawCall (webgpu, posBuffer) {
 
     let colorList = []
 
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < particles.length; i++) {
         colorList[i*3] = Math.random()
         colorList[i*3+1] = Math.random()
         colorList[i*3+2] = Math.random()
@@ -554,7 +573,7 @@ const buffers = [
           , quadBuffer , colorBuffer
         ],
         count: 6,
-        instances: 1000 / 4,
+        instances: 1e6 / 4,
         bindGroup: function ({pipeline}) {
       
             let uniformsBuffer = webgpu.device.createBuffer({
