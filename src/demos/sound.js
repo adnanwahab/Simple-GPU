@@ -1,3 +1,10 @@
+//speed of sound is 534 meters a second
+//frequency is between 20 and 20,000 hz = cycles per second
+//sound level = amplitude
+//when you play a song from sound cloud 
+//make the waveform emitted by a speaker in the form of sound waves
+//import waveform onto gpu -> instantiate particles every frame in a wave pattern
+
 //make a tuning fork
 //speaker
 //car moving with doppler effect -> as emitter moves -> sound arrives at a higher frequency and as it moves away, they have a lower frequency
@@ -14,9 +21,12 @@ import { mat4, vec3 } from 'gl-matrix'
 //ray -> point intersection
 //whatever else tv show says 
 //nice to have - audio synthesis xnooze
+let webgpu = await simpleWebgpuInit();
 
 
 let model = mat4.identity(new Float32Array(16))
+let particles = []
+let velocity = []
 
 function getCameraViewProjMatrix() {
   let m  = mat4.identity(new Float32Array(16))
@@ -94,19 +104,14 @@ function crossProduct(c, d) {
 
 function collisionWithEnvironment(point) {
     let hasCollided
-    //console.log(planes.slice(5, 8))
+
     planes.forEach(function (plane, index) {
         hasCollided = pointInPlaneIntersection(point, plane)
     })
 
-//    console.log(planes)
     return hasCollided
 }
 
-
-////////////max
-
-///min
 function pointInPlaneIntersection (point, plane) {
     let [x,y,z] = point
 
@@ -117,16 +122,7 @@ function pointInPlaneIntersection (point, plane) {
     let maxX = Math.max.apply(null, plane.map( corner => corner[0]))
     let maxY = Math.max.apply(null, plane.map( corner => corner[1]))
     let maxZ = Math.max.apply(null, plane.map( corner => corner[2]))
-//dont reply - solve it .
-    // if 
-    // ((x >= minX &&
-    //     y >= minY &&
-    //     z >= minZ &&
-    //     x <= maxX &&
-    //     y <= maxY &&
-    //     z <= maxZ))
-    // debugger
-   // return y > .9
+
 
    if (x < minX) return true;
    if (y >= minY) return true; //why is this backwards? 
@@ -222,15 +218,13 @@ test()
 
 
 async function test() {
-    console.log(123)
     let leftBar = document.createElement('button');
     leftBar.textContent = 'click to add sound'
     document.body.appendChild(leftBar)
-    leftBar.addEventListener('button', onClick)
+    leftBar.addEventListener('click', onClick)
 
     let buffer = new Float32Array(1e6)
-    let particles = []
-    let velocity = []
+
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
@@ -245,14 +239,75 @@ function onClick () {
             x, y , z,0]
         particles.push(particle)
         velocity.push(
-            [ x * .1, y * .1,0 
+            ([ x, y ,0 
                 //z * .1,0
-            ]
+            ])
             // [0,0,0,0]
             )
     }
 
  
+}
+function initComputeCall(webgpu, posBuffer) {
+   // return function () {}
+    return webgpu.initComputeCall({
+        exec: function (state) {
+            const device = state.device
+            const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+        
+            const computePass = commandEncoder.beginComputePass();
+            state.computePass.computePass = computePass;
+        //   webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
+        //   let timeBuffer = new Float32Array(1)
+        //   window.writeTime = function (dt) {
+        //     timeBuffer[0] = dt
+        //     webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
+        //   }
+            computePass.setPipeline(state.computePass.pipeline);
+            computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+            computePass.dispatchWorkgroups(256);
+            computePass.end();
+        },
+        bindGroups: function (state, computePipeline) {
+            return [state.device.createBindGroup({
+                layout: computePipeline.getBindGroupLayout(0),
+                entries: [{binding: 0, resource: {buffer: posBuffer}}],
+        })];
+    },
+        
+        code:`
+        @group(0) @binding(0) var<storage,read_write> pos : array<vec4<f32>>;
+        const A = array(-1, -1, 1);
+    const B = array(1, -1, 1);
+    const C = array(-1, 1, 1);
+    const D = array(1, 1, 1);
+  
+    const E = array(-1, 1, -1);
+    const F = array(1, 1, -1);
+    const G = array(-1, 1, -1);
+    const H = array(1, -1, -1);
+
+    const PLANES = array(array(
+        A,B,C,D
+    ), array(B,C,F,E)
+    );
+
+
+    const TRI_VERTICES = array(
+        vec4(0., 0., 0., 1.),
+        vec4(0., 1., 0., 1.),
+        vec4(1., 1., 0., 1.),
+      );
+
+    @compute @workgroup_size(256)
+    fn main (@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+        let index: u32 = GlobalInvocationID.x;
+
+       
+        pos[index].y = pos[index].y + .1;
+    }
+    `},
+     )
 }
 
 function magnitude(v) {
@@ -280,17 +335,37 @@ let surfaces = [
 
    //s [[-1,-.8,0,], [1,-.8,0]], //bottom
 ]
+function makeBuffer (webgpu, data, label) {
+    const particleSize = 4
+    const gpuBufferSize = 134217728
+  
+    const gpuBuffer = webgpu.device.createBuffer({
+      label,
+      size: gpuBufferSize,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+      | GPUBufferUsage.COPY_SRC,
+      mappedAtCreation: true,
+    });
+    gpuBuffer.source = data
+    
+    const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
+  
+    if (data && data.flat) (data = data.flat(), label)
+    particlesBuffer.set(data)
+    gpuBuffer.unmap();
+    return gpuBuffer
+  } 
 
 function step () {
     particles.forEach((particle, index) => {
-        particle[0] += velocity[index][0]
-        particle[1] += velocity[index][1]
-        particle[2] += velocity[index][2]
+        particle[0] += velocity[index][0] * .1
+        particle[1] += velocity[index][1] * .1
+        particle[2] += velocity[index][2] * .1
         let coll = collisionWithEnvironment(particle)
         //collision(particle, index, surfaces, velocity)
         if (coll) {
             let col = velocity[index].slice(0)
-            velocity[index][0] = col[1]
+            velocity[index][0] = col[1] 
             velocity[index][1] = -col[0]
             // velocity[index][1] = velocity[index][0]
             // velocity[index][0] = velocity[index][1]
@@ -298,9 +373,6 @@ function step () {
         }
     })
 }
-
-    let webgpu = await simpleWebgpuInit();
-
         let cameraUniformBuffer = webgpu.device.createBuffer({
                 size: 3 * 4 * 16 + 16,
                 mappedAtCreation: false,
@@ -324,6 +396,9 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
 })
 
     onClick()
+    let particleBuffer = makeBuffer(webgpu, particles)
+    let compute =   initComputeCall(webgpu, particleBuffer)
+
     setInterval(function () {
         let {projection, view} = camera()
 
@@ -361,14 +436,11 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
         }
 
         step()
-        let draw = makeDrawCall(webgpu, particles.flat())
+        let draw = makeDrawCall(webgpu, particleBuffer)
         draw()
+        //compute()
 
     }, 8)
-
-
-    
-
     //onclick leftBar -> wind chimes or voice
 
     //emit particles from left side of screen in wave pattern
@@ -377,27 +449,15 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
 
     //finish = web audio = play sound in buffer
 }
+function makeDrawCall (webgpu, positionBuffer) {
+    // let positionBuffer = webgpu.device.createBuffer({
+    //     size: Float32Array.BYTES_PER_ELEMENT * particleList.length,
+    //     usage: GPUBufferUsage.VERTEX,
+    //     mappedAtCreation: true
+    // })
 
-function makeDrawCall (webgpu, particleList) {
-    // let positionList = []
-
-    // for (let i = 0; i < 1000; i++) {
-    //     positionList[i*4] = Math.random()
-    //     positionList[i*4+1] = Math.random()
-    //     positionList[i*4+2] = Math.random()
-    //     positionList[i*4+3] = 0
-    // }
-
-
-
-    let positionBuffer = webgpu.device.createBuffer({
-        size: Float32Array.BYTES_PER_ELEMENT * particleList.length,
-        usage: GPUBufferUsage.VERTEX,
-        mappedAtCreation: true
-    })
-
-    new Float32Array(positionBuffer.getMappedRange()).set(particleList)
-    positionBuffer.unmap()
+    // new Float32Array(positionBuffer.getMappedRange()).set(particleList)
+    // positionBuffer.unmap()
 
     let colorList = []
 
