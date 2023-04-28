@@ -297,6 +297,14 @@ function step () {
 }
 
     let webgpu = await simpleWebgpuInit();
+
+        let cameraUniformBuffer = webgpu.device.createBuffer({
+                size: 3 * 4 * 16 + 16,
+                mappedAtCreation: false,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+
+            })
+            window.cameraUniformBuffer = cameraUniformBuffer
     
     let camera = createCamera({
         center: [0, 2.5, 0],
@@ -315,7 +323,11 @@ function step () {
         let cameraUniformBuffer = window.cameraUniformBuffer
 
         if (cameraUniformBuffer) {
-            console.log(projection, view, model)
+//console.log(123)
+    //    projection = mat4.identity(new Float32Array(16));
+    //    view = mat4.identity(new Float32Array(16));
+    //    model = mat4.identity(new Float32Array(16));
+//console.log(projection)
         webgpu.device.queue.writeBuffer(
             cameraUniformBuffer,
             0,
@@ -473,13 +485,7 @@ const buffers = [
                 mappedAtCreation: false,
                 usage: GPUBufferUsage.UNIFORM
             })
-            let cameraUniformBuffer = webgpu.device.createBuffer({
-                size: 192,
-                mappedAtCreation: false,
-                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-
-            })
-            window.cameraUniformBuffer = cameraUniformBuffer
+        
             let right = 1, left = -1;
             let top = 1, bottom = -1;
             let far = 1000;
@@ -499,7 +505,7 @@ const buffers = [
          
 
             
-
+//console.log(cameraUniformBuffer)
         let desc = {
           label: Math.random(),
             layout: pipeline.getBindGroupLayout(0),
@@ -564,11 +570,12 @@ const buffers = [
     //shit * 
     // 
     //  * 
-//    camera.viewMatrix * camera.modelMatrix * 
+//   camera.viewMatrix * camera.modelMatrix * 
 
-// camera.projectionMatrix
-//      * camera.viewMatrix *  
-//camera.modelMatrix * 
+camera.projectionMatrix      * 
+camera.viewMatrix *  
+camera.modelMatrix * 
+
      vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
     
     vsOut.localPosition = quadCorner;
