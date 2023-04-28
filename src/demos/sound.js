@@ -1,4 +1,7 @@
 //speed of sound is 534 meters a second
+//sonic boom 
+//doppler effect
+ 
 //frequency is between 20 and 20,000 hz = cycles per second
 //sound level = amplitude
 //when you play a song from sound cloud 
@@ -228,7 +231,7 @@ async function test() {
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
-    for (let i = 0; i < 2e4; i++) {
+    for (let i = 0; i < 1e6; i++) {
         let idx = (i % 360) * 1.5 ;
         let radius = (i % 6)* .1
         let x = radius * Math.cos((idx)* Math.PI / 180)
@@ -248,7 +251,7 @@ function onClick () {
 
  
 }
-function initComputeCall(webgpu, posBuffer) {
+function initComputeCall(webgpu, posBuffer, velocityBuffer) {
    // return function () {}
     return webgpu.initComputeCall({
         exec: function (state) {
@@ -271,12 +274,16 @@ function initComputeCall(webgpu, posBuffer) {
         bindGroups: function (state, computePipeline) {
             return [state.device.createBindGroup({
                 layout: computePipeline.getBindGroupLayout(0),
-                entries: [{binding: 0, resource: {buffer: posBuffer}}],
+                entries: [{binding: 0, resource: {buffer: posBuffer}},
+                            {binding: 1, resource: {buffer: velocityBuffer}
+                }],
         })];
     },
         
         code:`
         @group(0) @binding(0) var<storage,read_write> pos : array<vec4<f32>>;
+        @group(0) @binding(1) var<storage,read_write> velocity : array<vec4<f32>>;
+
         const A = array(-1, -1, 1);
     const B = array(1, -1, 1);
     const C = array(-1, 1, 1);
@@ -304,7 +311,7 @@ function initComputeCall(webgpu, posBuffer) {
         let index: u32 = GlobalInvocationID.x;
 
        
-        pos[index].y = pos[index].y + .1;
+        pos[index] = pos[index] + velocity[index] * .1;
     }
     `},
      )
@@ -397,7 +404,9 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
 
     onClick()
     let particleBuffer = makeBuffer(webgpu, particles)
-    let compute =   initComputeCall(webgpu, particleBuffer)
+    let velocityBuffer = makeBuffer(webgpu, velocity)
+
+    let compute =   initComputeCall(webgpu, particleBuffer, velocityBuffer)
 
     setInterval(function () {
         let {projection, view} = camera()
@@ -435,10 +444,10 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
 
         }
 
-        step()
+       //step()
         let draw = makeDrawCall(webgpu, particleBuffer)
         draw()
-        //compute()
+        compute()
 
     }, 8)
     //onclick leftBar -> wind chimes or voice
@@ -449,15 +458,21 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
 
     //finish = web audio = play sound in buffer
 }
-function makeDrawCall (webgpu, positionBuffer) {
-    // let positionBuffer = webgpu.device.createBuffer({
-    //     size: Float32Array.BYTES_PER_ELEMENT * particleList.length,
-    //     usage: GPUBufferUsage.VERTEX,
-    //     mappedAtCreation: true
-    // })
 
-    // new Float32Array(positionBuffer.getMappedRange()).set(particleList)
-    // positionBuffer.unmap()
+let makeGpuBuffer = (particleList) => {
+    let positionBuffer = webgpu.device.createBuffer({
+        size: Float32Array.BYTES_PER_ELEMENT * particleList.length * 4,
+        usage: GPUBufferUsage.VERTEX,
+        mappedAtCreation: true
+    })
+
+    new Float32Array(positionBuffer.getMappedRange()).set(particleList.flat())
+    positionBuffer.unmap()
+    return positionBuffer
+}
+
+function makeDrawCall (webgpu, posBuffer) {
+//    let posBuffer = makeGpuBuffer(particleList)
 
     let colorList = []
 
@@ -533,7 +548,7 @@ const buffers = [
         attributeBuffers: buffers,
         attributeBufferData: [
          //shapes[0]
-         positionBuffer
+         posBuffer
           //makeBuffer(gridBuffer, 0, 'cube'),
           //makeBuffer(makeCube(), 0, 'cube')
           , quadBuffer , colorBuffer
