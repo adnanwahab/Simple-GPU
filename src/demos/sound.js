@@ -232,7 +232,7 @@ async function test() {
     //represent sound using particles or quad 
 
     function makeRadius (i) {
-        return i / 1e5
+        return Math.ceil(i / 1e4) / 10
     }
 function onClick () {
     for (let i = 0; i < 1e6; i++) {
@@ -241,12 +241,12 @@ function onClick () {
         let x = radius * Math.cos((idx)* Math.PI / 180)
         let y = radius * Math.sin((idx)* Math.PI / 180) 
         let z = radius * Math.tan((idx)* Math.PI / 180) 
-        z = 0//Math.random()
+        z = 0
         let particle = 
         [x, y , z,0]
         particles.push(particle)
         velocity.push(
-            ([ x , y ,0 , 0
+            ([ x  , y ,0 , 0
                 //z * .1,0
             ])
             // [0,0,0,0]
@@ -256,7 +256,11 @@ function onClick () {
  
 }
 function initComputeCall(webgpu, posBuffer, velocityBuffer) {
-   // return function () {}
+    let lifetime = []
+    for (let i = 0; i < 1e6; i++ ) {
+        lifetime[i] = Math.random() *100;
+    }
+   let lifetimeBuffer = makeBuffer(webgpu, lifetime)
     return webgpu.initComputeCall({
         exec: function (state) {
             const device = state.device
@@ -279,7 +283,10 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
             return [state.device.createBindGroup({
                 layout: computePipeline.getBindGroupLayout(0),
                 entries: [{binding: 0, resource: {buffer: posBuffer}},
-                            {binding: 1, resource: {buffer: velocityBuffer}
+                            {binding: 1, resource: {buffer: velocityBuffer}},
+                            {binding: 2, resource: {buffer: lifetimeBuffer}
+
+                            
                 }],
         })];
     },
@@ -287,6 +294,8 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
         code:`
         @group(0) @binding(0) var<storage,read_write> pos : array<vec4<f32>>;
         @group(0) @binding(1) var<storage,read_write> velocity : array<vec4<f32>>;
+        @group(0) @binding(2) var<storage,read_write> lifetime : array<f32>;
+
 
         const A = array(-1, -1, 1);
     const B = array(1, -1, 1);
@@ -312,12 +321,13 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
 
       fn hasCollided (p: vec3<f32>)-> bool {
         var minX = -1; 
-        if (p.x < -2) {return true;}
-       if (p.y <= -2) {return true;} //why is this backwards? 
-            if (p.x >= 2) {return true;}
-            if (p.y >= 2) {return true;}
-            if (p.z <= -2 ) {return true;}
-            if (p.z >= 2 ){ return true;}
+        var bounds = 3.;
+        if (p.x < -bounds) {return true;}
+       if (p.y <= -bounds) {return true;} //why is this backwards? 
+            if (p.x >= bounds) {return true;}
+            if (p.y >= bounds) {return true;}
+            if (p.z <= -bounds ) {return true;}
+            if (p.z >= bounds ){ return true;}
             return false;
       }
 
@@ -330,6 +340,12 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
         if (hasCollided(pos[index].xyz)) {
             var vel = velocity[index];
             velocity[index] = vec4<f32>(vel.y, - vel.x, vel.z, 1.);
+        }
+        lifetime[index]-= 1;
+        if (lifetime[index] < 0) {
+            lifetime[index] = 1000;
+            pos[index] = vec4<f32>(0);
+            velocity[index] = vec4<f32>(cos(f32(index)), sin(f32(index)), 0, 1.);
         }
     }
     `},
@@ -566,10 +582,7 @@ const buffers = [
     let drawDescriptor = {
         attributeBuffers: buffers,
         attributeBufferData: [
-         //shapes[0]
          posBuffer
-          //makeBuffer(gridBuffer, 0, 'cube'),
-          //makeBuffer(makeCube(), 0, 'cube')
           , quadBuffer , colorBuffer
         ],
         count: 6,
