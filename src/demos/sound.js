@@ -225,7 +225,7 @@ async function test() {
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
-    for (let i = 0; i < 1e3; i++) {
+    for (let i = 0; i < 1e4; i++) {
         let idx = (i % 360) ;
         let radius = i % 18
         let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
@@ -236,7 +236,7 @@ function onClick () {
             x- .5, y- .5 ,0,0]
         particles.push(particle)
         velocity.push(
-            [ x, y * .1,0 
+            [ x * .1, y * .1,0 
                 //z * .1,0
             ]
             // [0,0,0,0]
