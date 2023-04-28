@@ -257,7 +257,7 @@ function onClick () {
 }
 function initComputeCall(webgpu, posBuffer, velocityBuffer) {
     let lifetime = []
-    for (let i = 0; i < 1e6; i++ ) {
+    for (let i = 0; i < 5e6; i++ ) {
         lifetime[i] = Math.random() *100;
     }
    let lifetimeBuffer = makeBuffer(webgpu, lifetime)
@@ -276,7 +276,7 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
         //   }
             computePass.setPipeline(state.computePass.pipeline);
             computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-            computePass.dispatchWorkgroups(256);
+            computePass.dispatchWorkgroups(1000);
             computePass.end();
         },
         bindGroups: function (state, computePipeline) {
@@ -343,7 +343,7 @@ function initComputeCall(webgpu, posBuffer, velocityBuffer) {
         }
         lifetime[index]-= 1;
         if (lifetime[index] < 0) {
-            lifetime[index] = 1000;
+            lifetime[index] = 10000;
             pos[index] = vec4<f32>(0);
             velocity[index] = vec4<f32>(cos(f32(index)), sin(f32(index)), 0, 1.);
         }
