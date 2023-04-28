@@ -1,10 +1,52 @@
 import simpleWebgpuInit from '../../lib/main';
+import createCamera from './createCamera'
+import { mat4, vec3 } from 'gl-matrix'
+
 
 //3d camera matrix transform
 //point in plane intersection
 //ray -> point intersection
 //whatever else tv show says 
 //nice to have - audio synthesis xnooze
+
+
+let model = mat4.identity(new Float32Array(16))
+
+function getCameraViewProjMatrix() {
+  let m  = mat4.identity(new Float32Array(16))
+  mat4.translate(model, model, vec3.fromValues(2, 2, 0));
+  mat4.rotate(
+    model,
+    model,
+    1,
+    vec3.fromValues(
+      Math.sin(0),
+      //Math.cos((cosCounter += 1) * .001),
+      Math.cos(1),
+      0
+    )
+  );
+//  model = m
+  //vec3.rotateY(eyePosition, eyePosition, origin, rad);
+
+  let projectionMatrix = mat4.create();
+  let viewProjectionMatrix = mat4.create();
+  mat4.perspectiveZO(projectionMatrix,
+    10, 500 / 500, .5, 10.0);
+  //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
+  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+
+  //mat4.lookAt(viewProjectionMatrix, eyePosition, origin, upVector);
+
+
+  // Write the render parameters to the uniform buffer.
+  let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
+  let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
+  viewProjectionMatrixHost.set(viewProjectionMatrix);
+  return viewProjectionMatrixHost
+}
+
+ const cameraViewProj = getCameraViewProjMatrix();
 
 function distance (a , b) {
     let [dx, dy, dz] = [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -89,7 +131,6 @@ if (y >= maxY) return true;
 if (z >= maxZ ) return true;
 if (z <= minZ ) return true;
 
-console.log(minY)
 //if (y < -1) return true;
 //console.log(minY, maxY)
    //return ! (x <= minX) && ! (y <= minY)
@@ -189,11 +230,15 @@ function onClick () {
         let radius = i % 18
         let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
         let y = radius * Math.sin((idx-90)* Math.PI / 180) * .01 
+        let z = radius * Math.tan((idx-90)* Math.PI / 180) * .01
+        z = 0
         let particle = [
             x- .5, y- .5 ,0,0]
         particles.push(particle)
         velocity.push(
-            [ x * .1, y * .1,0,0]
+            [ x * .1, y * .1, 0 
+                //z * .1,0
+            ]
             // [0,0,0,0]
             )
     }
@@ -253,8 +298,54 @@ function step () {
 
     let webgpu = await simpleWebgpuInit();
     
+    let camera = createCamera({
+        center: [0, 2.5, 0],
+        damping: 0,
+        noScroll: true,
+        renderOnDirty: true,
+        element: webgpu.canvas  || false ||
+        document.createElement('div') || false
+       
+      });
+
     onClick()
     setInterval(function () {
+        let {projection, view} = camera()
+
+        let cameraUniformBuffer = window.cameraUniformBuffer
+
+        if (cameraUniformBuffer) {
+            console.log(projection, view, model)
+        webgpu.device.queue.writeBuffer(
+            cameraUniformBuffer,
+            0,
+            projection.buffer,
+            projection.byteOffset,
+            projection.byteLength
+          );
+
+
+          webgpu.device.queue.writeBuffer(
+            cameraUniformBuffer,
+            64,
+            view.buffer,
+            view.byteOffset,
+            view.byteLength
+          );
+
+          webgpu.device.queue.writeBuffer(
+            cameraUniformBuffer,
+            128,
+            model
+            .buffer,
+            model
+            .byteOffset,
+            model
+            .byteLength
+          );
+
+        }
+
         step()
         let draw = makeDrawCall(webgpu, particles.flat())
         draw()
@@ -282,6 +373,8 @@ function makeDrawCall (webgpu, particleList) {
     //     positionList[i*4+2] = Math.random()
     //     positionList[i*4+3] = 0
     // }
+
+
 
     let positionBuffer = webgpu.device.createBuffer({
         size: Float32Array.BYTES_PER_ELEMENT * particleList.length,
@@ -383,9 +476,29 @@ const buffers = [
             let cameraUniformBuffer = webgpu.device.createBuffer({
                 size: 192,
                 mappedAtCreation: false,
-                usage: GPUBufferUsage.UNIFORM
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 
             })
+            window.cameraUniformBuffer = cameraUniformBuffer
+            let right = 1, left = -1;
+            let top = 1, bottom = -1;
+            let far = 1000;
+            let near = 100000;
+
+            // let projection = new Float32Array(16);
+            // projection.set([
+            // 2 /( right - left) , 0, 0 , left + right /(left - right ),
+            // 0, 2/ (top-bottom) / 2 , - top + bottom / top - bottom, 
+            // 0, 0, -2 / far - near , - far + near /far - near,
+            // 0,0,0,1
+
+
+
+
+            // ])
+         
+
+            
 
         let desc = {
           label: Math.random(),
@@ -444,12 +557,18 @@ const buffers = [
     ) -> VSOut {
     var vsOut: VSOut;  
   
-    var shit =     camera.projectionMatrix
-     * camera.viewMatrix *  camera.modelMatrix;
+   var shit =     camera.projectionMatrix;
     var shit2 = uniforms.time;
     vsOut.position = 
 
-    
+    //shit * 
+    // 
+    //  * 
+//    camera.viewMatrix * camera.modelMatrix * 
+
+// camera.projectionMatrix
+//      * camera.viewMatrix *  
+//camera.modelMatrix * 
      vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
     
     vsOut.localPosition = quadCorner;

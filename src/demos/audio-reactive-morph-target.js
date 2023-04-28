@@ -1757,6 +1757,8 @@ let swapChainTexture = result.state.swapChainTexture
 setInterval(
 async function () {
     let {projection, view} = camera()
+    console.log(projection, view, model)
+
     device.queue.writeBuffer(
       cameraUniformBuffer,
       0,

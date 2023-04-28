@@ -4,6 +4,7 @@ import mouseWheel from 'mouse-wheel'
 var isBrowser = typeof window !== 'undefined'
 
 function createCamera (props_) {
+  console.log(123123123)
   var props = props_ || {}
 
   // Preserve backward-compatibilty while renaming preventDefault -> noScroll
