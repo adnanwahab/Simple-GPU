@@ -1,3 +1,9 @@
+//make a tuning fork
+//speaker
+//car moving with doppler effect -> as emitter moves -> sound arrives at a higher frequency and as it moves away, they have a lower frequency
+//hardcode geometries in shader for gpu collisions 
+//linked diagram - sound received by listener - frequency waveform
+
 import simpleWebgpuInit from '../../lib/main';
 import createCamera from './createCamera'
 import { mat4, vec3 } from 'gl-matrix'
@@ -61,7 +67,7 @@ let cubeMapCoordinates = [
     [-1, 1, -1] , [1, 1, -1],
 
     [-1, 1, -1], [1, -1, -1]
-].map(row => row.map(i => i * 2))
+].map(row => row.map(i => i * 3))
 
 let [A, B,C ,D, E, F, G, H] = cubeMapCoordinates
 
@@ -218,6 +224,8 @@ test()
 async function test() {
     console.log(123)
     let leftBar = document.createElement('button');
+    leftBar.textContent = 'click to add sound'
+    document.body.appendChild(leftBar)
     leftBar.addEventListener('button', onClick)
 
     let buffer = new Float32Array(1e6)
@@ -226,15 +234,15 @@ async function test() {
     //draw waves using a quad 
     //represent sound using particles or quad 
 function onClick () {
-    for (let i = 0; i < 1e4; i++) {
-        let idx = (i % 360) ;
-        let radius = i % 18
-        let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
-        let y = radius * Math.sin((idx-90)* Math.PI / 180) * .01 
-        let z = radius * Math.tan((idx-90)* Math.PI / 180) * .01
-//        z = 0
+    for (let i = 0; i < 2e4; i++) {
+        let idx = (i % 360) * 1.5 ;
+        let radius = (i % 6)* .1
+        let x = radius * Math.cos((idx)* Math.PI / 180)
+        let y = radius * Math.sin((idx)* Math.PI / 180) 
+        let z = radius * Math.tan((idx)* Math.PI / 180) 
+        z = 0
         let particle = [
-            x- .5, y- .5 , z,0]
+            x, y , z,0]
         particles.push(particle)
         velocity.push(
             [ x * .1, y * .1,0 
@@ -278,12 +286,6 @@ function step () {
         particle[0] += velocity[index][0]
         particle[1] += velocity[index][1]
         particle[2] += velocity[index][2]
-        // velocity[index][0] *= .99
-        // velocity[index][1] *= .99
-        // velocity[index][2] *= .99
-        // does sound lose amplitude over time? or does it lower velocity 
-        // sound is air compression waves
-       
         let coll = collisionWithEnvironment(particle)
         //collision(particle, index, surfaces, velocity)
         if (coll) {
@@ -328,12 +330,6 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
         let cameraUniformBuffer = window.cameraUniformBuffer
 
         if (cameraUniformBuffer) {
-//console.log(123)
-    //    projection = mat4.identity(new Float32Array(16));
-    //    view = mat4.identity(new Float32Array(16));
-    //    model = mat4.identity(new Float32Array(16));
-//console.log(projection)
-console.log(view)
         webgpu.device.queue.writeBuffer(
             cameraUniformBuffer,
             0,
@@ -368,7 +364,7 @@ console.log(view)
         let draw = makeDrawCall(webgpu, particles.flat())
         draw()
 
-    }, 16)
+    }, 8)
 
 
     
