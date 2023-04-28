@@ -231,12 +231,12 @@ function onClick () {
         let x = radius * Math.cos((idx-90)* Math.PI / 180) * .01 
         let y = radius * Math.sin((idx-90)* Math.PI / 180) * .01 
         let z = radius * Math.tan((idx-90)* Math.PI / 180) * .01
-        z = 0
+//        z = 0
         let particle = [
             x- .5, y- .5 ,0,0]
         particles.push(particle)
         velocity.push(
-            [ x * .1, y * .1, 0 
+            [ x, y * .1,0 
                 //z * .1,0
             ]
             // [0,0,0,0]
@@ -315,6 +315,10 @@ function step () {
         document.createElement('div') || false
        
       });
+      let zoom = 1
+webgpu.canvas.addEventListener('mousewheel', function (e) {
+  camera.zoom(zoom = zoom + .1 * e.deltaY)
+})
 
     onClick()
     setInterval(function () {
