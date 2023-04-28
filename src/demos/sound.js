@@ -61,7 +61,7 @@ let cubeMapCoordinates = [
     [-1, 1, -1] , [1, 1, -1],
 
     [-1, 1, -1], [1, -1, -1]
-]
+].map(row => row.map(i => i * 2))
 
 let [A, B,C ,D, E, F, G, H] = cubeMapCoordinates
 
@@ -69,6 +69,7 @@ let [A, B,C ,D, E, F, G, H] = cubeMapCoordinates
 let planes = [
     [A, B, C, D], //front
     [B, C, F, E], // right
+//    [B, C, F, E].map(row => row.map(i => i / 10)), 
     [F, E, H, G], // back
     [G, H, A, D], // left
     [A, H, E, B], // bot
@@ -233,7 +234,7 @@ function onClick () {
         let z = radius * Math.tan((idx-90)* Math.PI / 180) * .01
 //        z = 0
         let particle = [
-            x- .5, y- .5 ,0,0]
+            x- .5, y- .5 , z,0]
         particles.push(particle)
         velocity.push(
             [ x * .1, y * .1,0 
@@ -332,6 +333,7 @@ webgpu.canvas.addEventListener('mousewheel', function (e) {
     //    view = mat4.identity(new Float32Array(16));
     //    model = mat4.identity(new Float32Array(16));
 //console.log(projection)
+console.log(view)
         webgpu.device.queue.writeBuffer(
             cameraUniformBuffer,
             0,
@@ -693,7 +695,9 @@ camera.modelMatrix *
   
     var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
     //color.rgb +
-    return vec4<f32>(1,1,1, 1.);
+    return vec4<f32>(1, 1, 1, 1.);
+
+    return vec4<f32>(color.rgb, 1.);
     }
     `}}));
     return drawRosePetals
