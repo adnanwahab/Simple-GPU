@@ -1,5 +1,7 @@
 let drawShapes = false
 let particlesCount = 1e6
+//angular velocity
+//fix the grid
 //drawing
 //build a position buffer on cpu
 //build a velocity buffer on cpu 
@@ -105,15 +107,15 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-//   magnet
-stream2,
-//makeVectorField8,
-//makeVectorField8, // good job 5/10 sphere
-//makeVectorField10,
-//makeVectorField2, // no good - circle SDF
-//makeVectorField4,
-//makeVectorField5,//needs improvement  // spiral grid
-//makeVectorField8 //good- make better
+   //magnet
+stream3,
+makeVectorField8,
+makeVectorField8, // good job 5/10 sphere
+makeVectorField10,
+makeVectorField2, // no good - circle SDF
+makeVectorField4,
+makeVectorField5,//needs improvement  // spiral grid
+makeVectorField8 //good- make better
      //makeVectorField1, needs improvement
   ]; //make these better
 
@@ -198,6 +200,25 @@ function shit2() {
      //return [0, z, -y, 1]
 
   })
+}
+
+function stream3() {
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    return [x,y,z , 1]
+  })
+
+  for (let i = 0; i < vf.length; i++) {
+    let [x,y,z] = vf[i]
+    vf[i] = [
+      100  * Math.tanh(z + y) , 
+      0,
+      0,
+      1
+    ]
+    // p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180) 
+    // p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180)
+  }
+  return vf
 }
 
 function stream2() {
@@ -602,6 +623,7 @@ function makeVectorFieldGeneric(cb, buffer ) {
       }
     }
   }
+  console.log(result)
   return result
 }
 
@@ -755,7 +777,14 @@ function zeroToOne(x , y, z) {
 }
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let velocityBuffer = new Float32Array(particlesCount)
+  let velocityBuffer = new Float32Array(particlesCount )
+  for (let i = 0; i < 1e6; i+=3) {
+    velocityBuffer[i] = Math.cos(i)
+    velocityBuffer[i+1] = Math.sin(i)
+    velocityBuffer[i+2] = Math.cos(i)
+//    velocityBuffer[i+3] = 0
+
+  }
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
@@ -807,7 +836,9 @@ uniformsBuffer
     code:  `
     struct Uniforms {
       mouse: vec2<f32>,
-      time: f32
+      time: f32,
+      mode: f32,
+
     }
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
@@ -978,14 +1009,14 @@ uniformsBuffer
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
-    if (z < .1) {z = .9;}
+    //if (z < .1) {z = .9;}
     
-    var idx = i32(floor(x * 100) + floor(y * 100) * 100 + floor(floor(z * 100) * 100) * 100);
+    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100) + floor(floor(z * 100) * 100) * 100);
     return idx;
   }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .5;
+    var pos = p * 1.;
     let idx = hashPosition(pos);
 
     var x = pos.x;
@@ -1008,7 +1039,7 @@ uniformsBuffer
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
-    return vf.xyz;
+    return vt.xyz;
   }
 
 
@@ -1050,7 +1081,7 @@ fn applyVF() -> vec3<f32> {
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-     velocity[index] *= .1;
+     //velocity[index] *= .1;
      velocity[index] = velocity[index] + .1 * vf;
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
@@ -1083,7 +1114,12 @@ fn applyVF() -> vec3<f32> {
     window.writeTime = function (dt) {
       timeBuffer[0] = dt
       webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
+    }
+    let modeBuffer = new Float32Array(1)
 
+    window.writeMode = function (dt) {
+      timeBuffer[0] = dt
+      webgpu.device.queue.writeBuffer(uniformsBuffer, 12,  modeBuffer)
     }
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
@@ -1453,8 +1489,8 @@ async function basic () {
     let happyBear = makeBuffer(list, 0, 'bear')
   
       computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
-      //drawScreen.swapAttributeBuffer(0, happyBear)
-      drawScreen = makeDrawCall(happyBear, drawDescriptor)
+      drawScreen.swapAttributeBuffer(happyBear, 0)
+      //drawScreen = makeDrawCall(happyBear, drawDescriptor)
       
     }
     setTimeout(vfPicker, 10000)
