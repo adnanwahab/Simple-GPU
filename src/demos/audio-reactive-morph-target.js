@@ -1,4 +1,19 @@
-// make 
+let drawShapes = false
+let particlesCount = 1e5
+//drawing
+//build a position buffer on cpu
+//build a velocity buffer on cpu 
+//4 seconds to upload to gpu -> blocking unless you split the buffer from 1m to 10,000 uploaded per frame
+//use gpu to animate them for 10 seconds
+//use vector field to morph particles 
+//repeat 
+
+// make ricochet as a mode
+//make velocity have an initial parameter
+// make the vector field have rotation and other different modes 
+//tween vector fields in a more precise manner 
+//gradually buffer new vector fields so that it doesnt block for 2 seconds
+
 //performance - make faster - gradual buffering of vectorfield 2seconds -> 100 frames
 //data cube
 //make vector field more continuous 
@@ -50,7 +65,7 @@ import createCamera from './createCamera'
 import bunny from 'bunny'
 import dragon from 'stanford-dragon'
 import { mat4, vec3 } from 'gl-matrix'
-const particlesCount = 442008
+//const particlesCount = 442008
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 import * as dat from 'dat.gui';
@@ -91,23 +106,16 @@ let result = []
 let pickVF = function () {
   let list = [
    magnet
-
-
-//     stream2,
-//     makeVectorField8,
-//     makeVectorField8, // good job 5/10 sphere
-//     makeVectorField10,
-//    makeVectorField2, // no good - circle SDF
-//     makeVectorField4,
-//    makeVectorField5,//needs improvement  // spiral grid
-//  makeVectorField8 //good- make better
-
-
-
+//stream2,
+//makeVectorField8,
+//makeVectorField8, // good job 5/10 sphere
+//makeVectorField10,
+//makeVectorField2, // no good - circle SDF
+//makeVectorField4,
+//makeVectorField5,//needs improvement  // spiral grid
+//makeVectorField8 //good- make better
      //makeVectorField1, needs improvement
-
   ]; //make these better
-
 
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
@@ -115,26 +123,65 @@ let pickVF = function () {
 }
 
 function magnet() {
-
   let pt = [0, 0, 0]
-
-
-
   // let vf =  makeVectorFieldGeneric(function (x, y, z) {
   //   let dist = distanceTo(pt, [x,y,z])
   //   return [ 1/y, 1/ x ,z,1]
   // })
+  // let vf =  makeVectorFieldGeneric(function (x, y, z) {
+  //   let dist = distanceTo(pt, [x,y,z])
+  //   let theta = Math.atan(y / x)
+  //   return [  Math.cos(theta * 10),  Math.sin(theta * 10) ,0,1]
+  // })
+  let i = 0;
+  let dir = [1,0,0,1]
   let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    i++
+    // if (i < 10000) dir = [10,0,0,1]
+    // if (i < 20000 ) dir = [0,-1,0,1]
+    // if (i > 40000 ) dir = [0,1,0,1]
+    // if (i > 60000 ) dir = [1,0,0,1]
+
+    // if (i > 80000 ) dir = [-1,0,0,1]
+
+    // if (i > 1e5 ) dir = [0,1,0,1]
+
+    // if (i > 1) dir = [0,-1,0,1]
+    // if (y < 0) dir = [0, 10, 0 , 0]
+    // if (y > 0) dir = [0, -10, 0 , 0]
+    console.log(i)
+
+    if (i < 1000) dir = [0, 10, 0 , 0]
+    if (i > 1000) dir = [x,y,z,1]
+    if (i > 10000) dir = [0, -10, 0 , 0]
+    // if (x < 0) dir = [10, 0, 10, 0]
+
+    // if (x > 0) dir = [-10, 0, 10, 0]
+    return dir
+    //return [x,y,z,1]
     let dist = distanceTo(pt, [x,y,z])
     let theta = Math.atan(y / x)
-    return [  Math.cos(theta * 2),  Math.sin(theta * 2) ,0,1]
+    return [  Math.cos(theta * 10),  Math.sin(theta * 10) , Math.sin(theta),1]
   })
-  let i = 0;
-  //for (let i = 0; i< vf.length; i++ ) {
-    
-    let [x,y,z] = vf[i]
-
-  //}
+  // let i = 0;
+  // let n = 1
+  // let dir = [
+  //   [1,0,0,0],
+  //   [0,1,0,0],
+  //   [-1, 0,0,0],
+  //   [0,-1,0,0]
+  // ]
+  // let m =0
+  // let getDir = () => {
+  //   m = (m + 1) % 3
+  //   //console.log(m)
+  //   return dir[m]
+  // }
+  // for (let idx = 0; idx< vf.length /100 ; idx++) {
+  //   let coord = Math.floor(Math.random() * 10000)
+  //   let [x,y,z] = vf[idx]
+  // }
+  console.log(vf)
   return vf
 } 
 
@@ -708,13 +755,13 @@ function zeroToOne(x , y, z) {
 }
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let velocityBuffer = new Float32Array(1e6)
+  let velocityBuffer = new Float32Array(particlesCount)
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
 
-  let particleLifetime = new Float32Array(1e6)
+  let particleLifetime = new Float32Array(particlesCount)
   for(let i =0; i < particleLifetime.length; i++) {
     if (i < 1e5)
     particleLifetime[i] = -3000000
@@ -1112,9 +1159,9 @@ getFrames(2)
 getFrames(3)
 getFrames(4)
 
-let pointBuffer = new Float32Array(1e6)
+let pointBuffer = new Float32Array(particlesCount)
 let pointBufferCount = 0
-let indexPool = new Array(1e6 / 4).fill(1).map((d, i) => i)
+let indexPool = new Array(particlesCount / 4).fill(1).map((d, i) => i)
 indexPool.alloc = function (n) {
   let i = 0
 
@@ -1308,7 +1355,6 @@ function moveParticles () {
 
 let drawParticles = true
 
-let test = new Array(250000).fill(0).map(Math.random)
 function makeStagingBuffer() {
   setTimeout(function () {
     if (! shapes[0] || !animating) return;
@@ -1393,6 +1439,7 @@ let list = pointBuffer.slice()
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
 
+if (drawShapes)
 list.set(pointBuffer.slice(0, pointBufferCount) )
 
 
@@ -1515,7 +1562,7 @@ function vectorTo(b, a) {
 }
 
 //precisely calculate line interval convolutions using xr
-var rgb = new Float32Array(1e6);
+var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
@@ -1566,7 +1613,7 @@ let drawDescriptor = {
   ],
   count: 6,
   //blend,
-  instances: 1e6 / 4,
+  instances: particlesCount ,
   bindGroup: function ({pipeline}) {
 
   
