@@ -156,3 +156,116 @@ function sdHeart( p ){
   function sub (a, b) {
     return [a[0] - b[0], a[1] - b[1]]
     }
+
+
+
+function buildQuadTree(dancer) {
+  let tree = {}
+  let id = 0
+
+  function pop () {
+    return id++
+  }
+
+  let calcBounds = function (x,y,z) {
+    return z * 1e6 + y * 1e4 + x * 1e2
+  }
+
+  let idxToBounds = function (idx) {
+    let z = (idx / 1e6).toPrecision(2);
+    idx -= z;
+    let y = (idx / 1e4).toPrecision(2)
+    idx -= y;
+    let x = (idx / 1e2).toPrecision(2);
+    return [x, y, z]
+  }
+
+  let childNodes = function (min, max) {
+    let dimensions = [(max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2, ]
+
+    return [min + dimensions[0], min + dimensions[1], min + dimensions[2]]
+  }
+
+  tree[pop()] = [pop(), pop(), calcBounds(-1, -1, -1), calcBounds(1,1,1)]
+
+  function atMaxCapacity (node) {
+    return node[0] < 0 && node[1] < 0;
+  }
+
+  function contains(node, point ) {
+    let min = idxToBounds(node[2])
+    let max = idxToBounds(node[2])
+
+    return point[0] > min[0] &&
+    point[1] > min[1] &&
+    point[2] > min[2] &&
+    point[0] < max[0] &&
+    point[1] < max[1] &&
+    point[2] < max[2] 
+  }
+
+  function addPoint(point) {
+
+    let [x,y,z]= point
+
+    let root = tree[0]
+
+    while (atMaxCapacity(root)) {
+      let left = root[0]
+      let right = root[1]
+      if (contains(left, point)) root = left
+      else root = right
+    }
+
+    let leaf=  tree[id]
+    if (leaf.length < 4)
+      tree[id].push(point)
+      else {
+        tree[id] = [pop(), pop(), min, max]
+
+
+      }
+
+
+      //tree root = 4 ids of next leaves and their bounds
+    //on collision show sparks
+    //record collisions in a buffer 
+    //one buffer to hold bounds
+    
+    //leaf id has min, max bottom left and top right
+    //bottom left and top right
+    // when a leaf has more than 4 points -> create 4 new leaves and put those points and rebalance
+
+
+    //add point to bucket
+    //split space into 4 
+    //top left= -1,-,1,-1 to 0,0,0 0 to 1
+    //bottom left = -1
+    //add points to leaf
+    //if leaf has more than 8 points -> split leaf into more
+    //if 
+
+
+    //buffer = id
+    //buffer = holds points or index to next bucket
+    //one buffer holds 
+
+    // buffer holds vec4
+    //vec4 holds 4 indexes or if a terminal leaf then 
+
+
+
+    /// buffer
+    ////  | | | | 
+    //   / 
+    //  /
+    // /
+    // A
+    // / | | \
+    // 1 2 3 4 
+    // 100,000 points = 25,000 leaves or vec4
+
+  }
+
+  dancer.forEach(addPoint)
+}

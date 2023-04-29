@@ -1,3 +1,5 @@
+// make 
+//performance - make faster - gradual buffering of vectorfield 2seconds -> 100 frames
 //data cube
 //make vector field more continuous 
 // spiral patterns 
@@ -11,130 +13,10 @@
 //wind simulation
 //gpu mesh detection -> do a GPU quad tree - collision with dancer 
 //add dragon to quad tree
-
-
-
 //quad tree 
 //tree particles
 //leaves
 
-function buildQuadTree(dancer) {
-  let tree = {}
-  let id = 0
-
-  function pop () {
-    return id++
-  }
-
-  //tree.leaf = 
-  //maximum id = 4 trillion -> split that into 6 numbers 
-
-  //leaf = [left, right, minBound, maxBound]
-
-
-
-  let calcBounds = function (x,y,z) {
-    return z * 1e6 + y * 1e4 + x * 1e2
-  }
-
-  let idxToBounds = function (idx) {
-    let z = (idx / 1e6).toPrecision(2);
-    idx -= z;
-    let y = (idx / 1e4).toPrecision(2)
-    idx -= y;
-    let x = (idx / 1e2).toPrecision(2);
-    return [x, y, z]
-  }
-
-  let childNodes = function (min, max) {
-    let dimensions = [(max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2, ]
-
-    return [min + dimensions[0], min + dimensions[1], min + dimensions[2]]
-  }
-
-  tree[pop()] = [pop(), pop(), calcBounds(-1, -1, -1), calcBounds(1,1,1)]
-
-  function atMaxCapacity (node) {
-    return node[0] < 0 && node[1] < 0;
-  }
-
-  function contains(node, point ) {
-    let min = idxToBounds(node[2])
-    let max = idxToBounds(node[2])
-
-    return point[0] > min[0] &&
-    point[1] > min[1] &&
-    point[2] > min[2] &&
-    point[0] < max[0] &&
-    point[1] < max[1] &&
-    point[2] < max[2] 
-  }
-
-  function addPoint(point) {
-
-    let [x,y,z]= point
-
-    let root = tree[0]
-
-    while (atMaxCapacity(root)) {
-      let left = root[0]
-      let right = root[1]
-      if (contains(left, point)) root = left
-      else root = right
-    }
-
-    let leaf=  tree[id]
-    if (leaf.length < 4)
-      tree[id].push(point)
-      else {
-        tree[id] = [pop(), pop(), min, max]
-
-
-      }
-
-
-      //tree root = 4 ids of next leaves and their bounds
-    //on collision show sparks
-    //record collisions in a buffer 
-    //one buffer to hold bounds
-    
-    //leaf id has min, max bottom left and top right
-    //bottom left and top right
-    // when a leaf has more than 4 points -> create 4 new leaves and put those points and rebalance
-
-
-    //add point to bucket
-    //split space into 4 
-    //top left= -1,-,1,-1 to 0,0,0 0 to 1
-    //bottom left = -1
-    //add points to leaf
-    //if leaf has more than 8 points -> split leaf into more
-    //if 
-
-
-    //buffer = id
-    //buffer = holds points or index to next bucket
-    //one buffer holds 
-
-    // buffer holds vec4
-    //vec4 holds 4 indexes or if a terminal leaf then 
-
-
-
-    /// buffer
-    ////  | | | | 
-    //   / 
-    //  /
-    // /
-    // A
-    // / | | \
-    // 1 2 3 4 
-    // 100,000 points = 25,000 leaves or vec4
-
-  }
-
-  dancer.forEach(addPoint)
-}
 
 function getDist(a, b) {
   let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
@@ -142,7 +24,6 @@ function getDist(a, b) {
     return a + b
   }))
 }
-
 
 let {cos, sin, } = Math
 
@@ -209,17 +90,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-   //magnet
+   magnet
 
 
-    stream2,
-    makeVectorField8,
-    makeVectorField8, // good job 5/10 sphere
-    makeVectorField10,
-   makeVectorField2, // no good - circle SDF
-    makeVectorField4,
-   makeVectorField5,//needs improvement  // spiral grid
- makeVectorField8 //good- make better
+//     stream2,
+//     makeVectorField8,
+//     makeVectorField8, // good job 5/10 sphere
+//     makeVectorField10,
+//    makeVectorField2, // no good - circle SDF
+//     makeVectorField4,
+//    makeVectorField5,//needs improvement  // spiral grid
+//  makeVectorField8 //good- make better
 
 
 
@@ -235,14 +116,19 @@ let pickVF = function () {
 
 function magnet() {
 
-  let pt = [makeRand(), makeRand(), -1]
+  let pt = [0, 0, 0]
 
 
 
+  // let vf =  makeVectorFieldGeneric(function (x, y, z) {
+  //   let dist = distanceTo(pt, [x,y,z])
+  //   return [ 1/y, 1/ x ,z,1]
+  // })
   let vf =  makeVectorFieldGeneric(function (x, y, z) {
-    return [x,y,z,1]
+    let dist = distanceTo(pt, [x,y,z])
+    let theta = Math.atan(y / x)
+    return [  Math.cos(theta * 2),  Math.sin(theta * 2) ,0,1]
   })
-
   let i = 0;
   //for (let i = 0; i< vf.length; i++ ) {
     
@@ -1067,6 +953,7 @@ uniformsBuffer
     // }
 
     let vf = vectorFieldBuffer[idx];
+//    vectorFieldBuffer[idx] = sin(vectorFieldBuffer[idx]);
     //vectorFieldBuffer[idx] += cos(vf);
     let vf1 = vectorFieldBuffer2[idx];
     var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
@@ -1074,7 +961,7 @@ uniformsBuffer
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
-    return vt.xyz;
+    return vf.xyz;
   }
 
 
@@ -1283,7 +1170,6 @@ let rhomboid = function (origin, side, skew) {
   let d = [origin[0] - side, origin[1] - side] // bottom left
   let lines = [new line(a, b), new line(a, c), new line(c, d), new line(d, b)]
   lines.forEach( line => line.draw() )
-  //console.log(a)
 }
 
 let triangle = function (origin, side) {
@@ -1294,20 +1180,19 @@ let triangle = function (origin, side) {
   lines.forEach( line => line.draw() )
 }
 
-//setInterval(function ( ) {
-  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   for (let i =0; i< 100; i++) {
+    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   }
-//}, 1000)
+
 
 window.addEventListener('click', function () {
   let timebetween = 1000
@@ -1339,7 +1224,7 @@ function initParticles () {
     particleMesh[i] = {x: -.9 + i / 1e4, y: .9, z: 0, dir: [makeRand(), makeRand()]}
   }
 }
-initParticles()
+//initParticles()
 
 let keyframeFunctions = [
   function (p, i, t) {
@@ -1505,21 +1390,9 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
 let list = pointBuffer.slice()
-// for( let i = 0; i < list.length; i+=4){
-//   list[i]= makeRand() * 2
-//   list[i+1]= makeRand() * 2
-
-//   list[i+2]=  makeRand() * 2
-
-//   list[i+3]= 0
-
-// }
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
-// makeVectorFieldGeneric(function (x, y, z) {
-//   return [x, y, z]
-// }, pointBuffer)
-console.log(pointBufferCount)
+
 list.set(pointBuffer.slice(0, pointBufferCount) )
 
 
@@ -1527,8 +1400,6 @@ list.set(pointBuffer.slice(0, pointBufferCount) )
 async function basic () {
   let vf1 =  pickVF(), vf2 = pickVF()
   function vfPicker() {
-    //console.log(vf2)
-//    vf2.destroy()
     vf1 = pickVF()
     vf2 =  vf2
       
