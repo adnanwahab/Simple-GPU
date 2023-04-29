@@ -230,7 +230,6 @@ let pickVF = function () {
 
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
-  console.log(idx, ret)
   return ret
 }
 
@@ -1075,7 +1074,7 @@ uniformsBuffer
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
-    return vf.xyz;
+    return vt.xyz;
   }
 
 
@@ -1227,7 +1226,7 @@ getFrames(3)
 getFrames(4)
 
 let pointBuffer = new Float32Array(1e6)
-
+let pointBufferCount = 0
 let indexPool = new Array(1e6 / 4).fill(1).map((d, i) => i)
 indexPool.alloc = function (n) {
   let i = 0
@@ -1237,6 +1236,7 @@ indexPool.alloc = function (n) {
     result.push(this.shift())
     i++
   }
+  pointBufferCount += n;
   return result;
 }
 
@@ -1294,19 +1294,20 @@ let triangle = function (origin, side) {
   lines.forEach( line => line.draw() )
 }
 
-setInterval(function ( ) {
+//setInterval(function ( ) {
   // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
   // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  for (let i =0; i< 100; i++) {
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-
-}, 1000)
+  }
+//}, 1000)
 
 window.addEventListener('click', function () {
   let timebetween = 1000
@@ -1503,7 +1504,7 @@ window.makeBuffer = function makeBuffer (stuff, flag, label) {
   return gpuBuffer
 } 
 let webgpu = simpleWebgpuInit().then(w => webgpu = w)
-let list = pointBuffer
+let list = pointBuffer.slice()
 // for( let i = 0; i < list.length; i+=4){
 //   list[i]= makeRand() * 2
 //   list[i+1]= makeRand() * 2
@@ -1514,9 +1515,13 @@ let list = pointBuffer
 
 // }
 list = makeGrid().map(d => d)
+list = new Float32Array(list.flat())
 // makeVectorFieldGeneric(function (x, y, z) {
 //   return [x, y, z]
 // }, pointBuffer)
+console.log(pointBufferCount)
+list.set(pointBuffer.slice(0, pointBufferCount) )
+
 
 
 async function basic () {
@@ -1535,7 +1540,7 @@ async function basic () {
       
     }
     setTimeout(vfPicker, 10000)
-  setInterval(vfPicker, 300000)
+  setInterval(vfPicker, 10000)
 
 
   computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
@@ -1638,7 +1643,7 @@ function vectorTo(b, a) {
   return unitVector(b) - unitVector(a)
 }
 
-//precisely calculate line interval convolutions using 
+//precisely calculate line interval convolutions using xr
 var rgb = new Float32Array(1e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
@@ -1757,7 +1762,6 @@ let swapChainTexture = result.state.swapChainTexture
 setInterval(
 async function () {
     let {projection, view} = camera()
-    console.log(projection, view, model)
 
     device.queue.writeBuffer(
       cameraUniformBuffer,
@@ -1799,7 +1803,7 @@ async function () {
 
     // pp(texture)
     drawScreen()
-    }, 8) 
+    }, 100) 
 }
 
 
