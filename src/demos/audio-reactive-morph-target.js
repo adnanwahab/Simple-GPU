@@ -209,17 +209,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-   magnet
+   //magnet
 
 
-//     stream2,
-//     makeVectorField8,
-//     makeVectorField8, // good job 5/10 sphere
-//     makeVectorField10,
-//    makeVectorField2, // no good - circle SDF
-//     makeVectorField4,
-//    makeVectorField5,//needs improvement  // spiral grid
-//  makeVectorField8 //good- make better
+    stream2,
+    makeVectorField8,
+    makeVectorField8, // good job 5/10 sphere
+    makeVectorField10,
+   makeVectorField2, // no good - circle SDF
+    makeVectorField4,
+   makeVectorField5,//needs improvement  // spiral grid
+ makeVectorField8 //good- make better
 
 
 
@@ -1118,8 +1118,8 @@ fn applyVF() -> vec3<f32> {
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
      velocity[index] *= .1;
-     //velocity[index] = velocity[index] + .1 * vf;
-     velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
+     velocity[index] = velocity[index] + .1 * vf;
+     //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
 
       //wind turbulence
