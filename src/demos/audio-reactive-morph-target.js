@@ -1,5 +1,5 @@
 let drawShapes = false
-let particlesCount = 1e5
+let particlesCount = 1e6
 //drawing
 //build a position buffer on cpu
 //build a velocity buffer on cpu 
@@ -105,8 +105,8 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-   magnet
-//stream2,
+//   magnet
+stream2,
 //makeVectorField8,
 //makeVectorField8, // good job 5/10 sphere
 //makeVectorField10,
@@ -157,7 +157,7 @@ function magnet() {
     // if (x < 0) dir = [10, 0, 10, 0]
 
     // if (x > 0) dir = [-10, 0, 10, 0]
-    return dir
+    return dir.slice(0)
     //return [x,y,z,1]
     let dist = distanceTo(pt, [x,y,z])
     let theta = Math.atan(y / x)
