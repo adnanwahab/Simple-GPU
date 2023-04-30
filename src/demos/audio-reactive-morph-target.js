@@ -137,22 +137,26 @@ test123
 //3d model -> flow fields 
 function test123() {
   let i = 0
-  let point = [-1, 0, 0]
-  let point2 = [1, 0,0 ]
-  let vf =  makeVectorFieldGeneric(function (x, y, z) {
-    i++
-    
-    // if (i < 1000) return  [Math.cos(x + y) +  Math.tanh(x + y), Math.tanh(x + y), Math.tanh(x + y), 1]
-    // if (i > 1000) return  [-Math.cos(x + y) +  -Math.tanh(x + y), -Math.tanh(x + y), Math.tanh(x + y), 1]
-    let loc = [x,y,1]
-
-let pt = getDist(loc, point)  > getDist(loc, point2) ? point: point2
-
-    let distance = distanceTo(pt, loc)
-    let dist = getDist(pt, loc)
-    if (dist < 1) return [y, -x, z, 1]
-    return [ distance[1], distance[0],  distance[2], 1]
+  let point = [0, 1, 0]
+  let point2 = [0, 1,0 ]
+  i++    // if (i < 1e5 ) return [0,-1,0,0]
+  let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+    if (i % 2 === 0) {
+      if (k % 2 === 0) return [0, -1,0,0]
+      else return [-1, 0,0,0]
+    } else {
+      if (k % 2 === 0) return [1, 0,0,0]
+      else return [0, 1,0,0]
+    }
   })
+
+  // for (let i =0; i < 100; i++) {
+  //   for (let j =0; j < 100; j++) {
+  //     for (let k =0; k < 100; k++) {
+  //       vf[]
+  //     }
+  //   }
+  // }
   
 
   return vf
@@ -171,7 +175,7 @@ function magnet() {
   // })
   let i = 0;
   let dir = [1,0,0,1]
-  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+  let vf =  makeVectorFieldGeneric(function (x, y, z, ) {
     i++
     // if (i < 10000) dir = [10,0,0,1]
     // if (i < 20000 ) dir = [0,-1,0,1]
@@ -644,7 +648,7 @@ function makeVectorFieldGeneric(cb, buffer ) {
     for (let j = 0; j < height; j++) {
       for (let k = 0; k < zspace; k++) {
 
-      let [x, y, z] = clipSpace(j, i, k, width, height)
+      let [x, y, z] = clipSpace(k, j, i, width, height)
 
       let [x1, y1, z1] = zeroToOne(x , y, z) 
       //
@@ -652,7 +656,7 @@ function makeVectorFieldGeneric(cb, buffer ) {
          +  z1 * width * width * width
          )
       
-      result[idx] = cb(x, y, z)
+      result[idx] = cb(x, y, z, i, j, k, idx)
    
       }
     }
@@ -872,7 +876,7 @@ uniformsBuffer
       mouse: vec2<f32>,
       time: f32,
       mode: f32,
-
+      decayRate: f32
     }
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
@@ -1045,7 +1049,7 @@ uniformsBuffer
     var z = (1. - (pos.z)) / 2.;
     //if (z < .1) {z = .9;}
     
-    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100) + floor(floor(z * 100) * 100) * 100);
+    var idx = i32(floor(x * 100) + floor(floor(y * 10000)) + floor(floor(z * 1000000)));
     return idx;
   }
 
@@ -1116,7 +1120,7 @@ fn applyVF() -> vec3<f32> {
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-     //velocity[index] *= .1;
+     velocity[index] *= uniforms.decayRate;
      velocity[index] = velocity[index] + .1 * vf;
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
@@ -1151,6 +1155,13 @@ fn applyVF() -> vec3<f32> {
       webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
     }
     let modeBuffer = new Float32Array(1)
+    let decayRate = new Float32Array(1)
+
+    window.writeDecayRate = function (decayRateNum) {
+      decayRate[0] = decayRateNum
+      webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  decayRate)
+    }
+    window.writeDecayRate(.1)
 
     window.writeMode = function (dt) {
       timeBuffer[0] = dt
