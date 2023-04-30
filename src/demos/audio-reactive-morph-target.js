@@ -107,21 +107,55 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
+
+test123
+
    //magnet
-stream3,
-makeVectorField8,
-makeVectorField8, // good job 5/10 sphere
-makeVectorField10,
-makeVectorField2, // no good - circle SDF
-makeVectorField4,
-makeVectorField5,//needs improvement  // spiral grid
-makeVectorField8 //good- make better
+// stream3,
+// makeVectorField8,
+// makeVectorField8, // good job 5/10 sphere
+// makeVectorField10,
+// makeVectorField2, // no good - circle SDF
+// makeVectorField4,
+// makeVectorField5,//needs improvement  // spiral grid
+// makeVectorField8 //good- make better
      //makeVectorField1, needs improvement
   ]; //make these better
 
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
   return ret
+}
+
+//magnet simulation - electrical current 
+//vec -> orbitpoint 
+//railgun demo
+//magnets -> electric beam 
+//flower - parametric rose 
+//bring visualizer back - improve to page through stuff
+//make visualizer write to a vector field that automatically saves to local storage 
+//3d model -> flow fields 
+function test123() {
+  let i = 0
+  let point = [-1, 0, 0]
+  let point2 = [1, 0,0 ]
+  let vf =  makeVectorFieldGeneric(function (x, y, z) {
+    i++
+    
+    // if (i < 1000) return  [Math.cos(x + y) +  Math.tanh(x + y), Math.tanh(x + y), Math.tanh(x + y), 1]
+    // if (i > 1000) return  [-Math.cos(x + y) +  -Math.tanh(x + y), -Math.tanh(x + y), Math.tanh(x + y), 1]
+    let loc = [x,y,1]
+
+let pt = getDist(loc, point)  > getDist(loc, point2) ? point: point2
+
+    let distance = distanceTo(pt, loc)
+    let dist = getDist(pt, loc)
+    if (dist < 1) return [y, -x, z, 1]
+    return [ distance[1], distance[0],  distance[2], 1]
+  })
+  
+
+  return vf
 }
 
 function magnet() {
@@ -777,11 +811,11 @@ function zeroToOne(x , y, z) {
 }
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let velocityBuffer = new Float32Array(particlesCount )
+  let velocityBuffer = new Float32Array(particlesCount * 3)
   for (let i = 0; i < 1e6; i+=3) {
-    velocityBuffer[i] = Math.cos(i)
-    velocityBuffer[i+1] = Math.sin(i)
-    velocityBuffer[i+2] = Math.cos(i)
+    // velocityBuffer[i] = Math.cos(i)
+    // velocityBuffer[i+1] = Math.sin(i)
+    // velocityBuffer[i+2] = Math.cos(i)
 //    velocityBuffer[i+3] = 0
 
   }
@@ -1017,6 +1051,7 @@ uniformsBuffer
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
     var pos = p * 1.;
+    //pos.z -= 1.1;
     let idx = hashPosition(pos);
 
     var x = pos.x;
@@ -1039,7 +1074,7 @@ uniformsBuffer
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
-    return vt.xyz;
+    return vf.xyz;
   }
 
 
@@ -1123,7 +1158,7 @@ fn applyVF() -> vec3<f32> {
     }
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-      computePass.dispatchWorkgroups(1000);
+      computePass.dispatchWorkgroups(10000);
       computePass.end();
     },
     bindGroups: function (state, computePipeline) {
@@ -1494,7 +1529,7 @@ async function basic () {
       
     }
     setTimeout(vfPicker, 10000)
-  setInterval(vfPicker, 10000)
+  setInterval(vfPicker, 30000)
 
 
   computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
