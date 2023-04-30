@@ -141,14 +141,27 @@ function test123() {
   let point2 = [0, 1,0 ]
   i++    // if (i < 1e5 ) return [0,-1,0,0]
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
-    if (i % 2 === 0) {
-      if (k % 2 === 0) return [0, -1,0,0]
-      else return [-1, 0,0,0]
-    } else {
-      if (k % 2 === 0) return [1, 0,0,0]
-      else return [0, 1,0,0]
-    }
+    return [Math.cos(x), Math.sin(y), -z, 1]
+
+  //   if (i % 2 === 0) {
+  //   if (j % 2 === 0) {
+  //     if (k % 2 === 0) return [0, -1,0,0]
+  //     else return [-1, 0,0,0]
+  //   } else {
+  //     if (k % 2 === 0) return [1, 0,0,0]
+  //     else return [0, 1,0,0]
+  //   }
+  // } else {
+  //   if (k % 2 === 0) return [0, ,-1,0]
+  //     else return [0, 0,1,0]
+//    return [-x, -y, -z, 1]
+//  }
+
+    return [x ,y, z, 1]
   })
+  // let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+
+  // })
 
   // for (let i =0; i < 100; i++) {
   //   for (let j =0; j < 100; j++) {
@@ -644,7 +657,7 @@ function makeVectorField5() {
 
 function makeVectorFieldGeneric(cb, buffer ) {
   var result = buffer || []
-  for (let i = 0; i <= width; i++) {
+  for (let i = 0; i < width; i++) {
     for (let j = 0; j < height; j++) {
       for (let k = 0; k < zspace; k++) {
 
@@ -652,8 +665,8 @@ function makeVectorFieldGeneric(cb, buffer ) {
 
       let [x1, y1, z1] = zeroToOne(x , y, z) 
       //
-      let idx = Math.round(x1 * width + y1 * width * height 
-         +  z1 * width * width * width
+      let idx = Math.round(x1 * width + y1 * width * height
+         +  z1 * width * width * width 
          )
       
       result[idx] = cb(x, y, z, i, j, k, idx)
@@ -1049,7 +1062,10 @@ uniformsBuffer
     var z = (1. - (pos.z)) / 2.;
     //if (z < .1) {z = .9;}
     
-    var idx = i32(floor(x * 100) + floor(floor(y * 10000)) + floor(floor(z * 1000000)));
+    // 
+    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
+    + floor(floor(z * 100) * 100) * 100
+    );
     return idx;
   }
 
@@ -1161,7 +1177,7 @@ fn applyVF() -> vec3<f32> {
       decayRate[0] = decayRateNum
       webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  decayRate)
     }
-    window.writeDecayRate(.1)
+    window.writeDecayRate(0)
 
     window.writeMode = function (dt) {
       timeBuffer[0] = dt
