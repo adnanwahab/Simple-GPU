@@ -1,5 +1,110 @@
+let img = new Image();
+img.src = './data/webgpu.png'
+await img.decode();
+let bitmap = await createImageBitmap(img);
+
+const buffers = [
+  {
+      attributes: [
+          {
+              shaderLocation: 0,
+              offset: 0,
+              format: "float32x4",
+          }
+      ],
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+      stepMode: "instance",
+  },
+  {
+      attributes: [
+          {
+              shaderLocation: 1,
+              offset: 0,
+              format: "float32x2",
+          }
+      ],
+      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+      stepMode: "vertex",
+  },
+  {
+    attributes: [
+        {
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x4",
+        }
+    ],
+    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+    stepMode: "instance",
+},
+
+{
+  attributes: [
+      {
+          shaderLocation: 3,
+          offset: 0,
+          format: "float32x3",
+      }
+  ],
+  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+  stepMode: "instance",
+},
+]
+
+
 let drawShapes = false
 let particlesCount = 1e6
+let drawScreen
+let time = 0
+let stagingBuffer
+let modelType = 1
+let animating = true
+let width = 100, height = width, zspace = 100
+let shapes = []
+let webgpu = await simpleWebgpuInit()
+const uniformsBuffer = webgpu.device.createBuffer({
+  size: 48, 
+  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+});
+
+function makeBuffer (stuff, flag, label) {
+  const particleSize = 4
+  const gpuBufferSize = 134217728
+
+  const gpuBuffer = webgpu.device.createBuffer({
+    label,
+    size: gpuBufferSize,
+    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+    | GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+  gpuBuffer.source = stuff
+  
+  const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
+
+  if (stuff && stuff.flat) (stuff = stuff.flat(), label)
+  particlesBuffer.set(stuff)
+  gpuBuffer.unmap();
+  return gpuBuffer
+} 
+
+let pointBuffer = new Float32Array(particlesCount)
+let pointBufferCount = 0
+let list = pointBuffer.slice()
+list = makeGrid().map(d => d)
+list = new Float32Array(list.flat())
+
+var rgb = new Float32Array(3e6);
+for (let i = 0; i < rgb.length; i++) {
+  let stuff = ((i % 1000) / 1e3) 
+  let interval = (Math.sin((stuff)) + 1) / 2.
+  let color = d3.rgb( interpolateTurbo(stuff));
+  rgb[3*i] = color.r / 255 / 2 + .5
+  rgb[3*i+1] = color.g / 255 /2 + .5
+  rgb[3*i+2] = color.b / 255 /2 + .5
+}
+const colorBuffer = makeBuffer(rgb, 0, 'color')
+
 //angular velocity
 //fix the grid
 //drawing
@@ -80,12 +185,7 @@ import postProcessing from './postProcessing'
 //set lifetime of dancer particles to -1000 -> if negative <1000 - dont apply velocity 
 //dancer appears ->  immune to vector field for a few seconds before disappearing 
 //make all variables in one obj -> link up to sliders if and only if necessary
-let drawScreen
-let time = 0
-let stagingBuffer
-let modelType = 1
-let animating = true
-let width = 100, height = width, zspace = 100
+
 const mouse = [0,0]
 
 function makeGrid () {
@@ -108,23 +208,39 @@ let result = []
 let pickVF = function () {
   let list = [
 
-test123
+    test456,
 
-   //magnet
+//    magnet,
 // stream3,
-// makeVectorField8,
-// makeVectorField8, // good job 5/10 sphere
 // makeVectorField10,
 // makeVectorField2, // no good - circle SDF
 // makeVectorField4,
 // makeVectorField5,//needs improvement  // spiral grid
-// makeVectorField8 //good- make better
-     //makeVectorField1, needs improvement
+// makeVectorField8, //good- make better
+//      makeVectorField1, 
   ]; //make these better
 
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
+  console.log(idx)
   return ret
+}
+
+
+function test456() {
+
+  let point = [0, 1, 0]
+  let point2 = [0, 1,0 ]
+
+  let down = [0, -1, 0, 0]
+  let diagonalLeft = [-1, -1, 0, 0]
+  let diagonalRight = [0, -1, 1, 0]
+   // if (i < 1e5 ) return [0,-1,0,0]
+  let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+    return j % 2 === i ? down : diagonalLeft
+  })
+
+  return vf;
 }
 
 //magnet simulation - electrical current 
@@ -190,28 +306,11 @@ function magnet() {
   let dir = [1,0,0,1]
   let vf =  makeVectorFieldGeneric(function (x, y, z, ) {
     i++
-    // if (i < 10000) dir = [10,0,0,1]
-    // if (i < 20000 ) dir = [0,-1,0,1]
-    // if (i > 40000 ) dir = [0,1,0,1]
-    // if (i > 60000 ) dir = [1,0,0,1]
-
-    // if (i > 80000 ) dir = [-1,0,0,1]
-
-    // if (i > 1e5 ) dir = [0,1,0,1]
-
-    // if (i > 1) dir = [0,-1,0,1]
-    // if (y < 0) dir = [0, 10, 0 , 0]
-    // if (y > 0) dir = [0, -10, 0 , 0]
-    console.log(i)
-
     if (i < 1000) dir = [0, 10, 0 , 0]
     if (i > 1000) dir = [x,y,z,1]
     if (i > 10000) dir = [0, -10, 0 , 0]
-    // if (x < 0) dir = [10, 0, 10, 0]
-
-    // if (x > 0) dir = [-10, 0, 10, 0]
+ 
     return dir.slice(0)
-    //return [x,y,z,1]
     let dist = distanceTo(pt, [x,y,z])
     let theta = Math.atan(y / x)
     return [  Math.cos(theta * 10),  Math.sin(theta * 10) , Math.sin(theta),1]
@@ -548,6 +647,18 @@ let controlPoints = [...Array(5).keys()].map( d => [
 ])
 
 
+function magnitude (v) {
+  let pow = (e) => Math.pow(e, 2)
+  return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]))
+}
+let jdx = 0
+return makeVectorFieldGeneric(function (x,y,z) {
+  jdx++
+  
+
+
+  return [x * x , y * y, z * z , 1]
+ })
 
   let vf =  makeVectorFieldGeneric(function (x,y,z) {
         return [ x,y,z, 0]
@@ -674,7 +785,6 @@ function makeVectorFieldGeneric(cb, buffer ) {
       }
     }
   }
-  console.log(result)
   return result
 }
 
@@ -834,7 +944,6 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
     // velocityBuffer[i+1] = Math.sin(i)
     // velocityBuffer[i+2] = Math.cos(i)
 //    velocityBuffer[i+3] = 0
-
   }
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
@@ -1070,7 +1179,7 @@ uniformsBuffer
   }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * 1.;
+    var pos = p * .5;
     //pos.z -= 1.1;
     let idx = hashPosition(pos);
 
@@ -1136,7 +1245,7 @@ fn applyVF() -> vec3<f32> {
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-     velocity[index] *= uniforms.decayRate;
+     velocity[index] *= .0;
      velocity[index] = velocity[index] + .1 * vf;
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
@@ -1240,25 +1349,26 @@ function getFrames(model) {
           if (model === 2) basic()
           setTimeout(makeStagingBuffer, 3000)
         }
+       // makeStagingBuffer()
       })
     })
   })
 }
+//makeStagingBuffer()
+basic()
+// fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
+//   dancer = new Float32Array(d)
+//   for (let i = 0; i < dancer.length; i++) {
+//     dancer[4*i+1] -= .5;
+//   }
+//   shapes.push(window.makeBuffer(dancer, 0,'leaf'))
+// })
+// getFrames(1)
+// getFrames(2)
+// getFrames(3)
+// getFrames(4)
 
-fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
-  dancer = new Float32Array(d)
-  for (let i = 0; i < dancer.length; i++) {
-    dancer[4*i+1] -= .5;
-  }
-  shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-})
-getFrames(1)
-getFrames(2)
-getFrames(3)
-getFrames(4)
 
-let pointBuffer = new Float32Array(particlesCount)
-let pointBufferCount = 0
 let indexPool = new Array(particlesCount / 4).fill(1).map((d, i) => i)
 indexPool.alloc = function (n) {
   let i = 0
@@ -1507,35 +1617,12 @@ function makeStagingBuffer() {
   }, 20)
 }
 
-let shapes = []
 function writeBuffer (device, buffer, array) {
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
-window.makeBuffer = function makeBuffer (stuff, flag, label) {
-  const particleSize = 4
-  const gpuBufferSize = 134217728
 
-  const gpuBuffer = webgpu.device.createBuffer({
-    label,
-    size: gpuBufferSize,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-    | GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
-  gpuBuffer.source = stuff
-  
-  const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
 
-  if (stuff && stuff.flat) (stuff = stuff.flat(), label)
-  particlesBuffer.set(stuff)
-  gpuBuffer.unmap();
-  return gpuBuffer
-} 
-let webgpu = simpleWebgpuInit().then(w => webgpu = w)
-let list = pointBuffer.slice()
-list = makeGrid().map(d => d)
-list = new Float32Array(list.flat())
 
 if (drawShapes)
 list.set(pointBuffer.slice(0, pointBufferCount) )
@@ -1551,26 +1638,21 @@ async function basic () {
     let happyBear = makeBuffer(list, 0, 'bear')
   
       computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+      if (! drawScreen)       drawScreen = makeDrawCall(happyBear, drawDescriptor)
+
       drawScreen.swapAttributeBuffer(happyBear, 0)
-      //drawScreen = makeDrawCall(happyBear, drawDescriptor)
       
     }
-    setTimeout(vfPicker, 10000)
   setInterval(vfPicker, 30000)
 
-
-  computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2)
+  const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
+  computeTransition = makeComputeShader(webgpu, makeBuffer(posBuffer), vf1, vf2)
 
 const cameraUniformBuffer = webgpu.device.createBuffer({
   size: 3 * 4 * 16 + 16, // 4x4 matrix
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 
-const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
-1
-const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
-shapes.push(posBuffer)
-shapes.push(dragonBuffer)
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
   usage: GPUBufferUsage.VERTEX,
@@ -1582,6 +1664,56 @@ new Float32Array(quadBuffer.getMappedRange()).set([
 ]);
 quadBuffer.unmap();
 
+let drawDescriptor = {
+  attributeBuffers: buffers,
+  attributeBufferData: [
+    shapes[0]
+    //makeBuffer(gridBuffer, 0, 'cube'),
+    //makeBuffer(makeCube(), 0, 'cube')
+    , quadBuffer, posBuffer, colorBuffer
+  ],
+  count: 6,
+  //blend,
+  instances: particlesCount ,
+  bindGroup: function ({pipeline}) {
+
+  
+let texture = webgpu.texture(bitmap)
+  let desc = {
+    label: Math.random(),
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+          {
+               binding: 0,
+              resource: {
+                  buffer: uniformsBuffer,
+              }
+          },
+          {
+            binding: 1,
+            resource: {
+            buffer: cameraUniformBuffer
+            }
+          },
+          {
+            binding: 2,
+            resource: texture.sampler,
+          },
+          {
+            binding: 3,
+            resource: texture.texture.createView(),
+          },
+      ]
+  }
+    return webgpu.device.createBindGroup(desc);
+  }
+}
+const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
+shapes.push(posBuffer)
+shapes.push(dragonBuffer)
+
+
+vfPicker()
 
 //convert each point in buffer to a vector to next point
 
@@ -1660,29 +1792,13 @@ function vectorTo(b, a) {
 }
 
 //precisely calculate line interval convolutions using xr
-var rgb = new Float32Array(3e6);
-for (let i = 0; i < rgb.length; i++) {
-  let stuff = ((i % 1000) / 1e3) 
-  let interval = (Math.sin((stuff)) + 1) / 2.
-  let color = d3.rgb( interpolateTurbo(stuff));
-  rgb[3*i] = color.r / 255 / 2 + .5
-  rgb[3*i+1] = color.g / 255 /2 + .5
-  rgb[3*i+2] = color.b / 255 /2 + .5
-}
-const colorBuffer = makeBuffer(rgb, 0, 'color')
+
 let hello = []
 //5 files
 // 5 draw calls
 // shader box + generate box + shaders for transitions + functions to change rotation
 // compute shader - changing poitns according to vector field - 3 of those
-let img = new Image();
-img.src = './data/webgpu.png'
-await img.decode();
-let bitmap = await createImageBitmap(img);
-const uniformsBuffer = webgpu.device.createBuffer({
-  size: 48, 
-  usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-});
+
 let abc = new Float32Array(1)
 
 
@@ -1701,50 +1817,7 @@ setInterval(function () {
     window.writeTime(elapsed)
   } 
 }, 8)
-let drawDescriptor = {
-  attributeBuffers: buffers,
-  attributeBufferData: [
-    shapes[0]
-    //makeBuffer(gridBuffer, 0, 'cube'),
-    //makeBuffer(makeCube(), 0, 'cube')
-    , quadBuffer, posBuffer, colorBuffer
-  ],
-  count: 6,
-  //blend,
-  instances: particlesCount ,
-  bindGroup: function ({pipeline}) {
 
-  
-let texture = webgpu.texture(bitmap)
-  let desc = {
-    label: Math.random(),
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-          {
-               binding: 0,
-              resource: {
-                  buffer: uniformsBuffer,
-              }
-          },
-          {
-            binding: 1,
-            resource: {
-            buffer: cameraUniformBuffer
-            }
-          },
-          {
-            binding: 2,
-            resource: texture.sampler,
-          },
-          {
-            binding: 3,
-            resource: texture.texture.createView(),
-          },
-      ]
-  }
-    return webgpu.device.createBindGroup(desc);
-  }
-}
 
 
 const a = new Float32Array(1)
@@ -1777,6 +1850,7 @@ let swapChainTexture = result.state.swapChainTexture
 
 setInterval(
 async function () {
+  console.log(123)
     let {projection, view} = camera()
 
     device.queue.writeBuffer(
@@ -1818,6 +1892,7 @@ async function () {
     // bitmap = result.state.swapChainTexture
 
     // pp(texture)
+
     drawScreen()
     }, 100) 
 }
@@ -1992,50 +2067,3 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
 }
 
 
-const buffers = [
-  {
-      attributes: [
-          {
-              shaderLocation: 0,
-              offset: 0,
-              format: "float32x4",
-          }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-      stepMode: "instance",
-  },
-  {
-      attributes: [
-          {
-              shaderLocation: 1,
-              offset: 0,
-              format: "float32x2",
-          }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-      stepMode: "vertex",
-  },
-  {
-    attributes: [
-        {
-            shaderLocation: 2,
-            offset: 0,
-            format: "float32x4",
-        }
-    ],
-    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-    stepMode: "instance",
-},
-
-{
-  attributes: [
-      {
-          shaderLocation: 3,
-          offset: 0,
-          format: "float32x3",
-      }
-  ],
-  arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-  stepMode: "instance",
-},
-]
