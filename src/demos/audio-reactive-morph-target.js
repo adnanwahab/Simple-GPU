@@ -1823,6 +1823,9 @@ setInterval(function () {
 const a = new Float32Array(1)
 
 drawScreen = makeDrawCall(shapes[0], drawDescriptor) 
+let happyBear = makeBuffer(list, 0, 'bear')
+
+drawScreen.swapAttributeBuffer(happyBear, 0)
 
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
