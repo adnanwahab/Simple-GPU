@@ -1,3 +1,9 @@
+//rotate / transpose vector field
+//smoothstep interpolate vectors / multiply / 
+//visualize vector field in background as a shader
+
+
+
 let img = new Image();
 img.src = './data/webgpu.png'
 await img.decode();
@@ -66,6 +72,22 @@ const uniformsBuffer = webgpu.device.createBuffer({
   size: 48, 
   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
+
+const cameraUniformBuffer = webgpu.device.createBuffer({
+  size: 3 * 4 * 16 + 16, // 4x4 matrix
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+const quadBuffer = webgpu.device.createBuffer({
+  size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
+  usage: GPUBufferUsage.VERTEX,
+  mappedAtCreation: true,
+});
+new Float32Array(quadBuffer.getMappedRange()).set([
+  -1, -1, +1, -1, +1, +1,
+  -1, -1, +1, +1, -1, +1
+]);
+quadBuffer.unmap();
 
 function makeBuffer (stuff, flag, label) {
   const particleSize = 4
@@ -207,10 +229,9 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-
-    test456,
-
-//    magnet,
+    test999,
+// makeVectorField2,
+//    magnet, 
 // stream3,
 // makeVectorField10,
 // makeVectorField2, // no good - circle SDF
@@ -227,6 +248,60 @@ let pickVF = function () {
 }
 
 
+
+//>
+//cubic ray marching - sdf for cube - derive that not from IQ 
+//do cubes tonight
+//100 billion humans - the best part of the world is all the stuff other humans figured out and made for us to learn from, adapt and recombine
+//do from scratch for next 3 days
+//start with a spiral shape
+//radius  - tv show says dont use distance
+//theta = Math.atan(y / x) , figure out for z
+function test999() {
+
+  let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+    let theta = Math.atan(y / x)
+    return [10 * Math.cos(theta / 2) * Math.sin(x),10 * Math.cos(theta * 2) + Math.cos(y), z, 1]
+    //return j % 2 === i ? down : diagonalLeft
+  })
+
+  return vf
+}
+
+
+function test678() {
+
+  let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+    return [x, y ,z, 1]
+    //return j % 2 === i ? down : diagonalLeft
+  })
+
+  let i = 0;
+  let prev = 1e5 / 2;
+  let right = [1,0,0,0]
+  let left = [-1,0,0,0]
+  let down = [0,-1,0,0]
+  let up = [0,1,0,0]
+  let dir = [up, down, left, right]
+  let going = right
+
+  while (i < 1e7) {
+    i++
+    vf[prev] = going
+    if (Math.random() > .9) going = dir[Math.random() * dir.choice | length]
+    let next = dir.indexOf(going)
+
+    if (next === 0) prev += 1
+    if (next === 1) prev += -1
+    if (next === 2) prev += 100
+    if (next === 3) prev -= 100
+    if (prev > 1e4) prev = 0
+  }
+console.log(vf)
+  return vf;
+}
+
+
 function test456() {
 
   let point = [0, 1, 0]
@@ -236,8 +311,11 @@ function test456() {
   let diagonalLeft = [-1, -1, 0, 0]
   let diagonalRight = [0, -1, 1, 0]
    // if (i < 1e5 ) return [0,-1,0,0]
+   let wtf = .3 - dist 
+ 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
-    return j % 2 === i ? down : diagonalLeft
+    return [-y * 10 , x * 10, z, 10]
+    //return j % 2 === i ? down : diagonalLeft
   })
 
   return vf;
@@ -884,6 +962,7 @@ function makeVectorField2() {
         vec[0] = y * 10.
         vec[1] = -x * 10.
       } 
+      vec[2] = sin(x)
       return vec
     })
 }
@@ -1164,6 +1243,17 @@ uniformsBuffer
     return (x + 1.) / 2.;
   }
 
+  fn hasCollided (p: vec3<f32>)-> bool {
+    var minX = -1; 
+    var bounds = 3.;
+    if (p.x < -bounds) {return true;}
+   if (p.y <= -bounds) {return true;} //why is this backwards? 
+        if (p.x >= bounds) {return true;}
+        if (p.y >= bounds) {return true;}
+        if (p.z <= -bounds ) {return true;}
+        if (p.z >= bounds ){ return true;}
+        return false;
+  }
 
   fn hashPosition(pos: vec3<f32>) ->  i32{
     var x = (pos.x + 1) / 2.;
@@ -1240,7 +1330,10 @@ fn applyVF() -> vec3<f32> {
       let t = uniforms.time;
       //var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
 
-    
+      if (hasCollided(pos.xyz))  {
+        var vel = velocity[index];
+        velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+      }
   
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
@@ -1251,7 +1344,7 @@ fn applyVF() -> vec3<f32> {
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
 
       //wind turbulence
-      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+//      buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
       //sphere
       //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
       //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
@@ -1631,97 +1724,68 @@ list.set(pointBuffer.slice(0, pointBufferCount) )
 
 async function basic () {
   let vf1 =  pickVF(), vf2 = pickVF()
+  let happyBear = makeBuffer(list, 0, 'bear')
+
+  const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
+  computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+
+  let drawDescriptor = {
+    attributeBuffers: buffers,
+    attributeBufferData: [
+      happyBear
+      , quadBuffer, happyBear, colorBuffer
+    ],
+    count: 6,
+    instances: particlesCount ,
+    bindGroup: function ({pipeline}) {
+  let texture = webgpu.texture(bitmap)
+    let desc = {
+      label: Math.random(),
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                 binding: 0,
+                resource: {
+                    buffer: uniformsBuffer,
+                }
+            },
+            {
+              binding: 1,
+              resource: {
+              buffer: cameraUniformBuffer
+              }
+            },
+            {
+              binding: 2,
+              resource: texture.sampler,
+            },
+            {
+              binding: 3,
+              resource: texture.texture.createView(),
+            },
+        ]
+    }
+      return webgpu.device.createBindGroup(desc);
+    }
+  }
   function vfPicker() {
     vf1 = pickVF()
     vf2 =  vf2
-      
     let happyBear = makeBuffer(list, 0, 'bear')
-  
       computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
       if (! drawScreen)       drawScreen = makeDrawCall(happyBear, drawDescriptor)
-
       drawScreen.swapAttributeBuffer(happyBear, 0)
       
     }
+    vfPicker()
   setInterval(vfPicker, 30000)
+  drawScreen = makeDrawCall(happyBear, drawDescriptor) 
 
-  const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
-  computeTransition = makeComputeShader(webgpu, makeBuffer(posBuffer), vf1, vf2)
-
-const cameraUniformBuffer = webgpu.device.createBuffer({
-  size: 3 * 4 * 16 + 16, // 4x4 matrix
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-});
-
-const quadBuffer = webgpu.device.createBuffer({
-  size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
-  usage: GPUBufferUsage.VERTEX,
-  mappedAtCreation: true,
-});
-new Float32Array(quadBuffer.getMappedRange()).set([
-  -1, -1, +1, -1, +1, +1,
-  -1, -1, +1, +1, -1, +1
-]);
-quadBuffer.unmap();
-
-let drawDescriptor = {
-  attributeBuffers: buffers,
-  attributeBufferData: [
-    shapes[0]
-    //makeBuffer(gridBuffer, 0, 'cube'),
-    //makeBuffer(makeCube(), 0, 'cube')
-    , quadBuffer, posBuffer, colorBuffer
-  ],
-  count: 6,
-  //blend,
-  instances: particlesCount ,
-  bindGroup: function ({pipeline}) {
-
-  
-let texture = webgpu.texture(bitmap)
-  let desc = {
-    label: Math.random(),
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-          {
-               binding: 0,
-              resource: {
-                  buffer: uniformsBuffer,
-              }
-          },
-          {
-            binding: 1,
-            resource: {
-            buffer: cameraUniformBuffer
-            }
-          },
-          {
-            binding: 2,
-            resource: texture.sampler,
-          },
-          {
-            binding: 3,
-            resource: texture.texture.createView(),
-          },
-      ]
-  }
-    return webgpu.device.createBindGroup(desc);
-  }
-}
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
 shapes.push(dragonBuffer)
 
-
-vfPicker()
-
-//convert each point in buffer to a vector to next point
-
-
-
-
 const device = webgpu.device
-
 
 let model = mat4.identity(new Float32Array(16))
 let cosCounter = 0
@@ -1734,13 +1798,10 @@ function getCameraViewProjMatrix() {
     1,
     vec3.fromValues(
       Math.sin(0),
-      //Math.cos((cosCounter += 1) * .001),
       Math.cos(1),
       0
     )
   );
-//  model = m
-  //vec3.rotateY(eyePosition, eyePosition, origin, rad);
 
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
@@ -1748,9 +1809,6 @@ function getCameraViewProjMatrix() {
     10, 500 / 500, .5, 10.0);
   //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
-
-  //mat4.lookAt(viewProjectionMatrix, eyePosition, origin, upVector);
-
 
   // Write the render parameters to the uniform buffer.
   let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
@@ -1760,10 +1818,7 @@ function getCameraViewProjMatrix() {
 }
 
  const cameraViewProj = getCameraViewProjMatrix();
-// setInterval(function () {
-//    getCameraViewProjMatrix()
-// }, 10)
-// Calling simplewebgpu.init() creates a new partially evaluated draw command
+
 const blend = {
   color: {
     srcFactor: 'src-alpha',
@@ -1776,8 +1831,6 @@ const blend = {
     operation: 'add',
   },
 }
-//compute shader = transition from one mesh to another
-//vertex -> fragment = simple display + lighting
 function magnitude (v) {
   return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2])
 }
@@ -1791,13 +1844,7 @@ function vectorTo(b, a) {
   return unitVector(b) - unitVector(a)
 }
 
-//precisely calculate line interval convolutions using xr
-
 let hello = []
-//5 files
-// 5 draw calls
-// shader box + generate box + shaders for transitions + functions to change rotation
-// compute shader - changing poitns according to vector field - 3 of those
 
 let abc = new Float32Array(1)
 
@@ -1821,12 +1868,6 @@ setInterval(function () {
 
 
 const a = new Float32Array(1)
-
-drawScreen = makeDrawCall(shapes[0], drawDescriptor) 
-let happyBear = makeBuffer(list, 0, 'bear')
-
-drawScreen.swapAttributeBuffer(happyBear, 0)
-
 
 webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[0] = e.clientX / 1000
@@ -1853,7 +1894,6 @@ let swapChainTexture = result.state.swapChainTexture
 
 setInterval(
 async function () {
-  console.log(123)
     let {projection, view} = camera()
 
     device.queue.writeBuffer(
@@ -1888,28 +1928,14 @@ async function () {
     );
     
     computeTransition()
-    // let result = drawCalls[drawCallChoice]({
-    //   texture: bitmap
-    // })
-
-    // bitmap = result.state.swapChainTexture
-
-    // pp(texture)
-
+  
     drawScreen()
     }, 100) 
 }
 
 
-
-
-
-
-
-
-
 function makeDrawCall (buffer, drawDescriptor) {
-  drawDescriptor.attributeBufferData[0] = buffer
+ // drawDescriptor.attributeBufferData[0] = buffer
   
   const drawRosePetals =  webgpu.initDrawCall(Object.assign(drawDescriptor , { shader:{
     vertEntryPoint: 'main_vertex',
