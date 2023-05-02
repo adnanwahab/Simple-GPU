@@ -261,8 +261,7 @@ function test999() {
 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     let theta = Math.atan(y / x)
-    return [10 * Math.cos(theta / 2) * Math.sin(x),10 * Math.cos(theta * 2) + Math.cos(y), z, 1]
-    //return j % 2 === i ? down : diagonalLeft
+    return [0,0,0, 1]
   })
 
   return vf
@@ -1015,14 +1014,22 @@ function zeroToOne(x , y, z) {
 
   return [x1, y1, z1]
 }
+function makeRadius (i) {
+  return Math.ceil(i / 1e4) / 10
+}
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let velocityBuffer = new Float32Array(particlesCount * 3)
-  for (let i = 0; i < 1e6; i+=3) {
-    // velocityBuffer[i] = Math.cos(i)
-    // velocityBuffer[i+1] = Math.sin(i)
-    // velocityBuffer[i+2] = Math.cos(i)
-//    velocityBuffer[i+3] = 0
+  let velocityBuffer = new Float32Array(particlesCount * 4)
+  for (let i = 0; i < velocityBuffer.length; i+=4) {
+    let idx = (i % 360)* 1.5 ;
+let radius = makeRadius(i)
+// let x = 
+// let y = 
+// let z = radius * Math.tan((idx)* Math.PI / 180) 
+    velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    //velocityBuffer[i+2] = 1 * Math.cos(i)
+     //velocityBuffer[i+3] = 0
   }
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
@@ -1245,9 +1252,9 @@ uniformsBuffer
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 3.;
+    var bounds = 1.;
     if (p.x < -bounds) {return true;}
-   if (p.y <= -bounds) {return true;} //why is this backwards? 
+     if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
         if (p.y >= bounds) {return true;}
         if (p.z <= -bounds ) {return true;}
@@ -1338,7 +1345,7 @@ fn applyVF() -> vec3<f32> {
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-     velocity[index] *= .0;
+     //velocity[index] *= .0;
      velocity[index] = velocity[index] + .1 * vf;
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
