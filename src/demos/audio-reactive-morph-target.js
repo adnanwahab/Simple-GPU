@@ -1,8 +1,8 @@
 //rotate / transpose vector field
 //smoothstep interpolate vectors / multiply / 
 //visualize vector field in background as a shader
-
-
+import dragon from 'stanford-dragon'
+// import dancer
 
 let img = new Image();
 img.src = './data/webgpu.png'
@@ -83,10 +83,12 @@ const quadBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.VERTEX,
   mappedAtCreation: true,
 });
+
 new Float32Array(quadBuffer.getMappedRange()).set([
   -1, -1, +1, -1, +1, +1,
   -1, -1, +1, +1, -1, +1
 ]);
+
 quadBuffer.unmap();
 
 function makeBuffer (stuff, flag, label) {
@@ -126,6 +128,7 @@ for (let i = 0; i < rgb.length; i++) {
   rgb[3*i+2] = color.b / 255 /2 + .5
 }
 const colorBuffer = makeBuffer(rgb, 0, 'color')
+const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 
 //angular velocity
 //fix the grid
@@ -192,7 +195,8 @@ import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
 import createCamera from './createCamera'
 import bunny from 'bunny'
-import dragon from 'stanford-dragon'
+
+
 import { mat4, vec3 } from 'gl-matrix'
 //const particlesCount = 442008
 import simpleWebgpuInit from '../../lib/main';
@@ -244,6 +248,9 @@ let pickVF = function () {
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[idx]()
   console.log(idx)
+
+
+
   return ret
 }
 
@@ -257,11 +264,36 @@ let pickVF = function () {
 //start with a spiral shape
 //radius  - tv show says dont use distance
 //theta = Math.atan(y / x) , figure out for z
+
+
+//make all vectors points to 1,-1, 1
+//get vector to B from A = subtract B - A 
+
+
+//A = 0,0,0 
+//B = 1,1,1
+//vector at a = B - A 
 function test999() {
+  let p = dragon.positions
+  
+  // let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+  //   let theta = Math.atan(y / x)
+  //   let a = [x, y, z]
+  //   let b = [0, 0, 0]
+  //   return [b[0] - a[0], b[1] - a[1], b[2] - a[2], 1]
+  // })
 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     let theta = Math.atan(y / x)
-    return [0,0,0, 1]
+    let a = [x, y, z]
+    let b = [0, 0, 0]
+    return [x,y,z, 1]
+  })
+
+  p.forEach(function (point, index) {
+    let idx = findIndex(point)
+
+    vf[idx] = p[idx+1] - p[idx]
   })
 
   return vf
@@ -869,10 +901,17 @@ result = makeVectorFieldGeneric(function (x, y, z ) {
   return [x,y,z, 1]
 },)
 
-function findIndex (idx) {
-  let z = idx / 1e6;
-  let y = idx / z;
-  let x = idx / y;
+function findIndex (point) {
+let [x, y, z] = point;
+ var x1 = ((x + 1) /2).toPrecision(2)
+  var y1 = ((1. - y) / 2).toPrecision(2) 
+  var z1 = ((1. - z) / 2).toPrecision(2) 
+
+  x1 *= 100;
+  y1 *= 10000;
+  z1 *= 1000000;
+
+  return x1 + y1 + z1
 }
 
 
@@ -1022,12 +1061,9 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let velocityBuffer = new Float32Array(particlesCount * 4)
   for (let i = 0; i < velocityBuffer.length; i+=4) {
     let idx = (i % 360)* 1.5 ;
-let radius = makeRadius(i)
-// let x = 
-// let y = 
-// let z = radius * Math.tan((idx)* Math.PI / 180) 
-    velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    let radius = makeRadius(i);
+    // velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    // velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
     //velocityBuffer[i+2] = 1 * Math.cos(i)
      //velocityBuffer[i+3] = 0
   }
@@ -1042,7 +1078,6 @@ let radius = makeRadius(i)
     particleLifetime[i] = -3000000
   else 
     particleLifetime[i] = Math.random() * 300000
-
   }
 
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
@@ -1322,7 +1357,7 @@ fn applyVF() -> vec3<f32> {
       //   buffer3[(index)]= r;
       // } else if (life < 0) {
       //   lifetime[index] = 3000.;
-      //   //        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
       //   buffer3[(index)]= r;
       // } else {
       //   lifetime[index] -= 1.;
@@ -1345,7 +1380,7 @@ fn applyVF() -> vec3<f32> {
 
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
-     //velocity[index] *= .0;
+     velocity[index] *= .0;
      velocity[index] = velocity[index] + .1 * vf;
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
@@ -1788,7 +1823,6 @@ async function basic () {
   setInterval(vfPicker, 30000)
   drawScreen = makeDrawCall(happyBear, drawDescriptor) 
 
-const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 shapes.push(posBuffer)
 shapes.push(dragonBuffer)
 
