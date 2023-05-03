@@ -233,9 +233,10 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    test999,
+    makeVectorField8
+//    test999,
 // makeVectorField2,
-//    magnet, 
+   // magnet, 
 // stream3,
 // makeVectorField10,
 // makeVectorField2, // no good - circle SDF
@@ -275,13 +276,23 @@ let pickVF = function () {
 //vector at a = B - A 
 function test999() {
   let p = dragon.positions
-  
+  //console.log(shapes[0])
+  //if (shapes[0]) p = shapes[0]
   // let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
   //   let theta = Math.atan(y / x)
   //   let a = [x, y, z]
   //   let b = [0, 0, 0]
   //   return [b[0] - a[0], b[1] - a[1], b[2] - a[2], 1]
   // })
+
+//add
+//subtract
+//multiply
+//divide
+//exponentiate
+//log
+//scale from domain to range
+//cos, sin, and tangent - clock
 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     let theta = Math.atan(y / x)
@@ -290,11 +301,11 @@ function test999() {
     return [x,y,z, 1]
   })
 
-  p.forEach(function (point, index) {
-    let idx = findIndex(point)
+  // p.forEach(function (point, index) {
+  //   let idx = findIndex(point)
 
-    vf[idx] = p[idx+1] - p[idx]
-  })
+  //   vf[idx] = p[idx+1] - p[idx]
+  // })
 
   return vf
 }
@@ -763,10 +774,14 @@ function magnitude (v) {
 let jdx = 0
 return makeVectorFieldGeneric(function (x,y,z) {
   jdx++
-  
+  let theta = Math.atan(y / x)
+  let radius = getDist([x, y, z], [0,0,0])
 
+  return [Math.cos(theta ), Math.sin(theta ), 0 , 1]
 
-  return [x * x , y * y, z * z , 1]
+  return [Math.cos(theta )* radius, Math.sin(theta ) * radius, z * z , 1]
+
+  return [Math.cos(theta) * (x + y), Math.sin(theta) * (x + y) , z * z , 1]
  })
 
   let vf =  makeVectorFieldGeneric(function (x,y,z) {
@@ -1381,7 +1396,9 @@ fn applyVF() -> vec3<f32> {
       //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
 
      velocity[index] *= .0;
-     velocity[index] = velocity[index] + .1 * vf;
+     if (uniforms.mode == 0) {
+       velocity[index] = velocity[index] + .1 * vf;
+     }
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
 
@@ -1491,13 +1508,19 @@ function getFrames(model) {
 }
 //makeStagingBuffer()
 basic()
-// fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
-//   dancer = new Float32Array(d)
-//   for (let i = 0; i < dancer.length; i++) {
-//     dancer[4*i+1] -= .5;
-//   }
-//   shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-// })
+fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
+  dancer = new Float32Array(d)
+  for (let i = 0; i < dancer.length; i++) {
+    dancer[4*i+1] -= .5;
+  }
+  // let triplets = []
+  // for (let i = 0; i < dancer.length; i++) {
+  //   dancer[4*i+1] -= .5;
+  // }
+  // shapes.push(dancer)
+  //shapes.push(window.makeBuffer(dancer, 0,'leaf'))
+
+})
 // getFrames(1)
 // getFrames(2)
 // getFrames(3)
