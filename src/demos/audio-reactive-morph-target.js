@@ -889,6 +889,24 @@ function makeVectorField5() {
        })
 }
 
+function makeVectorFieldGeneric2D(cb, buffer ) {
+  let w = width * 10, h = height * 10;
+  var result = buffer || []
+  for (let i = 0; i < w; i++) {
+    for (let j = 0; j < h; j++) {
+
+      let [x, y, z] = clipSpace(i, j, 0, w, h)
+
+      let [x1, y1, z1] = zeroToOne(x , y, 0) 
+      //
+      let idx = Math.round(x1 * w + y1 * w * h)
+      
+      result[idx] = cb(x, y, 0, i, j, k, idx)
+   
+    }
+  }
+  return result
+}
 
 function makeVectorFieldGeneric(cb, buffer ) {
   var result = buffer || []
