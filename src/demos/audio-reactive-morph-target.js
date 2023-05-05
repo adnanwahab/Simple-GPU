@@ -126,6 +126,9 @@ let list = pointBuffer.slice()
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
 list.set(pointBuffer)
+//if (window.writeMode() === 0)
+//list = new Float32Array(particlesCount)
+
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
@@ -135,6 +138,7 @@ for (let i = 0; i < rgb.length; i++) {
   rgb[3*i+1] = color.g / 255 /2 + .5
   rgb[3*i+2] = color.b / 255 /2 + .5
 }
+
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 
@@ -830,10 +834,35 @@ function makeVectorField2() {
 
 //make vector field that infinitely randomly generates lots of variety and detail every few seconds
 //make dancer in center -> overwrite particles in first 1e5 coordinates 
-
+// draw shapes in by index
 let computeTransition
 let camera = {position: {x: 0, y: 0, z: 0} }
 const gui = new dat.GUI();
+let props = {}
+let toggleMode = 0;
+props.resetAnimation = function () {
+  //window.writeMode(toggleMode = toggleMode == 0 ? 1 : 0)
+  //if (toggleMode === 1) vfPicker()
+
+  //make it fly from 0,0,0 to bounds... 
+
+  //make it become a cube 
+  
+  //explode into vector field 
+
+  //make it fly toward the camera ??? in z dimension while tweening camera 90 degrees 
+
+
+  //sequence keyframes into a story - 1 - 2 - 3 - 4
+}
+
+props.resetMeshCube = function () {}
+
+gui.add(props, 'resetMeshCube').name('resetMeshCube')
+gui.add(props, 'resetAnimation').name('resetAnimation')
+//gui.add(props, 'resetAnimation').name('resetAnimation')
+
+
 const cameraFolder = gui.addFolder('Camera')
 cameraFolder.add(camera.position, 'z', 0, 10)
 cameraFolder.open()
@@ -1106,7 +1135,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 10.;
+    var bounds = 2.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1155,8 +1184,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
-                return 
-                vec3<f32>(0,);
+                if (uniforms.mode ==0 )
+                 { return vec3<f32>(0,); }
     return vf.xyz;
   }
 
@@ -1196,11 +1225,11 @@ fn applyVF() -> vec3<f32> {
         var vel = velocity[index];
         velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
       }
-
-     //velocity[index] *= .0;
-     if (uniforms.mode == 0) {
+//uniforms.mode == 1
+     //if (uniforms.mode == 0) {
+       //velocity[index] *= .0;
        velocity[index] = velocity[index] + .1 * vf;
-     }
+     //}
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index].xyz,  1);
 
@@ -1243,8 +1272,9 @@ fn applyVF() -> vec3<f32> {
     window.writeDecayRate(0)
 
     window.writeMode = function (dt) {
-      timeBuffer[0] = dt
-      webgpu.device.queue.writeBuffer(uniformsBuffer, 12,  modeBuffer)
+      modeBuffer[0] = dt
+      console.log(dt)
+      webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  modeBuffer)
     }
       computePass.setPipeline(state.computePass.pipeline);
       computePass.setBindGroup(0, state.computePass.bindGroups[0]);
@@ -1309,7 +1339,6 @@ function getFrames(model) {
   })
 }
 //makeStagingBuffer()
-basic()
 fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
   dancer = new Float32Array(d)
   for (let i = 0; i < dancer.length; i++) {
@@ -1587,63 +1616,69 @@ function writeBuffer (device, buffer, array) {
 if (drawShapes)
 list.set(pointBuffer.slice(0, pointBufferCount) )
 
+let happyBear = makeBuffer(list, 0, 'bear')
 
+let vf1 =  pickVF(), vf2 = pickVF()
+
+const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
+computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+
+let drawDescriptor = {
+  attributeBuffers: buffers,
+  attributeBufferData: [
+    happyBear
+    , quadBuffer, happyBear, colorBuffer
+  ],
+  count: 6,
+  instances: particlesCount ,
+  bindGroup: function ({pipeline}) {
+let texture = webgpu.texture(bitmap)
+  let desc = {
+    label: Math.random(),
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+          {
+               binding: 0,
+              resource: {
+                  buffer: uniformsBuffer,
+              }
+          },
+          {
+            binding: 1,
+            resource: {
+            buffer: cameraUniformBuffer
+            }
+          },
+          {
+            binding: 2,
+            resource: texture.sampler,
+          },
+          {
+            binding: 3,
+            resource: texture.texture.createView(),
+          },
+      ]
+  }
+    return webgpu.device.createBindGroup(desc);
+  }
+}
+
+
+function vfPicker() {
+  vf1 = pickVF()
+  vf2 =  vf2
+    computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+    if (! drawScreen)       drawScreen = makeDrawCall(happyBear, drawDescriptor)
+    drawScreen.swapAttributeBuffer(happyBear, 0)
+    
+  }
+  basic()
 
 async function basic () {
-  let vf1 =  pickVF(), vf2 = pickVF()
   let happyBear = makeBuffer(list, 0, 'bear')
 
-  const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
-  computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+ 
 
-  let drawDescriptor = {
-    attributeBuffers: buffers,
-    attributeBufferData: [
-      happyBear
-      , quadBuffer, happyBear, colorBuffer
-    ],
-    count: 6,
-    instances: particlesCount ,
-    bindGroup: function ({pipeline}) {
-  let texture = webgpu.texture(bitmap)
-    let desc = {
-      label: Math.random(),
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-            {
-                 binding: 0,
-                resource: {
-                    buffer: uniformsBuffer,
-                }
-            },
-            {
-              binding: 1,
-              resource: {
-              buffer: cameraUniformBuffer
-              }
-            },
-            {
-              binding: 2,
-              resource: texture.sampler,
-            },
-            {
-              binding: 3,
-              resource: texture.texture.createView(),
-            },
-        ]
-    }
-      return webgpu.device.createBindGroup(desc);
-    }
-  }
-  function vfPicker() {
-    vf1 = pickVF()
-    vf2 =  vf2
-    let happyBear = makeBuffer(list, 0, 'bear')
-      computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
-      if (! drawScreen)       drawScreen = makeDrawCall(happyBear, drawDescriptor)
-      drawScreen.swapAttributeBuffer(happyBear, 0)
-      
-    }
     vfPicker()
   setInterval(vfPicker, 30000)
   drawScreen = makeDrawCall(happyBear, drawDescriptor) 
