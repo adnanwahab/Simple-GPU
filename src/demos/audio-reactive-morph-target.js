@@ -233,17 +233,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeVectorField8
-//    test999,
-// makeVectorField2,
-   // magnet, 
-// stream3,
-// makeVectorField10,
-// makeVectorField2, // no good - circle SDF
-// makeVectorField4,
-// makeVectorField5,//needs improvement  // spiral grid
-// makeVectorField8, //good- make better
-//      makeVectorField1, 
+    makeVectorField8,
+   test999,
+makeVectorField2,
+   magnet, 
+stream3,
+makeVectorField10,
+makeVectorField2, // no good - circle SDF
+makeVectorField4,
+makeVectorField5,//needs improvement  // spiral grid
+makeVectorField8, //good- make better
+     makeVectorField1, 
   ]; //make these better
 
   let idx = (Math.random() * list.length) | 0 
