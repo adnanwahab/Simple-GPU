@@ -1,8 +1,16 @@
-//rotate / transpose vector field
-//smoothstep interpolate vectors / multiply / 
-//visualize vector field in background as a shader
+
+let {cos, sin, } = Math
+
+import * as d3 from 'd3'
+import {interpolateTurbo} from "d3-scale-chromatic";
+import createCamera from './createCamera'
+import bunny from 'bunny'
+import { mat4, vec3 } from 'gl-matrix'
+import simpleWebgpuInit from '../../lib/main';
+import utils from '../../lib/utils';
+import * as dat from 'dat.gui';
+import postProcessing from './postProcessing'
 import dragon from 'stanford-dragon'
-// import dancer
 
 let img = new Image();
 img.src = './data/webgpu.png'
@@ -58,7 +66,7 @@ const buffers = [
 ]
 
 
-let drawShapes = false
+let drawShapes = true
 let particlesCount = 1e6
 let drawScreen
 let time = 0
@@ -117,7 +125,7 @@ let pointBufferCount = 0
 let list = pointBuffer.slice()
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
-
+list.set(pointBuffer)
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
@@ -130,40 +138,6 @@ for (let i = 0; i < rgb.length; i++) {
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 
-//angular velocity
-//fix the grid
-//drawing
-//build a position buffer on cpu
-//build a velocity buffer on cpu 
-//4 seconds to upload to gpu -> blocking unless you split the buffer from 1m to 10,000 uploaded per frame
-//use gpu to animate them for 10 seconds
-//use vector field to morph particles 
-//repeat 
-
-// make ricochet as a mode
-//make velocity have an initial parameter
-// make the vector field have rotation and other different modes 
-//tween vector fields in a more precise manner 
-//gradually buffer new vector fields so that it doesnt block for 2 seconds
-
-//performance - make faster - gradual buffering of vectorfield 2seconds -> 100 frames
-//data cube
-//make vector field more continuous 
-// spiral patterns 
-// concentric circles
-// [CHECK] organize compute shader and all code
-// make cubes - shiny
-// [CHECK] use lifetime to tween patterns
-//cube = 8 points, 12 lines 
-//each vector field has different parameters for the simulation
-
-//wind simulation
-//gpu mesh detection -> do a GPU quad tree - collision with dancer 
-//add dragon to quad tree
-//quad tree 
-//tree particles
-//leaves
-
 
 function getDist(a, b) {
   let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
@@ -172,45 +146,6 @@ function getDist(a, b) {
   }))
 }
 
-let {cos, sin, } = Math
-
-//make the dancer modulate the edges  with the vector field -> wave patterns 
-// make the dancer - reset buffer 
-//compute shader should always run but shouldnt change first 100,000 particles
-//sin wave of 100,000 particles fly around on interval before resetting every 30 seconds
-//use lifetime to animate first 100,000 particles ?? or index 
-
-//make the vector field dance and then reset to a position based on index - cube ??
-
-//make camera parameters a function of audio waveform 
-//make particles smoothly interpolate in using lifetime
-//make particle colors revolve around dancer
-//make a cube of 27 cubes
-//tween between different patterns - two vector field slots ??? 
-//make vector fields continuous - AI or something 
-//https://www.youtube.com/watch?v=tRSbwUGySxA
-//https://en.wikipedia.org/wiki/Transformation_matrix
-//linear algebra from scratch
-import * as d3 from 'd3'
-import {interpolateTurbo} from "d3-scale-chromatic";
-import createCamera from './createCamera'
-import bunny from 'bunny'
-
-
-import { mat4, vec3 } from 'gl-matrix'
-//const particlesCount = 442008
-import simpleWebgpuInit from '../../lib/main';
-import utils from '../../lib/utils';
-import * as dat from 'dat.gui';
-import postProcessing from './postProcessing'
-//make a draw call visualizer - draw 3d lines or arrows with triangles
-//convert to custom railway camera -> make a tool to tune it -> tour through gigantic vectorfield -> show lots of detail and scale 
-//add more particles
-//cloud of flying particles -> 10% forms into dancer -> 
-//hardcode - dancer index into shader
-//set lifetime of dancer particles to -1000 -> if negative <1000 - dont apply velocity 
-//dancer appears ->  immune to vector field for a few seconds before disappearing 
-//make all variables in one obj -> link up to sliders if and only if necessary
 
 const mouse = [0,0]
 
@@ -227,17 +162,15 @@ function length2 (p) {
   return Math.sqrt(x*x + y*y)
 }
 
-//butterfly turning into wind 
-//start with a cube
 let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
     makeVectorField8,
-   test999,
+   //test999,
 makeVectorField2,
-   magnet, 
-stream3,
+  // magnet, 
+//stream3, DELETE ME
 makeVectorField10,
 makeVectorField2, // no good - circle SDF
 makeVectorField4,
@@ -255,44 +188,9 @@ makeVectorField8, //good- make better
   return ret
 }
 
-
-
-//>
-//cubic ray marching - sdf for cube - derive that not from IQ 
-//do cubes tonight
-//100 billion humans - the best part of the world is all the stuff other humans figured out and made for us to learn from, adapt and recombine
-//do from scratch for next 3 days
-//start with a spiral shape
-//radius  - tv show says dont use distance
-//theta = Math.atan(y / x) , figure out for z
-
-
-//make all vectors points to 1,-1, 1
-//get vector to B from A = subtract B - A 
-
-
-//A = 0,0,0 
-//B = 1,1,1
-//vector at a = B - A 
 function test999() {
   let p = dragon.positions
-  //console.log(shapes[0])
-  //if (shapes[0]) p = shapes[0]
-  // let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
-  //   let theta = Math.atan(y / x)
-  //   let a = [x, y, z]
-  //   let b = [0, 0, 0]
-  //   return [b[0] - a[0], b[1] - a[1], b[2] - a[2], 1]
-  // })
 
-//add
-//subtract
-//multiply
-//divide
-//exponentiate
-//log
-//scale from domain to range
-//cos, sin, and tangent - clock
 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     let theta = Math.atan(y / x)
@@ -301,11 +199,6 @@ function test999() {
     return [x,y,z, 1]
   })
 
-  // p.forEach(function (point, index) {
-  //   let idx = findIndex(point)
-
-  //   vf[idx] = p[idx+1] - p[idx]
-  // })
 
   return vf
 }
@@ -339,7 +232,6 @@ function test678() {
     if (next === 3) prev -= 100
     if (prev > 1e4) prev = 0
   }
-console.log(vf)
   return vf;
 }
 
@@ -363,14 +255,6 @@ function test456() {
   return vf;
 }
 
-//magnet simulation - electrical current 
-//vec -> orbitpoint 
-//railgun demo
-//magnets -> electric beam 
-//flower - parametric rose 
-//bring visualizer back - improve to page through stuff
-//make visualizer write to a vector field that automatically saves to local storage 
-//3d model -> flow fields 
 function test123() {
   let i = 0
   let point = [0, 1, 0]
@@ -378,50 +262,15 @@ function test123() {
   i++    // if (i < 1e5 ) return [0,-1,0,0]
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     return [Math.cos(x), Math.sin(y), -z, 1]
-
-  //   if (i % 2 === 0) {
-  //   if (j % 2 === 0) {
-  //     if (k % 2 === 0) return [0, -1,0,0]
-  //     else return [-1, 0,0,0]
-  //   } else {
-  //     if (k % 2 === 0) return [1, 0,0,0]
-  //     else return [0, 1,0,0]
-  //   }
-  // } else {
-  //   if (k % 2 === 0) return [0, ,-1,0]
-  //     else return [0, 0,1,0]
-//    return [-x, -y, -z, 1]
-//  }
-
     return [x ,y, z, 1]
   })
-  // let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
-
-  // })
-
-  // for (let i =0; i < 100; i++) {
-  //   for (let j =0; j < 100; j++) {
-  //     for (let k =0; k < 100; k++) {
-  //       vf[]
-  //     }
-  //   }
-  // }
-  
 
   return vf
 }
 
 function magnet() {
   let pt = [0, 0, 0]
-  // let vf =  makeVectorFieldGeneric(function (x, y, z) {
-  //   let dist = distanceTo(pt, [x,y,z])
-  //   return [ 1/y, 1/ x ,z,1]
-  // })
-  // let vf =  makeVectorFieldGeneric(function (x, y, z) {
-  //   let dist = distanceTo(pt, [x,y,z])
-  //   let theta = Math.atan(y / x)
-  //   return [  Math.cos(theta * 10),  Math.sin(theta * 10) ,0,1]
-  // })
+
   let i = 0;
   let dir = [1,0,0,1]
   let vf =  makeVectorFieldGeneric(function (x, y, z, ) {
@@ -435,40 +284,19 @@ function magnet() {
     let theta = Math.atan(y / x)
     return [  Math.cos(theta * 10),  Math.sin(theta * 10) , Math.sin(theta),1]
   })
-  // let i = 0;
-  // let n = 1
-  // let dir = [
-  //   [1,0,0,0],
-  //   [0,1,0,0],
-  //   [-1, 0,0,0],
-  //   [0,-1,0,0]
-  // ]
-  // let m =0
-  // let getDir = () => {
-  //   m = (m + 1) % 3
-  //   //console.log(m)
-  //   return dir[m]
-  // }
-  // for (let idx = 0; idx< vf.length /100 ; idx++) {
-  //   let coord = Math.floor(Math.random() * 10000)
-  //   let [x,y,z] = vf[idx]
-  // }
-  console.log(vf)
+
+
   return vf
 } 
 
 function shit2() {
   return makeVectorFieldGeneric(function (x, y, z) {
-    ///if (Math.random () > .999) console.log(x)
     if (Math.abs(x) > .3) 
     return [y, x, 0, 1]
     if (Math.abs(x) > .6)
     return [z, 0, x, 1] 
      else 
      return [0, z, y, 1]
-
-     //return [0, z, -y, 1]
-
   })
 }
 
@@ -561,7 +389,6 @@ function shit4() {
     //  return [0, z, y, 1]
 
      //return [0, z, -y, 1]
-
   })
 
   let visited = 0;
@@ -608,18 +435,7 @@ function shit () {
 
  
   let vf =  makeVectorFieldGeneric(function (x, y, z) {
-    // let idx = range.map(d => getDist(d, [x,y,z])).sort(function (a, b) {
-    //   return a - b
-    // })
-    
-    // let origin = range[idx]
-    // let pt = [x,y,z]
-    // let originDist = dist(pt, origin);
-    // if (Math.random() > 1)
-    // return [y, -x, 0, 1]
-    // else 
-    // return [0, z, -y, 1]
-   //return unitVector([x,y,z]).concat(1)
+
 let maxDist = Infinity
 let origin
 let pt = [x,y,z]
@@ -630,7 +446,6 @@ let pt = [x,y,z]
         origin = range[i]
       }
     }
-  //if (Math.random () > .999)console.log(maxDist)
     if (maxDist < .25) {
       return distanceTo(origin, pt)
     } else if (maxDist < 1.) {
@@ -656,8 +471,6 @@ let pt = [x,y,z]
       vf[i] = [-x, -y, -z, 1]
     } 
     // vf[i]= [0,0,0,0]
-  
-  
   }
   return vf 
 }
@@ -691,14 +504,9 @@ function helloWorld() {
   let rotatedVector = function (v, theta) {
 let a= multiply(k, Math.cos(theta))
 let b = multiply(multiply(k, v), Math.sin(theta))
-//if (Math.random() > .9999) console.log(a, b)
 
     let ir = add(a,b)
     return add(ir, multiply(multiply(k, dot(k,v)), Math.cos(theta)) )
-    
-    
-    //add(multiply(v, Math.cos(theta)), multiply(multiply(k, v), Math.sin(theta)) + 
-    //multiply(multiply(k, dot(k, v)), 1 - Math.cos(theta))
   }
 
   function dist(a, b) {
@@ -712,9 +520,7 @@ let b = multiply(multiply(k, v), Math.sin(theta))
   function matrixMultVec(m, v) {
     return v.map((d, i) => {
       return d * m[i][0] + d * m[i][1] + d * m[i][2]
-      // d * m[1][0] + d * m[1][1] + d * m[1][2],
-      // d * m[2][0] + d * m[2][1] + d * m[2][2]
-    
+
     })
   }
 
@@ -746,7 +552,6 @@ let b = multiply(multiply(k, v), Math.sin(theta))
     let rotation = rotatePointAroundAxis(90, [x, y, z]).concat(1)
 
     return minus(rotation, [x,y ,z]).concat(1)
-    //distanceTo([x,y,z], rotatedVector([x,y,z], theta).concat(1)).concat(1)
   },)
 }
   
@@ -787,21 +592,15 @@ return makeVectorFieldGeneric(function (x,y,z) {
   let vf =  makeVectorFieldGeneric(function (x,y,z) {
         return [ x,y,z, 0]
        })
-       //do stuff like this
-//if dist < 1 for origin -> go toward origin
-//if dist < 1 for destination -> rotate then go toward orign
-//else go toward midpoint between origin + destination
-//if in midpoint of origin + destination -> go toward destination
+ 
 let origin = controlPoints[0]
 let destination = controlPoints[1]
 let x = origin[0] * 100 | 0;
   let y = origin[1] * 10000 | 0;
   let z = origin[2] * 1000000 | 0;
   let idx = x + y + z;
-  //console.log(idx)
   let distance = distanceTo(origin, destination)
-  //vf[idx] = [distance[0],distance[1],distance[2],0]
-  //vf[0] = [0,0,0,0]
+
 
   origin = [0,0,0];
 
@@ -844,8 +643,8 @@ function makeVectorField10() {
    //return [-x ,- y,z * .1,1]
     x *= 10
     y *= 10
-    let x1 = .1 *  Math.sin(y + x)
-    let y1 = .1 * Math.sin(x - y)
+    let x1 = .2 *  Math.sin(y + x)
+    let y1 = .2 * Math.sin(x - y)
 
     return [ x1, y1 , z , 1]
   }) 
@@ -961,15 +760,6 @@ function findPoint(d) {
 
   let index = Math.floor(x1 + y1 + z1);
   return [result[index], index, result]
-}
-
-
-let counter = 0 ;
-while (counter < 100) {
-  let pt = [makeRand(), makeRand(), makeRand()]
-  let [point, index, result] = findPoint(pt)
-  //console.log(pt, point, index)
-  counter++
 }
 
 let magnets
@@ -1093,12 +883,12 @@ function makeRadius (i) {
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let velocityBuffer = new Float32Array(particlesCount * 4)
   for (let i = 0; i < velocityBuffer.length; i+=4) {
-    let idx = (i % 360)* 1.5 ;
-    let radius = makeRadius(i);
-    // velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    // velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
-    //velocityBuffer[i+2] = 1 * Math.cos(i)
-     //velocityBuffer[i+3] = 0
+    let idx = ((i/4) % 360)* 1.5 ;
+    let radius = .1  * makeRadius(i);
+    velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    velocityBuffer[i+2] = 0//1 * Math.cos(i)
+     velocityBuffer[i+3] = 0
   }
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
@@ -1108,9 +898,9 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let particleLifetime = new Float32Array(particlesCount)
   for(let i =0; i < particleLifetime.length; i++) {
     if (i < 1e5)
-    particleLifetime[i] = -3000000
+    particleLifetime[i] = -3000
   else 
-    particleLifetime[i] = Math.random() * 300000
+    particleLifetime[i] = Math.random() * 3000
   }
 
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
@@ -1143,8 +933,6 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-uniformsBuffer
-
   return  webgpu.initComputeCall({
     label: `predictedPosition`,
     code:  `
@@ -1162,8 +950,6 @@ uniformsBuffer
     @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-
-
 
   fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
     return 1.79284291400159 - 0.85373472095314 * r;
@@ -1320,7 +1106,7 @@ uniformsBuffer
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 1.;
+    var bounds = 10.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1344,7 +1130,8 @@ uniformsBuffer
   }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .5;
+    var pos = p * .9;
+    pos += .05;
     //pos.z -= 1.1;
     let idx = hashPosition(pos);
 
@@ -1368,6 +1155,8 @@ uniformsBuffer
                 uniforms.time / 3000);
 
                 //return vec3<f32>(-x, -y, -z);
+                return 
+                vec3<f32>(0,);
     return vf.xyz;
   }
 
@@ -1386,12 +1175,10 @@ fn applyVF() -> vec3<f32> {
 
       let life = lifetime[index];
       let r = reset[index]; 
-      // if (life < -2000000) {
-      //   buffer3[(index)]= r;
-      // } else if (life < 0) {
+      //  if (life < 0) {
       //   lifetime[index] = 3000.;
       //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-      //   buffer3[(index)]= r;
+      //   buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
       // } else {
       //   lifetime[index] -= 1.;
       // }
@@ -1409,16 +1196,13 @@ fn applyVF() -> vec3<f32> {
         var vel = velocity[index];
         velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
       }
-  
 
-      //var vf = vec3<f32>(vectorFieldBuffer[idx].xyz);
-
-     velocity[index] *= .0;
+     //velocity[index] *= .0;
      if (uniforms.mode == 0) {
        velocity[index] = velocity[index] + .1 * vf;
      }
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
-     buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index].xyz,  1);
+     buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index].xyz,  1);
 
       //wind turbulence
 //      buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
