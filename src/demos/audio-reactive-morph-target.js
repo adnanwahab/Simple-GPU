@@ -185,9 +185,6 @@ let pickVF = function () {
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[0]()
   console.log(idx)
-
-
-
   return ret
 }
 
@@ -283,14 +280,17 @@ function magnet() {
     // if (i < 1000) dir = [0, 10, 0 , 0]
     // if (i > 1000) dir = [x,y,z,1]
     // if (i > 10000) dir = [0, -10, 0 , 0]
- 
-    // return dir.slice(0)
-    let dist = distanceTo(pt, [x,y,z])
     let theta = Math.atan(y / x)
-    return [  Math.cos(theta * 10),  Math.sin(theta * 10) , Math.sin(theta),1]
+    return [ 10 * Math.cos(theta * 10), 10 * Math.sin(theta * 10) ,10 * Math.sin(theta),1]
+
+    // return dir.slice(0)
+    let dist = distanceTo(pt[0], [x,y,z])
+    return [  1 / dist ,  1 / dist ,1 / dist,1]
+    //flower petals are a primitive - apply them to some other equation and get something even more cool
+//    
     // let dist = distanceTo(pt, [x,y,z])
     // let theta = Math.atan(y / x)
-    // [  1 / dist ,  1 / dist ,1 / dist,1]
+    // 
   })
 
 
@@ -975,6 +975,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       mode: f32,
       decayRate: f32
     }
+    
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
@@ -1009,6 +1010,39 @@ for(let i = 0; i < mesh.source.length; i+=4) {
         if (p.z <= -bounds ) {return true;}
         if (p.z >= bounds ){ return true;}
         return false;
+  }
+
+  fn makeMagnets () -> array<vec3<f32>, 4> {
+    var result = array<vec3<f32>, 4>();
+
+    result[0] = vec3<f32>(0, 0, 0);
+    result[1] = vec3<f32>(0, 0, 0);
+    result[2] = vec3<f32>(0, 0, 0);
+    result[3] = vec3<f32>(0, 0, 0);
+
+
+    return result;
+  }
+
+  fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
+    var radius = distance(pos, mag);
+    var theta = atan(pos.y / pos.x);
+    return 1;
+  }
+
+  fn applyMagnets(pos: vec3<f32>) -> f32 {
+    var idx = hashPosition(pos);
+
+    var magnets = makeMagnets();
+
+
+    vectorFieldBuffer[idx] = vec4<f32>(0);
+    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y))
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
+    return 1.;
   }
 
   fn hashPosition(pos: vec3<f32>) ->  i32{
@@ -1052,7 +1086,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
                 //return vec3<f32>(-x, -y, -z);
                 // if (uniforms.mode ==0 )
                 //  { return vec3<f32>(0,); }
-    return vt.xyz;
+    return vf.xyz;
   }
 
 
@@ -1064,7 +1098,7 @@ fn applyVF() -> vec3<f32> {
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
-
+    
       //if magnitude > 1 -> revert to center 
       //fly into position -> by index offset duration
 
@@ -1079,7 +1113,7 @@ fn applyVF() -> vec3<f32> {
       // }
 
       var pos = buffer3[index];
-
+      //applyMagnets(pos.xyz);
       var abc = buffer3[index];
 
       var vf = hash(pos.xyz);
