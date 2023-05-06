@@ -170,21 +170,20 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    makeVectorField8,
    //test999,
-makeVectorField2,
-  // magnet, 
-//stream3, DELETE ME
-makeVectorField10,
-makeVectorField2, // no good - circle SDF
-makeVectorField4,
-makeVectorField5,//needs improvement  // spiral grid
-makeVectorField8, //good- make better
-     makeVectorField1, 
+      magnet, 
+    //   makeVectorField2,
+    //   makeVectorField8,
+    //   makeVectorField10,
+    //   makeVectorField2, // no good - circle SDF
+    //   makeVectorField4,
+    //   makeVectorField5,//needs improvement  // spiral grid
+    //   makeVectorField8, //good- make better
+    //  makeVectorField1, 
   ]; //make these better
-
+//stream3, DELETE ME
   let idx = (Math.random() * list.length) | 0 
-  let ret =  list[idx]()
+  let ret =  list[0]()
   console.log(idx)
 
 
@@ -273,20 +272,25 @@ function test123() {
 }
 
 function magnet() {
-  let pt = [0, 0, 0]
+  let pt = [...Array(5).keys()].map(data => [makeRand(), makeRand(), 0])
 
   let i = 0;
   let dir = [1,0,0,1]
   let vf =  makeVectorFieldGeneric(function (x, y, z, ) {
+
+
     i++
-    if (i < 1000) dir = [0, 10, 0 , 0]
-    if (i > 1000) dir = [x,y,z,1]
-    if (i > 10000) dir = [0, -10, 0 , 0]
+    // if (i < 1000) dir = [0, 10, 0 , 0]
+    // if (i > 1000) dir = [x,y,z,1]
+    // if (i > 10000) dir = [0, -10, 0 , 0]
  
-    return dir.slice(0)
+    // return dir.slice(0)
     let dist = distanceTo(pt, [x,y,z])
     let theta = Math.atan(y / x)
     return [  Math.cos(theta * 10),  Math.sin(theta * 10) , Math.sin(theta),1]
+    // let dist = distanceTo(pt, [x,y,z])
+    // let theta = Math.atan(y / x)
+    // [  1 / dist ,  1 / dist ,1 / dist,1]
   })
 
 
