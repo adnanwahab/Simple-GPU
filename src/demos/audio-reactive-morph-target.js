@@ -1,3 +1,5 @@
+//mirror world
+
 
 let {cos, sin, } = Math
 
@@ -125,7 +127,7 @@ let pointBufferCount = 0
 let list = pointBuffer.slice()
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
-list.set(pointBuffer)
+//list.set(pointBuffer)
 //if (window.writeMode() === 0)
 //list = new Float32Array(particlesCount)
 
@@ -170,8 +172,9 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
+    keeptrying
    //test999,
-      magnet, 
+      //magnet, 
     //   makeVectorField2,
     //   makeVectorField8,
     //   makeVectorField10,
@@ -186,6 +189,17 @@ let pickVF = function () {
   let ret =  list[0]()
   console.log(idx)
   return ret
+}
+
+function keeptrying () {
+  let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
+    let theta = Math.atan(y / x)
+    let a = [x, y, z]
+    let b = [0, 0, 0]
+    return [z,z,z, 1]
+  })
+
+  return vf
 }
 
 function test999() {
@@ -1076,8 +1090,9 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     // }
 
     let vf = vectorFieldBuffer[idx];
-//    vectorFieldBuffer[idx] = sin(vectorFieldBuffer[idx]);
-    //vectorFieldBuffer[idx] *= 20. * sin(uniforms.time);
+    var theta = atan(vf.y / vf.x);
+    var shit = uniforms.time;
+    vectorFieldBuffer[idx] += vec4<f32>(cos(theta), sin(theta), 0, 1);
     let vf1 = vectorFieldBuffer2[idx];
     var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
                 vec3<f32>(vectorFieldBuffer2[idx].xyz), 
@@ -1325,6 +1340,7 @@ let triangle = function (origin, side) {
 }
 
   for (let i =0; i< 100; i++) {
+    //change to concentric triangles + add rotation euler angles 
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
