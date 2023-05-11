@@ -1068,6 +1068,75 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     return idx;
   }
 
+
+  // fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
+  //   var dir = direction[index];// + vec3<f32>(1, 1, 1);
+  //   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+ 
+  //   // if (false) {
+  //   //   dir.x += .5;
+  //   //   dir.y += .5;  
+  //   // } else {
+  //   //   dir.x += cos(1.75);
+  //   //   dir.y += sin(1.75);
+  //   //   // dir.x += 1. * cos(group *10 );
+  //   //   // dir.y += 1 * sin(group * 10);
+  //   // }
+
+  //   var theta = atan2(dir.y, dir.x);
+  //   // // dir.x += cos(theta * 1);
+  //   // // dir.y += sin(theta * 1);
+
+  //   dir.x =  cos(theta + 1.6);
+  //   dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
+
+  //   // if (group == 0) {
+  //   //   dir = vec3<f32>(1, 0, 0);
+  //   // } else if (group == 1)  {
+  //   //   dir = vec3<f32>(0, 1, 0);
+  //   // } else if (group == 2)  {
+  //   // dir = vec3<f32>(0, -1, 0);
+  //   // } else if (group == 3)  {
+  //   //   dir = vec3<f32>(-1, 0, 0);
+  //   // }
+  //   direction[index] = dir;
+  //   return dir;
+  // }
+
+
+  // fn drawCoolShape () -> vec3<f32>  {
+  //   //helix = circle + z direction
+  //   return vec3<f32>(0.);
+  // }
+
+
+// fn helix(index: u32) -> vec3<f32>  {
+//   var dir = direction[index];
+
+
+//   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+
+
+//   var theta = atan2(dir.z, dir.x);
+
+//   // dir.x = cos(theta * 1.5);
+//   // dir.z = sin(theta * 1.5);
+
+
+//   dir.x =  cos(theta + 1.2);
+//   //dir.y = .1 * .000001;
+//   dir.z = sin(theta + 1.2);
+
+//   // dir.x = .1;
+//   // dir.y = .1;
+
+//   //posBuffer[index] = vec4<f32>(0.);
+
+//   direction[index] = dir;
+//   return dir;
+// }
+
+
   fn hash(p: vec3<f32>) -> vec3<f32> {
     var pos = p * .1;
     //pos += .05;
