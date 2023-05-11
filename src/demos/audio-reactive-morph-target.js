@@ -1,5 +1,5 @@
 //mirror world
-
+//generate vector field purely on GPU -> 10 million 
 
 let {cos, sin, } = Math
 
@@ -932,10 +932,10 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   for (let i = 0; i < velocityBuffer.length; i+=4) {
     let idx = ((i/4) % 360)* 1.5 ;
     let radius = .1  * makeRadius(i);
-    velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
-    velocityBuffer[i+2] = 0//1 * Math.cos(i)
-     velocityBuffer[i+3] = 0
+    // velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    // velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    // velocityBuffer[i+2] = 0//1 * Math.cos(i)
+    //  velocityBuffer[i+3] = 0
   }
 
   let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
@@ -1110,32 +1110,67 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   // }
 
 
-// fn helix(index: u32) -> vec3<f32>  {
-//   var dir = direction[index];
+fn helix(index: u32) -> vec3<f32>  {
+  var dir = velocity[index];
 
 
-//   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
 
 
-//   var theta = atan2(dir.z, dir.x);
+  var theta = atan2(dir.z, dir.x);
 
-//   // dir.x = cos(theta * 1.5);
-//   // dir.z = sin(theta * 1.5);
+  // dir.x = cos(theta * 1.5);
+  // dir.z = sin(theta * 1.5);
 
 
-//   dir.x =  cos(theta + 1.2);
-//   //dir.y = .1 * .000001;
-//   dir.z = sin(theta + 1.2);
+  dir.x =  cos(theta + 1.2);
+  //dir.y = .1 * .000001;
+  dir.z = sin(theta + 1.2);
 
-//   // dir.x = .1;
-//   // dir.y = .1;
+  // dir.x = .1;
+  // dir.y = .1;
 
-//   //posBuffer[index] = vec4<f32>(0.);
+  //posBuffer[index] = vec4<f32>(0.);
 
-//   direction[index] = dir;
-//   return dir;
-// }
+  velocity[index] = dir;
+  return dir;
+}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fn drawShape (index: u32) -> vec3<f32> {
+  var dir = velocity[index];
+
+
+  var theta = atan2(dir.y, dir.x);
+
+  dir.x = cos(theta + .7);
+  dir.y = sin(theta + .7);
+
+  lifetime[index] -= 1.;
+
+
+  if (lifetime[index] < 0) {
+    velocity[index] = dir; 
+    lifetime[index]= 3;
+    buffer3[index]= buffer3[index] + vec4<f32>(.1 * dir, 1.);
+  }
+
+  return dir;
+}
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
     var pos = p * .1;
@@ -1192,15 +1227,15 @@ fn applyVF() -> vec3<f32> {
       //   buffer3[(index)]= vec4<f32>(0.);
       // }
 
-
+      drawShape(index);
 
       let r = reset[index]; 
-       if (life < 0) {
-        lifetime[index] = 3000.;
-        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
-      } 
-      lifetime[index] -= 1.;
+      //  if (life < 0) {
+      //   lifetime[index] = 3000.;
+      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+      //   buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
+      // } 
+      // lifetime[index] -= 1.;
       
       var pos = buffer3[index];
       //applyMagnets(pos.xyz);
@@ -1236,8 +1271,9 @@ fn applyVF() -> vec3<f32> {
         //buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
         //velocity[index]*= .001;
       }
-      velocity[index] *= .0;
-       velocity[index] = velocity[index] + .1 * vf;
+      //helix(index);
+       //velocity[index] *= .0;
+       //velocity[index] = velocity[index] + .1 * vf;
     }`,
   
     exec: function (state){
