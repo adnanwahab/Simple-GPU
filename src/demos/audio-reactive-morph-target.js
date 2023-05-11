@@ -944,12 +944,8 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let particleLifetime = new Float32Array(particlesCount)
   for(let i =0; i < particleLifetime.length; i++) {
-    if (i < 1e5)
-    particleLifetime[i] = -3000
-  else 
-    particleLifetime[i] = Math.random() * 3000
+    particleLifetime[i] = 300;
   }
-
   let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
 
 let max = {
@@ -1016,7 +1012,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 2.;
+    var bounds = 10.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1073,8 +1069,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .9;
-    pos += .05;
+    var pos = p * .1;
+    //pos += .05;
     //pos.z -= 1.1;
     let idx = hashPosition(pos);
 
@@ -1090,9 +1086,12 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     // }
 
     let vf = vectorFieldBuffer[idx];
-    var theta = atan(vf.y / vf.x);
+    var theta = atan2(pos.y, pos.x);
     var shit = uniforms.time;
-    vectorFieldBuffer[idx] += vec4<f32>(cos(theta), sin(theta), 0, 1);
+    //vectorFieldBuffer[idx] += vec4<f32>(abs(pos.x), abs(pos.y), 0, 1);
+    vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta), 0, 1);
+
+
     let vf1 = vectorFieldBuffer2[idx];
     var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
                 vec3<f32>(vectorFieldBuffer2[idx].xyz), 
@@ -1118,15 +1117,22 @@ fn applyVF() -> vec3<f32> {
       //fly into position -> by index offset duration
 
       let life = lifetime[index];
-      let r = reset[index]; 
-      //  if (life < 0) {
-      //   lifetime[index] = 3000.;
-      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-      //   buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
-      // } else {
-      //   lifetime[index] -= 1.;
+      // if (life < 0) {
+      //   lifetime[index] = 300.;
+      //   velocity[index] = vec3<f32>(0.);
+      //   buffer3[(index)]= vec4<f32>(0.);
       // }
 
+
+
+      let r = reset[index]; 
+       if (life < 0) {
+        lifetime[index] = 3000.;
+        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+        buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
+      } 
+      lifetime[index] -= 1.;
+      
       var pos = buffer3[index];
       //applyMagnets(pos.xyz);
       var abc = buffer3[index];
@@ -1138,13 +1144,12 @@ fn applyVF() -> vec3<f32> {
 
       if (hasCollided(pos.xyz))  {
         var vel = velocity[index];
-        velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+        //velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+        //velocity[index] *= .0;
+        //velocity[index] = velocity[index] + .1 * vf;
+        //
+        //
       }
-//uniforms.mode == 1
-     //if (uniforms.mode == 0) {
-       velocity[index] *= .0;
-       velocity[index] = velocity[index] + .1 * vf;
-     //}
      //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index].xyz,  1);
 
@@ -1162,6 +1167,8 @@ fn applyVF() -> vec3<f32> {
         //buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
         //velocity[index]*= .001;
       }
+      velocity[index] *= .0;
+       velocity[index] = velocity[index] + .1 * vf;
     }`,
   
     exec: function (state){
