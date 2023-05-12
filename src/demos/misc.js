@@ -1,3 +1,53 @@
+`fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+  
+  var idx = f32(index);
+  var radius = idx / 256;
+   //4 / 3 * pow(idx / 256, 3);
+  //circle 
+  posBuffer[index] = vec4<f32>(
+    
+    cos(idx) , idx /2000., 
+    
+    sin(idx), 1.);
+
+  //if (posBuffer[index].y > .74) {
+//    buffer.xz /= 
+    posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+    posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+ // }
+
+  posBuffer[index].y *= .6;
+
+  return false;
+}
+
+// fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+
+//   var idx = f32(index);
+//   // var radius = idx / 256;
+//   //  //4 / 3 * pow(idx / 256, 3);
+//   // //circle 
+//   posBuffer[index] = vec4<f32>(
+//     cos(idx) - sin(idx / 2000), idx /2000., 
+//     sin(idx) - (1-sin(idx / 2000)), 1.);
+
+//     posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+//     posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+
+//     posBuffer[index].y *= .6;
+
+//   // posBuffer[index] = vec4<f32>(.001 * direction[index] +  posBuffer[index].xyz, 1.);
+//   // direction[index] = vec3<f32>(.1, 0., 0.);
+
+//   // // if (posBuffer[index].x > .75) {
+//   // //   direction[index] = -vec3<f32>(.1, 0., 0.);
+//   // // }
+
+
+//   return false;
+// }
+`
+
 
 function visualizeVectorField () {
 let shouldDraw = true

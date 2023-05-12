@@ -156,7 +156,7 @@ function getDist(a, b) {
 const mouse = [0,0]
 
 function makeGrid () {
-  return makeVectorFieldGeneric(function (x, y, z) {
+  return makeVectorFieldGenericCool(function (x, y, z) {
     return [x * 1, y * 1, z , 1]
   })
 }
@@ -708,6 +708,25 @@ function makeVectorField5() {
         return [ 1  / Math.cos(-10 * y + x), 1 / Math.sin(10 * x + y), 
           1 / 10 * Math.atan(x, y), 1]
        })
+}
+
+function makeVectorFieldGenericCool(cb, buffer ) {
+  let w = width * 10, h = height * 10, zspace = 10;
+  var result = buffer || []
+  for (let i = 0; i < w; i++) {
+    for (let j = 0; j < h; j++) {
+      for (let k = 0; k < zspace; k++) {
+      let [x, y, z] = clipSpace(i, j, k, w, h)
+
+      let [x1, y1, z1] = zeroToOne(x , y, z) 
+      //
+      let idx = Math.round(x1 * w + y1 * w * h)
+      
+      result[idx] = cb(x, y, 0, i, j, k, idx)
+      }
+    }
+  }
+  return result
 }
 
 function makeVectorFieldGeneric2D(cb, buffer ) {
@@ -1439,7 +1458,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   //noise Buffer = unique ID = Math.random () * coefficent for each particle 
   var dt = sin(uniforms.time);
   
-  var group = f32(idx) % 10;   
+  var group = f32(index) % 10;
     lifetime[idx] -= 100;
     if ( lifetime[idx] < 100) {
       lifetime[idx] = 10000;
@@ -1573,56 +1592,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   return dir;
   }
-  
-  fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  
-    var idx = f32(index);
-    var radius = idx / 256;
-     //4 / 3 * pow(idx / 256, 3);
-    //circle 
-    posBuffer[index] = vec4<f32>(
-      
-      cos(idx) , idx /2000., 
-      
-      sin(idx), 1.);
-  
-    //if (posBuffer[index].y > .74) {
-  //    buffer.xz /= 
-      posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-      posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-   // }
-  
-    posBuffer[index].y *= .6;
-  
-    return false;
-  }
-  
-  // fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  
-  //   var idx = f32(index);
-  //   // var radius = idx / 256;
-  //   //  //4 / 3 * pow(idx / 256, 3);
-  //   // //circle 
-  //   posBuffer[index] = vec4<f32>(
-  //     cos(idx) - sin(idx / 2000), idx /2000., 
-  //     sin(idx) - (1-sin(idx / 2000)), 1.);
-  
-  //     posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-  //     posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-  
-  //     posBuffer[index].y *= .6;
-  
-  //   // posBuffer[index] = vec4<f32>(.001 * direction[index] +  posBuffer[index].xyz, 1.);
-  //   // direction[index] = vec3<f32>(.1, 0., 0.);
-  
-  //   // // if (posBuffer[index].x > .75) {
-  //   // //   direction[index] = -vec3<f32>(.1, 0., 0.);
-  //   // // }
-  
-  
-  //   return false;
-  // }
-  
 
 fn applyVF() -> vec3<f32> {
   return vec3<f32>(1.);
@@ -1630,6 +1599,9 @@ fn applyVF() -> vec3<f32> {
   
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+
+      //vector field -- 1000 x 1000 x 10
+      //20 million particles - wind - vector field change
       let index: u32 = GlobalInvocationID.x;
     
       
@@ -1643,6 +1615,7 @@ fn applyVF() -> vec3<f32> {
       //   posbuffer[(index)]= vec4<f32>(0.);
       // }
 
+      
       drawShape(index);
 
       let r = reset[index]; 
@@ -1654,6 +1627,9 @@ fn applyVF() -> vec3<f32> {
       // lifetime[index] -= 1.;
       
       var pos = posBuffer[index];
+
+      runAlongRoute(pos.xyz, f32(index));
+
       //applyMagnets(pos.xyz);
       var abc = posBuffer[index];
 
