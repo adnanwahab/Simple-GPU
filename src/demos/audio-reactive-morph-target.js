@@ -928,17 +928,17 @@ function makeRadius (i) {
 }
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
-  let velocityBuffer = new Float32Array(particlesCount * 4)
-  for (let i = 0; i < velocityBuffer.length; i+=4) {
+  let directionBuffer = new Float32Array(particlesCount * 4)
+  for (let i = 0; i < directionBuffer.length; i+=4) {
     let idx = ((i/4) % 360)* 1.5 ;
     let radius = .1  * makeRadius(i);
-    // velocityBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    // velocityBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
-    // velocityBuffer[i+2] = 0//1 * Math.cos(i)
-    //  velocityBuffer[i+3] = 0
+    // directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    // directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    // directionBuffer[i+2] = 0//1 * Math.cos(i)
+    //  directionBuffer[i+3] = 0
   }
 
-  let velocity = makeBuffer(velocityBuffer, 0, 'vectorField')
+  let direction = makeBuffer(directionBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
 
@@ -988,9 +988,9 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-    @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
+    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-    @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
+    @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
@@ -1102,16 +1102,13 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   //   direction[index] = dir;
   //   return dir;
   // }
-
-
   // fn drawCoolShape () -> vec3<f32>  {
   //   //helix = circle + z direction
   //   return vec3<f32>(0.);
   // }
 
-
 fn helix(index: u32) -> vec3<f32>  {
-  var dir = velocity[index];
+  var dir = direction[index];
 
 
   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
@@ -1132,27 +1129,12 @@ fn helix(index: u32) -> vec3<f32>  {
 
   //posBuffer[index] = vec4<f32>(0.);
 
-  velocity[index] = dir;
+  direction[index] = dir;
   return dir;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 fn drawShape (index: u32) -> vec3<f32> {
-  var dir = velocity[index];
+  var dir = direction[index];
 
 
   var theta = atan2(dir.y, dir.x);
@@ -1164,9 +1146,9 @@ fn drawShape (index: u32) -> vec3<f32> {
 
 
   if (lifetime[index] < 0) {
-    velocity[index] = dir; 
+    direction[index] = dir; 
     lifetime[index]= 3;
-    buffer3[index]= buffer3[index] + vec4<f32>(.1 * dir, 1.);
+    posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
   }
 
   return dir;
@@ -1209,6 +1191,439 @@ fn drawShape (index: u32) -> vec3<f32> {
 
 
 
+  fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
+    var dir = direction[index];// + vec3<f32>(1, 1, 1);
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+    // if (false) {
+    //   dir.x += .5;
+    //   dir.y += .5;  
+    // } else {
+    //   dir.x += cos(1.75);
+    //   dir.y += sin(1.75);
+    //   // dir.x += 1. * cos(group *10 );
+    //   // dir.y += 1 * sin(group * 10);
+    // }
+  
+    var theta = atan2(dir.y, dir.x);
+    // // dir.x += cos(theta * 1);
+    // // dir.y += sin(theta * 1);
+  
+    dir.x =  cos(theta + 1.6);
+    dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
+  
+    // if (group == 0) {
+    //   dir = vec3<f32>(1, 0, 0);
+    // } else if (group == 1)  {
+    //   dir = vec3<f32>(0, 1, 0);
+    // } else if (group == 2)  {
+    // dir = vec3<f32>(0, -1, 0);
+    // } else if (group == 3)  {
+    //   dir = vec3<f32>(-1, 0, 0);
+    // }
+    direction[index] = dir;
+    return dir;
+  }
+  
+  
+  // fn drawCoolShape () -> vec3<f32>  {
+  //   //helix = circle + z direction
+  //   return vec3<f32>(0.);
+  // }
+  
+  
+  // fn helix(index: u32) -> vec3<f32>  {
+  // var dir = direction[index];
+  
+  
+  // if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+  
+  // var theta = atan2(dir.z, dir.x);
+  
+  // // dir.x = cos(theta * 1.5);
+  // // dir.z = sin(theta * 1.5);
+  
+  
+  // dir.x =  cos(theta + 1.2);
+  // //dir.y = .1 * .000001;
+  // dir.z = sin(theta + 1.2);
+  
+  // // dir.x = .1;
+  // // dir.y = .1;
+  
+  // //posBuffer[index] = vec4<f32>(0.);
+  
+  // direction[index] = dir;
+  // return dir;
+  // }
+  
+  //windowing function for direction ?? 
+  
+  
+  
+  fn test123 (index: u32, flag: f32) {
+    var dir = direction[index];
+//    var idx = indexBuffer[index];
+  var idx = f32(index);
+    
+    let pos = posBuffer[index];
+  //    dir.x = pos.x - pos.y;
+    if (lifetime[index] < 1000) {
+      //posBuffer[index] = vec4<f32>(0);
+    }
+    //f32(index)
+  if (uniforms.time > 30000 - f32(index)) {
+  
+    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
+    //return;
+  }
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+  
+    var i = flag;//(uniforms.time % 3);
+  
+    //choose 2/3 indices based on a timer 
+    var theta = atan2(dir.z, dir.x);
+  
+    // dir.z =  cos(theta + 1.2);
+    // dir.x = sin(theta + 1.2);
+  
+    if (i == 0) { 
+      var theta = atan2(dir.z, dir.x);
+      dir.x +=  cos(idx);
+      dir.z += sin(idx);
+    }
+    if (i == 1) { 
+      var theta = atan2(dir.y, dir.x);
+      dir.x +=  cos(idx);
+      dir.y += sin(idx);
+    }
+    if (i == 2) { 
+      var theta = atan2(dir.z, dir.y);
+      dir.y +=  cos(idx);
+      dir.z += sin(idx);
+    }
+  
+    dir.y = dir.x;//cos(idx);
+    dir.x = dir.y;// sin(idx);
+  
+  
+    dir.y = cos(idx);
+    dir.x = sin(idx);
+    if (hasCollided(posBuffer[index].xyz)) {
+        // dir.y = dir.x;
+        // dir.x = dir.y;
+    }
+  
+    // if (length(dir) > 5) {
+    //   dir.x *= -1;
+    //   dir.y *= -1;
+   
+    // }
+  
+  //show the demo to people and demo has to be really good 
+  //the process has to be good too
+  
+    //if (u32(uniforms.time) <= index * 1000) {
+    //  dir = vec3<f32>(-1000);
+    //}
+    //if (shouldAnimate(direction[index])) {
+      direction[index] = dir;
+    //}
+    return;
+  }
+  
+  fn vortex (index: u32) {
+    var dir = direction[index];
+    var idx = f32(index);
+  
+    //f32(index)
+  if (uniforms.time > 30000 - f32(index)) {
+  
+    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
+    //return;
+  }
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+    dir.y = .1;
+    if (idx > 128){
+      dir.y *= -1;
+    }
+    // * idx * cos(idx);
+    direction[index] = dir;
+    let pos = posBuffer[index];
+    dir.x = pos.x - pos.y;
+  
+  
+  //   if (hasCollided(posBuffer[index].xyz)) {
+  //     // dir.y = dir.x;
+  //     // dir.x = dir.y;
+  // }
+  } 
+  
+  //   fn lastWeek(pos: vec3<f32>, idx: u32) -> f32{
+  //     //rotate hues so that rainbow flies toward camera 
+  //     //no direction
+  //     let index = f32(idx);
+  // let i = index / 10000;
+  //     posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //     //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //     return -1;
+  //   }
+  
+  fn vines (idx: u32) -> f32{
+  return -1;
+  }
+  
+  
+  fn Mandala (pos:vec3<f32>, idx: u32) -> f32{
+  
+  
+  //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
+  //gpu graphics = draw 10 lines of ducks from 4 attachment points
+  
+  if (uniforms.time < 20) {}
+  
+  
+  
+  
+  return -1;  
+  }
+  
+  fn web (pos: vec3<f32>, idx: u32) -> f32{
+  
+  var index = f32(idx);
+  //ditch conditionals in favor of building up a variable and then using it at the end 
+  if (lifetime[idx] < 10000) {
+    posBuffer[idx] = vec4<f32>(0.);
+  }
+  if (idx < 256) {
+    var i = f32(idx) - 128.;
+    posBuffer[idx] = vec4<f32>(-i / 64., i / 64., 0., 1.) + vec4<f32>(-.5, -.5, 0, 0);
+  }
+  if (idx < 128){
+    posBuffer[idx] = vec4<f32>(index / 64., index / 64., 0., 1.) + vec4<f32>(-.5, -.5,0 , 0);
+  } 
+  
+  
+  
+  return -1;
+  }
+  
+  // fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
+  //   //rotate hues so that rainbow flies toward camera 
+  //   //no direction
+  //   let index = f32(idx);
+  //   let i = index / 10000;
+  //   posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //   //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //   return -1;
+  // }
+  
+  //dont think anything else - just fnish the shader
+  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
+  //make a new buffer that links particle to the index in the buffer
+  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
+  fn runAlongRoute (pos:vec3<f32>, index:f32) -> vec3<f32> {
+  var idx = u32(index);
+  
+  var dir =  direction[idx];
+  
+  //time, mode, attenuationRate, particleIndex, groupIndex 
+  //synchronized swimmers - all particles of certain color do similar stuff 
+  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
+  var dt = sin(uniforms.time);
+  
+  //var group = groupIndex[idx];    
+    lifetime[idx] -= 100;
+    if ( lifetime[idx] < 100) {
+      lifetime[idx] = 10000;
+    }
+    //lastMonth(pos,idx);
+    
+    //web(pos, idx);
+  
+  
+    // if (group == 0 || group == 3) { 
+    //   lifetime[idx] -= 100;
+    //   if ( lifetime[idx] < 100) {
+    //     lifetime[idx] = 10000;
+  
+    //     dir = changeDirection(pos,idx);
+    //   }
+    // }
+  
+    // if (group == 2) {
+    //   //
+    //   //dir *= .9;
+    //   //dir = dir + .1 * hash(pos);
+    //   //dir = drawCoolShape();
+    //   //direction[idx]=  dir + .1 * hash(pos);
+    //   lifetime[idx] -= 100;  
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    // //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    // helix(idx);
+       
+    //   }
+    // } 
+    // if (group == 3) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 1.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+    // if (group == 4) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    vortex(idx);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+  
+    // if (group == 5) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 2.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+    // if (group == 6) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 0.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+    // if (group == 7) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 2.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+    
+    // if (group == 8) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 0.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+    // if (group == 9) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 1.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+    // if ( lifetime[idx] < 1000) {
+    //   //posBuffer[idx]  = vec4<f32>(0.);
+    // }
+  
+  
+    // if (group == 1) { 
+    //   lifetime[idx] -= 100; 
+    //   if ( lifetime[idx] < 100) { 
+    //     lifetime[idx] = 10000;
+  
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    //    test123(idx, 1.);
+    //    //dir = hash(pos.xyz);
+    //   }
+    // }
+  
+    
+  
+  
+  posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
+  
+  return dir;
+  }
+  
+  fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+  
+    var idx = f32(index);
+    var radius = idx / 256;
+     //4 / 3 * pow(idx / 256, 3);
+    //circle 
+    posBuffer[index] = vec4<f32>(
+      
+      cos(idx) , idx /2000., 
+      
+      sin(idx), 1.);
+  
+    //if (posBuffer[index].y > .74) {
+  //    buffer.xz /= 
+      posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+      posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+   // }
+  
+    posBuffer[index].y *= .6;
+  
+    return false;
+  }
+  
+  // fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+  
+  //   var idx = f32(index);
+  //   // var radius = idx / 256;
+  //   //  //4 / 3 * pow(idx / 256, 3);
+  //   // //circle 
+  //   posBuffer[index] = vec4<f32>(
+  //     cos(idx) - sin(idx / 2000), idx /2000., 
+  //     sin(idx) - (1-sin(idx / 2000)), 1.);
+  
+  //     posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+  //     posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+  
+  //     posBuffer[index].y *= .6;
+  
+  //   // posBuffer[index] = vec4<f32>(.001 * direction[index] +  posBuffer[index].xyz, 1.);
+  //   // direction[index] = vec3<f32>(.1, 0., 0.);
+  
+  //   // // if (posBuffer[index].x > .75) {
+  //   // //   direction[index] = -vec3<f32>(.1, 0., 0.);
+  //   // // }
+  
+  
+  //   return false;
+  // }
+  
+
 fn applyVF() -> vec3<f32> {
   return vec3<f32>(1.);
 }
@@ -1223,8 +1638,8 @@ fn applyVF() -> vec3<f32> {
       let life = lifetime[index];
       // if (life < 0) {
       //   lifetime[index] = 300.;
-      //   velocity[index] = vec3<f32>(0.);
-      //   buffer3[(index)]= vec4<f32>(0.);
+      //   direction[index] = vec3<f32>(0.);
+      //   posbuffer[(index)]= vec4<f32>(0.);
       // }
 
       drawShape(index);
@@ -1232,14 +1647,14 @@ fn applyVF() -> vec3<f32> {
       let r = reset[index]; 
       //  if (life < 0) {
       //   lifetime[index] = 3000.;
-      //   velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-      //   buffer3[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
+      //   direction[index] = vec3<f32>(sfrand() * 10., -20, 30.);
+      //   posbuffer[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
       // } 
       // lifetime[index] -= 1.;
       
-      var pos = buffer3[index];
+      var pos = posBuffer[index];
       //applyMagnets(pos.xyz);
-      var abc = buffer3[index];
+      var abc = posBuffer[index];
 
       var vf = hash(pos.xyz);
 
@@ -1247,33 +1662,33 @@ fn applyVF() -> vec3<f32> {
       //var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
 
       if (hasCollided(pos.xyz))  {
-        var vel = velocity[index];
-        //velocity[index] = vec3<f32>(vel.y, -vel.x, vel.z);
-        //velocity[index] *= .0;
-        //velocity[index] = velocity[index] + .1 * vf;
+        var vel = direction[index];
+        //direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+        //direction[index] *= .0;
+        //direction[index] = direction[index] + .1 * vf;
         //
         //
       }
-     //velocity[index] = velocity[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
-     buffer3[index] = vec4<f32>(pos.xyz + .01 * velocity[index].xyz,  1);
+     //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
+     posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
 
       //wind turbulence
-//      buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
+//      posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(posbuffer[index].xyz), 1);
       //sphere
-      //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
+      //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
+      //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
 
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-      if (distance(buffer3[index].xy, mouse) < .1) {
-        // velocity[index].x = velocity[index].y;
-        // velocity[index].y = -velocity[index].x;
-        //buffer3[index]= vec4<f32>(buffer3[index].xy - vec2<f32>(distance(buffer3[index].xy, mouse)), 0., 1.);
-        //buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
-        //velocity[index]*= .001;
+      if (distance(posBuffer[index].xy, mouse) < .1) {
+        // direction[index].x = direction[index].y;
+        // direction[index].y = -direction[index].x;
+        //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
+        //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
+        //direction[index]*= .001;
       }
       //helix(index);
-       //velocity[index] *= .0;
-       //velocity[index] = velocity[index] + .1 * vf;
+       direction[index] *= .0;
+       direction[index] = direction[index] + .1 * vf;
     }`,
   
     exec: function (state){
@@ -1318,7 +1733,7 @@ fn applyVF() -> vec3<f32> {
       {binding: 0, resource: {buffer: gridBuffer}},
       {binding: 1, resource: {buffer: mesh || shapes[0]}},
       {binding: 2, resource: {buffer: uniformsBuffer}},
-      {binding: 3, resource: {buffer: velocity}},
+      {binding: 3, resource: {buffer: direction}},
       {binding: 4, resource: {buffer: lifeTimeBuffer}},
       {binding: 5, resource: {buffer: reset }},
       {binding: 6, resource: {buffer: gridBuffer2 }},
