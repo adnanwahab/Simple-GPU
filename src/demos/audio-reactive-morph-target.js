@@ -945,6 +945,7 @@ function zeroToOne(x , y, z) {
 function makeRadius (i) {
   return Math.ceil(i / 1e4) / 10
 }
+const reset = makeBuffer(makeGrid(), 0, 'reset')
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let directionBuffer = new Float32Array(particlesCount * 4)
@@ -961,11 +962,11 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
 
-  let particleLifetime = new Float32Array(particlesCount)
-  for(let i =0; i < particleLifetime.length; i++) {
-    particleLifetime[i] = 300;
-  }
-  let lifeTimeBuffer = makeBuffer(particleLifetime, 0, 'vectorField')
+  let particledistancetraveled = new Float32Array(particlesCount)
+  // for(let i =0; i < particledistancetraveled.length; i++) {
+  //   particledistancetraveled[i] = 300;
+  // }
+  let distancetraveledBuffer = makeBuffer(particledistancetraveled, 0, 'vectorField')
 
 let max = {
   x: 0,
@@ -1010,7 +1011,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-    @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
+    @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
 
@@ -1031,7 +1032,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 10.;
+    var bounds = 1.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1161,12 +1162,11 @@ fn drawShape (index: u32) -> vec3<f32> {
   dir.x = cos(theta + .7);
   dir.y = sin(theta + .7);
 
-  lifetime[index] -= 1.;
+  distancetraveled[index] += 1.;
 
 
-  if (lifetime[index] < 0) {
+  if (distancetraveled[index] > 100) {
     direction[index] = dir; 
-    lifetime[index]= 3;
     posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
   }
 
@@ -1288,7 +1288,7 @@ fn drawShape (index: u32) -> vec3<f32> {
     
     let pos = posBuffer[index];
   //    dir.x = pos.x - pos.y;
-    if (lifetime[index] < 1000) {
+    if (distancetraveled[index] < 1000) {
       //posBuffer[index] = vec4<f32>(0);
     }
     //f32(index)
@@ -1330,11 +1330,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     dir.y = cos(idx);
     dir.x = sin(idx);
-    if (hasCollided(posBuffer[index].xyz)) {
-        // dir.y = dir.x;
-        // dir.x = dir.y;
-    }
-  
+
     // if (length(dir) > 5) {
     //   dir.x *= -1;
     //   dir.y *= -1;
@@ -1416,7 +1412,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   var index = f32(idx);
   //ditch conditionals in favor of building up a variable and then using it at the end 
-  if (lifetime[idx] < 10000) {
+  if (distancetraveled[idx] < 10000) {
     posBuffer[idx] = vec4<f32>(0.);
   }
   if (idx < 256) {
@@ -1458,139 +1454,61 @@ fn drawShape (index: u32) -> vec3<f32> {
   //noise Buffer = unique ID = Math.random () * coefficent for each particle 
   var dt = sin(uniforms.time);
   
-  var group = f32(index) % 10;
-    lifetime[idx] -= 100;
-    if ( lifetime[idx] < 100) {
-      lifetime[idx] = 10000;
-    }
-    //lastMonth(pos,idx);
+  var group = f32(index) % 20;
+    distancetraveled[idx] += 1;
+    // if ( distancetraveled[idx] > 100) {
+    //   distancetraveled[idx] = 0;
+    // }
+
     
     //web(pos, idx);
   
   
-    if (group == 0 || group == 3) { 
-      lifetime[idx] -= 100;
-      if ( lifetime[idx] < 100) {
-        lifetime[idx] = 10000;
+    // if (group == 0 || group == 3) { 
+    //   distancetraveled[idx] -= 100;
+
+    //     helix(idx);
+    //     //dir = drawCoolShape();
+
+    //     lastMonth(pos,idx);
+    //     dir = changeDirection(pos,idx);
+    // }
   
-        dir = changeDirection(pos,idx);
+    for (var i = 0.; i < 20.; i += 1.) {
+      if (group < 9) {
+        ribbon(idx);
+        continue;
+      }
+      if (group == i) {
+        //test123(idx, 1.);
+        //vortex(idx);
+        impressTheWizards(idx);
       }
     }
-  
-    if (group == 2) {
-      //
-      //dir *= .9;
-      //dir = dir + .1 * hash(pos);
-      //dir = drawCoolShape();
-      //direction[idx]=  dir + .1 * hash(pos);
-      lifetime[idx] -= 100;  
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    helix(idx);
-       
-      }
-    } 
-    if (group == 3) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 1.);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-    if (group == 4) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       vortex(idx);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-  
-    if (group == 5) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 2.);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-    if (group == 6) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 0.);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-    if (group == 7) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 2.);
-       //dir = hash(pos.xyz);
-      }
-    }
-    
-    if (group == 8) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 0.);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-    if (group == 9) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 1.);
-       //dir = hash(pos.xyz);
-      }
-    }
-    if ( lifetime[idx] < 1000) {
-      //posBuffer[idx]  = vec4<f32>(0.);
-    }
-  
-  
-    if (group == 1) { 
-      lifetime[idx] -= 100; 
-      if ( lifetime[idx] < 100) { 
-        lifetime[idx] = 10000;
-  
-       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-       test123(idx, 1.);
-       //dir = hash(pos.xyz);
-      }
-    }
-  
-    
-  
+
   
   posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
   
   return dir;
+  }
+
+  fn impressTheWizards(idx: u32) -> f32 {
+
+    return -1;
+  }
+
+//improve the patterns
+  fn ribbon(idx: u32) -> f32 {
+    var dt = distancetraveled[idx];
+    var pos = posBuffer[idx];
+    var theta = atan2(pos.y, pos.x);
+    direction[idx] = vec3<f32>(cos(theta * 1.1), cos(theta * 1.1), pos.y);
+    if (dt > 100) {
+      distancetraveled[idx]= 0;
+      posBuffer[idx] =reset[idx];
+      //vec4<f32>(0.);
+    }
+    return -1;
   }
 
 fn applyVF() -> vec3<f32> {
@@ -1600,34 +1518,11 @@ fn applyVF() -> vec3<f32> {
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
-      //vector field -- 1000 x 1000 x 10
-      //20 million particles - wind - vector field change
       let index: u32 = GlobalInvocationID.x;
     
-      
-      //if magnitude > 1 -> revert to center 
-      //fly into position -> by index offset duration
 
-      let life = lifetime[index];
-      // if (life < 0) {
-      //   lifetime[index] = 300.;
-      //   direction[index] = vec3<f32>(0.);
-      //   posbuffer[(index)]= vec4<f32>(0.);
-      // }
-
-      
-      drawShape(index);
-
-      let r = reset[index]; 
-      //  if (life < 0) {
-      //   lifetime[index] = 3000.;
-      //   direction[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-      //   posbuffer[(index)]= vec4<f32>(cos(uniforms.time), sin(uniforms.time), 0, 1);
-      // } 
-      // lifetime[index] -= 1.;
-      
       var pos = posBuffer[index];
-
+      var r = reset[index];
       runAlongRoute(pos.xyz, f32(index));
 
       //applyMagnets(pos.xyz);
@@ -1636,15 +1531,12 @@ fn applyVF() -> vec3<f32> {
       var vf = hash(pos.xyz);
 
       let t = uniforms.time;
-      //var vf2 = vec3<f32>(vectorFieldBuffer2[idx].xyz);
 
       if (hasCollided(pos.xyz))  {
         var vel = direction[index];
-        //direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
-        //direction[index] *= .0;
+        direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+        direction[index] *= .0;
         //direction[index] = direction[index] + .1 * vf;
-        //
-        //
       }
      //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
@@ -1665,7 +1557,7 @@ fn applyVF() -> vec3<f32> {
       }
       //helix(index);
       //  direction[index] *= .0;
-      //  direction[index] = direction[index] + .1 * vf;
+      //  direction[index] = direction[index] + .001 * vf;
       //lastMonth(pos.xyz, index);
       //draw cool shapes and then dont deform them in the vector field until some time 
 
@@ -1706,7 +1598,6 @@ fn applyVF() -> vec3<f32> {
     },
     bindGroups: function (state, computePipeline) {
 
-  const reset = makeBuffer(dancer, 0, 'reset')
 
   const descriptor = {
     layout: computePipeline.getBindGroupLayout(0),
@@ -1715,7 +1606,7 @@ fn applyVF() -> vec3<f32> {
       {binding: 1, resource: {buffer: mesh || shapes[0]}},
       {binding: 2, resource: {buffer: uniformsBuffer}},
       {binding: 3, resource: {buffer: direction}},
-      {binding: 4, resource: {buffer: lifeTimeBuffer}},
+      {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
       {binding: 6, resource: {buffer: gridBuffer2 }},
     ]
