@@ -1413,17 +1413,17 @@ fn drawShape (index: u32) -> vec3<f32> {
   return -1;
   }
   
-  // fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
-  //   //rotate hues so that rainbow flies toward camera 
-  //   //no direction
-  //   let index = f32(idx);
-  //   let i = index / 10000;
-  //   posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
+  fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
+    //rotate hues so that rainbow flies toward camera 
+    //no direction
+    let index = f32(idx);
+    let i = index / 10000;
+    posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
   
-  //   //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
+    //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
   
-  //   return -1;
-  // }
+    return -1;
+  }
   
   //dont think anything else - just fnish the shader
   //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
@@ -1439,7 +1439,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   //noise Buffer = unique ID = Math.random () * coefficent for each particle 
   var dt = sin(uniforms.time);
   
-  //var group = groupIndex[idx];    
+  var group = f32(idx) % 10;   
     lifetime[idx] -= 100;
     if ( lifetime[idx] < 100) {
       lifetime[idx] = 10000;
@@ -1449,122 +1449,122 @@ fn drawShape (index: u32) -> vec3<f32> {
     //web(pos, idx);
   
   
-    // if (group == 0 || group == 3) { 
-    //   lifetime[idx] -= 100;
-    //   if ( lifetime[idx] < 100) {
-    //     lifetime[idx] = 10000;
+    if (group == 0 || group == 3) { 
+      lifetime[idx] -= 100;
+      if ( lifetime[idx] < 100) {
+        lifetime[idx] = 10000;
   
-    //     dir = changeDirection(pos,idx);
-    //   }
-    // }
+        dir = changeDirection(pos,idx);
+      }
+    }
   
-    // if (group == 2) {
-    //   //
-    //   //dir *= .9;
-    //   //dir = dir + .1 * hash(pos);
-    //   //dir = drawCoolShape();
-    //   //direction[idx]=  dir + .1 * hash(pos);
-    //   lifetime[idx] -= 100;  
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 2) {
+      //
+      //dir *= .9;
+      //dir = dir + .1 * hash(pos);
+      //dir = drawCoolShape();
+      //direction[idx]=  dir + .1 * hash(pos);
+      lifetime[idx] -= 100;  
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    // //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    // helix(idx);
+    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+    helix(idx);
        
-    //   }
-    // } 
-    // if (group == 3) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+      }
+    } 
+    if (group == 3) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 1.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 1.);
+       //dir = hash(pos.xyz);
+      }
+    }
   
-    // if (group == 4) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 4) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    vortex(idx);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       vortex(idx);
+       //dir = hash(pos.xyz);
+      }
+    }
   
   
-    // if (group == 5) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 5) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 2.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 2.);
+       //dir = hash(pos.xyz);
+      }
+    }
   
-    // if (group == 6) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 6) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 0.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 0.);
+       //dir = hash(pos.xyz);
+      }
+    }
   
-    // if (group == 7) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 7) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 2.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 2.);
+       //dir = hash(pos.xyz);
+      }
+    }
     
-    // if (group == 8) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 8) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 0.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 0.);
+       //dir = hash(pos.xyz);
+      }
+    }
   
-    // if (group == 9) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 9) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 1.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
-    // if ( lifetime[idx] < 1000) {
-    //   //posBuffer[idx]  = vec4<f32>(0.);
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 1.);
+       //dir = hash(pos.xyz);
+      }
+    }
+    if ( lifetime[idx] < 1000) {
+      //posBuffer[idx]  = vec4<f32>(0.);
+    }
   
   
-    // if (group == 1) { 
-    //   lifetime[idx] -= 100; 
-    //   if ( lifetime[idx] < 100) { 
-    //     lifetime[idx] = 10000;
+    if (group == 1) { 
+      lifetime[idx] -= 100; 
+      if ( lifetime[idx] < 100) { 
+        lifetime[idx] = 10000;
   
-    //    //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
-    //    test123(idx, 1.);
-    //    //dir = hash(pos.xyz);
-    //   }
-    // }
+       //dir =  posBuffer[idx].xyz - reset[idx].xyz;    
+       test123(idx, 1.);
+       //dir = hash(pos.xyz);
+      }
+    }
   
     
   
@@ -1632,6 +1632,7 @@ fn applyVF() -> vec3<f32> {
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
     
+      
       //if magnitude > 1 -> revert to center 
       //fly into position -> by index offset duration
 
@@ -1687,8 +1688,12 @@ fn applyVF() -> vec3<f32> {
         //direction[index]*= .001;
       }
       //helix(index);
-       direction[index] *= .0;
-       direction[index] = direction[index] + .1 * vf;
+      //  direction[index] *= .0;
+      //  direction[index] = direction[index] + .1 * vf;
+      //lastMonth(pos.xyz, index);
+      //draw cool shapes and then dont deform them in the vector field until some time 
+
+      runAlongRoute(pos.xyz, f32(index));
     }`,
   
     exec: function (state){
