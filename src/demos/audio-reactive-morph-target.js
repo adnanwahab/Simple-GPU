@@ -1482,7 +1482,7 @@ fn drawShape (index: u32) -> vec3<f32> {
       if (group == i) {
         //test123(idx, 1.);
         //vortex(idx);
-        impressTheWizards(idx);
+        makeCoolShader(idx);
       }
     }
 
@@ -1492,8 +1492,18 @@ fn drawShape (index: u32) -> vec3<f32> {
   return dir;
   }
 
-  fn impressTheWizards(idx: u32) -> f32 {
+  fn makeCoolShader(idx: u32) -> f32 {
+    var dt = distancetraveled[idx];
+    var index = f32(idx);
+    var pos = posBuffer[idx];
 
+    direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+
+    if (dt > 100) {
+      distancetraveled[idx]= 0;
+      posBuffer[idx] =reset[idx];
+      //vec4<f32>(0.);
+    }
     return -1;
   }
 
