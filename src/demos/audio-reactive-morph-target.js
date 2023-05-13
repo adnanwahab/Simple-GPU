@@ -11,6 +11,8 @@ import utils from '../../lib/utils';
 import * as dat from 'dat.gui';
 import postProcessing from './postProcessing'
 import dragon from 'stanford-dragon'
+import createCamera from './createCamera'
+
 
 async function morph() { 
 
@@ -1468,16 +1470,16 @@ fn drawShape (index: u32) -> vec3<f32> {
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
         if (group < 20) {
-          // ribbon(idx);
+           ribbon(idx);
           //continue;
         }
         if (group == i) {
-          // makeParticlesFly(idx);
-          // test123(idx, 1.);
+          makeParticlesFly(idx);
+          //test123(idx, 1.);
           // vortex(idx);
           // makeCoolShader(idx);
-          // helix(idx);
-          makeASpiralWithoutSinCosineOrIndex(idx);
+          //helix(idx);
+          //makeASpiralWithoutSinCosineOrIndex(idx);
         }
       //}
     }
@@ -1526,12 +1528,9 @@ fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
       cos(idx) , idx /2000., 
       
       sin(idx), 1.);
-  
-    //if (posBuffer[index].y > .74) {
-  //    buffer.xz /= 
+
       posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
       posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-   // }
   
     posBuffer[index].y *= .6;
   
@@ -1568,7 +1567,7 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
-    direction[idx] = 10. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    direction[idx] = 1. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
     direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
 
     // if (distancetraveled[idx] > 1000) {
@@ -2087,6 +2086,16 @@ shapes.push(dragonBuffer)
 const device = webgpu.device
 
 let cosCounter = 0
+
+let camera = createCamera({
+  center: [0, 2.5, 0],
+  damping: 0,
+  noScroll: true,
+  renderOnDirty: true,
+  element: webgpu.canvas || false ||
+  document.createElement('div') || false
+ 
+});
 function getCameraViewProjMatrix() {
   let model = mat4.identity(new Float32Array(16))
 
@@ -2107,26 +2116,27 @@ function getCameraViewProjMatrix() {
   let viewProjectionMatrix = mat4.create();
 
   let eyePosition = vec3.set(vec3.create(), 0, 0, 1);
-  mat4.perspectiveZO(projectionMatrix, 10, 500 / 500, .5, 10.0);
+  //mat4.perspectiveZO(projectionMatrix, 10, 500 / 500, .5, 10.0);
   //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
   // mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
 
 
+  let {projection, view} = camera()
 
   device.queue.writeBuffer(
     modelViewProjectionMemory,
     0,
-    projectionMatrix.buffer,
-    projectionMatrix.byteOffset,
-    projectionMatrix.byteLength
+    projection.buffer,
+    projection.byteOffset,
+    projection.byteLength
   );
 
   device.queue.writeBuffer(
     modelViewProjectionMemory,
     64,
-    viewProjectionMatrix.buffer,
-    viewProjectionMatrix.byteOffset,
-    viewProjectionMatrix.byteLength 
+    view.buffer,
+    view.byteOffset,
+    view.byteLength 
   );
    device.queue.writeBuffer(
     modelViewProjectionMemory,
@@ -2145,6 +2155,7 @@ function getCameraViewProjMatrix() {
   // );
   return [model, viewProjectionMatrix, projectionMatrix]
 }
+
 
  
 
