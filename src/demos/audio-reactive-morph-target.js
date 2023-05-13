@@ -4,7 +4,6 @@ let {cos, sin, } = Math
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
-import createCamera from './createCamera'
 import bunny from 'bunny'
 import { mat4, vec3 } from 'gl-matrix'
 import simpleWebgpuInit from '../../lib/main';
@@ -14,10 +13,6 @@ import postProcessing from './postProcessing'
 import dragon from 'stanford-dragon'
 
 async function morph() { 
-// let img = new Image();
-// img.src = './data/webgpu.png'
-// await img.decode();
-// let bitmap = await createImageBitmap(img);
 
 const buffers = [
   {
@@ -83,14 +78,13 @@ const uniformsBuffer = webgpu.device.createBuffer({
   usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-const cameraUniformBuffer = webgpu.device.createBuffer({
-  size: 3 * 4 * 16 + 16, // 4x4 matrix
-  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-});
-
+let modelViewProjectionMemory = webgpu.device.createBuffer({
+  size: 196,
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+})
 const quadBuffer = webgpu.device.createBuffer({
   size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
-  usage: GPUBufferUsage.VERTEX,
+  usage: GPUBufferUsage.VERTEX ,
   mappedAtCreation: true,
 });
 
@@ -135,10 +129,10 @@ var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
-  let color = d3.rgb( interpolateTurbo(stuff));
-  rgb[3*i] = color.r / 255 / 2 + .5
-  rgb[3*i+1] = color.g / 255 /2 + .5
-  rgb[3*i+2] = color.b / 255 /2 + .5
+  let color = //d3.rgb( interpolateTurbo(stuff));
+  rgb[3*i] =Math.random()
+  rgb[3*i+1] = Math.random()
+  rgb[3*i+2] = Math.random()
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
@@ -187,7 +181,7 @@ let pickVF = function () {
 //stream3, DELETE ME
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[0]()
-  console.log(idx)
+
   return ret
 }
 
@@ -1474,15 +1468,16 @@ fn drawShape (index: u32) -> vec3<f32> {
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
         if (group < 20) {
-          //ribbon(idx);
+          // ribbon(idx);
           //continue;
         }
         if (group == i) {
-          makeParticlesFly(idx);
-          //test123(idx, 1.);
-          //vortex(idx);
+          // makeParticlesFly(idx);
+          // test123(idx, 1.);
+          // vortex(idx);
           // makeCoolShader(idx);
-          //helix(idx);
+          // helix(idx);
+          makeASpiralWithoutSinCosineOrIndex(idx);
         }
       //}
     }
@@ -1497,6 +1492,13 @@ fn drawShape (index: u32) -> vec3<f32> {
   posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
   
   return dir;
+  }
+
+  fn makeASpiralWithoutSinCosineOrIndex(idx: u32) -> bool {
+
+    var pos = posBuffer[idx];
+    direction[idx] = - vec3<f32>(pos.y, -pos.x, pos.z);
+    return false;
   }
 
 fn makeParticlesFly(idx: u32) -> bool {
@@ -2040,7 +2042,7 @@ let texture = webgpu.texture(canvas)
           {
             binding: 1,
             resource: {
-            buffer: cameraUniformBuffer
+            buffer: modelViewProjectionMemory
             }
           },
           {
@@ -2084,37 +2086,67 @@ shapes.push(dragonBuffer)
 
 const device = webgpu.device
 
-let model = mat4.identity(new Float32Array(16))
 let cosCounter = 0
 function getCameraViewProjMatrix() {
+  let model = mat4.identity(new Float32Array(16))
+
   let m  = mat4.identity(new Float32Array(16))
-  mat4.translate(model, model, vec3.fromValues(2, 2, 0));
-  mat4.rotate(
-    model,
-    model,
-    1,
-    vec3.fromValues(
-      Math.sin(0),
-      Math.cos(1),
-      0
-    )
-  );
+  //mat4.translate(model, model, vec3.fromValues(0, 0, 0));
+  // mat4.rotate(
+  //   model,
+  //   model,
+  //   1,
+  //   vec3.fromValues(
+  //     Math.sin(0),
+  //     Math.cos(1),
+  //     0
+  //   )
+  // );
 
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
-  mat4.perspectiveZO(projectionMatrix,
-    10, 500 / 500, .5, 10.0);
-  //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
-  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
 
-  // Write the render parameters to the uniform buffer.
-  let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
-  let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
-  viewProjectionMatrixHost.set(viewProjectionMatrix);
-  return viewProjectionMatrixHost
+  let eyePosition = vec3.set(vec3.create(), 0, 0, 1);
+  mat4.perspectiveZO(projectionMatrix, 10, 500 / 500, .5, 10.0);
+  //mat4.translate(viewProjectionMatrix, viewProjectionMatrix, eyePosition);
+  // mat4.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+
+
+
+  device.queue.writeBuffer(
+    modelViewProjectionMemory,
+    0,
+    projectionMatrix.buffer,
+    projectionMatrix.byteOffset,
+    projectionMatrix.byteLength
+  );
+
+  device.queue.writeBuffer(
+    modelViewProjectionMemory,
+    64,
+    viewProjectionMatrix.buffer,
+    viewProjectionMatrix.byteOffset,
+    viewProjectionMatrix.byteLength 
+  );
+   device.queue.writeBuffer(
+    modelViewProjectionMemory,
+    128,
+    model.buffer,
+    model.byteOffset,
+    model.byteLength
+  );
+
+  // device.queue.writeBuffer(
+  //   modelViewProjectionMemory,
+  //   192,  
+  //   a.buffer,
+  //   0,
+  //   a.byteLength
+  // );
+  return [model, viewProjectionMatrix, projectionMatrix]
 }
 
- const cameraViewProj = getCameraViewProjMatrix();
+ 
 
 
 function magnitude (v) {
@@ -2160,15 +2192,6 @@ webgpu.canvas.addEventListener('mousemove', function (e) {
   mouse[1] = e.clientY / 500
 })
 
-let camera = createCamera({
-  center: [0, 2.5, 0],
-  damping: 0,
-  noScroll: true,
-  renderOnDirty: true,
-  element: webgpu.canvas || false ||
-  document.createElement('div') || false
- 
-});
 let zoom = 1
 webgpu.canvas.addEventListener('mousewheel', function (e) {
   camera.zoom(zoom = zoom + .1 * e.deltaY)
@@ -2178,40 +2201,12 @@ let result = drawScreen()
 
 let swapChainTexture = result.state.swapChainTexture
 
+
 setInterval(
 async function () {
-    let {projection, view} = camera()
+    //let {projection, view} = camera()
+    let [model, projection, view] = getCameraViewProjMatrix()
 
-    device.queue.writeBuffer(
-      cameraUniformBuffer,
-      0,
-      projection.buffer,
-      projection.byteOffset,
-      projection.byteLength
-    );
-
-    device.queue.writeBuffer(
-      cameraUniformBuffer,
-      64,
-      view.buffer,
-      view.byteOffset,
-      view.byteLength 
-    );
-     device.queue.writeBuffer(
-      cameraUniformBuffer,
-      128,
-      model.buffer,
-      model.byteOffset,
-      model.byteLength
-    );
-
-    device.queue.writeBuffer(
-      cameraUniformBuffer,
-      192,  
-      a.buffer,
-      0,
-      a.byteLength
-    );
     
     computeTransition()
   
@@ -2248,7 +2243,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
- @group(0) @binding(1) var<uniform> camera : Camera;
+  @group(0) @binding(1) var<uniform> cam : Camera;
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
   
@@ -2258,13 +2253,12 @@ function makeDrawCall (buffer, drawDescriptor) {
   ) -> VSOut {
   var vsOut: VSOut;  
 
-  var remove =    camera.projectionMatrix
-    * camera.viewMatrix *  camera.modelMatrix;
+  
 
-  vsOut.position = 
+  vsOut.position = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix *
  
   
-   remove * vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
