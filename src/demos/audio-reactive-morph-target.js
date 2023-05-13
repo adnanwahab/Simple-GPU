@@ -1,6 +1,5 @@
 //mirror world
 //generate vector field purely on GPU -> 10 million 
-
 let {cos, sin, } = Math
 
 import * as d3 from 'd3'
@@ -14,10 +13,11 @@ import * as dat from 'dat.gui';
 import postProcessing from './postProcessing'
 import dragon from 'stanford-dragon'
 
-let img = new Image();
-img.src = './data/webgpu.png'
-await img.decode();
-let bitmap = await createImageBitmap(img);
+async function morph() { 
+// let img = new Image();
+// img.src = './data/webgpu.png'
+// await img.decode();
+// let bitmap = await createImageBitmap(img);
 
 const buffers = [
   {
@@ -2337,3 +2337,6 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
 }
 
 
+
+}
+morph()

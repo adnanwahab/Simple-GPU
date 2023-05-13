@@ -1391,6 +1391,19 @@
         })
       };
     }
+    if (HTMLCanvasElement === textureData.constructor) {
+      let texture = device.createTexture({
+        size: [textureData.width, textureData.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      return {
+        id: count++,
+        texture,
+        width: textureData.width,
+        height: textureData.height
+      };
+    }
     if (ImageBitmap === textureData.constructor) {
       let imageBitmap = textureData;
       let texture = device.createTexture({

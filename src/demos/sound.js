@@ -24,6 +24,7 @@ import { mat4, vec3 } from 'gl-matrix'
 //ray -> point intersection
 //whatever else tv show says 
 //nice to have - audio synthesis xnooze
+async function sound () {
 let webgpu = await simpleWebgpuInit();
 
 
@@ -805,3 +806,5 @@ camera.modelMatrix *
     `}}));
     return drawRosePetals
   }
+}
+sound()

@@ -2050,6 +2050,7 @@
   var import_mouse_wheel = __toESM(require_wheel());
   var isBrowser = typeof window !== "undefined";
   function createCamera(props_) {
+    console.log(123123123);
     var props = props_ || {};
     if (typeof props.noScroll === "undefined") {
       props.noScroll = props.preventDefault;
@@ -2638,6 +2639,19 @@ fn prefixSumOut(
           format: "rgba8unorm",
           usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
         })
+      };
+    }
+    if (HTMLCanvasElement === textureData.constructor) {
+      let texture = device.createTexture({
+        size: [textureData.width, textureData.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      return {
+        id: count++,
+        texture,
+        width: textureData.width,
+        height: textureData.height
       };
     }
     if (ImageBitmap === textureData.constructor) {

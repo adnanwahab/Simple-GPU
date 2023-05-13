@@ -1665,6 +1665,7 @@
   var import_mouse_wheel = __toESM(require_wheel());
   var isBrowser = typeof window !== "undefined";
   function createCamera(props_) {
+    console.log(123123123);
     var props = props_ || {};
     if (typeof props.noScroll === "undefined") {
       props.noScroll = props.preventDefault;

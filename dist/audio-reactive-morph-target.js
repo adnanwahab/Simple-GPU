@@ -97,7 +97,7 @@
     "node_modules/mouse-change/mouse-listen.js"(exports, module) {
       "use strict";
       module.exports = mouseListen;
-      var mouse2 = require_mouse();
+      var mouse = require_mouse();
       function mouseListen(element, callback) {
         if (!callback) {
           callback = element;
@@ -134,8 +134,8 @@
           return changed;
         }
         function handleEvent(nextButtons, ev) {
-          var nextX = mouse2.x(ev);
-          var nextY = mouse2.y(ev);
+          var nextX = mouse.x(ev);
+          var nextY = mouse.y(ev);
           if ("buttons" in ev) {
             nextButtons = ev.buttons | 0;
           }
@@ -163,17 +163,17 @@
           }
         }
         function handleMouseMove(ev) {
-          if (mouse2.buttons(ev) === 0) {
+          if (mouse.buttons(ev) === 0) {
             handleEvent(0, ev);
           } else {
             handleEvent(buttonState, ev);
           }
         }
         function handleMouseDown(ev) {
-          handleEvent(buttonState | mouse2.buttons(ev), ev);
+          handleEvent(buttonState | mouse.buttons(ev), ev);
         }
         function handleMouseUp(ev) {
-          handleEvent(buttonState & ~mouse2.buttons(ev), ev);
+          handleEvent(buttonState & ~mouse.buttons(ev), ev);
         }
         function attachListeners() {
           if (attached) {
@@ -222,10 +222,10 @@
           }
         }
         attachListeners();
-        var result3 = {
+        var result2 = {
           element
         };
-        Object.defineProperties(result3, {
+        Object.defineProperties(result2, {
           enabled: {
             get: function() {
               return attached;
@@ -264,7 +264,7 @@
             enumerable: true
           }
         });
-        return result3;
+        return result2;
       }
     }
   });
@@ -1026,14 +1026,14 @@
     }
   };
   function classedAdd(node, names) {
-    var list2 = classList(node), i = -1, n = names.length;
+    var list = classList(node), i = -1, n = names.length;
     while (++i < n)
-      list2.add(names[i]);
+      list.add(names[i]);
   }
   function classedRemove(node, names) {
-    var list2 = classList(node), i = -1, n = names.length;
+    var list = classList(node), i = -1, n = names.length;
     while (++i < n)
-      list2.remove(names[i]);
+      list.remove(names[i]);
   }
   function classedTrue(names) {
     return function() {
@@ -1053,9 +1053,9 @@
   function classed_default(name, value) {
     var names = classArray(name + "");
     if (arguments.length < 2) {
-      var list2 = classList(this.node()), i = -1, n = names.length;
+      var list = classList(this.node()), i = -1, n = names.length;
       while (++i < n)
-        if (!list2.contains(names[i]))
+        if (!list.contains(names[i]))
           return false;
       return true;
     }
@@ -1558,13 +1558,13 @@
     this.opacity = +opacity;
   }
   define_default(Rgb, rgb, extend(Color, {
-    brighter: function(k) {
-      k = k == null ? brighter : Math.pow(brighter, k);
-      return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
+    brighter: function(k2) {
+      k2 = k2 == null ? brighter : Math.pow(brighter, k2);
+      return new Rgb(this.r * k2, this.g * k2, this.b * k2, this.opacity);
     },
-    darker: function(k) {
-      k = k == null ? darker : Math.pow(darker, k);
-      return new Rgb(this.r * k, this.g * k, this.b * k, this.opacity);
+    darker: function(k2) {
+      k2 = k2 == null ? darker : Math.pow(darker, k2);
+      return new Rgb(this.r * k2, this.g * k2, this.b * k2, this.opacity);
     },
     rgb: function() {
       return this;
@@ -1634,13 +1634,13 @@
     this.opacity = +opacity;
   }
   define_default(Hsl, hsl, extend(Color, {
-    brighter: function(k) {
-      k = k == null ? brighter : Math.pow(brighter, k);
-      return new Hsl(this.h, this.s, this.l * k, this.opacity);
+    brighter: function(k2) {
+      k2 = k2 == null ? brighter : Math.pow(brighter, k2);
+      return new Hsl(this.h, this.s, this.l * k2, this.opacity);
     },
-    darker: function(k) {
-      k = k == null ? darker : Math.pow(darker, k);
-      return new Hsl(this.h, this.s, this.l * k, this.opacity);
+    darker: function(k2) {
+      k2 = k2 == null ? darker : Math.pow(darker, k2);
+      return new Hsl(this.h, this.s, this.l * k2, this.opacity);
     },
     rgb: function() {
       var h = this.h % 360 + (this.h < 0) * 360, s = isNaN(h) || isNaN(this.s) ? 0 : this.s, l = this.l, m2 = l + (l < 0.5 ? l : 1 - l) * s, m1 = 2 * l - m2;
@@ -1690,9 +1690,9 @@
   var constant_default2 = (x) => () => x;
 
   // node_modules/d3-interpolate/src/color.js
-  function linear(a, d2) {
+  function linear(a, d) {
     return function(t) {
-      return a + t * d2;
+      return a + t * d;
     };
   }
   function exponential(a, b, y) {
@@ -1706,8 +1706,8 @@
     };
   }
   function nogamma(a, b) {
-    var d2 = b - a;
-    return d2 ? linear(a, d2) : constant_default2(isNaN(a) ? b : a);
+    var d = b - a;
+    return d ? linear(a, d) : constant_default2(isNaN(a) ? b : a);
   }
 
   // node_modules/d3-interpolate/src/rgb.js
@@ -1816,15 +1816,15 @@
     scaleX: 1,
     scaleY: 1
   };
-  function decompose_default(a, b, c2, d2, e, f) {
+  function decompose_default(a, b, c2, d, e, f) {
     var scaleX, scaleY, skewX;
     if (scaleX = Math.sqrt(a * a + b * b))
       a /= scaleX, b /= scaleX;
-    if (skewX = a * c2 + b * d2)
-      c2 -= a * skewX, d2 -= b * skewX;
-    if (scaleY = Math.sqrt(c2 * c2 + d2 * d2))
-      c2 /= scaleY, d2 /= scaleY, skewX /= scaleY;
-    if (a * d2 < b * c2)
+    if (skewX = a * c2 + b * d)
+      c2 -= a * skewX, d -= b * skewX;
+    if (scaleY = Math.sqrt(c2 * c2 + d * d))
+      c2 /= scaleY, d /= scaleY, skewX /= scaleY;
+    if (a * d < b * c2)
       a = -a, b = -b, skewX = -skewX, scaleX = -scaleX;
     return {
       translateX: e,
@@ -1937,10 +1937,10 @@
   }
   Timer.prototype = timer.prototype = {
     constructor: Timer,
-    restart: function(callback, delay, time2) {
+    restart: function(callback, delay, time) {
       if (typeof callback !== "function")
         throw new TypeError("callback is not a function");
-      time2 = (time2 == null ? now() : +time2) + (delay == null ? 0 : +delay);
+      time = (time == null ? now() : +time) + (delay == null ? 0 : +delay);
       if (!this._next && taskTail !== this) {
         if (taskTail)
           taskTail._next = this;
@@ -1949,7 +1949,7 @@
         taskTail = this;
       }
       this._call = callback;
-      this._time = time2;
+      this._time = time;
       sleep();
     },
     stop: function() {
@@ -1960,9 +1960,9 @@
       }
     }
   };
-  function timer(callback, delay, time2) {
+  function timer(callback, delay, time) {
     var t = new Timer();
-    t.restart(callback, delay, time2);
+    t.restart(callback, delay, time);
     return t;
   }
   function timerFlush() {
@@ -1993,11 +1993,11 @@
       clockSkew -= delay, clockLast = now2;
   }
   function nap() {
-    var t0, t1 = taskHead, t2, time2 = Infinity;
+    var t0, t1 = taskHead, t2, time = Infinity;
     while (t1) {
       if (t1._call) {
-        if (time2 > t1._time)
-          time2 = t1._time;
+        if (time > t1._time)
+          time = t1._time;
         t0 = t1, t1 = t1._next;
       } else {
         t2 = t1._next, t1._next = null;
@@ -2005,17 +2005,17 @@
       }
     }
     taskTail = t0;
-    sleep(time2);
+    sleep(time);
   }
-  function sleep(time2) {
+  function sleep(time) {
     if (frame)
       return;
     if (timeout)
       timeout = clearTimeout(timeout);
-    var delay = time2 - clockNow;
+    var delay = time - clockNow;
     if (delay > 24) {
-      if (time2 < Infinity)
-        timeout = setTimeout(wake, time2 - clock.now() - clockSkew);
+      if (time < Infinity)
+        timeout = setTimeout(wake, time - clock.now() - clockSkew);
       if (interval)
         interval = clearInterval(interval);
     } else {
@@ -2026,13 +2026,13 @@
   }
 
   // node_modules/d3-timer/src/timeout.js
-  function timeout_default(callback, delay, time2) {
+  function timeout_default(callback, delay, time) {
     var t = new Timer();
     delay = delay == null ? 0 : +delay;
     t.restart((elapsed) => {
       t.stop();
       callback(elapsed + delay);
-    }, delay, time2);
+    }, delay, time);
     return t;
   }
 
@@ -2507,9 +2507,9 @@
     for (var groups = this._groups, m2 = groups.length, subgroups = [], parents = [], j = 0; j < m2; ++j) {
       for (var group = groups[j], n = group.length, node, i = 0; i < n; ++i) {
         if (node = group[i]) {
-          for (var children2 = select.call(node, node.__data__, i, group), child, inherit2 = get2(node, id2), k = 0, l = children2.length; k < l; ++k) {
-            if (child = children2[k]) {
-              schedule_default(child, name, id2, k, children2, inherit2);
+          for (var children2 = select.call(node, node.__data__, i, group), child, inherit2 = get2(node, id2), k2 = 0, l = children2.length; k2 < l; ++k2) {
+            if (child = children2[k2]) {
+              schedule_default(child, name, id2, k2, children2, inherit2);
             }
           }
           subgroups.push(children2);
@@ -2823,15 +2823,15 @@
   }
 
   // node_modules/d3-zoom/src/transform.js
-  function Transform(k, x, y) {
-    this.k = k;
+  function Transform(k2, x, y) {
+    this.k = k2;
     this.x = x;
     this.y = y;
   }
   Transform.prototype = {
     constructor: Transform,
-    scale: function(k) {
-      return k === 1 ? this : new Transform(this.k * k, this.x, this.y);
+    scale: function(k2) {
+      return k2 === 1 ? this : new Transform(this.k * k2, this.x, this.y);
     },
     translate: function(x, y) {
       return x === 0 & y === 0 ? this : new Transform(this.k, this.x + this.k * x, this.y + this.k * y);
@@ -4163,7 +4163,7 @@
     hermite: () => hermite,
     inverse: () => inverse,
     len: () => len,
-    length: () => length,
+    length: () => length2,
     lerp: () => lerp,
     max: () => max2,
     min: () => min2,
@@ -4207,7 +4207,7 @@
     out[2] = a[2];
     return out;
   }
-  function length(a) {
+  function length2(a) {
     var x = a[0];
     var y = a[1];
     var z = a[2];
@@ -4361,18 +4361,18 @@
     out[2] = az + t * (b[2] - az);
     return out;
   }
-  function hermite(out, a, b, c2, d2, t) {
+  function hermite(out, a, b, c2, d, t) {
     var factorTimes2 = t * t;
     var factor1 = factorTimes2 * (2 * t - 3) + 1;
     var factor2 = factorTimes2 * (t - 2) + t;
     var factor3 = factorTimes2 * (t - 1);
     var factor4 = factorTimes2 * (3 - 2 * t);
-    out[0] = a[0] * factor1 + b[0] * factor2 + c2[0] * factor3 + d2[0] * factor4;
-    out[1] = a[1] * factor1 + b[1] * factor2 + c2[1] * factor3 + d2[1] * factor4;
-    out[2] = a[2] * factor1 + b[2] * factor2 + c2[2] * factor3 + d2[2] * factor4;
+    out[0] = a[0] * factor1 + b[0] * factor2 + c2[0] * factor3 + d[0] * factor4;
+    out[1] = a[1] * factor1 + b[1] * factor2 + c2[1] * factor3 + d[1] * factor4;
+    out[2] = a[2] * factor1 + b[2] * factor2 + c2[2] * factor3 + d[2] * factor4;
     return out;
   }
-  function bezier(out, a, b, c2, d2, t) {
+  function bezier(out, a, b, c2, d, t) {
     var inverseFactor = 1 - t;
     var inverseFactorTimesTwo = inverseFactor * inverseFactor;
     var factorTimes2 = t * t;
@@ -4380,9 +4380,9 @@
     var factor2 = 3 * t * inverseFactorTimesTwo;
     var factor3 = 3 * factorTimes2 * inverseFactor;
     var factor4 = factorTimes2 * t;
-    out[0] = a[0] * factor1 + b[0] * factor2 + c2[0] * factor3 + d2[0] * factor4;
-    out[1] = a[1] * factor1 + b[1] * factor2 + c2[1] * factor3 + d2[1] * factor4;
-    out[2] = a[2] * factor1 + b[2] * factor2 + c2[2] * factor3 + d2[2] * factor4;
+    out[0] = a[0] * factor1 + b[0] * factor2 + c2[0] * factor3 + d[0] * factor4;
+    out[1] = a[1] * factor1 + b[1] * factor2 + c2[1] * factor3 + d[1] * factor4;
+    out[2] = a[2] * factor1 + b[2] * factor2 + c2[2] * factor3 + d[2] * factor4;
     return out;
   }
   function random(out, scale3) {
@@ -4429,39 +4429,39 @@
     return out;
   }
   function rotateX2(out, a, b, rad) {
-    var p2 = [], r = [];
-    p2[0] = a[0] - b[0];
-    p2[1] = a[1] - b[1];
-    p2[2] = a[2] - b[2];
-    r[0] = p2[0];
-    r[1] = p2[1] * Math.cos(rad) - p2[2] * Math.sin(rad);
-    r[2] = p2[1] * Math.sin(rad) + p2[2] * Math.cos(rad);
+    var p = [], r = [];
+    p[0] = a[0] - b[0];
+    p[1] = a[1] - b[1];
+    p[2] = a[2] - b[2];
+    r[0] = p[0];
+    r[1] = p[1] * Math.cos(rad) - p[2] * Math.sin(rad);
+    r[2] = p[1] * Math.sin(rad) + p[2] * Math.cos(rad);
     out[0] = r[0] + b[0];
     out[1] = r[1] + b[1];
     out[2] = r[2] + b[2];
     return out;
   }
   function rotateY2(out, a, b, rad) {
-    var p2 = [], r = [];
-    p2[0] = a[0] - b[0];
-    p2[1] = a[1] - b[1];
-    p2[2] = a[2] - b[2];
-    r[0] = p2[2] * Math.sin(rad) + p2[0] * Math.cos(rad);
-    r[1] = p2[1];
-    r[2] = p2[2] * Math.cos(rad) - p2[0] * Math.sin(rad);
+    var p = [], r = [];
+    p[0] = a[0] - b[0];
+    p[1] = a[1] - b[1];
+    p[2] = a[2] - b[2];
+    r[0] = p[2] * Math.sin(rad) + p[0] * Math.cos(rad);
+    r[1] = p[1];
+    r[2] = p[2] * Math.cos(rad) - p[0] * Math.sin(rad);
     out[0] = r[0] + b[0];
     out[1] = r[1] + b[1];
     out[2] = r[2] + b[2];
     return out;
   }
   function rotateZ2(out, a, b, rad) {
-    var p2 = [], r = [];
-    p2[0] = a[0] - b[0];
-    p2[1] = a[1] - b[1];
-    p2[2] = a[2] - b[2];
-    r[0] = p2[0] * Math.cos(rad) - p2[1] * Math.sin(rad);
-    r[1] = p2[0] * Math.sin(rad) + p2[1] * Math.cos(rad);
-    r[2] = p2[2];
+    var p = [], r = [];
+    p[0] = a[0] - b[0];
+    p[1] = a[1] - b[1];
+    p[2] = a[2] - b[2];
+    r[0] = p[0] * Math.cos(rad) - p[1] * Math.sin(rad);
+    r[1] = p[0] * Math.sin(rad) + p[1] * Math.cos(rad);
+    r[2] = p[2];
     out[0] = r[0] + b[0];
     out[1] = r[1] + b[1];
     out[2] = r[2] + b[2];
@@ -4493,7 +4493,7 @@
   var div = divide;
   var dist = distance;
   var sqrDist = squaredDistance;
-  var len = length;
+  var len = length2;
   var sqrLen = squaredLength;
   var forEach = function() {
     var vec = create3();
@@ -4528,6 +4528,7 @@
   var import_mouse_wheel = __toESM(require_wheel());
   var isBrowser = typeof window !== "undefined";
   function createCamera(props_) {
+    console.log(123123123);
     var props = props_ || {};
     if (typeof props.noScroll === "undefined") {
       props.noScroll = props.preventDefault;
@@ -4650,7 +4651,6 @@
 
   // src/demos/audio-reactive-morph-target.js
   var import_bunny = __toESM(require_bunny());
-  var import_stanford_dragon = __toESM(require__());
 
   // lib/utils.js
   var addMouseEvents = function(canvas, data) {
@@ -4661,12 +4661,12 @@
       data.mouseY = y / event.target.clientHeight;
     });
   };
-  function createCanvas(width2 = 1e3, height2 = 1e3) {
+  function createCanvas(width = 1e3, height = 1e3) {
     let dpi = devicePixelRatio;
     var canvas = document.createElement("canvas");
-    canvas.width = dpi * width2;
-    canvas.height = dpi * height2;
-    canvas.style.width = width2 + "px";
+    canvas.width = dpi * width;
+    canvas.height = dpi * height;
+    canvas.style.width = width + "px";
     document.body.appendChild(canvas);
     return canvas;
   }
@@ -4718,7 +4718,7 @@
     buffer2.unmap();
     return buffer2;
   }
-  function makeBuffer2(device, size = 4, usage, data, type2) {
+  function makeBuffer(device, size = 4, usage, data, type2) {
     const buffer2 = device.createBuffer({
       size,
       mappedAtCreation: true,
@@ -4739,7 +4739,7 @@
   }
   var utils_default = {
     paramsBuffer,
-    makeBuffer: makeBuffer2,
+    makeBuffer,
     createBuffer,
     createCanvas,
     addMouseEvents,
@@ -4770,6 +4770,19 @@
           format: "rgba8unorm",
           usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING
         })
+      };
+    }
+    if (HTMLCanvasElement === textureData.constructor) {
+      let texture = device.createTexture({
+        size: [textureData.width, textureData.height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+      });
+      return {
+        id: count++,
+        texture,
+        width: textureData.width,
+        height: textureData.height
       };
     }
     if (ImageBitmap === textureData.constructor) {
@@ -4850,8 +4863,8 @@
         continue;
       if (options.uniforms[key].isProp)
         continue;
-      let result3 = options.uniforms[key](context);
-      size += result3.byteLength || 4;
+      let result2 = options.uniforms[key](context);
+      size += result2.byteLength || 4;
       uniforms[key] = function(a) {
         device.queue.writeBuffer(state2.uniformBuffer, size, a.buffer, a.byteOffset, a.byteLength);
       };
@@ -4874,8 +4887,8 @@
         // },
       ]
     };
-    let result3 = options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
-    return result3;
+    let result2 = options.bindGroup ? options.bindGroup(state2) : device.createBindGroup(state2.bindGroupDescriptor);
+    return result2;
   }
   function createRenderPasses(state2, options) {
     let device = state2.device;
@@ -4906,9 +4919,9 @@
       if (state2.options.uniforms[key].isProp) {
         return;
       }
-      let result3 = isFunction(state2.options.uniforms[key]) ? state2.options.uniforms[key](context) : state2.options.uniforms[key];
-      device.queue.writeBuffer(state2.uniformBuffer, size, result3.buffer, result3.byteOffset, result3.byteLength);
-      size += result3.byteLength;
+      let result2 = isFunction(state2.options.uniforms[key]) ? state2.options.uniforms[key](context) : state2.options.uniforms[key];
+      device.queue.writeBuffer(state2.uniformBuffer, size, result2.buffer, result2.byteOffset, result2.byteLength);
+      size += result2.byteLength;
     }
   }
   function isTypedArray(array2) {
@@ -5295,22 +5308,22 @@
   var Common = {
     BREAK: {},
     extend: function extend2(target) {
-      this.each(ARR_SLICE.call(arguments, 1), function(obj2) {
-        var keys = this.isObject(obj2) ? Object.keys(obj2) : [];
+      this.each(ARR_SLICE.call(arguments, 1), function(obj) {
+        var keys = this.isObject(obj) ? Object.keys(obj) : [];
         keys.forEach(function(key) {
-          if (!this.isUndefined(obj2[key])) {
-            target[key] = obj2[key];
+          if (!this.isUndefined(obj[key])) {
+            target[key] = obj[key];
           }
         }.bind(this));
       }, this);
       return target;
     },
     defaults: function defaults(target) {
-      this.each(ARR_SLICE.call(arguments, 1), function(obj2) {
-        var keys = this.isObject(obj2) ? Object.keys(obj2) : [];
+      this.each(ARR_SLICE.call(arguments, 1), function(obj) {
+        var keys = this.isObject(obj) ? Object.keys(obj) : [];
         keys.forEach(function(key) {
           if (this.isUndefined(target[key])) {
-            target[key] = obj2[key];
+            target[key] = obj[key];
           }
         }.bind(this));
       }, this);
@@ -5326,23 +5339,23 @@
         return args[0];
       };
     },
-    each: function each(obj2, itr, scope) {
-      if (!obj2) {
+    each: function each(obj, itr, scope) {
+      if (!obj) {
         return;
       }
-      if (ARR_EACH && obj2.forEach && obj2.forEach === ARR_EACH) {
-        obj2.forEach(itr, scope);
-      } else if (obj2.length === obj2.length + 0) {
+      if (ARR_EACH && obj.forEach && obj.forEach === ARR_EACH) {
+        obj.forEach(itr, scope);
+      } else if (obj.length === obj.length + 0) {
         var key = void 0;
         var l = void 0;
-        for (key = 0, l = obj2.length; key < l; key++) {
-          if (key in obj2 && itr.call(scope, obj2[key], key) === this.BREAK) {
+        for (key = 0, l = obj.length; key < l; key++) {
+          if (key in obj && itr.call(scope, obj[key], key) === this.BREAK) {
             return;
           }
         }
       } else {
-        for (var _key in obj2) {
-          if (itr.call(scope, obj2[_key], _key) === this.BREAK) {
+        for (var _key in obj) {
+          if (itr.call(scope, obj[_key], _key) === this.BREAK) {
             return;
           }
         }
@@ -5354,31 +5367,31 @@
     debounce: function debounce(func, threshold, callImmediately) {
       var timeout2 = void 0;
       return function() {
-        var obj2 = this;
+        var obj = this;
         var args = arguments;
         function delayed() {
           timeout2 = null;
           if (!callImmediately)
-            func.apply(obj2, args);
+            func.apply(obj, args);
         }
         var callNow = callImmediately || !timeout2;
         clearTimeout(timeout2);
         timeout2 = setTimeout(delayed, threshold);
         if (callNow) {
-          func.apply(obj2, args);
+          func.apply(obj, args);
         }
       };
     },
-    toArray: function toArray(obj2) {
-      if (obj2.toArray)
-        return obj2.toArray();
-      return ARR_SLICE.call(obj2);
+    toArray: function toArray(obj) {
+      if (obj.toArray)
+        return obj.toArray();
+      return ARR_SLICE.call(obj);
     },
-    isUndefined: function isUndefined(obj2) {
-      return obj2 === void 0;
+    isUndefined: function isUndefined(obj) {
+      return obj === void 0;
     },
-    isNull: function isNull(obj2) {
-      return obj2 === null;
+    isNull: function isNull(obj) {
+      return obj === null;
     },
     isNaN: function(_isNaN) {
       function isNaN2(_x) {
@@ -5388,26 +5401,26 @@
         return _isNaN.toString();
       };
       return isNaN2;
-    }(function(obj2) {
-      return isNaN(obj2);
+    }(function(obj) {
+      return isNaN(obj);
     }),
-    isArray: Array.isArray || function(obj2) {
-      return obj2.constructor === Array;
+    isArray: Array.isArray || function(obj) {
+      return obj.constructor === Array;
     },
-    isObject: function isObject(obj2) {
-      return obj2 === Object(obj2);
+    isObject: function isObject(obj) {
+      return obj === Object(obj);
     },
-    isNumber: function isNumber(obj2) {
-      return obj2 === obj2 + 0;
+    isNumber: function isNumber(obj) {
+      return obj === obj + 0;
     },
-    isString: function isString(obj2) {
-      return obj2 === obj2 + "";
+    isString: function isString(obj) {
+      return obj === obj + "";
     },
-    isBoolean: function isBoolean(obj2) {
-      return obj2 === false || obj2 === true;
+    isBoolean: function isBoolean(obj) {
+      return obj === false || obj === true;
     },
-    isFunction: function isFunction2(obj2) {
-      return obj2 instanceof Function;
+    isFunction: function isFunction2(obj) {
+      return obj instanceof Function;
     }
   };
   var INTERPRETATIONS = [
@@ -5416,57 +5429,57 @@
       conversions: {
         THREE_CHAR_HEX: {
           read: function read(original) {
-            var test2 = original.match(/^#([A-F0-9])([A-F0-9])([A-F0-9])$/i);
-            if (test2 === null) {
+            var test = original.match(/^#([A-F0-9])([A-F0-9])([A-F0-9])$/i);
+            if (test === null) {
               return false;
             }
             return {
               space: "HEX",
-              hex: parseInt("0x" + test2[1].toString() + test2[1].toString() + test2[2].toString() + test2[2].toString() + test2[3].toString() + test2[3].toString(), 0)
+              hex: parseInt("0x" + test[1].toString() + test[1].toString() + test[2].toString() + test[2].toString() + test[3].toString() + test[3].toString(), 0)
             };
           },
           write: colorToString
         },
         SIX_CHAR_HEX: {
           read: function read2(original) {
-            var test2 = original.match(/^#([A-F0-9]{6})$/i);
-            if (test2 === null) {
+            var test = original.match(/^#([A-F0-9]{6})$/i);
+            if (test === null) {
               return false;
             }
             return {
               space: "HEX",
-              hex: parseInt("0x" + test2[1].toString(), 0)
+              hex: parseInt("0x" + test[1].toString(), 0)
             };
           },
           write: colorToString
         },
         CSS_RGB: {
           read: function read3(original) {
-            var test2 = original.match(/^rgb\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
-            if (test2 === null) {
+            var test = original.match(/^rgb\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
+            if (test === null) {
               return false;
             }
             return {
               space: "RGB",
-              r: parseFloat(test2[1]),
-              g: parseFloat(test2[2]),
-              b: parseFloat(test2[3])
+              r: parseFloat(test[1]),
+              g: parseFloat(test[2]),
+              b: parseFloat(test[3])
             };
           },
           write: colorToString
         },
         CSS_RGBA: {
           read: function read4(original) {
-            var test2 = original.match(/^rgba\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
-            if (test2 === null) {
+            var test = original.match(/^rgba\(\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*,\s*(\S+)\s*\)/);
+            if (test === null) {
               return false;
             }
             return {
               space: "RGB",
-              r: parseFloat(test2[1]),
-              g: parseFloat(test2[2]),
-              b: parseFloat(test2[3]),
-              a: parseFloat(test2[4])
+              r: parseFloat(test[1]),
+              g: parseFloat(test[2]),
+              b: parseFloat(test[3]),
+              a: parseFloat(test[4])
             };
           },
           write: colorToString
@@ -5643,10 +5656,10 @@
     hsv_to_rgb: function hsv_to_rgb(h, s, v) {
       var hi = Math.floor(h / 60) % 6;
       var f = h / 60 - Math.floor(h / 60);
-      var p2 = v * (1 - s);
+      var p = v * (1 - s);
       var q = v * (1 - f * s);
       var t = v * (1 - (1 - f) * s);
-      var c2 = [[v, t, p2], [q, v, p2], [p2, v, t], [p2, q, v], [t, p2, v], [v, p2, q]][hi];
+      var c2 = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][hi];
       return {
         r: c2[0] * 255,
         g: c2[1] * 255,
@@ -5698,10 +5711,10 @@
       return value << (tmpComponent = componentIndex * 8) | hex2 & ~(255 << tmpComponent);
     }
   };
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(obj2) {
-    return typeof obj2;
-  } : function(obj2) {
-    return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(obj) {
+    return typeof obj;
+  } : function(obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
   };
   var classCallCheck = function(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -5842,13 +5855,13 @@
     }
   };
   Color2.recalculateHSV = function(color2) {
-    var result3 = ColorMath.rgb_to_hsv(color2.r, color2.g, color2.b);
+    var result2 = ColorMath.rgb_to_hsv(color2.r, color2.g, color2.b);
     Common.extend(color2.__state, {
-      s: result3.s,
-      v: result3.v
+      s: result2.s,
+      v: result2.v
     });
-    if (!Common.isNaN(result3.h)) {
-      color2.__state.h = result3.h;
+    if (!Common.isNaN(result2.h)) {
+      color2.__state.h = result2.h;
     } else if (Common.isUndefined(color2.__state.h)) {
       color2.__state.h = 0;
     }
@@ -5937,9 +5950,9 @@
     KeyboardEvents: ["keydown"]
   };
   var EVENT_MAP_INV = {};
-  Common.each(EVENT_MAP, function(v, k) {
+  Common.each(EVENT_MAP, function(v, k2) {
     Common.each(v, function(e) {
-      EVENT_MAP_INV[e] = k;
+      EVENT_MAP_INV[e] = k2;
     });
   });
   var CSS_VALUE_PIXELS = /(\d+(\.\d+)?)px/;
@@ -6444,12 +6457,12 @@
   }(NumberController);
   var FunctionController = function(_Controller) {
     inherits(FunctionController2, _Controller);
-    function FunctionController2(object, property, text2) {
+    function FunctionController2(object, property, text) {
       classCallCheck(this, FunctionController2);
       var _this2 = possibleConstructorReturn(this, (FunctionController2.__proto__ || Object.getPrototypeOf(FunctionController2)).call(this, object, property));
       var _this = _this2;
       _this2.__button = document.createElement("div");
-      _this2.__button.innerHTML = text2 === void 0 ? "Fire" : text2;
+      _this2.__button.innerHTML = text === void 0 ? "Fire" : text;
       dom.bind(_this2.__button, "click", function(e) {
         e.preventDefault();
         _this.fire();
@@ -7116,8 +7129,8 @@
   };
   GUI.toggleHide = function() {
     hide = !hide;
-    Common.each(hideableGuis, function(gui2) {
-      gui2.domElement.style.display = hide ? "none" : "";
+    Common.each(hideableGuis, function(gui) {
+      gui.domElement.style.display = hide ? "none" : "";
     });
   };
   GUI.CLASS_AUTO_PLACE = "a";
@@ -7184,11 +7197,11 @@
           newGuiParams.closed = this.load.folders[name].closed;
           newGuiParams.load = this.load.folders[name];
         }
-        var gui2 = new GUI(newGuiParams);
-        this.__folders[name] = gui2;
-        var li = addRow(this, gui2.domElement);
+        var gui = new GUI(newGuiParams);
+        this.__folders[name] = gui;
+        var li = addRow(this, gui.domElement);
         dom.addClass(li, "folder");
-        return gui2;
+        return gui;
       },
       removeFolder: function removeFolder(folder) {
         this.__ul.removeChild(folder.domElement.parentElement);
@@ -7269,11 +7282,11 @@
         }
       },
       getRoot: function getRoot() {
-        var gui2 = this;
-        while (gui2.parent) {
-          gui2 = gui2.parent;
+        var gui = this;
+        while (gui.parent) {
+          gui = gui.parent;
         }
-        return gui2;
+        return gui;
       },
       getSaveObject: function getSaveObject() {
         var toReturn2 = this.load;
@@ -7309,12 +7322,12 @@
         addPresetOption(this, presetName, true);
         this.saveToLocalStorageIfPossible();
       },
-      revert: function revert(gui2) {
+      revert: function revert(gui) {
         Common.each(this.__controllers, function(controller) {
           if (!this.getRoot().load.remembered) {
             controller.setValue(controller.initialValue);
           } else {
-            recallSavedValue(gui2 || this.getRoot(), controller);
+            recallSavedValue(gui || this.getRoot(), controller);
           }
           if (controller.__onFinishChange) {
             controller.__onFinishChange.call(controller, controller.getValue());
@@ -7323,7 +7336,7 @@
         Common.each(this.__folders, function(folder) {
           folder.revert(folder);
         });
-        if (!gui2) {
+        if (!gui) {
           markPresetModified(this.getRoot(), false);
         }
       },
@@ -7344,42 +7357,42 @@
       }
     }
   );
-  function addRow(gui2, newDom, liBefore) {
+  function addRow(gui, newDom, liBefore) {
     var li = document.createElement("li");
     if (newDom) {
       li.appendChild(newDom);
     }
     if (liBefore) {
-      gui2.__ul.insertBefore(li, liBefore);
+      gui.__ul.insertBefore(li, liBefore);
     } else {
-      gui2.__ul.appendChild(li);
+      gui.__ul.appendChild(li);
     }
-    gui2.onResize();
+    gui.onResize();
     return li;
   }
-  function removeListeners(gui2) {
-    dom.unbind(window, "resize", gui2.__resizeHandler);
-    if (gui2.saveToLocalStorageIfPossible) {
-      dom.unbind(window, "unload", gui2.saveToLocalStorageIfPossible);
+  function removeListeners(gui) {
+    dom.unbind(window, "resize", gui.__resizeHandler);
+    if (gui.saveToLocalStorageIfPossible) {
+      dom.unbind(window, "unload", gui.saveToLocalStorageIfPossible);
     }
   }
-  function markPresetModified(gui2, modified) {
-    var opt = gui2.__preset_select[gui2.__preset_select.selectedIndex];
+  function markPresetModified(gui, modified) {
+    var opt = gui.__preset_select[gui.__preset_select.selectedIndex];
     if (modified) {
       opt.innerHTML = opt.value + "*";
     } else {
       opt.innerHTML = opt.value;
     }
   }
-  function augmentController(gui2, li, controller) {
+  function augmentController(gui, li, controller) {
     controller.__li = li;
-    controller.__gui = gui2;
+    controller.__gui = gui;
     Common.extend(controller, {
       options: function options(_options) {
         if (arguments.length > 1) {
           var nextSibling = controller.__li.nextElementSibling;
           controller.remove();
-          return _add(gui2, controller.object, controller.property, {
+          return _add(gui, controller.object, controller.property, {
             before: nextSibling,
             factoryArgs: [Common.toArray(arguments)]
           });
@@ -7387,7 +7400,7 @@
         if (Common.isArray(_options) || Common.isObject(_options)) {
           var _nextSibling = controller.__li.nextElementSibling;
           controller.remove();
-          return _add(gui2, controller.object, controller.property, {
+          return _add(gui, controller.object, controller.property, {
             before: _nextSibling,
             factoryArgs: [_options]
           });
@@ -7425,7 +7438,7 @@
           var oldName = controller.__li.firstElementChild.firstElementChild.innerHTML;
           var wasListening = controller.__gui.__listening.indexOf(controller) > -1;
           controller.remove();
-          var newController = _add(gui2, controller.object, controller.property, {
+          var newController = _add(gui, controller.object, controller.property, {
             before: controller.__li.nextElementSibling,
             factoryArgs: [controller.__min, controller.__max, controller.__step]
           });
@@ -7464,14 +7477,14 @@
       controller.updateDisplay();
     }
     controller.setValue = Common.compose(function(val) {
-      if (gui2.getRoot().__preset_select && controller.isModified()) {
-        markPresetModified(gui2.getRoot(), true);
+      if (gui.getRoot().__preset_select && controller.isModified()) {
+        markPresetModified(gui.getRoot(), true);
       }
       return val;
     }, controller.setValue);
   }
-  function recallSavedValue(gui2, controller) {
-    var root2 = gui2.getRoot();
+  function recallSavedValue(gui, controller) {
+    var root2 = gui.getRoot();
     var matchedIndex = root2.__rememberedObjects.indexOf(controller.object);
     if (matchedIndex !== -1) {
       var controllerMap = root2.__rememberedObjectIndecesToControllers[matchedIndex];
@@ -7483,8 +7496,8 @@
       if (root2.load && root2.load.remembered) {
         var presetMap = root2.load.remembered;
         var preset = void 0;
-        if (presetMap[gui2.preset]) {
-          preset = presetMap[gui2.preset];
+        if (presetMap[gui.preset]) {
+          preset = presetMap[gui.preset];
         } else if (presetMap[DEFAULT_DEFAULT_PRESET_NAME]) {
           preset = presetMap[DEFAULT_DEFAULT_PRESET_NAME];
         } else {
@@ -7498,7 +7511,7 @@
       }
     }
   }
-  function _add(gui2, object, property, params) {
+  function _add(gui, object, property, params) {
     if (object[property] === void 0) {
       throw new Error('Object "' + object + '" has no property "' + property + '"');
     }
@@ -7507,12 +7520,12 @@
       controller = new ColorController(object, property);
     } else {
       var factoryArgs = [object, property].concat(params.factoryArgs);
-      controller = ControllerFactory.apply(gui2, factoryArgs);
+      controller = ControllerFactory.apply(gui, factoryArgs);
     }
     if (params.before instanceof Controller) {
       params.before = params.before.__li;
     }
-    recallSavedValue(gui2, controller);
+    recallSavedValue(gui, controller);
     dom.addClass(controller.domElement, "c");
     var name = document.createElement("span");
     dom.addClass(name, "property-name");
@@ -7520,36 +7533,36 @@
     var container = document.createElement("div");
     container.appendChild(name);
     container.appendChild(controller.domElement);
-    var li = addRow(gui2, container, params.before);
+    var li = addRow(gui, container, params.before);
     dom.addClass(li, GUI.CLASS_CONTROLLER_ROW);
     if (controller instanceof ColorController) {
       dom.addClass(li, "color");
     } else {
       dom.addClass(li, _typeof(controller.getValue()));
     }
-    augmentController(gui2, li, controller);
-    gui2.__controllers.push(controller);
+    augmentController(gui, li, controller);
+    gui.__controllers.push(controller);
     return controller;
   }
-  function getLocalStorageHash(gui2, key) {
+  function getLocalStorageHash(gui, key) {
     return document.location.href + "." + key;
   }
-  function addPresetOption(gui2, name, setSelected) {
+  function addPresetOption(gui, name, setSelected) {
     var opt = document.createElement("option");
     opt.innerHTML = name;
     opt.value = name;
-    gui2.__preset_select.appendChild(opt);
+    gui.__preset_select.appendChild(opt);
     if (setSelected) {
-      gui2.__preset_select.selectedIndex = gui2.__preset_select.length - 1;
+      gui.__preset_select.selectedIndex = gui.__preset_select.length - 1;
     }
   }
-  function showHideExplain(gui2, explain) {
-    explain.style.display = gui2.useLocalStorage ? "block" : "none";
+  function showHideExplain(gui, explain) {
+    explain.style.display = gui.useLocalStorage ? "block" : "none";
   }
-  function addSaveMenu(gui2) {
-    var div2 = gui2.__save_row = document.createElement("li");
-    dom.addClass(gui2.domElement, "has-save");
-    gui2.__ul.insertBefore(div2, gui2.__ul.firstChild);
+  function addSaveMenu(gui) {
+    var div2 = gui.__save_row = document.createElement("li");
+    dom.addClass(gui.domElement, "has-save");
+    gui.__ul.insertBefore(div2, gui.__ul.firstChild);
     dom.addClass(div2, "save-row");
     var gears = document.createElement("span");
     gears.innerHTML = "&nbsp;";
@@ -7566,19 +7579,19 @@
     button3.innerHTML = "Revert";
     dom.addClass(button3, "button");
     dom.addClass(button3, "revert");
-    var select = gui2.__preset_select = document.createElement("select");
-    if (gui2.load && gui2.load.remembered) {
-      Common.each(gui2.load.remembered, function(value, key) {
-        addPresetOption(gui2, key, key === gui2.preset);
+    var select = gui.__preset_select = document.createElement("select");
+    if (gui.load && gui.load.remembered) {
+      Common.each(gui.load.remembered, function(value, key) {
+        addPresetOption(gui, key, key === gui.preset);
       });
     } else {
-      addPresetOption(gui2, DEFAULT_DEFAULT_PRESET_NAME, false);
+      addPresetOption(gui, DEFAULT_DEFAULT_PRESET_NAME, false);
     }
     dom.bind(select, "change", function() {
-      for (var index = 0; index < gui2.__preset_select.length; index++) {
-        gui2.__preset_select[index].innerHTML = gui2.__preset_select[index].value;
+      for (var index = 0; index < gui.__preset_select.length; index++) {
+        gui.__preset_select[index].innerHTML = gui.__preset_select[index].value;
       }
-      gui2.preset = this.value;
+      gui.preset = this.value;
     });
     div2.appendChild(select);
     div2.appendChild(gears);
@@ -7590,13 +7603,13 @@
       var localStorageCheckBox = document.getElementById("dg-local-storage");
       var saveLocally = document.getElementById("dg-save-locally");
       saveLocally.style.display = "block";
-      if (localStorage.getItem(getLocalStorageHash(gui2, "isLocal")) === "true") {
+      if (localStorage.getItem(getLocalStorageHash(gui, "isLocal")) === "true") {
         localStorageCheckBox.setAttribute("checked", "checked");
       }
-      showHideExplain(gui2, explain);
+      showHideExplain(gui, explain);
       dom.bind(localStorageCheckBox, "change", function() {
-        gui2.useLocalStorage = !gui2.useLocalStorage;
-        showHideExplain(gui2, explain);
+        gui.useLocalStorage = !gui.useLocalStorage;
+        showHideExplain(gui, explain);
       });
     }
     var newConstructorTextArea = document.getElementById("dg-new-constructor");
@@ -7606,28 +7619,28 @@
       }
     });
     dom.bind(gears, "click", function() {
-      newConstructorTextArea.innerHTML = JSON.stringify(gui2.getSaveObject(), void 0, 2);
+      newConstructorTextArea.innerHTML = JSON.stringify(gui.getSaveObject(), void 0, 2);
       SAVE_DIALOGUE.show();
       newConstructorTextArea.focus();
       newConstructorTextArea.select();
     });
     dom.bind(button, "click", function() {
-      gui2.save();
+      gui.save();
     });
     dom.bind(button2, "click", function() {
       var presetName = prompt("Enter a new preset name.");
       if (presetName) {
-        gui2.saveAs(presetName);
+        gui.saveAs(presetName);
       }
     });
     dom.bind(button3, "click", function() {
-      gui2.revert();
+      gui.revert();
     });
   }
-  function addResizeHandle(gui2) {
+  function addResizeHandle(gui) {
     var pmouseX = void 0;
-    gui2.__resize_handle = document.createElement("div");
-    Common.extend(gui2.__resize_handle.style, {
+    gui.__resize_handle = document.createElement("div");
+    Common.extend(gui.__resize_handle.style, {
       width: "6px",
       marginLeft: "-3px",
       height: "200px",
@@ -7636,42 +7649,42 @@
     });
     function drag(e) {
       e.preventDefault();
-      gui2.width += pmouseX - e.clientX;
-      gui2.onResize();
+      gui.width += pmouseX - e.clientX;
+      gui.onResize();
       pmouseX = e.clientX;
       return false;
     }
     function dragStop() {
-      dom.removeClass(gui2.__closeButton, GUI.CLASS_DRAG);
+      dom.removeClass(gui.__closeButton, GUI.CLASS_DRAG);
       dom.unbind(window, "mousemove", drag);
       dom.unbind(window, "mouseup", dragStop);
     }
     function dragStart(e) {
       e.preventDefault();
       pmouseX = e.clientX;
-      dom.addClass(gui2.__closeButton, GUI.CLASS_DRAG);
+      dom.addClass(gui.__closeButton, GUI.CLASS_DRAG);
       dom.bind(window, "mousemove", drag);
       dom.bind(window, "mouseup", dragStop);
       return false;
     }
-    dom.bind(gui2.__resize_handle, "mousedown", dragStart);
-    dom.bind(gui2.__closeButton, "mousedown", dragStart);
-    gui2.domElement.insertBefore(gui2.__resize_handle, gui2.domElement.firstElementChild);
+    dom.bind(gui.__resize_handle, "mousedown", dragStart);
+    dom.bind(gui.__closeButton, "mousedown", dragStart);
+    gui.domElement.insertBefore(gui.__resize_handle, gui.domElement.firstElementChild);
   }
-  function setWidth(gui2, w) {
-    gui2.domElement.style.width = w + "px";
-    if (gui2.__save_row && gui2.autoPlace) {
-      gui2.__save_row.style.width = w + "px";
+  function setWidth(gui, w) {
+    gui.domElement.style.width = w + "px";
+    if (gui.__save_row && gui.autoPlace) {
+      gui.__save_row.style.width = w + "px";
     }
-    if (gui2.__closeButton) {
-      gui2.__closeButton.style.width = w + "px";
+    if (gui.__closeButton) {
+      gui.__closeButton.style.width = w + "px";
     }
   }
-  function getCurrentPreset(gui2, useInitialValues) {
+  function getCurrentPreset(gui, useInitialValues) {
     var toReturn2 = {};
-    Common.each(gui2.__rememberedObjects, function(val, index) {
+    Common.each(gui.__rememberedObjects, function(val, index) {
       var savedValues = {};
-      var controllerMap = gui2.__rememberedObjectIndecesToControllers[index];
+      var controllerMap = gui.__rememberedObjectIndecesToControllers[index];
       Common.each(controllerMap, function(controller, property) {
         savedValues[property] = useInitialValues ? controller.initialValue : controller.getValue();
       });
@@ -7679,10 +7692,10 @@
     });
     return toReturn2;
   }
-  function setPresetSelectIndex(gui2) {
-    for (var index = 0; index < gui2.__preset_select.length; index++) {
-      if (gui2.__preset_select[index].value === gui2.preset) {
-        gui2.__preset_select.selectedIndex = index;
+  function setPresetSelectIndex(gui) {
+    for (var index = 0; index < gui.__preset_select.length; index++) {
+      if (gui.__preset_select[index].value === gui.preset) {
+        gui.__preset_select.selectedIndex = index;
       }
     }
   }
@@ -7699,708 +7712,74 @@
   var GUI$1 = GUI;
 
   // src/demos/audio-reactive-morph-target.js
-  var drawScreen;
-  var time = 0;
-  var stagingBuffer;
-  var modelType = 1;
-  var animating = true;
-  var width = 100;
-  var height = width;
-  var zspace = 10;
-  var mouse = [0, 0];
-  function makeGrid() {
-    makeVectorFieldGeneric(function(x, y, z) {
-      return [x, y, z, 1];
-    });
-  }
-  var gridBuffer = makeGrid();
-  function length2(p2) {
-    let [x, y] = p2;
-    return Math.sqrt(x * x + y * y);
-  }
-  var result2 = [];
-  var pickVF = function() {
-    let list2 = [
-      // makeVectorField9,
-      makeVectorField2,
-      makeVectorField3,
-      makeModelIndex,
-      makeVectorField4,
-      makeVectorField5
+  var import_stanford_dragon = __toESM(require__());
+  var { cos, sin } = Math;
+  async function morph() {
+    const buffers = [
+      {
+        attributes: [
+          {
+            shaderLocation: 0,
+            offset: 0,
+            format: "float32x4"
+          }
+        ],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+        stepMode: "instance"
+      },
+      {
+        attributes: [
+          {
+            shaderLocation: 1,
+            offset: 0,
+            format: "float32x2"
+          }
+        ],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
+        stepMode: "vertex"
+      },
+      {
+        attributes: [
+          {
+            shaderLocation: 2,
+            offset: 0,
+            format: "float32x4"
+          }
+        ],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+        stepMode: "instance"
+      },
+      {
+        attributes: [
+          {
+            shaderLocation: 3,
+            offset: 0,
+            format: "float32x3"
+          }
+        ],
+        arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+        stepMode: "instance"
+      }
     ];
-    let idx = Math.random() * list2.length | 0;
-    console.log(idx);
-    return [list2[idx](), idx];
-  };
-  function makeVectorField3() {
-    return makeVectorFieldGeneric(function(x, y, z) {
-      return [-x, -y, -z, 1];
-    });
-  }
-  function makeVectorField4() {
-    return makeVectorFieldGeneric(function(x, y, z) {
-      return [
-        Math.cos(-10 * y + x),
-        Math.sin(10 * x + y),
-        10 * Math.atan(x, y),
-        1
-      ];
-    });
-  }
-  function makeVectorField5() {
-    return makeVectorFieldGeneric(function(x, y, z) {
-      return [
-        1 / Math.cos(-10 * y + x),
-        1 / Math.sin(10 * x + y),
-        1 / 10 * Math.atan(x, y),
-        1
-      ];
-    });
-  }
-  function makeVectorFieldGeneric(cb, buffer2) {
-    var result3 = buffer2 || [];
-    for (let i = 0; i <= width; i++) {
-      for (let j = 0; j < height; j++) {
-        for (let k = 0; k < zspace; k++) {
-          let [x, y, z] = clipSpace(j, i, 0, width, height);
-          let [x1, y1, z1] = zeroToOne(x, y, 0);
-          let idx = Math.round(x1 * width + y1 * width * height + 0);
-          result3[idx] = cb(x, y, z);
-          result3[idx].x1 = x1;
-          result3[idx].y1 = y1;
-        }
-      }
-    }
-    return result3;
-  }
-  var d = Date.now();
-  function findPoint(d2) {
-    let [x, y] = d2;
-    var x1 = ((x + 1) / 2).toPrecision(2);
-    var y1 = ((1 - y) / 2).toPrecision(2);
-    x1 *= 100;
-    y1 *= 1e4;
-    let index = Math.floor(x1 + y1);
-    return [result2[index], index];
-  }
-  function makeModelIndex() {
-    let model = shapes[0].source;
-    makeVectorFieldGeneric(function(x, y, z) {
-      return [0, 0, 0, 0];
-    });
-    for (let i = 0; i < model.length; i += 4) {
-      let pt = model.slice(i, i + 2);
-      let [_, idx] = findPoint(pt);
-      result2[idx] = [10 * pt[0], 10 * pt[1], 0, 0];
-    }
-    return result2;
-  }
-  function makeVectorField2() {
-    return makeVectorFieldGeneric(function(x, y, z) {
-      let vec = [0, 0, 0, 0];
-      let p2 = [x, y, 0];
-      let l = circle(p2);
-      vec[0] = 1 - l * 10;
-      vec[1] = 1 - l * 10;
-      if (l < 0.5 && l > 0.4) {
-        vec[0] = y * 10;
-        vec[1] = -x * 10;
-      }
-      return vec;
-    });
-  }
-  var computeTransition;
-  var camera = { position: { x: 0, y: 0, z: 0 } };
-  var gui = new GUI$1();
-  var cameraFolder = gui.addFolder("Camera");
-  cameraFolder.add(camera.position, "z", 0, 10);
-  cameraFolder.open();
-  var p = { type: 45 };
-  gui.add(p, "type", 0, 100);
-  var text = { speed: "someName" };
-  gui.add(text, "speed", { King: "A", Queen: "B", Rook: "C" });
-  function circle(p2) {
-    return length2(p2);
-  }
-  function makeRand() {
-    let x = Math.random().toPrecision(2);
-    x -= 0.5;
-    return x * 2;
-  }
-  function clipSpace(x, y, z, width2, height2) {
-    y /= height2;
-    z /= width2;
-    y = y - 0.5;
-    z = z - 0.5;
-    y *= -2;
-    z *= 2;
-    x = x / width2 * 2 - 1;
-    return [x, y, z];
-  }
-  function zeroToOne(x, y, z) {
-    var x1 = (x + 1) / 2;
-    var y1 = (1 - y) / 2;
-    var z1 = (z + 1) / 2;
-    return [x1, y1, z1];
-  }
-  function makeComputeShader(webgpu2, mesh, vf1, vf2) {
-    let device = webgpu2.device;
-    let velocityBuffer = new Float32Array(1e6);
-    let velocity = makeBuffer(velocityBuffer, 0, "vectorField");
-    let gridBuffer2 = makeBuffer(vf1.flat(), 0, "result");
-    let gridBuffer22 = makeBuffer(vf2.flat(), 0, "result");
-    let particleLifetime = new Float32Array(1e6);
-    for (let i2 = 0; i2 < particleLifetime.length; i2++) {
-      particleLifetime[i2] = Math.random() * 3e3;
-    }
-    let lifeTimeBuffer = makeBuffer(particleLifetime, 0, "vectorField");
-    let coords = [];
-    for (var i = 0; i < 10; i++) {
-      coords.push((i / 10 - 0.5) * 2);
-    }
-    let max3 = {
-      x: 0,
-      y: 0,
-      z: 0
-    };
-    let min3 = {
-      x: 0,
-      y: 0,
-      z: 0
-    };
-    for (let i2 = 0; i2 < mesh.source.length; i2 += 4) {
-      let x = mesh.source[i2];
-      let y = mesh.source[i2 + 1];
-      let z = mesh.source[i2 + 2];
-      max3.x = Math.max(x, max3.x);
-      max3.y = Math.max(y, max3.y);
-      max3.z = Math.max(z, max3.z);
-      min3.x = Math.min(x, max3.x);
-      min3.y = Math.min(y, max3.y);
-      min3.z = Math.min(z, max3.z);
-    }
-    const uniformsBuffer = webgpu2.device.createBuffer({
-      size: 32,
+    let drawShapes = true;
+    let particlesCount = 1e6;
+    let drawScreen;
+    let time = 0;
+    let stagingBuffer;
+    let modelType = 1;
+    let animating = true;
+    let width = 100, height = width, zspace = 100;
+    let shapes = [];
+    let webgpu = await main_default();
+    const uniformsBuffer = webgpu.device.createBuffer({
+      size: 48,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
     });
-    return webgpu2.initComputeCall({
-      label: `predictedPosition`,
-      code: `
-    struct Uniforms {
-      mouse: vec2<f32>,
-      time: f32
-    }
-
-    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-    @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
-    @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-    @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
-    @group(0) @binding(4) var<storage, read_write> lifetime: array<f32>;
-    @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
-    @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-
-
-
-  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
-    return 1.79284291400159 - 0.85373472095314 * r;
-  }
-  
-  fn snoise( v: vec3<f32>) -> f32 {
-    var  C = vec2(1.0/6.0, 1.0/3.0) ;
-    var  D = vec4(0.0, 0.5, 1.0, 2.0);
-  
-  // First corner
-  var i = floor(v + dot(v, C.yyy) );
-  var x0 =   v - i + dot(i, C.xxx) ;
-  
-  // Other corners
-  var g = step(x0.yzx, x0.xyz);
-  var l = 1.0 - g;
-  var i1 = min( g.xyz, l.zxy );
-  var i2 = max( g.xyz, l.zxy );
-  
-    var x1 = x0 - i1 + C.xxx;
-    var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
-    var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
-  
-  // Permutations
-    i = mod289(i);
-    var p = permute( permute( permute(
-               i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-             + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-             + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-  
-  // Gradients: 7x7 points over a square, mapped onto an octahedron.
-  // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
-  let n_ = 0.142857142857; // 1.0/7.0
-  let  ns = n_ * D.wyz - D.xzx;
-  
-  let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
-  
-  let x_ = floor(j * ns.z);
-  let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
-  
-  let x = x_ *ns.x + ns.yyyy;
-  let y = y_ *ns.x + ns.yyyy;
-  let h = 1.0 - abs(x) - abs(y);
-  
-  let b0 = vec4( x.xy, y.xy );
-  let b1 = vec4( x.zw, y.zw );
-  
-    //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
-    //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
-    let s0 = floor(b0)*2.0 + 1.0;
-    let s1 = floor(b1)*2.0 + 1.0;
-    let sh = -step(h, vec4(0.0));
-  
-    let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-    let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-  
-    var p0 = vec3(a0.xy,h.x);
-    var p1 = vec3(a0.zw,h.y);
-    var p2 = vec3(a1.xy,h.z);
-    var p3 = vec3(a1.zw,h.w);
-  
-  //Normalise gradients
-    var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-    p0 *= norm.x;
-    p1 *= norm.y;
-    p2 *= norm.z;
-    p3 *= norm.w;
-  
-  // Mix final noise value
-  //t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-    
-  var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
-    m = m * m;
-    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
-                                  dot(p2,x2), dot(p3,x3) ) );
-    }
-  
-  //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
-  
-  const list=5.;
-  
-  fn curl_noise (pos:vec4<f32>, t: f32) -> vec4<f32> {
-    //make unit cube
-    //take 8 gradients of trilinear interpolations |-|
-    var x = pos.x;
-    var y = pos.y;
-    var z = pos.z;
-    var x0 = x + 1.;
-    return vec4<f32>(sfrand(), sfrand(), sfrand(), sfrand());
-  }
-  
-  fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
-    var s  = snoise(vec3( x ));
-    var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
-    var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
-    var c = vec3( s , s1 , s2 );
-    return c;
-  
-  }
-  
-  fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
-    var e = .00001;
-    var dx = vec3( e   , 0.0 , 0.0 );
-    var dy = vec3( 0.0 , e   , 0.0 );
-    var dz = vec3( 0.0 , 0.0 , e   );
-  
-    var p_x0 = snoiseVec3( p - dx );
-    var p_x1 = snoiseVec3( p + dx );
-    var p_y0 = snoiseVec3( p - dy );
-    var p_y1 = snoiseVec3( p + dy );
-    var p_z0 = snoiseVec3( p - dz );
-    var p_z1 = snoiseVec3( p + dz );
-  
-    var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
-    var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
-    var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
-  
-    var divisor = 1.0 / ( 2.0 * e );
-    return normalize( vec3( x , y , z ) * divisor );
-  }
-  
-   fn mod289( x: vec3<f32>)  -> vec3<f32> {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-  }
-  
-  fn mod289v( x: vec4<f32>)  ->vec4<f32>
-  {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-  }
-  
-  fn permute( x: vec4<f32>) -> vec4<f32>
-  {
-    return mod289v(((x*34.0)+1.0)*x);
-  }
-  
-  
-  fn fade( t: vec3<f32>) -> vec3<f32> {
-    return t*t*t*(t*(t*6.0-15.0)+10.0);
-  }
-  
-  fn sfrand () -> f32{
-    let co = vec2<f32>(${Math.random()}, ${Math.random()});
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-  }
-  
-  
-  fn mrand() ->  f32{
-    return (sfrand() * 2.) - 1.;
-  }
-
-  fn shift (x:f32)->f32 {
-    return (x + 1.) / 2.;
-  }
-
-  fn hash(pos: vec3<f32>) -> i32 {
-    var x = (pos.x + 1) / 2.;
-    var y = (1. - (pos.y)) / 2.;
-    x *= .5;
-    y *= .5;
-    if (x > 1.){ x = .5; } 
-    if (y > 1.){ y = .5; } 
-    if (y < 0.){ y = .5; } 
-    if (x < 0.){ x = .5; } 
-    return i32(floor(x * 100) + floor(y * 100) * 100);
-  }
-  
-    @compute @workgroup_size(256)
-    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-      let index: u32 = GlobalInvocationID.x;
-
-
-      let life = lifetime[index];
-      let r = reset[index]; 
-      if (life < 10.) {
-        lifetime[index] = 3000.;
-//        velocity[index] = vec3<f32>(sfrand() * 10., -20, 30.);
-        buffer3[(index)]= r;
-      } else {
-        lifetime[index] -= 8.;
-      }
-      //start as block
-      //if lifetime === -10000
-      //deform according to mesh
-      //look like dancer 
-
-      var pos = buffer3[index];
-
-      var abc = buffer3[index];
-
-      //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-      var idx = hash(pos.xyz);
-    
-      //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    var vf = vec3<f32>(vectorFieldBuffer[idx].xyz) + 
-    vec3<f32>(vectorFieldBuffer2[idx].xyz);
-    if (pos.z < 0.) {
-      vf *= vec3<f32>(-1, -1, 1.);
-    }
-    //+ vec3<f32>(vectorFieldBuffer[index].xyz)
-    ;
-    // vectorFieldBuffer[idx+1].xyz +
-    // vectorFieldBuffer[idx-1].xyz +
-    // vectorFieldBuffer[idx-100].xyz;
-    //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
-    //vectorFieldBuffer[idx].xyz;
-    // if (velocity[index].y < .01) {
-    //   velocity[index] = vec3<f32>(-10.);
-    // }
-        // if (pos.y > 0.) {
-        //   velocity[index].y =  sin(pos.y);
-        // } else {
-        //   velocity[index].y =  sin(pos.y);
-        // }
-        // if (pos.x > 0.) {
-        //   velocity[index].x = 10 * cos(pos.x);
-        // } else {
-        //   velocity[index].x = -10 * cos(pos.x);
-        // }
-      velocity[index] *= .1;
-     //velocity[index] = clamp(velocity[index] + .01 * vf, vec3<f32>(0), vec3<f32>(1 / 5.));
-     velocity[index] = velocity[index] + .01 * vf;
-     var p = buffer3[index];
-    //  if (p.x > .9){ velocity[index] *= -1;}
-    //  if (p.x < -0.9){ velocity[index] *= -1;}
-    //  if (p.y > .9){ velocity[index] *= -1;}
-    //  if (p.y < -.9){ velocity[index] *= -1;}
-     buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-
-      // if (uniforms.time > 0.) {
-      //   if (distance( buffer3[index], buffer1[index]) > .1) {
-      //  var p = (buffer1[index] - buffer3[index]).xyz;
-      //  //.1 * uniforms.time *
-      //   vf =  ( (.01 * curlNoise(p))) * p;
-      //   vf = p;
-      //   velocity[index] +=  .1 * vf;
-      //   buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-      //   }
-      // }
-      //wind turbulence
-      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-      
-      //sphere
-      //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-
-      //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
-      ;
-      //buffer3[index].x < 0. ||
-      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-      if (distance(buffer3[index].xy, mouse) < .1) {
-        // velocity[index].x = velocity[index].y;
-        // velocity[index].y = -velocity[index].x;
-        //buffer3[index]= vec4<f32>(buffer3[index].xy - vec2<f32>(distance(buffer3[index].xy, mouse)), 0., 1.);
-        buffer3[index] = buffer3[index] - vec4<f32>(mouse, 0,0);
-        //velocity[index]*= .001;
-      }
-      // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
-   
-
-    }`,
-      exec: function(state2) {
-        const device2 = state2.device;
-        const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device2.createCommandEncoder();
-        const computePass = commandEncoder.beginComputePass();
-        state2.computePass.computePass = computePass;
-        webgpu2.device.queue.writeBuffer(uniformsBuffer, 0, new Float32Array(mouse));
-        let timeBuffer = new Float32Array(1);
-        window.writeTime = function(dt) {
-          timeBuffer[0] = dt;
-          webgpu2.device.queue.writeBuffer(uniformsBuffer, 8, timeBuffer);
-        };
-        computePass.setPipeline(state2.computePass.pipeline);
-        computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
-        computePass.dispatchWorkgroups(1e3);
-        computePass.end();
-      },
-      bindGroups: function(state2, computePipeline) {
-        const reset = makeBuffer(frames[1][1], 0, "reset");
-        const descriptor = {
-          layout: computePipeline.getBindGroupLayout(0),
-          entries: [
-            { binding: 0, resource: { buffer: gridBuffer2 } },
-            { binding: 1, resource: { buffer: mesh || shapes[0] } },
-            { binding: 2, resource: { buffer: uniformsBuffer } },
-            { binding: 3, resource: { buffer: velocity } },
-            { binding: 4, resource: { buffer: lifeTimeBuffer } },
-            { binding: 5, resource: { buffer: reset } },
-            { binding: 6, resource: { buffer: gridBuffer22 } }
-          ]
-        };
-        let computeBindGroup = state2.device.createBindGroup(descriptor);
-        return [computeBindGroup];
-      }
-    });
-  }
-  var obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`;
-  var dancer = [];
-  var frames = [];
-  var frameMax = 50;
-  var frameCount = [...Array(frameMax).keys()];
-  function getFrames(model) {
-    frames[model] = [];
-    let loaded = 0;
-    return new Promise(function(resolve) {
-      frameCount.forEach(function(i) {
-        fetch(
-          `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
-        ).then((res) => res.arrayBuffer()).then((buffer2) => {
-          var floatBuffer = new Float32Array(buffer2);
-          for (let i2 = 0; i2 < floatBuffer.length; i2++) {
-            floatBuffer[4 * i2 + 1] -= 0.5;
-          }
-          frames[model][i] = floatBuffer;
-          loaded += 1;
-          if (loaded === frameMax - 1) {
-            resolve();
-            if (model === 2)
-              basic();
-            setTimeout(makeStagingBuffer, 3e3);
-          }
-        });
-      });
-    });
-  }
-  fetch(obj(1)).then((d2) => d2.arrayBuffer()).then((d2) => {
-    dancer = new Float32Array(d2);
-    for (let i = 0; i < dancer.length; i++) {
-      dancer[4 * i + 1] -= 0.5;
-    }
-    shapes.push(window.makeBuffer(dancer, 0, "leaf"));
-  });
-  getFrames(1);
-  getFrames(2);
-  getFrames(3);
-  getFrames(4);
-  var pointBuffer = new Float32Array(1e6);
-  var indexPool = new Array(1e6 / 4).fill(1).map((d2, i) => i);
-  indexPool.alloc = function(n) {
-    let i = 0;
-    let result3 = [];
-    while (i < n) {
-      result3.push(this.shift());
-      i++;
-    }
-    return result3;
-  };
-  function line(a, b) {
-    this.x1 = a[0];
-    this.y1 = a[1];
-    this.x2 = b[0];
-    this.y2 = b[1];
-    this.indices = [];
-    this.points = [];
-    this.array = pointBuffer;
-    this.subdivide = function(resolution) {
-      let { x1, y1, y2, x2 } = this;
-      let dy = y2 - y1;
-      let dx = x2 - x1;
-      let points = new Array(resolution).fill(0).map((d2, i) => {
-        return [
-          x1 + dx / resolution * i,
-          y1 + dy / resolution * i
-        ];
-      });
-      this.points = points;
-    };
-  }
-  line.prototype.draw = function() {
-    this.subdivide(50);
-    if (!this.indices.length) {
-      this.indices.push(...indexPool.alloc(this.points.length));
-    }
-    this.indices.forEach((d2, i) => {
-      let idx = d2 * 4;
-      this.array[idx] = this.points[i][0];
-      this.array[idx + 1] = this.points[i][1];
-    });
-  };
-  var triangle = function(origin, side) {
-    let a = [origin[0], origin[1] + side];
-    let b = [origin[0] - side, origin[1] - side];
-    let c2 = [origin[0] + side, origin[1] - side];
-    let lines = [new line(a, b), new line(a, c2), new line(c2, b)];
-    lines.forEach((line2) => line2.draw());
-  };
-  setInterval(function() {
-    triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-    triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-    triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-    triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-    triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-  }, 1e3);
-  window.addEventListener("click", function() {
-    let timebetween = 1e3;
-    if (!animating) {
-      modelType = 1 + modelType % frames.length;
-      let elapsed = Date.now();
-      setTimeout(function recur() {
-        let dt = Date.now() - elapsed;
-        if (dt < timebetween)
-          setTimeout(recur, 16);
-        else {
-          animating = true;
-          modelType = modelType === 1 ? 2 : 1;
-          return makeStagingBuffer();
-        }
-      }, 8);
-    } else {
-      animating = !animating;
-    }
-    if (animating)
-      return makeStagingBuffer();
-  });
-  var particleMesh = [];
-  function initParticles() {
-    for (let i = 0; i < 1e6; i++) {
-      particleMesh[i] = { x: -0.9 + i / 1e4, y: 0.9, z: 0, dir: [makeRand(), makeRand()] };
-    }
-  }
-  initParticles();
-  var test = new Array(25e4).fill(0).map(Math.random);
-  function makeStagingBuffer() {
-    setTimeout(function() {
-      if (!shapes[0] || !animating)
-        return;
-      stagingBuffer = webgpu.device.createBuffer({
-        size: 1e7,
-        usage: GPUBufferUsage.COPY_SRC,
-        mappedAtCreation: true
-      });
-      let frame2 = time % frames[modelType].length;
-      const toCopy = frames[modelType][frame2];
-      if (!toCopy)
-        return console.log(toCopy, modelType, frame2);
-      if (time === 0)
-        window.toCopy = toCopy;
-      time += 1;
-      const vertexPositions = new Float32Array(stagingBuffer.getMappedRange());
-      for (let i = 0; i < 9; i++) {
-        let idx = i * 4;
-        let yourCopy = new Float32Array(1e5);
-        for (let j = 0; j < toCopy.length; j += 4) {
-          yourCopy[j] = toCopy[j] + i * 0.111;
-          yourCopy[j + 1] = toCopy[j + 1] + 0.2 * Math.floor(i / 3);
-          yourCopy[j + 2] = toCopy[j + 2];
-          yourCopy[j + 3] = toCopy[j + 3];
-        }
-        vertexPositions.set(yourCopy, 1e5 * i);
-      }
-      stagingBuffer.unmap();
-      const commandEncoder = webgpu.device.createCommandEncoder({});
-      commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, vertexPositions.length * 4);
-      webgpu.device.queue.submit([commandEncoder.finish()]);
-      if (animating)
-        makeStagingBuffer();
-    }, 1e3);
-  }
-  var shapes = [];
-  window.makeBuffer = function makeBuffer3(stuff, flag, label) {
-    const particleSize = 4;
-    const gpuBufferSize = 134217728;
-    const gpuBuffer = webgpu.device.createBuffer({
-      label,
-      size: gpuBufferSize,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
-      mappedAtCreation: true
-    });
-    gpuBuffer.source = stuff;
-    const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
-    if (stuff && stuff.flat)
-      stuff = stuff.flat(), label;
-    particlesBuffer.set(stuff);
-    gpuBuffer.unmap();
-    return gpuBuffer;
-  };
-  var webgpu = main_default().then((w) => webgpu = w);
-  var list = pointBuffer;
-  for (let i = 0; i < list.length; i += 4) {
-    list[i] = makeRand() * 2;
-    list[i + 1] = makeRand() * 2;
-    list[i + 2] = makeRand() * 2;
-    list[i + 3] = 0;
-  }
-  async function basic() {
-    let vf1 = pickVF(), vf2 = pickVF();
-    setInterval(function() {
-      vf1 = vf2;
-      vf2 = pickVF();
-      let happyBear = makeBuffer(list, 0, "bear");
-      computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2);
-      drawScreen = makeDrawCall(happyBear, drawDescriptor);
-    }, 1e4);
-    computeTransition = makeComputeShader(webgpu, makeBuffer(frames[2][0]), vf1, vf2);
     const cameraUniformBuffer = webgpu.device.createBuffer({
       size: 3 * 4 * 16 + 16,
       // 4x4 matrix
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     });
-    const posBuffer = makeBuffer(import_bunny.default.positions.map((d2) => d2.concat(0)).flat(), 1, "bunny");
-    const dragonBuffer = makeBuffer(import_stanford_dragon.default.positions, 1, "dragon");
-    shapes.push(posBuffer);
-    shapes.push(dragonBuffer);
     const quadBuffer = webgpu.device.createBuffer({
       size: Float32Array.BYTES_PER_ELEMENT * 2 * 6,
       usage: GPUBufferUsage.VERTEX,
@@ -8421,90 +7800,1573 @@
       1
     ]);
     quadBuffer.unmap();
-    const device = webgpu.device;
-    const model = mat4_exports.identity(new Float32Array(16));
-    function getCameraViewProjMatrix() {
-      mat4_exports.translate(model, model, vec3_exports.fromValues(2, 2, 0));
-      mat4_exports.rotate(
-        model,
-        model,
-        1,
-        vec3_exports.fromValues(
-          Math.sin(0),
-          Math.cos(1),
-          0
-        )
-      );
-      let projectionMatrix = mat4_exports.create();
-      let viewProjectionMatrix = mat4_exports.create();
-      mat4_exports.perspectiveZO(
-        projectionMatrix,
-        10,
-        500 / 500,
-        0.5,
-        10
-      );
-      mat4_exports.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
-      let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
-      let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
-      viewProjectionMatrixHost.set(viewProjectionMatrix);
-      return viewProjectionMatrixHost;
+    function makeBuffer2(stuff, flag, label) {
+      const particleSize = 4;
+      const gpuBufferSize = 134217728;
+      const gpuBuffer = webgpu.device.createBuffer({
+        label,
+        size: gpuBufferSize,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+        mappedAtCreation: true
+      });
+      gpuBuffer.source = stuff;
+      const particlesBuffer = new Float32Array(gpuBuffer.getMappedRange());
+      if (stuff && stuff.flat)
+        stuff = stuff.flat(), label;
+      particlesBuffer.set(stuff);
+      gpuBuffer.unmap();
+      return gpuBuffer;
     }
-    const cameraViewProj = getCameraViewProjMatrix();
-    const blend = {
-      color: {
-        srcFactor: "src-alpha",
-        dstFactor: "one",
-        operation: "add"
-      },
-      alpha: {
-        srcFactor: "zero",
-        dstFactor: "one",
-        operation: "add"
-      }
+    let pointBuffer = new Float32Array(particlesCount);
+    let pointBufferCount = 0;
+    let list = pointBuffer.slice();
+    list = makeGrid().map((d2) => d2);
+    list = new Float32Array(list.flat());
+    var rgb2 = new Float32Array(3e6);
+    for (let i = 0; i < rgb2.length; i++) {
+      let stuff = i % 1e3 / 1e3;
+      let interval2 = (Math.sin(stuff) + 1) / 2;
+      let color2 = rgb(turbo_default(stuff));
+      rgb2[3 * i] = color2.r / 255 / 2 + 0.5;
+      rgb2[3 * i + 1] = color2.g / 255 / 2 + 0.5;
+      rgb2[3 * i + 2] = color2.b / 255 / 2 + 0.5;
+    }
+    const colorBuffer = makeBuffer2(rgb2, 0, "color");
+    const dragonBuffer = makeBuffer2(import_stanford_dragon.default.positions, 1, "dragon");
+    function getDist(a, b) {
+      let dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+      return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a2, b2) => {
+        return a2 + b2;
+      }));
+    }
+    const mouse = [0, 0];
+    function makeGrid() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        return [x * 1, y * 1, z, 1];
+      });
+    }
+    let gridBuffer = makeGrid();
+    function length22(p2) {
+      let [x, y] = p2;
+      return Math.sqrt(x * x + y * y);
+    }
+    let makeVectorField = makeVectorField4;
+    let result2 = [];
+    let pickVF = function() {
+      let list2 = [
+        keeptrying
+        //test999,
+        //magnet, 
+        //   makeVectorField2,
+        //   makeVectorField8,
+        //   makeVectorField10,
+        //   makeVectorField2, // no good - circle SDF
+        //   makeVectorField4,
+        //   makeVectorField5,//needs improvement  // spiral grid
+        //   makeVectorField8, //good- make better
+        //  makeVectorField1, 
+      ];
+      let idx = Math.random() * list2.length | 0;
+      let ret = list2[0]();
+      console.log(idx);
+      return ret;
     };
-    function magnitude(v) {
-      return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2]);
+    function keeptrying() {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+        let theta = Math.atan(y / x);
+        let a = [x, y, z];
+        let b = [0, 0, 0];
+        return [z, z, z, 1];
+      });
+      return vf;
+    }
+    function test999() {
+      let p2 = import_stanford_dragon.default.positions;
+      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+        let theta = Math.atan(y / x);
+        let a = [x, y, z];
+        let b = [0, 0, 0];
+        return [x, y, z, 1];
+      });
+      return vf;
+    }
+    function test678() {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
+        return [x, y, z, 1];
+      });
+      let i = 0;
+      let prev = 1e5 / 2;
+      let right = [1, 0, 0, 0];
+      let left = [-1, 0, 0, 0];
+      let down = [0, -1, 0, 0];
+      let up = [0, 1, 0, 0];
+      let dir = [up, down, left, right];
+      let going = right;
+      while (i < 1e7) {
+        i++;
+        vf[prev] = going;
+        if (Math.random() > 0.9)
+          going = dir[Math.random() * dir.choice | length];
+        let next = dir.indexOf(going);
+        if (next === 0)
+          prev += 1;
+        if (next === 1)
+          prev += -1;
+        if (next === 2)
+          prev += 100;
+        if (next === 3)
+          prev -= 100;
+        if (prev > 1e4)
+          prev = 0;
+      }
+      return vf;
+    }
+    function test456() {
+      let point = [0, 1, 0];
+      let point2 = [0, 1, 0];
+      let down = [0, -1, 0, 0];
+      let diagonalLeft = [-1, -1, 0, 0];
+      let diagonalRight = [0, -1, 1, 0];
+      let wtf = 0.3 - dist2;
+      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+        return [-y * 10, x * 10, z, 10];
+      });
+      return vf;
+    }
+    function test123() {
+      let i = 0;
+      let point = [0, 1, 0];
+      let point2 = [0, 1, 0];
+      i++;
+      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
+        return [Math.cos(x), Math.sin(y), -z, 1];
+        return [x, y, z, 1];
+      });
+      return vf;
+    }
+    function magnet() {
+      let pt = [...Array(5).keys()].map((data) => [makeRand(), makeRand(), 0]);
+      let i = 0;
+      let dir = [1, 0, 0, 1];
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        i++;
+        let theta = Math.atan(y / x);
+        return [10 * Math.cos(theta * 10), 10 * Math.sin(theta * 10), 10 * Math.sin(theta), 1];
+        let dist3 = distanceTo(pt[0], [x, y, z]);
+        return [1 / dist3, 1 / dist3, 1 / dist3, 1];
+      });
+      return vf;
+    }
+    function shit2() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        if (Math.abs(x) > 0.3)
+          return [y, x, 0, 1];
+        if (Math.abs(x) > 0.6)
+          return [z, 0, x, 1];
+        else
+          return [0, z, y, 1];
+      });
+    }
+    function stream3() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        return [x, y, z, 1];
+      });
+      for (let i = 0; i < vf.length; i++) {
+        let [x, y, z] = vf[i];
+        vf[i] = [
+          100 * Math.tanh(z + y),
+          0,
+          0,
+          1
+        ];
+      }
+      return vf;
+    }
+    function stream2() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        return [x, y, z, 1];
+      });
+      for (let i = 0; i < vf.length; i++) {
+        let [x, y, z] = vf[i];
+        vf[i] = [
+          1 / Math.tan(z) * y,
+          1 / Math.cos(z) * x,
+          1 / Math.cos(i * z) * z,
+          1
+        ];
+      }
+      return vf;
+    }
+    function stream() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        return [x, y, z, 1];
+      });
+      for (let i = 0; i < vf.length; i++) {
+        let [x, y, z] = vf[i];
+        vf[i] = [
+          1 / Math.tan(z) * y,
+          y,
+          1 / Math.cos(i * z) * z,
+          1
+        ];
+      }
+      return vf;
+    }
+    function shit3() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        return [x, y, z, 1];
+      });
+      for (let i = 0; i < vf.length; i++) {
+        let [x, y, z] = vf[i];
+        vf[i] = [
+          Math.tan(z) * y,
+          Math.cos(z) * x,
+          Math.cos(i * z),
+          1
+        ];
+      }
+      return vf;
+    }
+    function shit4() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        return [0, 0, 0, 1];
+      });
+      let visited = 0;
+      let movedX = 0;
+      let dirZ = 1;
+      let moveZ = (i2) => {
+        movedX = 0;
+        return i2 + 1e4 * dirZ;
+      };
+      var dir = moveZ;
+      let moveY = (i2) => i2 + 100;
+      let moveX = (i2) => {
+        movedX += 1;
+        if (movedX > 5) {
+          dir = moveZ;
+          dirZ *= -1;
+        }
+        return i2 + 1;
+      };
+      let i = 0;
+      moveX.nim = "x";
+      moveZ.nim = "Z";
+      while (visited < 1e3) {
+        if (i > 9e5)
+          dir = moveX;
+        let cell = vf[i = dir(i)];
+        console.log(i, dir.nim, dirZ);
+        if (dir === moveZ)
+          cell[2] = 10;
+        else
+          cell[0] = 10;
+        visited += 1;
+      }
+      return vf;
+    }
+    function shit() {
+      let range = [...Array(5).keys()].map((d2) => [makeRand(), makeRand(), makeRand()]);
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        let maxDist = Infinity;
+        let origin2;
+        let pt = [x, y, z];
+        for (let i2 = 0; i2 < range.length; i2++) {
+          let dist3 = getDist(pt, range[i2]);
+          if (dist3 < maxDist) {
+            maxDist = dist3;
+            origin2 = range[i2];
+          }
+        }
+        if (maxDist < 0.25) {
+          return distanceTo(origin2, pt);
+        } else if (maxDist < 1) {
+          return [y, -x, -z, 1];
+        } else {
+          return [-x, -y, -z, 1];
+        }
+      });
+      let origin = [1, 1, 1];
+      let destination = [-1, -1, -1];
+      for (var i = 0; i < vf.length; i++) {
+        let pt = vf[i];
+        let [x, y, z] = pt;
+        let originDist = dist2(pt, origin);
+        let destinationDist = dist2(pt, destination);
+        if (originDist < 0.25) {
+          vf[i] = [x, y, z, 1];
+        } else if (originDist < 0.5) {
+          vf[i] = [y, -x, -z, 1];
+        } else {
+          vf[i] = [-x, -y, -z, 1];
+        }
+      }
+      return vf;
+    }
+    function multiply3(a, b) {
+      if (!Array.isArray(b)) {
+        return a.map((d2) => d2 * b);
+      } else
+        return [a[0] * b[0], a[1] * b[1], a[2] * b[2]];
+    }
+    function add4(a, b) {
+      if (!Array.isArray(b)) {
+        return a.map((d2) => d2 + b);
+      } else
+        return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+    }
+    function dist2(a, b) {
+      let dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+      return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a2, b2) => {
+        return a2 + b2;
+      }));
+    }
+    function helloWorld() {
+      let rotationVector = unitVector([Math.random(), Math.random(), Math.random()]);
+      let k2 = rotationVector;
+      let rotatedVector = function(v, theta2) {
+        let a = multiply3(k2, Math.cos(theta2));
+        let b = multiply3(multiply3(k2, v), Math.sin(theta2));
+        let ir = add4(a, b);
+        return add4(ir, multiply3(multiply3(k2, dot2(k2, v)), Math.cos(theta2)));
+      };
+      function dist3(a, b) {
+        let dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+        return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a2, b2) => {
+          return a2 + b2;
+        }));
+      }
+      let theta = Math.random() * Math.PI / 180;
+      function matrixMultVec(m2, v) {
+        return v.map((d2, i) => {
+          return d2 * m2[i][0] + d2 * m2[i][1] + d2 * m2[i][2];
+        });
+      }
+      function rotatePointAroundAxis(theta2, pt) {
+        let xRotation = [[1, 0, 0], [0, cos(theta2), -sin(theta2)], [0, sin(theta2), cos(theta2)]];
+        let yRotation = [[cos(theta2), 0, theta2], [0, 1, 0], [-sin(theta2), 0, cos(theta2)]];
+        let zRotation = [[cos(theta2), -sin(theta2), 0], [sin(theta2), cos(theta2), 0], [0, 0, 1]];
+        return matrixMultVec(zRotation, pt);
+      }
+      function minus(v1, v2) {
+        return [
+          v1[0] - v2[0],
+          v1[1] - v2[1],
+          v1[2] - v2[2]
+        ];
+      }
+      let range = [...Array(5).keys()].map((d2) => [makeRand(), makeRand(), makeRand()]);
+      return makeVectorFieldGeneric(function(x, y, z) {
+        x = 10 * Math.cos(x);
+        return [x, y, z, 1];
+        let rotation = rotatePointAroundAxis(90, [x, y, z]).concat(1);
+        return minus(rotation, [x, y, z]).concat(1);
+      });
     }
     function unitVector(v) {
+      function magnitude(v2) {
+        let pow = (e) => Math.pow(e, 2);
+        return Math.sqrt(pow(v2[0]) + pow(v2[1]) + pow(v2[2]));
+      }
       let l = magnitude(v);
       return v.map((d2) => d2 / l);
     }
-    function vectorTo(b, a2) {
-      return unitVector(b) - unitVector(a2);
+    function makeVectorField8() {
+      let controlPoints = [...Array(5).keys()].map((d2) => [
+        Math.random(),
+        Math.random(),
+        Math.random()
+      ]);
+      function magnitude(v) {
+        let pow = (e) => Math.pow(e, 2);
+        return Math.sqrt(pow(v[0]) + pow(v[1]) + pow(v[2]));
+      }
+      let jdx = 0;
+      return makeVectorFieldGeneric(function(x2, y2, z2) {
+        jdx++;
+        let theta = Math.atan(y2 / x2);
+        let radius = getDist([x2, y2, z2], [0, 0, 0]);
+        return [Math.cos(theta), Math.sin(theta), 0, 1];
+        return [Math.cos(theta) * radius, Math.sin(theta) * radius, z2 * z2, 1];
+        return [Math.cos(theta) * (x2 + y2), Math.sin(theta) * (x2 + y2), z2 * z2, 1];
+      });
+      let vf = makeVectorFieldGeneric(function(x2, y2, z2) {
+        return [x2, y2, z2, 0];
+      });
+      let origin = controlPoints[0];
+      let destination = controlPoints[1];
+      let x = origin[0] * 100 | 0;
+      let y = origin[1] * 1e4 | 0;
+      let z = origin[2] * 1e6 | 0;
+      let idx = x + y + z;
+      let distance2 = distanceTo(origin, destination);
+      origin = [0, 0, 0];
+      for (var i = 0; i < vf.length; i++) {
+        let pt = vf[i];
+        let [x2, y2, z2] = pt;
+        let originDist = dist2(pt, origin);
+        let destinationDist = dist2(pt, destination);
+        if (originDist < 0.25) {
+          vf[i] = [x2, y2, z2, 1];
+        } else if (originDist < 0.5) {
+          vf[i] = [y2, -x2, -z2, 1];
+        } else {
+          vf[i] = [-x2, -y2, -z2, 1];
+        }
+      }
+      return vf;
     }
-    var rgb2 = new Float32Array(1e6);
-    for (let i2 = 0; i2 < rgb2.length; i2++) {
-      let stuff = i2 % 1e3 / 1e3;
-      let interval2 = (Math.sin(stuff) + 1) / 2;
-      let color2 = rgb(turbo_default(stuff));
-      rgb2[3 * i2] = color2.r / 255 / 2 + 0.5;
-      rgb2[3 * i2 + 1] = color2.g / 255 / 2 + 0.5;
-      rgb2[3 * i2 + 2] = color2.b / 255 / 2 + 0.5;
+    function distanceTo(b, a) {
+      return [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
     }
-    const colorBuffer = makeBuffer(rgb2, 0, "color");
-    let hello = [];
-    let img = new Image();
-    img.src = "./data/webgpu.png";
-    await img.decode();
-    let bitmap = await createImageBitmap(img);
+    function makeVectorField7() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        return [
+          Math.cos(-10 * y + x),
+          Math.sin(10 * x + y),
+          0,
+          1
+        ];
+      });
+    }
+    function makeVectorField10() {
+      let vf = makeVectorFieldGeneric(function(x, y, z) {
+        x *= 10;
+        y *= 10;
+        let x1 = 0.2 * Math.sin(y + x);
+        let y1 = 0.2 * Math.sin(x - y);
+        return [x1, y1, z, 1];
+      });
+      return vf;
+    }
+    function makeVectorField9() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        let pos = [x, y, z];
+        let a = x - y;
+        let length3 = length22(pos);
+        return [length3, length3, length3, 1];
+      });
+    }
+    function convergence() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        return [-x, -y, -z, 1];
+      });
+    }
+    function makeVectorField4() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        return [
+          Math.cos(-10 * y + x),
+          Math.sin(10 * x + y),
+          10 * Math.atan(x, y),
+          1
+        ];
+      });
+    }
+    function makeVectorField5() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        return [
+          1 / Math.cos(-10 * y + x),
+          1 / Math.sin(10 * x + y),
+          1 / 10 * Math.atan(x, y),
+          1
+        ];
+      });
+    }
+    function makeVectorFieldGenericCool(cb, buffer2) {
+      let w = width * 10, h = height * 10, zspace2 = 10;
+      var result3 = buffer2 || [];
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          for (let k2 = 0; k2 < zspace2; k2++) {
+            let [x, y, z] = clipSpace(i, j, k2, w, h);
+            let [x1, y1, z1] = zeroToOne(x, y, z);
+            let idx = Math.round(x1 * w + y1 * w * h);
+            result3[idx] = cb(x, y, 0, i, j, k2, idx);
+          }
+        }
+      }
+      return result3;
+    }
+    function makeVectorFieldGeneric2D(cb, buffer2) {
+      let w = width * 10, h = height * 10;
+      var result3 = buffer2 || [];
+      for (let i = 0; i < w; i++) {
+        for (let j = 0; j < h; j++) {
+          let [x, y, z] = clipSpace(i, j, 0, w, h);
+          let [x1, y1, z1] = zeroToOne(x, y, 0);
+          let idx = Math.round(x1 * w + y1 * w * h);
+          result3[idx] = cb(x, y, 0, i, j, k, idx);
+        }
+      }
+      return result3;
+    }
+    function makeVectorFieldGeneric(cb, buffer2) {
+      var result3 = buffer2 || [];
+      for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+          for (let k2 = 0; k2 < zspace; k2++) {
+            let [x, y, z] = clipSpace(k2, j, i, width, height);
+            let [x1, y1, z1] = zeroToOne(x, y, z);
+            let idx = Math.round(
+              x1 * width + y1 * width * height + z1 * width * width * width
+            );
+            result3[idx] = cb(x, y, z, i, j, k2, idx);
+          }
+        }
+      }
+      return result3;
+    }
+    result2 = makeVectorFieldGeneric(function(x, y, z) {
+      return [x, y, z, 1];
+    });
+    function findIndex(point) {
+      let [x, y, z] = point;
+      var x1 = ((x + 1) / 2).toPrecision(2);
+      var y1 = ((1 - y) / 2).toPrecision(2);
+      var z1 = ((1 - z) / 2).toPrecision(2);
+      x1 *= 100;
+      y1 *= 1e4;
+      z1 *= 1e6;
+      return x1 + y1 + z1;
+    }
+    function findPoint(d2) {
+      let [x, y, z] = d2;
+      var x1 = ((x + 1) / 2).toPrecision(2);
+      var y1 = ((1 - y) / 2).toPrecision(2);
+      var z1 = ((1 - z) / 2).toPrecision(2);
+      x1 *= 100;
+      y1 *= 1e4;
+      z1 *= 1e6;
+      let index = Math.floor(x1 + y1 + z1);
+      return [result2[index], index, result2];
+    }
+    let magnets;
+    function makeMagnets() {
+      magnets = [];
+      for (let i = 0; i < 5; i++) {
+        magnets.push([makeRand(), makeRand(), makeRand()]);
+        if (i < 1)
+          magnets.push([
+            makeRand(),
+            makeRand(),
+            makeRand()
+          ]);
+        else
+          magnets.push([
+            makeRand(),
+            makeRand(),
+            +makeRand()
+          ]);
+      }
+    }
+    makeMagnets();
+    let d = Date.now();
+    function makeVectorField1() {
+      magnets.forEach((m2) => {
+        let e = d - Date.now();
+        m2[0] = 0.1 * Math.cos(e / 1e3) + m2[0];
+        m2[1] = 0.1 * Math.sin(e / 1e3) + m2[1];
+        m2[2] = 0;
+      });
+      makeVectorFieldGeneric(function(x, y, z) {
+        let vec = [0, 0, 0, 0];
+        let p2 = [x, y, 0];
+        magnets.forEach((mag, i) => {
+          let dist3 = getDist(mag, p2);
+          let dx = unitVector(distanceTo(mag, p2));
+          vec = add4(vec, dx.map((d2) => d2 * 1 / dist3));
+        });
+        vec[2] = 0;
+        return vec;
+      });
+      return result2;
+    }
+    function makeVectorField2() {
+      return makeVectorFieldGeneric(function(x, y, z) {
+        let vec = [0, 0, 0, 0];
+        let p2 = [x, y, 0];
+        let l = circle(p2);
+        vec[0] = -x * 2;
+        vec[1] = -y * 2;
+        if (l < 0.6 && l > 0.3) {
+          vec[0] = y * 10;
+          vec[1] = -x * 10;
+        }
+        vec[2] = sin(x);
+        return vec;
+      });
+    }
+    let computeTransition;
+    let camera = { position: { x: 0, y: 0, z: 0 } };
+    const gui = new GUI$1();
+    let props = {};
+    let toggleMode = 0;
+    props.resetAnimation = function() {
+    };
+    props.resetMeshCube = function() {
+    };
+    gui.add(props, "resetMeshCube").name("resetMeshCube");
+    gui.add(props, "resetAnimation").name("resetAnimation");
+    const cameraFolder = gui.addFolder("Camera");
+    cameraFolder.add(camera.position, "z", 0, 10);
+    cameraFolder.open();
+    var person = { name: "Sam" };
+    let p = { type: 45 };
+    gui.add(p, "type", 0, 100);
+    var text = { speed: "someName" };
+    gui.add(text, "speed", { King: "A", Queen: "B", Rook: "C" });
+    const dot2 = (a, b) => {
+      return a[0] * b[0] + a[1] * b[1];
+    };
+    function circle(p2) {
+      return length22(p2);
+    }
+    function makeRand() {
+      let x = Math.random().toPrecision(2);
+      x -= 0.5;
+      return x * 2;
+    }
+    function clipSpace(x, y, z, width2, height2) {
+      y /= height2;
+      z /= width2;
+      y = y - 0.5;
+      z = z - 0.5;
+      y *= -2;
+      z *= -2;
+      x = x / width2 * 2 - 1;
+      return [x, y, z];
+    }
+    function zeroToOne(x, y, z) {
+      var x1 = (x + 1) / 2;
+      var y1 = (1 - y) / 2;
+      var z1 = (1 - z) / 2;
+      return [x1, y1, z1];
+    }
+    function makeRadius(i) {
+      return Math.ceil(i / 1e4) / 10;
+    }
+    const reset = makeBuffer2(makeGrid(), 0, "reset");
+    function makeComputeShader(webgpu2, mesh, vf12, vf22) {
+      let directionBuffer = new Float32Array(particlesCount * 4);
+      for (let i = 0; i < directionBuffer.length; i += 4) {
+        let idx = i / 4 % 360 * 1.5;
+        let radius = 0.1 * makeRadius(i);
+      }
+      let direction = makeBuffer2(directionBuffer, 0, "vectorField");
+      let gridBuffer2 = makeBuffer2(vf12.flat(), 0, "result");
+      let gridBuffer22 = makeBuffer2(vf22.flat(), 0, "result");
+      let particledistancetraveled = new Float32Array(particlesCount);
+      let distancetraveledBuffer = makeBuffer2(particledistancetraveled, 0, "vectorField");
+      let max3 = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+      let min3 = {
+        x: 0,
+        y: 0,
+        z: 0
+      };
+      for (let i = 0; i < mesh.source.length; i += 4) {
+        let x = mesh.source[i];
+        let y = mesh.source[i + 1];
+        let z = mesh.source[i + 2];
+        max3.x = Math.max(x, max3.x);
+        max3.y = Math.max(y, max3.y);
+        max3.z = Math.max(z, max3.z);
+        min3.x = Math.min(x, max3.x);
+        min3.y = Math.min(y, max3.y);
+        min3.z = Math.min(z, max3.z);
+      }
+      const uniformsBuffer2 = webgpu2.device.createBuffer({
+        size: 32,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+      });
+      return webgpu2.initComputeCall({
+        label: `predictedPosition`,
+        code: `
+    struct Uniforms {
+      mouse: vec2<f32>,
+      time: f32,
+      mode: f32,
+      decayRate: f32
+    }
+    
+
+    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
+    @group(0) @binding(2) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
+    @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
+    @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
+    @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
+
+  
+  fn sfrand () -> f32{
+    let co = vec2<f32>(${Math.random()}, ${Math.random()});
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+  
+  
+  fn mrand() ->  f32{
+    return (sfrand() * 2.) - 1.;
+  }
+
+  fn shift (x:f32)->f32 {
+    return (x + 1.) / 2.;
+  }
+
+  fn hasCollided (p: vec3<f32>)-> bool {
+    var minX = -1; 
+    var bounds = 1.;
+    if (p.x < -bounds) {return true;}
+     if (p.y <= -bounds) {return true;} //why is this backwards? 
+        if (p.x >= bounds) {return true;}
+        if (p.y >= bounds) {return true;}
+        if (p.z <= -bounds ) {return true;}
+        if (p.z >= bounds ){ return true;}
+        return false;
+  }
+
+  fn makeMagnets () -> array<vec3<f32>, 4> {
+    var result = array<vec3<f32>, 4>();
+
+    result[0] = vec3<f32>(0, 0, 0);
+    result[1] = vec3<f32>(0, 0, 0);
+    result[2] = vec3<f32>(0, 0, 0);
+    result[3] = vec3<f32>(0, 0, 0);
+
+
+    return result;
+  }
+
+  fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
+    var radius = distance(pos, mag);
+    var theta = atan(pos.y / pos.x);
+    return 1;
+  }
+
+  fn applyMagnets(pos: vec3<f32>) -> f32 {
+    var idx = hashPosition(pos);
+
+    var magnets = makeMagnets();
+
+
+    vectorFieldBuffer[idx] = vec4<f32>(0);
+    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y))
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
+    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
+    return 1.;
+  }
+
+  fn hashPosition(pos: vec3<f32>) ->  i32{
+    var x = (pos.x + 1) / 2.;
+    var y = (1. - (pos.y)) / 2.;
+    var z = (1. - (pos.z)) / 2.;
+    //if (z < .1) {z = .9;}
+    
+    // 
+    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
+    + floor(floor(z * 100) * 100) * 100
+    );
+    return idx;
+  }
+
+
+  // fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
+  //   var dir = direction[index];// + vec3<f32>(1, 1, 1);
+  //   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+ 
+  //   // if (false) {
+  //   //   dir.x += .5;
+  //   //   dir.y += .5;  
+  //   // } else {
+  //   //   dir.x += cos(1.75);
+  //   //   dir.y += sin(1.75);
+  //   //   // dir.x += 1. * cos(group *10 );
+  //   //   // dir.y += 1 * sin(group * 10);
+  //   // }
+
+  //   var theta = atan2(dir.y, dir.x);
+  //   // // dir.x += cos(theta * 1);
+  //   // // dir.y += sin(theta * 1);
+
+  //   dir.x =  cos(theta + 1.6);
+  //   dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
+
+  //   // if (group == 0) {
+  //   //   dir = vec3<f32>(1, 0, 0);
+  //   // } else if (group == 1)  {
+  //   //   dir = vec3<f32>(0, 1, 0);
+  //   // } else if (group == 2)  {
+  //   // dir = vec3<f32>(0, -1, 0);
+  //   // } else if (group == 3)  {
+  //   //   dir = vec3<f32>(-1, 0, 0);
+  //   // }
+  //   direction[index] = dir;
+  //   return dir;
+  // }
+  // fn drawCoolShape () -> vec3<f32>  {
+  //   //helix = circle + z direction
+  //   return vec3<f32>(0.);
+  // }
+
+fn helix(index: u32) -> vec3<f32>  {
+  var dir = direction[index];
+
+
+  if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+
+
+  var theta = atan2(dir.z, dir.x);
+
+  // dir.x = cos(theta * 1.5);
+  // dir.z = sin(theta * 1.5);
+
+
+  dir.x =  cos(theta + 1.2);
+  //dir.y = .1 * .000001;
+  dir.z = sin(theta + 1.2);
+
+  // dir.x = .1;
+  // dir.y = .1;
+
+  //posBuffer[index] = vec4<f32>(0.);
+
+  direction[index] = dir;
+  return dir;
+}
+
+fn drawShape (index: u32) -> vec3<f32> {
+  var dir = direction[index];
+
+
+  var theta = atan2(dir.y, dir.x);
+
+  dir.x = cos(theta + .7);
+  dir.y = sin(theta + .7);
+
+  distancetraveled[index] += 1.;
+
+
+  if (distancetraveled[index] > 100) {
+    direction[index] = dir; 
+    posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
+  }
+
+  return dir;
+}
+
+  fn hash(p: vec3<f32>) -> vec3<f32> {
+    var pos = p * .1;
+    //pos += .05;
+    //pos.z -= 1.1;
+    let idx = hashPosition(pos);
+
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+  //if uniforms.mode == 2 ?
+    // if (idx < 0) {
+    //   //return vec3<f32>(-x, -y, 0);
+    // }
+    // if (idx > 1000000) {
+    //   //return vec3<f32>(-x, -y, 0);
+    // }
+
+    let vf = vectorFieldBuffer[idx];
+    var theta = atan2(pos.y, pos.x);
+    var shit = uniforms.time;
+    //vectorFieldBuffer[idx] += vec4<f32>(abs(pos.x), abs(pos.y), 0, 1);
+    vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta), 0, 1);
+
+
+    let vf1 = vectorFieldBuffer2[idx];
+    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
+                vec3<f32>(vectorFieldBuffer2[idx].xyz), 
+                uniforms.time / 3000);
+
+                //return vec3<f32>(-x, -y, -z);
+                // if (uniforms.mode ==0 )
+                //  { return vec3<f32>(0,); }
+    return vf.xyz;
+  }
+
+
+
+  fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
+    var dir = direction[index];// + vec3<f32>(1, 1, 1);
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+    // if (false) {
+    //   dir.x += .5;
+    //   dir.y += .5;  
+    // } else {
+    //   dir.x += cos(1.75);
+    //   dir.y += sin(1.75);
+    //   // dir.x += 1. * cos(group *10 );
+    //   // dir.y += 1 * sin(group * 10);
+    // }
+  
+    var theta = atan2(dir.y, dir.x);
+    // // dir.x += cos(theta * 1);
+    // // dir.y += sin(theta * 1);
+  
+    dir.x =  cos(theta + 1.6);
+    dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
+  
+    // if (group == 0) {
+    //   dir = vec3<f32>(1, 0, 0);
+    // } else if (group == 1)  {
+    //   dir = vec3<f32>(0, 1, 0);
+    // } else if (group == 2)  {
+    // dir = vec3<f32>(0, -1, 0);
+    // } else if (group == 3)  {
+    //   dir = vec3<f32>(-1, 0, 0);
+    // }
+    direction[index] = dir;
+    return dir;
+  }
+  
+  
+  // fn drawCoolShape () -> vec3<f32>  {
+  //   //helix = circle + z direction
+  //   return vec3<f32>(0.);
+  // }
+  
+  
+  // fn helix(index: u32) -> vec3<f32>  {
+  // var dir = direction[index];
+  
+  
+  // if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+  
+  // var theta = atan2(dir.z, dir.x);
+  
+  // // dir.x = cos(theta * 1.5);
+  // // dir.z = sin(theta * 1.5);
+  
+  
+  // dir.x =  cos(theta + 1.2);
+  // //dir.y = .1 * .000001;
+  // dir.z = sin(theta + 1.2);
+  
+  // // dir.x = .1;
+  // // dir.y = .1;
+  
+  // //posBuffer[index] = vec4<f32>(0.);
+  
+  // direction[index] = dir;
+  // return dir;
+  // }
+  
+  //windowing function for direction ?? 
+  
+  
+  
+  fn test123 (index: u32, flag: f32) {
+    var dir = direction[index];
+//    var idx = indexBuffer[index];
+  var idx = f32(index);
+    
+    let pos = posBuffer[index];
+  //    dir.x = pos.x - pos.y;
+    if (distancetraveled[index] < 1000) {
+      //posBuffer[index] = vec4<f32>(0);
+    }
+    //f32(index)
+  if (uniforms.time > 30000 - f32(index)) {
+  
+    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
+    //return;
+  }
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+  
+    var i = flag;//(uniforms.time % 3);
+  
+    //choose 2/3 indices based on a timer 
+    var theta = atan2(dir.z, dir.x);
+  
+    // dir.z =  cos(theta + 1.2);
+    // dir.x = sin(theta + 1.2);
+  
+    if (i == 0) { 
+      var theta = atan2(dir.z, dir.x);
+      dir.x +=  cos(idx);
+      dir.z += sin(idx);
+    }
+    if (i == 1) { 
+      var theta = atan2(dir.y, dir.x);
+      dir.x +=  cos(idx);
+      dir.y += sin(idx);
+    }
+    if (i == 2) { 
+      var theta = atan2(dir.z, dir.y);
+      dir.y +=  cos(idx);
+      dir.z += sin(idx);
+    }
+  
+    dir.y = dir.x;//cos(idx);
+    dir.x = dir.y;// sin(idx);
+  
+  
+    dir.y = cos(idx);
+    dir.x = sin(idx);
+
+    // if (length(dir) > 5) {
+    //   dir.x *= -1;
+    //   dir.y *= -1;
+   
+    // }
+  
+  //show the demo to people and demo has to be really good 
+  //the process has to be good too
+  
+    //if (u32(uniforms.time) <= index * 1000) {
+    //  dir = vec3<f32>(-1000);
+    //}
+    //if (shouldAnimate(direction[index])) {
+      direction[index] = dir;
+    //}
+    return;
+  }
+  
+  fn vortex (index: u32) {
+    var dir = direction[index];
+    var idx = f32(index);
+  
+    //f32(index)
+  if (uniforms.time > 30000 - f32(index)) {
+  
+    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
+    //return;
+  }
+    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  
+    dir.y = .1;
+    if (idx > 128){
+      dir.y *= -1;
+    }
+    // * idx * cos(idx);
+    direction[index] = dir;
+    let pos = posBuffer[index];
+    dir.x = pos.x - pos.y;
+  
+  
+  //   if (hasCollided(posBuffer[index].xyz)) {
+  //     // dir.y = dir.x;
+  //     // dir.x = dir.y;
+  // }
+  } 
+  
+  //   fn lastWeek(pos: vec3<f32>, idx: u32) -> f32{
+  //     //rotate hues so that rainbow flies toward camera 
+  //     //no direction
+  //     let index = f32(idx);
+  // let i = index / 10000;
+  //     posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //     //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+  //     return -1;
+  //   }
+  
+  fn vines (idx: u32) -> f32{
+  return -1;
+  }
+  
+  
+  fn Mandala (pos:vec3<f32>, idx: u32) -> f32{
+  
+  
+  //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
+  //gpu graphics = draw 10 lines of ducks from 4 attachment points
+  
+  if (uniforms.time < 20) {}
+  
+  
+  
+  
+  return -1;  
+  }
+  
+  fn web (pos: vec3<f32>, idx: u32) -> f32{
+  
+  var index = f32(idx);
+  //ditch conditionals in favor of building up a variable and then using it at the end 
+  if (distancetraveled[idx] < 10000) {
+    posBuffer[idx] = vec4<f32>(0.);
+  }
+  if (idx < 256) {
+    var i = f32(idx) - 128.;
+    posBuffer[idx] = vec4<f32>(-i / 64., i / 64., 0., 1.) + vec4<f32>(-.5, -.5, 0, 0);
+  }
+  if (idx < 128){
+    posBuffer[idx] = vec4<f32>(index / 64., index / 64., 0., 1.) + vec4<f32>(-.5, -.5,0 , 0);
+  } 
+  
+  
+  
+  return -1;
+  }
+  
+  fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
+    //rotate hues so that rainbow flies toward camera 
+    //no direction
+    let index = f32(idx);
+    let i = index / 10000;
+    posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+    //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
+  
+    return -1;
+  }
+  
+  //dont think anything else - just fnish the shader
+  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
+  //make a new buffer that links particle to thet5 index in the buffer
+  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
+  fn runAlongRoute (pos:vec3<f32>, index:f32) -> vec3<f32> {
+  var idx = u32(index);
+  
+  var dir =  direction[idx];
+  
+  //time, mode, attenuationRate, particleIndex, groupIndex 
+  //synchronized swimmers - all particles of certain color do similar stuff 
+  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
+  var dt = sin(uniforms.time);
+  
+  var group = f32(index) % 20;
+    distancetraveled[idx] += 1;
+    // if ( distancetraveled[idx] > 100) {
+    //   distancetraveled[idx] = 0;
+    // }
+
+    
+    //web(pos, idx);
+  
+  
+    // if (group == 0 || group == 3) { 
+    //   distancetraveled[idx] -= 100;
+
+    //     helix(idx);
+    //     //dir = drawCoolShape();
+
+    //     lastMonth(pos,idx);
+    //     dir = changeDirection(pos,idx);
+    // }
+  
+    for (var i = 0.; i < 20.; i += 1.) {
+     // if (distancetraveled[idx] < 100)  {
+        if (group < 9) {
+          ribbon(idx);
+          continue;
+        }
+        if (group == i) {
+          //test123(idx, 1.);
+          //vortex(idx);
+          makeCoolShader(idx);
+        }
+      //}
+    }
+
+  
+  posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
+  
+  return dir;
+  }
+
+
+fn makeGreatStuff(idx:u32) -> f32 {
+  return -1;
+}
+
+  fn makeCoolShader(idx: u32) -> f32 {
+    var dt = distancetraveled[idx];
+    var index = f32(idx);
+    var pos = posBuffer[idx];
+
+    direction[idx] = vec3<f32>(cos(index * 1.1), 0, sin(index * 1.1));
+
+    // if (dt > 10) {
+    //   direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+    // }
+
+    if (dt > 100) {
+      distancetraveled[idx]= 0;
+      posBuffer[idx] =reset[idx];
+      //vec4<f32>(0.);
+    }
+    return -1;
+  }
+
+//improve the patterns
+  fn ribbon(idx: u32) -> f32 {
+    var dt = distancetraveled[idx];
+    var pos = posBuffer[idx];
+    var theta = atan2(pos.y, pos.x);
+    direction[idx] = vec3<f32>(cos(theta * 1.1), cos(theta * 1.1), pos.y);
+    if (dt > 100000) {
+      distancetraveled[idx]= 0;
+      posBuffer[idx] =reset[idx];
+      //vec4<f32>(0.);
+    }
+    return -1;
+  }
+
+fn applyVF() -> vec3<f32> {
+  return vec3<f32>(1.);
+}
+  
+    @compute @workgroup_size(256)
+    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+
+      let index: u32 = GlobalInvocationID.x;
+    
+
+      var pos = posBuffer[index];
+      var r = reset[index];
+      runAlongRoute(pos.xyz, f32(index));
+
+      //applyMagnets(pos.xyz);
+      var abc = posBuffer[index];
+
+      var vf = hash(pos.xyz);
+
+      let t = uniforms.time;
+
+      if (hasCollided(pos.xyz))  {
+        var vel = direction[index];
+        direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+        direction[index] *= .0;
+        //direction[index] = direction[index] + .1 * vf;
+      }
+     //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
+     posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+
+      //wind turbulence
+//      posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(posbuffer[index].xyz), 1);
+      //sphere
+      //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
+      //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
+
+      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
+      if (distance(posBuffer[index].xy, mouse) < .1) {
+        // direction[index].x = direction[index].y;
+        // direction[index].y = -direction[index].x;
+        //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
+        //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
+        //direction[index]*= .001;
+      }
+      //helix(index);
+      //  direction[index] *= .0;
+      //  direction[index] = direction[index] + .001 * vf;
+      //lastMonth(pos.xyz, index);
+      //draw cool shapes and then dont deform them in the vector field until some time 
+
+      runAlongRoute(pos.xyz, f32(index));
+    }`,
+        exec: function(state2) {
+          const device = state2.device;
+          const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device.createCommandEncoder();
+          const computePass = commandEncoder.beginComputePass();
+          state2.computePass.computePass = computePass;
+          webgpu2.device.queue.writeBuffer(uniformsBuffer2, 0, new Float32Array(mouse));
+          let timeBuffer = new Float32Array(1);
+          window.writeTime = function(dt) {
+            timeBuffer[0] = dt;
+            webgpu2.device.queue.writeBuffer(uniformsBuffer2, 8, timeBuffer);
+          };
+          let modeBuffer = new Float32Array(1);
+          let decayRate = new Float32Array(1);
+          window.writeDecayRate = function(decayRateNum) {
+            decayRate[0] = decayRateNum;
+            webgpu2.device.queue.writeBuffer(uniformsBuffer2, 16, decayRate);
+          };
+          window.writeDecayRate(0);
+          window.writeMode = function(dt) {
+            modeBuffer[0] = dt;
+            console.log(dt);
+            webgpu2.device.queue.writeBuffer(uniformsBuffer2, 8, modeBuffer);
+          };
+          computePass.setPipeline(state2.computePass.pipeline);
+          computePass.setBindGroup(0, state2.computePass.bindGroups[0]);
+          computePass.dispatchWorkgroups(1e4);
+          computePass.end();
+        },
+        bindGroups: function(state2, computePipeline) {
+          const descriptor = {
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: gridBuffer2 } },
+              { binding: 1, resource: { buffer: mesh || shapes[0] } },
+              { binding: 2, resource: { buffer: uniformsBuffer2 } },
+              { binding: 3, resource: { buffer: direction } },
+              { binding: 4, resource: { buffer: distancetraveledBuffer } },
+              { binding: 5, resource: { buffer: reset } },
+              { binding: 6, resource: { buffer: gridBuffer22 } }
+            ]
+          };
+          let computeBindGroup = state2.device.createBindGroup(descriptor);
+          return [computeBindGroup];
+        }
+      });
+    }
+    const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`;
+    let dancer = [];
+    let frames = [];
+    let frameMax = 50;
+    let frameCount = [...Array(frameMax).keys()];
+    function getFrames(model) {
+      frames[model] = [];
+      let loaded = 0;
+      return new Promise(function(resolve) {
+        frameCount.forEach(function(i) {
+          fetch(
+            `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
+          ).then((res) => res.arrayBuffer()).then((buffer2) => {
+            var floatBuffer = new Float32Array(buffer2);
+            for (let i2 = 0; i2 < floatBuffer.length; i2++) {
+              floatBuffer[4 * i2 + 1] -= 0.5;
+            }
+            frames[model][i] = floatBuffer;
+            loaded += 1;
+            if (loaded === frameMax - 1) {
+              resolve();
+              if (model === 2)
+                basic();
+              setTimeout(makeStagingBuffer, 3e3);
+            }
+          });
+        });
+      });
+    }
+    fetch(obj(1)).then((d2) => d2.arrayBuffer()).then((d2) => {
+      dancer = new Float32Array(d2);
+      for (let i = 0; i < dancer.length; i++) {
+        dancer[4 * i + 1] -= 0.5;
+      }
+    });
+    let indexPool = new Array(particlesCount / 4).fill(1).map((d2, i) => i);
+    indexPool.alloc = function(n) {
+      let i = 0;
+      let result3 = [];
+      while (i < n) {
+        result3.push(this.shift());
+        i++;
+      }
+      pointBufferCount += n;
+      return result3;
+    };
+    function line(a, b) {
+      this.x1 = a[0];
+      this.y1 = a[1];
+      this.x2 = b[0];
+      this.y2 = b[1];
+      this.indices = [];
+      this.points = [];
+      this.array = pointBuffer;
+      this.subdivide = function(resolution) {
+        let { x1, y1, y2, x2 } = this;
+        let dy = y2 - y1;
+        let dx = x2 - x1;
+        let points = new Array(resolution).fill(0).map((d2, i) => {
+          return [
+            x1 + dx / resolution * i,
+            y1 + dy / resolution * i
+          ];
+        });
+        this.points = points;
+      };
+    }
+    line.prototype.draw = function() {
+      this.subdivide(50);
+      if (!this.indices.length) {
+        this.indices.push(...indexPool.alloc(this.points.length));
+      }
+      this.indices.forEach((d2, i) => {
+        let idx = d2 * 4;
+        this.array[idx] = this.points[i][0];
+        this.array[idx + 1] = this.points[i][1];
+      });
+    };
+    let rhomboid = function(origin, side, skew) {
+      let a = [origin[0] + side + skew, origin[1] + side];
+      let b = [origin[0] - side + skew, origin[1] + side];
+      let c2 = [origin[0] + side, origin[1] - side];
+      let d2 = [origin[0] - side, origin[1] - side];
+      let lines = [new line(a, b), new line(a, c2), new line(c2, d2), new line(d2, b)];
+      lines.forEach((line2) => line2.draw());
+    };
+    let triangle = function(origin, side) {
+      let a = [origin[0], origin[1] + side];
+      let b = [origin[0] - side, origin[1] - side];
+      let c2 = [origin[0] + side, origin[1] - side];
+      let lines = [new line(a, b), new line(a, c2), new line(c2, b)];
+      lines.forEach((line2) => line2.draw());
+    };
+    for (let i = 0; i < 100; i++) {
+      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+    }
+    window.addEventListener("click", function() {
+      let timebetween = 1e3;
+      if (!animating) {
+        modelType = 1 + modelType % frames.length;
+        let elapsed = Date.now();
+        setTimeout(function recur() {
+          let dt = Date.now() - elapsed;
+          if (dt < timebetween)
+            setTimeout(recur, 16);
+          else {
+            animating = true;
+            modelType = modelType === 1 ? 2 : 1;
+            return makeStagingBuffer();
+          }
+        }, 8);
+      } else {
+        animating = !animating;
+      }
+      if (animating)
+        return makeStagingBuffer();
+    });
+    let particleMesh = [];
+    function initParticles() {
+      for (let i = 0; i < 1e6; i++) {
+        particleMesh[i] = { x: -0.9 + i / 1e4, y: 0.9, z: 0, dir: [makeRand(), makeRand()] };
+      }
+    }
+    let keyframeFunctions = [
+      function(p2, i, t) {
+        let idx = i / 100;
+        let radius = 1;
+        let z = i / 1e5 * 100;
+        p2.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180);
+        p2.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180);
+        p2.z = z;
+      },
+      function(p2, i, t) {
+        p2.x = i / 1e3;
+        p2.y = Math.round(i / 50) / 200;
+      },
+      function(p2, i, t) {
+        p2.x = i / 1e3;
+        p2.y = i % 100 / 10;
+      },
+      function(p2, i, t) {
+        i *= 1 - t;
+        p2.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
+        p2.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+      },
+      function down(p2) {
+        p2.y -= 0.01;
+      },
+      function windshieldWiper(p2, i, time2) {
+        let t = time2;
+        p2.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
+        p2.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+      },
+      function(p2, i) {
+        p2.x += 0.01;
+      },
+      function(p2, i, t) {
+        t = 1 - t;
+        p2.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
+        p2.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+      },
+      function windshieldWiper(p2, i, time2) {
+        let t = time2;
+        t += i / 1e3;
+        let idx = i % 10;
+        p2.x = 0.01 * idx * Math.cos(t * 360 * Math.PI / 180);
+        p2.y = 0.01 * idx * Math.sin(t * 360 * Math.PI / 180);
+        for (let n = 0; n < 10; n++)
+          if (i > n * 1e3)
+            p2.x += n * 0.2;
+      },
+      function(p2, i, t) {
+        p2.x = Math.tan(t * 360 * Math.PI / 180);
+        p2.y = Math.tan(t * 360 * Math.PI / 180);
+      }
+    ];
+    function tween(a, b, i) {
+      return a - (a - b) * i / (b - a);
+    }
+    let count2 = 0;
+    function moveParticles() {
+      count2 += 1;
+      let i = Math.floor(count2 / 100);
+      let fn = keyframeFunctions[0];
+      if (!fn)
+        fn = function(i2) {
+          count2 = 0;
+        };
+      for (let i2 = 0; i2 < 1e5; i2++) {
+        let pt = particleMesh[i2];
+        fn(pt, i2, count2 % 100 / 100);
+      }
+    }
+    let drawParticles = true;
+    function makeStagingBuffer() {
+      setTimeout(function() {
+        if (!shapes[0] || !animating)
+          return;
+        stagingBuffer = webgpu.device.createBuffer({
+          size: 1e7,
+          usage: GPUBufferUsage.COPY_SRC,
+          mappedAtCreation: true
+        });
+        let frame2 = time % frames[modelType].length;
+        const toCopy = frames[modelType][frame2];
+        dancer = toCopy;
+        if (!toCopy)
+          return console.log(toCopy, modelType, frame2);
+        if (time === 0)
+          window.toCopy = toCopy;
+        time += 1;
+        const vertexPositions = new Float32Array(stagingBuffer.getMappedRange());
+        vertexPositions.set(toCopy);
+        stagingBuffer.unmap();
+        const commandEncoder = webgpu.device.createCommandEncoder({});
+        commandEncoder.copyBufferToBuffer(stagingBuffer, 0, shapes[0], 0, toCopy.length * 4);
+        webgpu.device.queue.submit([commandEncoder.finish()]);
+        if (animating)
+          makeStagingBuffer();
+      }, 20);
+    }
+    function writeBuffer(device, buffer2, array2) {
+      device.queue.writeBuffer(device, 0, buffer2, 0, new Float32Array(16));
+    }
+    if (drawShapes)
+      list.set(pointBuffer.slice(0, pointBufferCount));
+    let happyBear = makeBuffer2(list, 0, "bear");
+    let vf1 = pickVF(), vf2 = pickVF();
+    const posBuffer = makeBuffer2(import_bunny.default.positions.map((d2) => d2.concat(0)).flat(), 1, "bunny");
+    computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2);
     let drawDescriptor = {
       attributeBuffers: buffers,
       attributeBufferData: [
-        shapes[0],
+        happyBear,
         quadBuffer,
-        posBuffer,
+        happyBear,
         colorBuffer
       ],
       count: 6,
-      //blend,
-      instances: 1e6 / 4,
+      instances: particlesCount,
       bindGroup: function({ pipeline }) {
-        const uniformsBuffer = webgpu.device.createBuffer({
-          size: 32,
-          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
-        });
-        let texture = webgpu.texture(bitmap);
+        let canvas = document.createElement("canvas");
+        let texture = webgpu.texture(canvas);
         let desc = {
           label: Math.random(),
           layout: pipeline.getBindGroupLayout(0),
@@ -8534,73 +9396,156 @@
         return webgpu.device.createBindGroup(desc);
       }
     };
-    const a = new Float32Array(1);
-    let choice = false;
-    let i = 0;
-    drawScreen = drawScreen = makeDrawCall(shapes[0], drawDescriptor);
-    webgpu.canvas.addEventListener("mousemove", function(e) {
-      mouse[0] = e.clientX / 1e3;
-      mouse[1] = e.clientY / 500;
-    });
-    let camera2 = createCamera_default({
-      center: [0, 2.5, 0],
-      damping: 0,
-      noScroll: true,
-      renderOnDirty: true,
-      element: webgpu.canvas || false || document.createElement("div") || false
-    });
-    let zoom = 10;
-    webgpu.canvas.addEventListener("mousewheel", function(e) {
-      camera2.zoom(zoom = zoom + 0.1 * e.deltaY);
-    });
-    let result3 = drawScreen();
-    let swapChainTexture = result3.state.swapChainTexture;
-    setInterval(
-      async function() {
-        let { projection, view } = camera2();
-        device.queue.writeBuffer(
-          cameraUniformBuffer,
-          0,
-          projection.buffer,
-          projection.byteOffset,
-          projection.byteLength
+    function vfPicker() {
+      vf1 = pickVF();
+      vf2 = vf2;
+      let happyBear2 = makeBuffer2(list, 0, "bear");
+      computeTransition = makeComputeShader(webgpu, happyBear2, vf1, vf2);
+      if (!drawScreen)
+        drawScreen = makeDrawCall(happyBear2, drawDescriptor);
+      drawScreen.swapAttributeBuffer(happyBear2, 0);
+    }
+    basic();
+    async function basic() {
+      let happyBear2 = makeBuffer2(list, 0, "bear");
+      vfPicker();
+      setInterval(vfPicker, 3e4);
+      drawScreen = makeDrawCall(happyBear2, drawDescriptor);
+      shapes.push(posBuffer);
+      shapes.push(dragonBuffer);
+      const device = webgpu.device;
+      let model = mat4_exports.identity(new Float32Array(16));
+      let cosCounter = 0;
+      function getCameraViewProjMatrix() {
+        let m2 = mat4_exports.identity(new Float32Array(16));
+        mat4_exports.translate(model, model, vec3_exports.fromValues(2, 2, 0));
+        mat4_exports.rotate(
+          model,
+          model,
+          1,
+          vec3_exports.fromValues(
+            Math.sin(0),
+            Math.cos(1),
+            0
+          )
         );
-        device.queue.writeBuffer(
-          cameraUniformBuffer,
-          64,
-          view.buffer,
-          view.byteOffset,
-          view.byteLength
+        let projectionMatrix = mat4_exports.create();
+        let viewProjectionMatrix = mat4_exports.create();
+        mat4_exports.perspectiveZO(
+          projectionMatrix,
+          10,
+          500 / 500,
+          0.5,
+          10
         );
-        device.queue.writeBuffer(
-          cameraUniformBuffer,
-          128,
-          model.buffer,
-          model.byteOffset,
-          model.byteLength
-        );
-        device.queue.writeBuffer(
-          cameraUniformBuffer,
-          192,
-          a.buffer,
-          0,
-          a.byteLength
-        );
-        if (!animating) {
-          computeTransition();
+        mat4_exports.multiply(viewProjectionMatrix, projectionMatrix, viewProjectionMatrix);
+        let renderParamsHost = new ArrayBuffer(4 * 4 * 4);
+        let viewProjectionMatrixHost = new Float32Array(renderParamsHost);
+        viewProjectionMatrixHost.set(viewProjectionMatrix);
+        return viewProjectionMatrixHost;
+      }
+      const cameraViewProj = getCameraViewProjMatrix();
+      const blend = {
+        color: {
+          srcFactor: "src-alpha",
+          dstFactor: "one",
+          operation: "add"
+        },
+        alpha: {
+          srcFactor: "zero",
+          dstFactor: "one",
+          operation: "add"
         }
-        drawScreen();
-      },
-      8
-    );
-  }
-  function makeDrawCall(buffer2, drawDescriptor) {
-    drawDescriptor.attributeBufferData[0] = buffer2;
-    const drawRosePetals = webgpu.initDrawCall(Object.assign(drawDescriptor, { shader: {
-      vertEntryPoint: "main_vertex",
-      fragEntryPoint: "main_fragment",
-      code: `
-  struct Uniforms {             //             align(16)  size(24)
+      };
+      function magnitude(v) {
+        return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2]);
+      }
+      function unitVector2(v) {
+        let l = magnitude(v);
+        return v.map((d2) => d2 / l);
+      }
+      function vectorTo(b, a2) {
+        return unitVector2(b) - unitVector2(a2);
+      }
+      let hello = [];
+      let abc = new Float32Array(1);
+      let elapsed = Date.now();
+      setInterval(function() {
+        abc[0] = performance.now();
+        device.queue.writeBuffer(
+          uniformsBuffer,
+          0,
+          abc.buffer,
+          abc.byteOffset,
+          abc.byteLength
+        );
+        if (window.writeTime) {
+          elapsed = Date.now() % 3e3;
+          window.writeTime(elapsed);
+        }
+      }, 8);
+      const a = new Float32Array(1);
+      webgpu.canvas.addEventListener("mousemove", function(e) {
+        mouse[0] = e.clientX / 1e3;
+        mouse[1] = e.clientY / 500;
+      });
+      let camera2 = createCamera_default({
+        center: [0, 2.5, 0],
+        damping: 0,
+        noScroll: true,
+        renderOnDirty: true,
+        element: webgpu.canvas || false || document.createElement("div") || false
+      });
+      let zoom = 1;
+      webgpu.canvas.addEventListener("mousewheel", function(e) {
+        camera2.zoom(zoom = zoom + 0.1 * e.deltaY);
+      });
+      let result3 = drawScreen();
+      let swapChainTexture = result3.state.swapChainTexture;
+      setInterval(
+        async function() {
+          let { projection, view } = camera2();
+          device.queue.writeBuffer(
+            cameraUniformBuffer,
+            0,
+            projection.buffer,
+            projection.byteOffset,
+            projection.byteLength
+          );
+          device.queue.writeBuffer(
+            cameraUniformBuffer,
+            64,
+            view.buffer,
+            view.byteOffset,
+            view.byteLength
+          );
+          device.queue.writeBuffer(
+            cameraUniformBuffer,
+            128,
+            model.buffer,
+            model.byteOffset,
+            model.byteLength
+          );
+          device.queue.writeBuffer(
+            cameraUniformBuffer,
+            192,
+            a.buffer,
+            0,
+            a.byteLength
+          );
+          computeTransition();
+          drawScreen();
+        },
+        100
+      );
+    }
+    function makeDrawCall(buffer2, drawDescriptor2) {
+      const drawRosePetals = webgpu.initDrawCall(Object.assign(drawDescriptor2, { shader: {
+        vertEntryPoint: "main_vertex",
+        fragEntryPoint: "main_fragment",
+        code: `
+  struct Uniforms {
+    time: f32,             //             align(16)  size(24)
   color: vec3<f32>,         // offset(0)   align(16)  size(16)
   spriteSize: vec2<f32>,    // offset(16)   align(8)  size(8)
   };
@@ -8609,14 +9554,16 @@
   projectionMatrix : mat4x4<f32>,
   viewMatrix : mat4x4<f32>,
   modelMatrix: mat4x4<f32>,
-  time: f32,
+
   
   }
   
   struct VSOut {
   @builtin(position) position: vec4<f32>,
   @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
-  @location(1) color: vec3<f32>
+  @location(1) color: vec3<f32>,
+  @location(2) globalPosition: vec2<f32>, // in {-1, +1}^2,
+
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -8624,33 +9571,83 @@
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
   
-  
-  
-  
-  
   @vertex
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
   @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
   ) -> VSOut {
-  var vsOut: VSOut;
-  var stuff = mix(inPosition.xy, pos2.xy, vec2<f32>(camera.time));
-  
-  
+  var vsOut: VSOut;  
+
   vsOut.position = 
    camera.projectionMatrix
    * camera.viewMatrix *  camera.modelMatrix * 
   
-   vec4<f32>(stuff + (.01 + uniforms.spriteSize) * quadCorner, inPosition.z, 1.);
-  //vec4<f32>(stuff + (.005 + vec3<f32>(uniforms.spriteSize, 1.), 1.);
+   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
+  vsOut.globalPosition = inPosition.xy;
+
   
   vsOut.color = color;
   return vsOut;
   }
-  
+
+
+
+  const size = 4.0;
+
+  const b = 0.3;//size of the smoothed border
+
+fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
+if (x < edge0) {return 0.;}
+
+if (x >= edge1) {return 1.;}
+
+let c = (x - edge0) / (edge1 - edge0);
+
+return c * c * (3 - 2 * c);
+}
+
+  fn mainImage(globalPosition: vec2<f32>, iResolution: vec2<f32>
+    ) -> vec4<f32> {
+    let aspect = iResolution.x/iResolution.y;
+    let position = (globalPosition.xy) * aspect;
+    let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
+    let offset=(uniforms.time) * 0.001;
+    let shit = uniforms.time;
+    let conv=4.;
+    let v=dist*4.-offset;
+    let ringr=floor(v);
+    
+    var stuff = 0.;
+    if (v % 3. > .5) {
+      stuff = 0.;
+    }
+
+var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
+    if (ringr % 2. ==1.) {
+     color=2.-color;
+    }
+
+  let distToMouseX = distance(1., globalPosition.x);
+  let distToMouseY = distance(2., globalPosition.y);
+
+  return vec4<f32>(
+    color, 
+    color, 
+    color, 
+   1.,
+    );
+};
+
+fn main(uv: vec2<f32>) -> vec4<f32> {
+  let fragCoord = vec2<f32>(uv.x, uv.y);
+  var base = vec4<f32>(cos(uniforms.time * .1), .5, sin(uniforms.time * 0.000001), 1.);
+  //let dist = distance( fragCoord, vec2<f32>(u.mouseX,  u.mouseY));
+  return mainImage(fragCoord, vec2<f32>(1000., 1000.));
+}
+
   @fragment
-  fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32> ) -> @location(0) vec4<f32> {
+  fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32>,  @location(2) globalPosition:vec2<f32>) -> @location(0) vec4<f32> {
   let distanceFromCenter: f32 = length(localPosition);
   if (distanceFromCenter > 1.0) {
       discard;
@@ -8692,56 +9689,15 @@
   let m = textureSample(myTexture, mySampler, localPosition);
   //sin(camera.time)
   //
-  return vec4<f32>(color.rgb, .7);
+
+  var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
+  //color.rgb +
+  return vec4<f32>(color.rgb * c.rgb, 1.);
   }
   `
-    } }));
-    return drawRosePetals;
-  }
-  var buffers = [
-    {
-      attributes: [
-        {
-          shaderLocation: 0,
-          offset: 0,
-          format: "float32x4"
-        }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-      stepMode: "instance"
-    },
-    {
-      attributes: [
-        {
-          shaderLocation: 1,
-          offset: 0,
-          format: "float32x2"
-        }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 2,
-      stepMode: "vertex"
-    },
-    {
-      attributes: [
-        {
-          shaderLocation: 2,
-          offset: 0,
-          format: "float32x4"
-        }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-      stepMode: "instance"
-    },
-    {
-      attributes: [
-        {
-          shaderLocation: 3,
-          offset: 0,
-          format: "float32x3"
-        }
-      ],
-      arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-      stepMode: "instance"
+      } }));
+      return drawRosePetals;
     }
-  ];
+  }
+  morph();
 })();
