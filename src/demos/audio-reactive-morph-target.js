@@ -2237,8 +2237,6 @@ function makeDrawCall (buffer, drawDescriptor) {
   projectionMatrix : mat4x4<f32>,
   viewMatrix : mat4x4<f32>,
   modelMatrix: mat4x4<f32>,
-
-  
   }
   
   struct VSOut {
@@ -2250,7 +2248,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-  @group(0) @binding(1) var<uniform> camera : Camera;
+ @group(0) @binding(1) var<uniform> camera : Camera;
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
   
@@ -2266,7 +2264,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   vsOut.position = 
  
   
-   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
+   remove * vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
