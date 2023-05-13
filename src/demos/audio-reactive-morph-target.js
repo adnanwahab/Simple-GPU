@@ -1304,7 +1304,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   }
     if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
   
-  
+
     var i = (uniforms.time  % 3);
   
     //choose 2/3 indices based on a timer 
@@ -1499,26 +1499,19 @@ fn drawShape (index: u32) -> vec3<f32> {
   return dir;
   }
 
+fn makeParticlesFly(idx: u32) -> bool {
+  var index = f32(idx);
+  var pos = posBuffer[idx];
 
-  fn makeParticlesFly(idx: u32)  -> bool {
-    //var nearestCorner = 
 
-      var index = f32(idx);
-      var pos = posBuffer[idx];
-      var theta = atan2(pos.x, pos.z);
-      var r = 1 / distance(vec2<f32>(0,0), pos.xy);
-      direction[idx] = vec3<f32>(r * cos(theta * 1.5), r * sin(theta * 1.5), 1);
-      return false;
-    }
-
-// fn makeParticlesFly(idx: u32)  -> bool {
-//   var index = f32(idx);
-//   var pos = posBuffer[idx];
-//   var theta = atan2(pos.y, pos.x);
-//   var r = 1 / distance(vec2<f32>(0,0) , pos.xy);
-//   direction[idx] = vec3<f32>(r * cos(theta * 2), r * sin(theta * 2), 1);
-//   return false;
-// }
+  //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  var vel = direction[idx];
+  //direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
+  //if (pos.z != 0.) {
+    //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  //}
+  return false;
+}
 
 fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   

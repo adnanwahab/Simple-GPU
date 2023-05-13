@@ -21,6 +21,15 @@
   return false;
 }
 
+// fn makeParticlesFly(idx: u32)  -> bool {
+//   var index = f32(idx);
+//   var pos = posBuffer[idx];
+//   var theta = atan2(pos.y, pos.x);
+//   var r = 1 / distance(vec2<f32>(0,0) , pos.xy);
+//   direction[idx] = vec3<f32>(r * cos(theta * 2), r * sin(theta * 2), 1);
+//   return false;
+// }
+
 // fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
 
 //   var idx = f32(index);
