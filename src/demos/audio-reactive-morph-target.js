@@ -1463,18 +1463,11 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   var group = f32(index) % 20;
     distancetraveled[idx] += 1;
-    // if ( distancetraveled[idx] > 100) {
-    //   distancetraveled[idx] = 0;
-    // }
 
-    
-    //web(pos, idx);
-  
-  
     // if (group == 0 || group == 3) { 
     //   distancetraveled[idx] -= 100;
 
-    //     helix(idx);
+    //     
     //     //dir = drawCoolShape();
 
     //     lastMonth(pos,idx);
@@ -1491,6 +1484,7 @@ fn drawShape (index: u32) -> vec3<f32> {
           test123(idx, 1.);
           //vortex(idx);
           //makeCoolShader(idx);
+          //helix(idx);
         }
       //}
     }
@@ -1519,7 +1513,7 @@ fn makeGreatStuff(idx:u32) -> f32 {
 
     if (dt > 100) {
       distancetraveled[idx]= 0;
-      posBuffer[idx] =reset[idx];
+      posBuffer[idx] = reset[idx];
       //vec4<f32>(0.);
     }
     return -1;
@@ -1588,7 +1582,7 @@ fn applyVF() -> vec3<f32> {
       //helix(index);
       //  direction[index] *= .0;
       //  direction[index] = direction[index] + .001 * vf;
-      lastMonth(pos.xyz, index);
+      //lastMonth(pos.xyz, index);
       //draw cool shapes and then dont deform them in the vector field until some time 
 
       runAlongRoute(pos.xyz, f32(index));
