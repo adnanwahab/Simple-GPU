@@ -1561,13 +1561,18 @@ fn makeGreatStuff(idx:u32) -> f32 {
     return -1;
   }
 
+//make it change through different phases - 5 phases 
+
+
 //improve the patterns
   fn ribbon(idx: u32) -> f32 {
     var dt = distancetraveled[idx];
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
-    direction[idx] = 1. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    //uniforms.time / 3000000
+    //.0001 * f32(idx) *
+    direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
     direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
 
     // if (distancetraveled[idx] > 1000) {
@@ -1607,7 +1612,7 @@ fn applyVF() -> vec3<f32> {
    
 
       //wind turbulence
-//      posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(posbuffer[index].xyz), 1);
+      //posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
       //sphere
       //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
       //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
@@ -1622,12 +1627,13 @@ fn applyVF() -> vec3<f32> {
       }
       //helix(index);
       //  direction[index] *= .0;
-      //  direction[index] = direction[index] + .001 * vf;
+        direction[index] = direction[index] + .001 * vf;
+        //posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
       //lastMonth(pos.xyz, index);
       //draw cool shapes and then dont deform them in the vector field until some time 
 
       //runAlongRoute(pos.xyz, f32(index));
-      //sphereEvaporate(pos, index);
+      //if (index < 100) { sphereEvaporate(pos, index);}
     }`,
   
     exec: function (state){
@@ -1644,11 +1650,11 @@ fn applyVF() -> vec3<f32> {
       webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
     }
     let modeBuffer = new Float32Array(1)
-    let decayRate = new Float32Array(1)
+    let twistRate = new Float32Array(1)
 
     window.writeDecayRate = function (decayRateNum) {
-      decayRate[0] = decayRateNum
-      webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  decayRate)
+      twistRate[0] = decayRateNum
+      webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  twistRate)
     }
     window.writeDecayRate(0)
 
@@ -2088,7 +2094,7 @@ const device = webgpu.device
 let cosCounter = 0
 
 let camera = createCamera({
-  center: [0, 2.5, 0],
+  center: [0, 0.0, 0],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -2101,16 +2107,16 @@ function getCameraViewProjMatrix() {
 
   let m  = mat4.identity(new Float32Array(16))
   //mat4.translate(model, model, vec3.fromValues(0, 0, 0));
-  // mat4.rotate(
-  //   model,
-  //   model,
-  //   1,
-  //   vec3.fromValues(
-  //     Math.sin(0),
-  //     Math.cos(1),
-  //     0
-  //   )
-  // );
+  mat4.rotate(
+    model,
+    model,
+    1,
+    vec3.fromValues(
+      Math.sin(0),
+      Math.cos(1.5),
+      0
+    )
+  );
 
   let projectionMatrix = mat4.create();
   let viewProjectionMatrix = mat4.create();
