@@ -1025,7 +1025,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   }
   
   
-  fn mrand() ->  f32{
+  fn mrand() -> f32 {
     return (sfrand() * 2.) - 1.;
   }
 
@@ -1479,10 +1479,10 @@ fn drawShape (index: u32) -> vec3<f32> {
         }
         if (group == i) {
           
-           //test123(idx, 1.);
+          test123(idx, 1.);
           //vortex(idx);
-          //makeCoolShader(idx);
-          //helix(idx);
+          // makeCoolShader(idx);
+          // helix(idx);
         }
       //}
     }
@@ -1553,11 +1553,11 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
     direction[idx] = 10. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    if (distancetraveled[idx] > 10) {
-      distancetraveled[idx]= 0;
-      posBuffer[idx] =reset[idx];
-      //vec4<f32>(0.);
-    }
+    // if (distancetraveled[idx] > 10) {
+    //   distancetraveled[idx]= 0;
+    //   posBuffer[idx] = reset[idx];
+    //   direction[idx] = 10. * vec3<f32>(direction[idx].y, direction[idx].x, 0.);
+    // }
     return -1;
   }
 
