@@ -967,6 +967,14 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   // }
   let distancetraveledBuffer = makeBuffer(particledistancetraveled, 0, 'vectorField')
 
+
+  let groupIndexBuffer = new Float32Array(particlesCount)
+  for (var i =0 ; i< particlesCount; i++ ){
+    groupIndexBuffer[i] = Math.floor(i / 1e5)
+  }
+
+  let groupBuffer = makeBuffer(groupIndexBuffer, 0, 'groupBuffer')
+
 let max = {
   x: 0,
   y: 0,
@@ -1013,6 +1021,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
+    @group(0) @binding(7) var<storage,read_write> group: array<f32>;
 
   
   fn sfrand () -> f32{
@@ -1375,7 +1384,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   
     if (hasCollided(posBuffer[index].xyz)) {
-      dir.y = dir.x;
+      dir.y = -dir.x;
       dir.x = -dir.y;
     }
   } 
@@ -1471,7 +1480,7 @@ fn drawShape (index: u32) -> vec3<f32> {
      // if (distancetraveled[idx] < 100)  {
         if (group < 20) {
            ribbon(idx);
-          //continue;
+          continue;
         }
         if (group == i) {
           makeParticlesFly(idx);
@@ -1571,8 +1580,17 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
     //uniforms.time / 3000000
-    //.0001 * f32(idx) *
+    //.001 * 
+    
+    if (idx > 256 ){
+          direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    } else {
+      let radius = distance(vec2<f32>(0,0), pos.xy);
+    direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    }
+
     direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+
     direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
 
     // if (distancetraveled[idx] > 1000) {
@@ -1626,12 +1644,14 @@ fn applyVF() -> vec3<f32> {
         //direction[index]*= .001;
       }
       //helix(index);
-      //  direction[index] *= .0;
+       direction[index] *= .0;
+       if ((group[index] > 9)) {
         direction[index] = direction[index] + .001 * vf;
-        //posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-      //lastMonth(pos.xyz, index);
+       posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+       }
+      if (group[index] == 8) {  lastMonth(pos.xyz, index); }
       //draw cool shapes and then dont deform them in the vector field until some time 
-
+      var group = group[index];
       //runAlongRoute(pos.xyz, f32(index));
       //if (index < 100) { sphereEvaporate(pos, index);}
     }`,
@@ -1681,6 +1701,7 @@ fn applyVF() -> vec3<f32> {
       {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
       {binding: 6, resource: {buffer: gridBuffer2 }},
+      {binding: 7, resource: {buffer: groupBuffer}}
     ]
   }
 
