@@ -1968,7 +1968,9 @@ let drawDescriptor = {
   count: 6,
   instances: particlesCount ,
   bindGroup: function ({pipeline}) {
-let texture = webgpu.texture(bitmap)
+    let canvas = document.createElement('canvas');
+    
+let texture = webgpu.texture(canvas)
   let desc = {
     label: Math.random(),
       layout: pipeline.getBindGroupLayout(0),
