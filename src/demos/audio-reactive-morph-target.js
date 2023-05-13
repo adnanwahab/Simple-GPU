@@ -893,21 +893,24 @@ props.resetAnimation = function () {
   //sequence keyframes into a story - 1 - 2 - 3 - 4
 }
 
-props.resetMeshCube = function () {}
+// props.resetMeshCube = function () {}
 
-gui.add(props, 'resetMeshCube').name('resetMeshCube')
-gui.add(props, 'resetAnimation').name('resetAnimation')
-//gui.add(props, 'resetAnimation').name('resetAnimation')
+// gui.add(props, 'resetMeshCube').name('resetMeshCube')
+// gui.add(props, 'resetAnimation').name('resetAnimation')
+// //gui.add(props, 'resetAnimation').name('resetAnimation')
 
 
-const cameraFolder = gui.addFolder('Camera')
-cameraFolder.add(camera.position, 'z', 0, 10)
-cameraFolder.open()
-var person = {name: 'Sam'};
-let p = {type: 45}
-gui.add(p, 'type', 0, 100)
-var text = { speed: 'someName' }
-gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
+// const cameraFolder = gui.addFolder('Camera')
+// cameraFolder.add(camera.position, 'z', 0, 10)
+// cameraFolder.open()
+// var person = {name: 'Sam'};
+// let p = {type: 45}
+// gui.add(p, 'type', 0, 100)
+// var text = { speed: 'someName' }
+// gui.add(text, 'speed', { King: 'A', Queen: 'B', Rook: 'C' } );
+
+
+
 const dot = ( a, b) => {
   return a[0] * b[0] + a[1] * b[1]// + a[2] * b[2];
 }
@@ -1032,7 +1035,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 1.;
+    var bounds = .1;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1279,6 +1282,8 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   //windowing function for direction ?? 
   
+  //distance traveled is on a per index basis
+  //distance traveled vs time elapsed = 
   
   
   fn test123 (index: u32, flag: f32) {
@@ -1289,7 +1294,7 @@ fn drawShape (index: u32) -> vec3<f32> {
     let pos = posBuffer[index];
   //    dir.x = pos.x - pos.y;
     if (distancetraveled[index] < 1000) {
-      //posBuffer[index] = vec4<f32>(0);
+      posBuffer[index] = vec4<f32>(0);
     }
     //f32(index)
   if (uniforms.time > 30000 - f32(index)) {
@@ -1313,11 +1318,13 @@ fn drawShape (index: u32) -> vec3<f32> {
       dir.x +=  cos(idx);
       dir.z += sin(idx);
     }
+
     if (i == 1) { 
       var theta = atan2(dir.y, dir.x);
       dir.x +=  cos(idx);
       dir.y += sin(idx);
     }
+
     if (i == 2) { 
       var theta = atan2(dir.z, dir.y);
       dir.y +=  cos(idx);
@@ -1371,10 +1378,10 @@ fn drawShape (index: u32) -> vec3<f32> {
     dir.x = pos.x - pos.y;
   
   
-  //   if (hasCollided(posBuffer[index].xyz)) {
-  //     // dir.y = dir.x;
-  //     // dir.x = dir.y;
-  // }
+    if (hasCollided(posBuffer[index].xyz)) {
+      dir.y = dir.x;
+      dir.x = dir.y;
+    }
   } 
   
   //   fn lastWeek(pos: vec3<f32>, idx: u32) -> f32{
@@ -1481,9 +1488,9 @@ fn drawShape (index: u32) -> vec3<f32> {
           continue;
         }
         if (group == i) {
-          //test123(idx, 1.);
+          test123(idx, 1.);
           //vortex(idx);
-          makeCoolShader(idx);
+          //makeCoolShader(idx);
         }
       //}
     }
@@ -1524,7 +1531,7 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
     direction[idx] = vec3<f32>(cos(theta * 1.1), cos(theta * 1.1), pos.y);
-    if (dt > 100000) {
+    if (dt > 1000) {
       distancetraveled[idx]= 0;
       posBuffer[idx] =reset[idx];
       //vec4<f32>(0.);
@@ -1552,15 +1559,17 @@ fn applyVF() -> vec3<f32> {
       var vf = hash(pos.xyz);
 
       let t = uniforms.time;
-
-      if (hasCollided(pos.xyz))  {
-        var vel = direction[index];
-        direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
-        direction[index] *= .0;
-        //direction[index] = direction[index] + .1 * vf;
-      }
+    
      //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+
+     direction[index] *= .0;
+     if (hasCollided(pos.xyz))  {
+      var vel = direction[index];
+      direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
+      direction[index] *= .0;
+      //direction[index] = direction[index] + .1 * vf;
+    }
 
       //wind turbulence
 //      posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(posbuffer[index].xyz), 1);
@@ -1579,7 +1588,7 @@ fn applyVF() -> vec3<f32> {
       //helix(index);
       //  direction[index] *= .0;
       //  direction[index] = direction[index] + .001 * vf;
-      //lastMonth(pos.xyz, index);
+      lastMonth(pos.xyz, index);
       //draw cool shapes and then dont deform them in the vector field until some time 
 
       runAlongRoute(pos.xyz, f32(index));
@@ -1958,8 +1967,20 @@ let vf1 =  pickVF(), vf2 = pickVF()
 
 const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
 computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
-
+const blend = {
+  color: {
+    srcFactor: 'src-alpha',
+    dstFactor: 'one',
+    operation: 'add',
+  },
+  alpha: {
+    srcFactor: 'zero',
+    dstFactor: 'one',
+    operation: 'add',
+  },
+}
 let drawDescriptor = {
+  //blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     happyBear
@@ -2020,7 +2041,7 @@ async function basic () {
  
 
     vfPicker()
-  setInterval(vfPicker, 30000)
+  //setInterval(vfPicker, 30000)
   drawScreen = makeDrawCall(happyBear, drawDescriptor) 
 
 shapes.push(posBuffer)
@@ -2060,18 +2081,7 @@ function getCameraViewProjMatrix() {
 
  const cameraViewProj = getCameraViewProjMatrix();
 
-const blend = {
-  color: {
-    srcFactor: 'src-alpha',
-    dstFactor: 'one',
-    operation: 'add',
-  },
-  alpha: {
-    srcFactor: 'zero',
-    dstFactor: 'one',
-    operation: 'add',
-  },
-}
+
 function magnitude (v) {
   return Math.sqrt(v[0]) + Math.sqrt(v[1]) + Math.sqrt(v[2])
 }
