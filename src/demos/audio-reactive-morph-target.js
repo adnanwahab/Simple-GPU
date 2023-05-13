@@ -1035,7 +1035,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = .1;
+    var bounds = 1.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1305,7 +1305,7 @@ fn drawShape (index: u32) -> vec3<f32> {
     if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
   
   
-    var i = flag;//(uniforms.time % 3);
+    var i = (uniforms.time  % 3);
   
     //choose 2/3 indices based on a timer 
     var theta = atan2(dir.z, dir.x);
@@ -1380,7 +1380,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     if (hasCollided(posBuffer[index].xyz)) {
       dir.y = dir.x;
-      dir.x = dir.y;
+      dir.x = -dir.y;
     }
   } 
   
@@ -1466,10 +1466,7 @@ fn drawShape (index: u32) -> vec3<f32> {
 
     // if (group == 0 || group == 3) { 
     //   distancetraveled[idx] -= 100;
-
-    //     
     //     //dir = drawCoolShape();
-
     //     lastMonth(pos,idx);
     //     dir = changeDirection(pos,idx);
     // }
@@ -1481,18 +1478,48 @@ fn drawShape (index: u32) -> vec3<f32> {
           continue;
         }
         if (group == i) {
-          test123(idx, 1.);
+          
+           //test123(idx, 1.);
           //vortex(idx);
           //makeCoolShader(idx);
           //helix(idx);
         }
       //}
     }
+    // if (hasCollided(pos.xyz))  {
+    //   var vel = direction[idx];
+    //   direction[idx] = vec3<f32>(vel.y, -vel.x, vel.z);
+    //   direction[idx] *= .0;
+    //   //direction[index] = direction[index] + .1 * vf;
+    // }
 
   
   posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
   
   return dir;
+  }
+
+fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+  
+    var idx = f32(index);
+    var radius = idx / 256;
+     //4 / 3 * pow(idx / 256, 3);
+    //circle 
+    posBuffer[index] = vec4<f32>(
+      
+      cos(idx) , idx /2000., 
+      
+      sin(idx), 1.);
+  
+    //if (posBuffer[index].y > .74) {
+  //    buffer.xz /= 
+      posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+      posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+   // }
+  
+    posBuffer[index].y *= .6;
+  
+    return false;
   }
 
 
@@ -1505,13 +1532,13 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var index = f32(idx);
     var pos = posBuffer[idx];
 
-    direction[idx] = vec3<f32>(cos(index * 1.1), 0, sin(index * 1.1));
+    direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
 
     // if (dt > 10) {
     //   direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
     // }
 
-    if (dt > 100) {
+    if (dt > 10) {
       distancetraveled[idx]= 0;
       posBuffer[idx] = reset[idx];
       //vec4<f32>(0.);
@@ -1524,8 +1551,9 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var dt = distancetraveled[idx];
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
-    direction[idx] = vec3<f32>(cos(theta * 1.1), cos(theta * 1.1), pos.y);
-    if (dt > 1000) {
+    distancetraveled[idx] += 1.;
+    direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    if (dt > 10) {
       distancetraveled[idx]= 0;
       posBuffer[idx] =reset[idx];
       //vec4<f32>(0.);
@@ -1558,12 +1586,7 @@ fn applyVF() -> vec3<f32> {
      posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
 
      direction[index] *= .0;
-     if (hasCollided(pos.xyz))  {
-      var vel = direction[index];
-      direction[index] = vec3<f32>(vel.y, -vel.x, vel.z);
-      direction[index] *= .0;
-      //direction[index] = direction[index] + .1 * vf;
-    }
+   
 
       //wind turbulence
 //      posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(posbuffer[index].xyz), 1);
@@ -1585,7 +1608,8 @@ fn applyVF() -> vec3<f32> {
       //lastMonth(pos.xyz, index);
       //draw cool shapes and then dont deform them in the vector field until some time 
 
-      runAlongRoute(pos.xyz, f32(index));
+      //runAlongRoute(pos.xyz, f32(index));
+      //sphereEvaporate(pos, index);
     }`,
   
     exec: function (state){
