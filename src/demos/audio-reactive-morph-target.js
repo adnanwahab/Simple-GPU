@@ -1553,10 +1553,11 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
     direction[idx] = 10. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    if (distancetraveled[idx] > 10) {
+    if (distancetraveled[idx] > 100) {
       distancetraveled[idx]= 0;
       posBuffer[idx] = reset[idx];
-      direction[idx] = 10. * vec3<f32>(direction[idx].y, direction[idx].x, 0.);
+      direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
+      // f32(idx) / 256.
     }
     return -1;
   }
