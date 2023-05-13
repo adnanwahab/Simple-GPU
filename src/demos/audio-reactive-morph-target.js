@@ -156,7 +156,7 @@ function getDist(a, b) {
 const mouse = [0,0]
 
 function makeGrid () {
-  return makeVectorFieldGenericCool(function (x, y, z) {
+  return makeVectorFieldGeneric(function (x, y, z) {
     return [x * 1, y * 1, z , 1]
   })
 }
@@ -1475,14 +1475,16 @@ fn drawShape (index: u32) -> vec3<f32> {
     // }
   
     for (var i = 0.; i < 20.; i += 1.) {
-      if (group < 9) {
-        ribbon(idx);
-        continue;
-      }
-      if (group == i) {
-        //test123(idx, 1.);
-        //vortex(idx);
-        makeCoolShader(idx);
+      if (distancetraveled[idx] < 100)  {
+        if (group < 9) {
+          ribbon(idx);
+          continue;
+        }
+        if (group == i) {
+          //test123(idx, 1.);
+          //vortex(idx);
+          makeCoolShader(idx);
+        }
       }
     }
 
@@ -1491,6 +1493,11 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   return dir;
   }
+
+
+fn makeGreatStuff(idx:u32) -> f32 {
+  return -1;
+}
 
   fn makeCoolShader(idx: u32) -> f32 {
     var dt = distancetraveled[idx];
