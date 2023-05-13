@@ -1473,16 +1473,16 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
-        if (group < 3) {
-          ribbon(idx);
-          continue;
+        if (group < 20) {
+          //ribbon(idx);
+          //continue;
         }
         if (group == i) {
-          
+          makeParticlesFly(idx);
           //test123(idx, 1.);
           //vortex(idx);
-           makeCoolShader(idx);
-          // helix(idx);
+          // makeCoolShader(idx);
+          //helix(idx);
         }
       //}
     }
@@ -1498,6 +1498,27 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   return dir;
   }
+
+
+  fn makeParticlesFly(idx: u32)  -> bool {
+    //var nearestCorner = 
+
+      var index = f32(idx);
+      var pos = posBuffer[idx];
+      var theta = atan2(pos.x, pos.z);
+      var r = 1 / distance(vec2<f32>(0,0), pos.xy);
+      direction[idx] = vec3<f32>(r * cos(theta * 1.5), r * sin(theta * 1.5), 1);
+      return false;
+    }
+
+// fn makeParticlesFly(idx: u32)  -> bool {
+//   var index = f32(idx);
+//   var pos = posBuffer[idx];
+//   var theta = atan2(pos.y, pos.x);
+//   var r = 1 / distance(vec2<f32>(0,0) , pos.xy);
+//   direction[idx] = vec3<f32>(r * cos(theta * 2), r * sin(theta * 2), 1);
+//   return false;
+// }
 
 fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   
@@ -1553,12 +1574,14 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
     direction[idx] = 10. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    if (distancetraveled[idx] > 100) {
-      distancetraveled[idx]= 0;
-      posBuffer[idx] = reset[idx];
-      direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-      // f32(idx) / 256.
-    }
+    direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
+
+    // if (distancetraveled[idx] > 1000) {
+    //   distancetraveled[idx]= 0;
+    //   posBuffer[idx] = vec4<f32>(0.);
+    //   //direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
+    //   // f32(idx) / 256.
+    // }
     return -1;
   }
 
