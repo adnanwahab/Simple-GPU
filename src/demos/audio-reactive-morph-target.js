@@ -1506,7 +1506,7 @@ fn makeParticlesFly(idx: u32) -> bool {
 
   //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
   var vel = direction[idx];
-  //direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
+  direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
   //if (pos.z != 0.) {
     //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
   //}
@@ -2260,9 +2260,11 @@ function makeDrawCall (buffer, drawDescriptor) {
   ) -> VSOut {
   var vsOut: VSOut;  
 
+  var remove =    camera.projectionMatrix
+    * camera.viewMatrix *  camera.modelMatrix;
+
   vsOut.position = 
-   camera.projectionMatrix
-   * camera.viewMatrix *  camera.modelMatrix * 
+ 
   
    vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
