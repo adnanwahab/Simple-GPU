@@ -1473,7 +1473,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
-        if (group < 9) {
+        if (group < 3) {
           ribbon(idx);
           continue;
         }
@@ -1552,8 +1552,8 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
     distancetraveled[idx] += 1.;
-    direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    if (dt > 10) {
+    direction[idx] = 10. * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    if (distancetraveled[idx] > 10) {
       distancetraveled[idx]= 0;
       posBuffer[idx] =reset[idx];
       //vec4<f32>(0.);
