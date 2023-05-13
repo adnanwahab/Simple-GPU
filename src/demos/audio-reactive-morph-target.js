@@ -1442,7 +1442,7 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   //dont think anything else - just fnish the shader
   //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
-  //make a new buffer that links particle to the index in the buffer
+  //make a new buffer that links particle to thet5 index in the buffer
   //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
   fn runAlongRoute (pos:vec3<f32>, index:f32) -> vec3<f32> {
   var idx = u32(index);
@@ -1475,7 +1475,7 @@ fn drawShape (index: u32) -> vec3<f32> {
     // }
   
     for (var i = 0.; i < 20.; i += 1.) {
-      if (distancetraveled[idx] < 100)  {
+     // if (distancetraveled[idx] < 100)  {
         if (group < 9) {
           ribbon(idx);
           continue;
@@ -1485,7 +1485,7 @@ fn drawShape (index: u32) -> vec3<f32> {
           //vortex(idx);
           makeCoolShader(idx);
         }
-      }
+      //}
     }
 
   
@@ -1504,7 +1504,11 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var index = f32(idx);
     var pos = posBuffer[idx];
 
-    direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+    direction[idx] = vec3<f32>(cos(index * 1.1), 0, sin(index * 1.1));
+
+    // if (dt > 10) {
+    //   direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+    // }
 
     if (dt > 100) {
       distancetraveled[idx]= 0;
@@ -1520,7 +1524,7 @@ fn makeGreatStuff(idx:u32) -> f32 {
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
     direction[idx] = vec3<f32>(cos(theta * 1.1), cos(theta * 1.1), pos.y);
-    if (dt > 100) {
+    if (dt > 100000) {
       distancetraveled[idx]= 0;
       posBuffer[idx] =reset[idx];
       //vec4<f32>(0.);
