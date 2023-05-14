@@ -1729,7 +1729,57 @@ fn makeGreatStuff(idx:u32) -> f32 {
 fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
   var theta = atan2(pos.y, pos.x);
   let idx = hashPosition(pos);
-  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta),  sin(theta), 1);
+
+
+
+  //use time to gain 3 way variation 
+
+  let t = uniforms.time * .0001; 
+// vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) * t, sin(theta) * t,  sin(theta  )* t, 1);
+
+  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta  ), 1);
+
+  //vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta  ), 1);
+
+  let vf = vectorFieldBuffer[idx];
+  //vectorFieldBuffer[idx] *= 10 * vec4<f32>(cos(vf.x), sin(vf.y),  sin(vf.z), 1);
+
+
+
+//  vectorFieldBuffer[index] = vec4<f32>()
+var bounds = 10.;
+  //  if pos.x > bounds {
+  //   posBuffer[index].x = 0.;
+  //  }
+
+  //  if pos.y > bounds {
+  //   posBuffer[index].y = 0.;
+  //  }
+
+  //  if pos.z < -bounds {
+  //   posBuffer[index].z = 0.;
+  //  }
+
+  //  if pos.x < -bounds {
+  //   posBuffer[index].x = 0.;
+  //  }
+
+  //  if pos.y < -bounds {
+  //   posBuffer[index].y = 0.;
+  //  }
+
+  //  if pos.z > bounds {
+  //   posBuffer[index].z = 0.;
+  //  }
+
+  // distancetraveled[index] += 1.;
+  if (distancetraveled[index] > 10000) {
+    var abc = vectorFieldBuffer[idx];
+  }
+  //vectorFieldBuffer[idx]  *= sin(uniforms.time);
+
+
+  
 
   return vec3<f32>(1.);
 }
