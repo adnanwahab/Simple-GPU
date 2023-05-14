@@ -1,3 +1,5 @@
+const useCurlNoise = false;
+
 const curl_noise = `  
 fn snoise( v: vec3<f32>) -> f32 {
       var  C = vec2(1.0/6.0, 1.0/3.0) ;
@@ -1815,7 +1817,7 @@ fn mutateField(index: u32) -> f32 {
    
 
       //wind turbulence
-      //posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
+      ${useCurlNoise ? 'posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);' : ''}
       //sphere
       //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
       //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
@@ -1830,10 +1832,12 @@ fn mutateField(index: u32) -> f32 {
       }
       //helix(index);
        direction[index] *= .0;
-       if (groupBuffer[index] > 3) {
+
+       if (groupBuffer[index] > 1) {
         direction[index] = direction[index] + .001 * vf;
        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
       }
+
       //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
       //draw cool shapes and then dont deform them in the vector field until some time 
       //var group = groupBuffer[index];
@@ -2231,7 +2235,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-  blend: blend,
+  //blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     happyBear
