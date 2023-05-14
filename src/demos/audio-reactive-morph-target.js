@@ -265,10 +265,10 @@ var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
   let interval = (Math.sin((stuff)) + 1) / 2.
-  let color = //d3.rgb( interpolateTurbo(stuff));
-  rgb[3*i] =Math.random()
-  rgb[3*i+1] = Math.random()
-  rgb[3*i+2] = Math.random()
+  let color = d3.rgb( interpolateTurbo(stuff));
+  rgb[3*i] = color.r / 255 
+  rgb[3*i+1] = color.g / 255
+  rgb[3*i+2] = color.b / 255
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
@@ -2235,7 +2235,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-  //blend: blend,
+  blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     happyBear
