@@ -1176,7 +1176,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 1.;
+    var bounds = 10.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1815,10 +1815,10 @@ fn mutateField(index: u32) -> f32 {
 
     //  direction[index] *= .0;
    
-    //  distancetraveled[index] += 1.;
-    //   if (distancetraveled[index] > 10000) {
-    //     posBuffer[index] = vec4<f32>(0.);
-    //   }
+     distancetraveled[index] += 1.;
+      if (hasCollided(pos.xyz)) {
+        posBuffer[index] = vec4<f32>(0.);
+      }
 
 
       //wind turbulence
