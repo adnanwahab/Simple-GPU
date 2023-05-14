@@ -1,6 +1,0 @@
-
-//
-
-function convertObjToPointCloud() {
-    return 
-}

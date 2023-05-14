@@ -143,9 +143,9 @@ import { mat4, vec3 } from 'gl-matrix'
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
 import * as dat from 'dat.gui';
-import postProcessing from './postProcessing'
+import postProcessing from './archive/postProcessing'
 import dragon from 'stanford-dragon'
-import createCamera from './createCamera'
+import createCamera from './archive/createCamera'
 
 
 async function morph() { 
@@ -1938,19 +1938,19 @@ function getFrames(model) {
   })
 }
 //makeStagingBuffer()
-fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
-  dancer = new Float32Array(d)
-  for (let i = 0; i < dancer.length; i++) {
-    dancer[4*i+1] -= .5;
-  }
-  // let triplets = []
-  // for (let i = 0; i < dancer.length; i++) {
-  //   dancer[4*i+1] -= .5;
-  // }
-  // shapes.push(dancer)
-  //shapes.push(window.makeBuffer(dancer, 0,'leaf'))
+// fetch(obj(1)).then(d => d.arrayBuffer()).then((d) => {
+//   dancer = new Float32Array(d)
+//   for (let i = 0; i < dancer.length; i++) {
+//     dancer[4*i+1] -= .5;
+//   }
+//   // let triplets = []
+//   // for (let i = 0; i < dancer.length; i++) {
+//   //   dancer[4*i+1] -= .5;
+//   // }
+//   // shapes.push(dancer)
+//   //shapes.push(window.makeBuffer(dancer, 0,'leaf'))
 
-})
+// })
 // getFrames(1)
 // getFrames(2)
 // getFrames(3)

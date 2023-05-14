@@ -7588,7 +7588,7 @@
   // src/demos/audio-reactive-morph-target.js
   var import_stanford_dragon = __toESM(require__());
 
-  // src/demos/createCamera
+  // src/demos/archive/createCamera
   var import_mouse_change = __toESM(require_mouse_listen());
   var import_mouse_wheel = __toESM(require_wheel());
   var isBrowser = typeof window !== "undefined";
@@ -9396,12 +9396,6 @@ fn mutateField(index: u32) -> f32 {
         });
       });
     }
-    fetch(obj(1)).then((d2) => d2.arrayBuffer()).then((d2) => {
-      dancer = new Float32Array(d2);
-      for (let i = 0; i < dancer.length; i++) {
-        dancer[4 * i + 1] -= 0.5;
-      }
-    });
     let indexPool = new Array(particlesCount / 4).fill(1).map((d2, i) => i);
     indexPool.alloc = function(n) {
       let i = 0;
