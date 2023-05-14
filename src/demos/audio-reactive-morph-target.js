@@ -1813,11 +1813,16 @@ fn mutateField(index: u32) -> f32 {
      //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
      posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
 
-     direction[index] *= .0;
+    //  direction[index] *= .0;
    
+    //  distancetraveled[index] += 1.;
+    //   if (distancetraveled[index] > 10000) {
+    //     posBuffer[index] = vec4<f32>(0.);
+    //   }
+
 
       //wind turbulence
-      ${useCurlNoise ? 'posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);' : ''}
+      ${useCurlNoise ? 'posBuffer[index] = posBuffer[index] + .001 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);' : ''}
       //sphere
       //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
       //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
