@@ -2816,6 +2816,12 @@
     return { type: t };
   }
 
+  // node_modules/d3-scale-chromatic/src/sequential-multi/turbo.js
+  function turbo_default(t) {
+    t = Math.max(0, Math.min(1, t));
+    return "rgb(" + Math.max(0, Math.min(255, Math.round(34.61 + t * (1172.33 - t * (10793.56 - t * (33300.12 - t * (38394.49 - t * 14825.05))))))) + ", " + Math.max(0, Math.min(255, Math.round(23.31 + t * (557.33 + t * (1225.33 - t * (3574.96 - t * (1073.77 + t * 707.56))))))) + ", " + Math.max(0, Math.min(255, Math.round(27.2 + t * (3211.1 - t * (15327.97 - t * (27814 - t * (22569.18 - t * 6838.66))))))) + ")";
+  }
+
   // node_modules/d3-zoom/src/transform.js
   function Transform(k2, x, y) {
     this.k = k2;
@@ -7709,6 +7715,138 @@
   var createCamera_default = createCamera;
 
   // src/demos/audio-reactive-morph-target.js
+  var useCurlNoise = false;
+  var curl_noise = `  
+fn snoise( v: vec3<f32>) -> f32 {
+      var  C = vec2(1.0/6.0, 1.0/3.0) ;
+      var  D = vec4(0.0, 0.5, 1.0, 2.0);
+    
+    // First corner
+    var i = floor(v + dot(v, C.yyy) );
+    var x0 =   v - i + dot(i, C.xxx) ;
+    
+    // Other corners
+    var g = step(x0.yzx, x0.xyz);
+    var l = 1.0 - g;
+    var i1 = min( g.xyz, l.zxy );
+    var i2 = max( g.xyz, l.zxy );
+    
+      var x1 = x0 - i1 + C.xxx;
+      var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+      var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+    
+    // Permutations
+      i = mod289(i);
+      var p = permute( permute( permute(
+                 i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+               + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+               + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+    
+    // Gradients: 7x7 points over a square, mapped onto an octahedron.
+    // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+    let n_ = 0.142857142857; // 1.0/7.0
+    let  ns = n_ * D.wyz - D.xzx;
+    
+    let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+    
+    let x_ = floor(j * ns.z);
+    let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+    
+    let x = x_ *ns.x + ns.yyyy;
+    let y = y_ *ns.x + ns.yyyy;
+    let h = 1.0 - abs(x) - abs(y);
+    
+    let b0 = vec4( x.xy, y.xy );
+    let b1 = vec4( x.zw, y.zw );
+    
+      //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+      //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+      let s0 = floor(b0)*2.0 + 1.0;
+      let s1 = floor(b1)*2.0 + 1.0;
+      let sh = -step(h, vec4(0.0));
+    
+      let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+      let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+    
+      var p0 = vec3(a0.xy,h.x);
+      var p1 = vec3(a0.zw,h.y);
+      var p2 = vec3(a1.xy,h.z);
+      var p3 = vec3(a1.zw,h.w);
+    
+    //Normalise gradients
+      var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+      p0 *= norm.x;
+      p1 *= norm.y;
+      p2 *= norm.z;
+      p3 *= norm.w;
+    
+    // Mix final noise value
+    //t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+      
+    var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
+      m = m * m;
+      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                    dot(p2,x2), dot(p3,x3) ) );
+      }
+    
+    //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
+    
+    const list=5.;
+
+  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
+      return 1.79284291400159 - 0.85373472095314 * r;
+    }
+
+  fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
+    var s  = snoise(vec3( x ));
+    var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
+    var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
+    var c = vec3( s , s1 , s2 );
+    return c;
+  
+  }
+  
+  fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
+    var e = .00001;
+    var dx = vec3( e   , 0.0 , 0.0 );
+    var dy = vec3( 0.0 , e   , 0.0 );
+    var dz = vec3( 0.0 , 0.0 , e   );
+  
+    var p_x0 = snoiseVec3( p - dx );
+    var p_x1 = snoiseVec3( p + dx );
+    var p_y0 = snoiseVec3( p - dy );
+    var p_y1 = snoiseVec3( p + dy );
+    var p_z0 = snoiseVec3( p - dz );
+    var p_z1 = snoiseVec3( p + dz );
+  
+    var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
+    var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
+    var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
+  
+    var divisor = 1.0 / ( 2.0 * e );
+    return normalize( vec3( x , y , z ) * divisor );
+  }
+  
+   fn mod289( x: vec3<f32>)  -> vec3<f32> {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
+  
+  fn mod289v( x: vec4<f32>)  ->vec4<f32>
+  {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+  }
+  
+  fn permute( x: vec4<f32>) -> vec4<f32>
+  {
+    return mod289v(((x*34.0)+1.0)*x);
+  }
+  
+  
+  fn fade( t: vec3<f32>) -> vec3<f32> {
+    return t*t*t*(t*(t*6.0-15.0)+10.0);
+  }
+
+`;
   var { cos, sin } = Math;
   async function morph() {
     const buffers = [
@@ -7758,7 +7896,7 @@
       }
     ];
     let drawShapes = true;
-    let particlesCount = 1e6;
+    let particlesCount = 2e6;
     let drawScreen;
     let time = 0;
     let stagingBuffer;
@@ -7821,12 +7959,10 @@
     for (let i = 0; i < rgb2.length; i++) {
       let stuff = i % 1e3 / 1e3;
       let interval2 = (Math.sin(stuff) + 1) / 2;
-      let color2 = (
-        //d3.rgb( interpolateTurbo(stuff));
-        rgb2[3 * i] = Math.random()
-      );
-      rgb2[3 * i + 1] = Math.random();
-      rgb2[3 * i + 2] = Math.random();
+      let color2 = rgb(turbo_default(stuff));
+      rgb2[3 * i] = color2.r / 255;
+      rgb2[3 * i + 1] = color2.g / 255;
+      rgb2[3 * i + 2] = color2.b / 255;
     }
     const colorBuffer = makeBuffer2(rgb2, 0, "color");
     const dragonBuffer = makeBuffer2(import_stanford_dragon.default.positions, 1, "dragon");
@@ -8434,6 +8570,10 @@
       for (let i2 = 0; i2 < directionBuffer.length; i2 += 4) {
         let idx = i2 / 4 % 360 * 1.5;
         let radius = 0.1 * makeRadius(i2);
+        directionBuffer[i2] = radius * Math.cos(idx * Math.PI / 180);
+        directionBuffer[i2 + 1] = radius * Math.sin(idx * Math.PI / 180);
+        directionBuffer[i2 + 2] = 0;
+        directionBuffer[i2 + 3] = 0;
       }
       let direction = makeBuffer2(directionBuffer, 0, "vectorField");
       let gridBuffer2 = makeBuffer2(vf12.flat(), 0, "result");
@@ -8481,6 +8621,8 @@
     }
     
 
+    ${curl_noise}
+
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
@@ -8488,7 +8630,7 @@
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-    @group(0) @binding(7) var<storage,read_write> group: array<f32>;
+    @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
   
   fn sfrand () -> f32{
@@ -8542,11 +8684,11 @@
 
 
     vectorFieldBuffer[idx] = vec4<f32>(0);
-    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y))
-    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
-    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
-    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
-    // vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
+    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y));
+    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
+    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
+    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
+    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
     return 1.;
   }
 
@@ -8557,6 +8699,11 @@
     //if (z < .1) {z = .9;}
     
     // 
+    // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
+    // + floor(floor(z * 1000) * 1000) * 10
+    // );
+
+
     var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
     + floor(floor(z * 100) * 100) * 100
     );
@@ -8666,10 +8813,10 @@ fn drawShape (index: u32) -> vec3<f32> {
     // }
 
     let vf = vectorFieldBuffer[idx];
-    var theta = atan2(pos.y, pos.x);
+
     var shit = uniforms.time;
     //vectorFieldBuffer[idx] += vec4<f32>(abs(pos.x), abs(pos.y), 0, 1);
-    vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta), 0, 1);
+
 
 
     let vf1 = vectorFieldBuffer2[idx];
@@ -8877,7 +9024,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   
   //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
-  //gpu graphics = draw 10 lines of ducks from 4 attachment points
   
   if (uniforms.time < 20) {}
   
@@ -8945,18 +9091,20 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
-        if (group < 20) {
+      if (uniforms.mode == 1) {
+        //makeParticlesFly(idx);
+        //test123(idx, 1.);
+        // vortex(idx);
+         //makeCoolShader(idx);
+        //helix(idx);
+        //makeASpiralWithoutSinCosineOrIndex(idx);
+        continue;
+      }
+        if (uniforms.mode == 0 && group < 20) {
            ribbon(idx);
           continue;
         }
-        if (group == i) {
-          makeParticlesFly(idx);
-          //test123(idx, 1.);
-          // vortex(idx);
-          // makeCoolShader(idx);
-          //helix(idx);
-          //makeASpiralWithoutSinCosineOrIndex(idx);
-        }
+      
       //}
     }
     // if (hasCollided(pos.xyz))  {
@@ -8984,34 +9132,16 @@ fn makeParticlesFly(idx: u32) -> bool {
   var pos = posBuffer[idx];
 
 
-  //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
   var vel = direction[idx];
   direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
-  //if (pos.z != 0.) {
-    //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  //}
+  if (pos.z != 0.) {
+    posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  }
   return false;
 }
 
-fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  
-    var idx = f32(index);
-    var radius = idx / 256;
-     //4 / 3 * pow(idx / 256, 3);
-    //circle 
-    posBuffer[index] = vec4<f32>(
-      
-      cos(idx) , idx /2000., 
-      
-      sin(idx), 1.);
 
-      posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-      posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-  
-    posBuffer[index].y *= .6;
-  
-    return false;
-  }
 
 
 fn makeGreatStuff(idx:u32) -> f32 {
@@ -9025,9 +9155,9 @@ fn makeGreatStuff(idx:u32) -> f32 {
 
     direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
 
-    // if (dt > 10) {
-    //   direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
-    // }
+    if (dt > 10) {
+      direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+    }
 
     if (dt > 10) {
       distancetraveled[idx]= 0;
@@ -9069,17 +9199,80 @@ fn makeGreatStuff(idx:u32) -> f32 {
     return -1;
   }
 
-fn applyVF() -> vec3<f32> {
+fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
+  var theta = atan2(pos.y, pos.x);
+  let idx = hashPosition(pos);
+  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta),  sin(theta), 1);
+
   return vec3<f32>(1.);
 }
+  // fn rotate (vel: vec3<f32>) -> vec3<f32>{
+
+  //   return vec3<f32>();
+  // }
+
+fn dragon (index: u32) -> f32 {
+
+  var pos = posBuffer[index];
+  var vel = direction[index];
+  applyVF(pos.xyz, index);
+  //use distanceTraveled to change group, direction
+  //distanceTraveled += length(direction)
+  //var lifetime = distanceTraveled[index];
   
+  // if (length(direction[index]) == 0.) {
+  //   direction[index] = vec3<f32>(0, 0, -1);
+  // }
+
+  //   var theta = atan2(direction[index].z, direction[index].x);
+  //   direction[index] = vec3<f32>(cos(theta * f32(index) /256), 0., sin(theta * f32(index) /256 ));
+
+  //   //1 rotation in 6 dimensions in order 
+  //   var theta = atan2(direction[index].y, direction[index].x);
+  //   direction[index] = vec3<f32>(cos(theta), sin(theta ), 0);
+
+  // //change velocity every few frames 
+  // posBuffer[index] =  posBuffer[index]  + .1 * vec4<f32>(direction[index], 0.);
+
+  // if (pos.x < 0 ||
+  //   pos.x > 0 ||
+  //   pos.z > 0 ||
+  //   pos.z < 0 ) {
+  //   var swap = direction[index].z;
+  //   direction[index].z = direction[index].x;
+  //   direction[index].x = swap;
+  //   direction[index] = vec3<f32>(0.);
+  // }
+
+  return -1;
+}
+
+fn mutateField(index: u32) -> f32 {
+  vectorFieldBuffer[index] = vec4<f32>(0, 0., 0., 0.);
+  return -1;
+} 
+
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
       let index: u32 = GlobalInvocationID.x;
-    
+
+
+      if (groupBuffer[index] > 1) {
+        dragon(index);
+      }
+      //mutateField(index);
+      if (length(direction[index]) == 0.) {
+        direction[index] = vec3<f32>(0, 0, -1);
+      }
+        //  direction[index] = cross(direction[index], direction[index+1]);
+        //  posBuffer[index] =  vec4<f32>(direction[index], 1.) + posBuffer[index];
+        //  return;
 
       var pos = posBuffer[index];
+
+      //applyMagnets(pos.xyz);
+
       var r = reset[index];
       runAlongRoute(pos.xyz, f32(index));
 
@@ -9097,7 +9290,7 @@ fn applyVF() -> vec3<f32> {
    
 
       //wind turbulence
-      //posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
+      ${useCurlNoise ? "posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);" : ""}
       //sphere
       //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
       //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
@@ -9112,15 +9305,20 @@ fn applyVF() -> vec3<f32> {
       }
       //helix(index);
        direction[index] *= .0;
-       if ((group[index] > 9)) {
+
+       if (groupBuffer[index] > 1) {
         direction[index] = direction[index] + .001 * vf;
        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-       }
-      if (group[index] == 8) {  lastMonth(pos.xyz, index); }
+      }
+
+      //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
       //draw cool shapes and then dont deform them in the vector field until some time 
-      var group = group[index];
+      //var group = groupBuffer[index];
       //runAlongRoute(pos.xyz, f32(index));
-      //if (index < 100) { sphereEvaporate(pos, index);}
+
+      // if (groupBuffer[index] > 8) {
+      //   sphereEvaporate(pos, index);
+      // }
     }`,
         exec: function(state2) {
           const device = state2.device;
@@ -9421,7 +9619,7 @@ fn applyVF() -> vec3<f32> {
       }
     };
     let drawDescriptor = {
-      //blend: blend,
+      blend,
       attributeBuffers: buffers,
       attributeBufferData: [
         happyBear,
