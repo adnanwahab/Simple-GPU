@@ -951,10 +951,10 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   for (let i = 0; i < directionBuffer.length; i+=4) {
     let idx = ((i/4) % 360)* 1.5 ;
     let radius = .1  * makeRadius(i);
-    // directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    // directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
-    // directionBuffer[i+2] = 0//1 * Math.cos(i)
-    //  directionBuffer[i+3] = 0
+    directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    directionBuffer[i+2] = 0//1 * Math.cos(i)
+     directionBuffer[i+3] = 0
   }
 
   let direction = makeBuffer(directionBuffer, 0, 'vectorField')
@@ -1021,7 +1021,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-    @group(0) @binding(7) var<storage,read_write> group: array<f32>;
+    @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
   
   fn sfrand () -> f32{
@@ -1410,7 +1410,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   
   //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
-  //gpu graphics = draw 10 lines of ducks from 4 attachment points
   
   if (uniforms.time < 20) {}
   
@@ -1478,18 +1477,20 @@ fn drawShape (index: u32) -> vec3<f32> {
   
     for (var i = 0.; i < 20.; i += 1.) {
      // if (distancetraveled[idx] < 100)  {
-        if (group < 20) {
+      if (uniforms.mode == 1) {
+        //makeParticlesFly(idx);
+        //test123(idx, 1.);
+        // vortex(idx);
+         //makeCoolShader(idx);
+        //helix(idx);
+        //makeASpiralWithoutSinCosineOrIndex(idx);
+        continue;
+      }
+        if (uniforms.mode == 0 && group < 20) {
            ribbon(idx);
           continue;
         }
-        if (group == i) {
-          makeParticlesFly(idx);
-          //test123(idx, 1.);
-          // vortex(idx);
-          // makeCoolShader(idx);
-          //helix(idx);
-          //makeASpiralWithoutSinCosineOrIndex(idx);
-        }
+      
       //}
     }
     // if (hasCollided(pos.xyz))  {
@@ -1517,34 +1518,16 @@ fn makeParticlesFly(idx: u32) -> bool {
   var pos = posBuffer[idx];
 
 
-  //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
   var vel = direction[idx];
   direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
-  //if (pos.z != 0.) {
-    //posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  //}
+  if (pos.z != 0.) {
+    posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
+  }
   return false;
 }
 
-fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  
-    var idx = f32(index);
-    var radius = idx / 256;
-     //4 / 3 * pow(idx / 256, 3);
-    //circle 
-    posBuffer[index] = vec4<f32>(
-      
-      cos(idx) , idx /2000., 
-      
-      sin(idx), 1.);
 
-      posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-      posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-  
-    posBuffer[index].y *= .6;
-  
-    return false;
-  }
 
 
 fn makeGreatStuff(idx:u32) -> f32 {
@@ -1558,9 +1541,9 @@ fn makeGreatStuff(idx:u32) -> f32 {
 
     direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
 
-    // if (dt > 10) {
-    //   direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
-    // }
+    if (dt > 10) {
+      direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
+    }
 
     if (dt > 10) {
       distancetraveled[idx]= 0;
@@ -1605,12 +1588,60 @@ fn makeGreatStuff(idx:u32) -> f32 {
 fn applyVF() -> vec3<f32> {
   return vec3<f32>(1.);
 }
+  fn rotate (vel: vec3<f32>) -> vec3<f32>{
+
+    return vec3<f32>();
+  }
+
+fn dragon (index: u32) -> f32 {
+
+  var pos = posBuffer[index];
+  var vel = direction[index];
+
+  //use distanceTraveled to change group, direction
+  //distanceTraveled += length(direction)
+  //var lifetime = distanceTraveled[index];
   
+  // if (length(direction[index]) == 0.) {
+  //   direction[index] = vec3<f32>(0, 0, -1);
+  // }
+
+  //   var theta = atan2(direction[index].z, direction[index].x);
+  //   direction[index] = vec3<f32>(cos(theta * f32(index) /256), 0., sin(theta * f32(index) /256 ));
+
+  //   //1 rotation in 6 dimensions in order 
+  //   var theta = atan2(direction[index].y, direction[index].x);
+  //   direction[index] = vec3<f32>(cos(theta), sin(theta ), 0);
+
+  // //change velocity every few frames 
+  // posBuffer[index] =  posBuffer[index]  + .1 * vec4<f32>(direction[index], 0.);
+
+  // if (pos.x < 0 ||
+  //   pos.x > 0 ||
+  //   pos.z > 0 ||
+  //   pos.z < 0 ) {
+  //   var swap = direction[index].z;
+  //   direction[index].z = direction[index].x;
+  //   direction[index].x = swap;
+  //   direction[index] = vec3<f32>(0.);
+  // }
+
+  return -1;
+}
+
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
       let index: u32 = GlobalInvocationID.x;
-    
+      if (groupBuffer[index] > 1) {
+        dragon(index);
+      }
+      if (length(direction[index]) == 0.) {
+        direction[index] = vec3<f32>(0, 0, -1);
+      }
+        //  direction[index] = cross(direction[index], direction[index+1]);
+        //  posBuffer[index] =  vec4<f32>(direction[index], 1.) + posBuffer[index];
+        //  return;
 
       var pos = posBuffer[index];
       var r = reset[index];
@@ -1645,15 +1676,18 @@ fn applyVF() -> vec3<f32> {
       }
       //helix(index);
        direction[index] *= .0;
-       if ((group[index] > 9)) {
+       if ((groupBuffer[index] > 9)) {
         direction[index] = direction[index] + .001 * vf;
        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
        }
-      if (group[index] == 8) {  lastMonth(pos.xyz, index); }
+      //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
       //draw cool shapes and then dont deform them in the vector field until some time 
-      var group = group[index];
+      //var group = groupBuffer[index];
       //runAlongRoute(pos.xyz, f32(index));
-      //if (index < 100) { sphereEvaporate(pos, index);}
+
+      // if (groupBuffer[index] > -1) {
+      //   sphereEvaporate(pos, index);
+      // }
     }`,
   
     exec: function (state){
