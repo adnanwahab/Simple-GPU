@@ -1610,7 +1610,8 @@ fn makeGreatStuff(idx:u32) -> f32 {
   }
 
 fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
-  var theta = atan2(pos.y, pos.x);
+  var theta = 1. * atan2(pos.y, pos.x);
+  var theta2 = atan2(pos.x, pos.z);
   let idx = hashPosition(pos);
 
 
@@ -1640,7 +1641,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
    //
 
    //vectorFieldBuffer[idx] =  makeVectorFieldSlot();
-  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta  ), 1);
+  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
 
   let vf = vectorFieldBuffer[idx];
   //vectorFieldBuffer[idx] *= 10 * vec4<f32>(cos(vf.x), sin(vf.y),  sin(vf.z), 1);
