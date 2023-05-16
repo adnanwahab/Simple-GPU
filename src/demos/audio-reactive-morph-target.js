@@ -1507,7 +1507,7 @@ fn drawShape (index: u32) -> vec3<f32> {
         continue;
       }
         if (uniforms.mode == 0 && group < 20) {
-           ribbon(idx);
+ //          ribbon(idx);
           continue;
         }
       
@@ -1596,12 +1596,6 @@ fn makeGreatStuff(idx:u32) -> f32 {
 
     direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
 
-    // if (distancetraveled[idx] > 1000) {
-    //   distancetraveled[idx]= 0;
-    //   posBuffer[idx] = vec4<f32>(0.);
-    //   //direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-    //   // f32(idx) / 256.
-    // }
     return -1;
   }
 
@@ -1613,43 +1607,11 @@ fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
   let idx = hashPosition(pos);
-
-
-
-  //use time to gain 3 way variation 
-
-  let t = uniforms.time * .0001; 
-//vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) * t, sin(theta) * t,  sin(theta  )* t, 1);
-
-  // vectorFieldBuffer[idx] +=  10. * vec4<f32>(cos(theta)
-  //  , sin(theta) ,  sin(theta  ), 1);
-
-  //vectorFieldBuffer[idx] *= .9;
-  //  vectorFieldBuffer[idx] *=  10. * vec4<f32>(cos(theta)
-  //  , sin(theta) ,  sin(theta  ), 1);
-
-  //  vectorFieldBuffer[idx] = vec4<f32>(mix(vectorFieldBuffer[idx].xyz,
-  //  vec3<f32>(vectorFieldBuffer2[idx].xyz), 
-  //  1.), 1.);
-  //add wind
-  //
-
-   //generate both vector fields on the gpu
-   //tween between them
-
-   //draw a curve from bottom left to top right
-   //
-
-   //vectorFieldBuffer[idx] =  makeVectorFieldSlot();
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
 
-  let vf = vectorFieldBuffer[idx];
-  //vectorFieldBuffer[idx] *= 10 * vec4<f32>(cos(vf.x), sin(vf.y),  sin(vf.z), 1);
 
-
-
-//  vectorFieldBuffer[index] = vec4<f32>()
-var bounds = 10.;
+  //ribbon()
+var bounds = 5.;
    if pos.x > bounds {
     posBuffer[index].x = 0.;
    }
@@ -1674,21 +1636,8 @@ var bounds = 10.;
     posBuffer[index].z = 0.;
    }
 
-  // distancetraveled[index] += 1.;
-  if (distancetraveled[index] > 10000) {
-    var abc = vectorFieldBuffer[idx];
-  }
-  //vectorFieldBuffer[idx]  *= sin(uniforms.time);
-
-
-  
-
   return vec3<f32>(1.);
 }
-  // fn rotate (vel: vec3<f32>) -> vec3<f32>{
-
-  //   return vec3<f32>();
-  // }
 
 fn dragon (index: u32) -> f32 {
 
@@ -1769,7 +1718,7 @@ fn mutateField(index: u32) -> f32 {
    
      distancetraveled[index] += 1.;
       if (hasCollided(pos.xyz)) {
-        posBuffer[index] = vec4<f32>(0.);
+        posBuffer[index] = vec4<f32>(sin(uniforms.time) + sin(f32(pos.x)));
       }
 
 
