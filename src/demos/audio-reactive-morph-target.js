@@ -1055,7 +1055,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 10.;
+    var bounds = 3.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1614,10 +1614,8 @@ fn changeAcceleration () -> f32{
     var theta = 1. * atan2(pos.y, pos.x);
     var radius = distance(pos, vec3<f32>(0));
 
-
-    vectorFieldBuffer[idx] = radius
-    
-    * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+    theta *= (sin(uniforms.time * .001));
+    vectorFieldBuffer[idx] = 10. * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
       var vf = hash(pos.xyz);
 
 
@@ -1631,13 +1629,41 @@ fn changeAcceleration () -> f32{
 
 
     if (hasCollided(pos.xyz)) {
-      posBuffer[index] = reset[index] * .1;
+      posBuffer[index] = reset[index];
       direction[index] = vec3<f32>(0.);
     }
 
 
     return -1;
   }
+  fn applyVF5(pos: vec3<f32>, index:u32) -> f32 {
+    let idx = hashPosition(pos);
+    var theta = 1. * atan2(pos.y, pos.x);
+    var radius = distance(pos, vec3<f32>(0));
+
+    theta *= (sin(uniforms.time * .001));
+    vectorFieldBuffer[idx] = 10. * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+      var vf = hash(pos.xyz);
+
+
+      vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+
+    direction[index] = direction[index] + .01 * vf;
+
+    posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+ 
+    direction[index] *= .9;
+
+
+    if (hasCollided(pos.xyz)) {
+      posBuffer[index] = reset[index];
+      direction[index] = vec3<f32>(0.);
+    }
+
+
+    return -1;
+  }
+
 
   fn applyVF2(pos: vec3<f32>, index:u32) -> f32 {
     let idx = hashPosition(pos);
