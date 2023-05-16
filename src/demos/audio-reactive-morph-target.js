@@ -985,7 +985,7 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let groupIndexBuffer = new Float32Array(particlesCount)
   for (var i =0 ; i< particlesCount; i++ ){
-    groupIndexBuffer[i] = Math.floor(i / 1e5)
+    groupIndexBuffer[i] = i
   }
 
   let groupBuffer = makeBuffer(groupIndexBuffer, 0, 'groupBuffer')
@@ -1608,14 +1608,98 @@ fn changeAcceleration () -> f32{
   return -1;
 }
 
+fn applyPhi(index: u32) -> vec3<f32> {
+var z = vectorFieldBuffer[index];
+var pos = posBuffer[index];
+var dir= direction[index];
 
-  fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
+var soFar = distancetraveled[index];
+var reset = reset[index];
+var other = vectorFieldBuffer2[index];
+var groupIndex = groupBuffer[index];
+
+
+return vec3<f32>(
+  0, 1, 2
+);
+
+//return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
+}
+
+
+fn applyVF0(pos: vec3<f32>, index:u32) -> f32 {
+  let idx = hashPosition(pos);
+  var theta = 1. * atan2(pos.y, pos.x);
+  var radius = distance(pos, vec3<f32>(0));
+
+  //theta *= 4. * (sin(uniforms.time * .001));
+  //if (groupBuffer[index] > uniforms.time) {
+    // vectorFieldBuffer[idx] =  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    vectorFieldBuffer[idx] = vec4<f32>(applyPhi(index), 1);
+  //}
+
+    var vf = hash(pos.xyz);
+
+
+    vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+
+  direction[index] = direction[index] + .01 * vf;
+
+  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+
+  direction[index] *= .9;
+
+
+  if (hasCollided(pos.xyz)) {
+    posBuffer[index] = reset[index];
+    direction[index] = vec3<f32>(0.);
+  }
+
+
+  return -1;
+}
+
+
+fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
+  let idx = hashPosition(pos);
+  var theta = 1. * atan2(pos.y, pos.x);
+  var radius = distance(pos, vec3<f32>(0));
+
+  //theta *= 4. * (sin(uniforms.time * .001));
+  //if (groupBuffer[index] > uniforms.time) {
+    // vectorFieldBuffer[idx] =  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    vectorFieldBuffer[idx] = vec4<f32>(sin(f32(index) / 1e6), 0, 0, 1);
+  //}
+
+    var vf = hash(pos.xyz);
+
+
+    vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+
+  direction[index] = direction[index] + .01 * vf;
+
+  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+
+  direction[index] *= .9;
+
+
+  if (hasCollided(pos.xyz)) {
+    posBuffer[index] = reset[index];
+    direction[index] = vec3<f32>(0.);
+  }
+
+
+  return -1;
+}
+
+
+  fn applyVF6(pos: vec3<f32>, index:u32) -> f32 {
     let idx = hashPosition(pos);
     var theta = 1. * atan2(pos.y, pos.x);
     var radius = distance(pos, vec3<f32>(0));
 
-    theta *= (sin(uniforms.time * .001));
-    vectorFieldBuffer[idx] = 10. * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+    theta *= 4. * (sin(uniforms.time * .001));
+    vectorFieldBuffer[idx] =  vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
       var vf = hash(pos.xyz);
 
 
@@ -1680,15 +1764,30 @@ fn changeAcceleration () -> f32{
     return -1;
   }
 
-fn applyVF1(pos: vec3<f32>, index:u32) -> vec3<f32> {
+fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
+  ribbon(index);
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
   let idx = hashPosition(pos);
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
-//set velocity to 0 every frame 
 
+  var vf = vectorFieldBuffer[idx];
+  direction[index] = vec3<f32>(0.);
+
+  direction[index] = direction[index] + .001 * vf.xyz;
   ribbon(index);
+  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
 var bounds = 10.;
+
+var z = vectorFieldBuffer[index];
+var z1 = posBuffer[index];
+var z2 = direction[index];
+
+var z3 = distancetraveled[index];
+var z4 = reset[index];
+var z5 = vectorFieldBuffer2[index];
+var z6 = groupBuffer[index];
+
    if pos.x > bounds {
     posBuffer[index].x = 0.;
    }
@@ -1768,7 +1867,7 @@ fn dragon (index: u32) -> f32 {
       var g = groupBuffer[index];
   
      distancetraveled[index] += 1.;
-      
+      var n = groupBuffer[index];
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
       if (distance(posBuffer[index].xy, mouse) < .1) {
         // direction[index].x = direction[index].y;
@@ -2359,8 +2458,7 @@ setInterval(function () {
     abc.byteLength
   );
   if (window.writeTime) {
-    elapsed = Date.now() % 3000
-    window.writeTime(elapsed)
+    window.writeTime(Date.now() - elapsed)
   } 
 }, 8)
 
