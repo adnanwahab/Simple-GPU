@@ -966,10 +966,10 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   for (let i = 0; i < directionBuffer.length; i+=4) {
     let idx = ((i/4) % 360)* 1.5 ;
     let radius = .1  * makeRadius(i);
-    directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
-    directionBuffer[i+2] = 0//1 * Math.cos(i)
-     directionBuffer[i+3] = 0
+    // directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
+    // directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    // directionBuffer[i+2] = 0//1 * Math.cos(i)
+    //  directionBuffer[i+3] = 0
   }
 
   let direction = makeBuffer(directionBuffer, 0, 'vectorField')
@@ -1202,7 +1202,7 @@ fn drawShape (index: u32) -> vec3<f32> {
 }
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .1;
+    var pos = p;
     //pos += .05;
     //pos.z -= 1.1;
     let idx = hashPosition(pos);
@@ -1603,15 +1603,45 @@ fn makeGreatStuff(idx:u32) -> f32 {
     //return vec4<f32>(,,,);
   }
 
-fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
+  fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
+    let idx = hashPosition(pos);
+    var theta = 1. * atan2(pos.y, pos.x);
+
+    vectorFieldBuffer[idx] = 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+      var vf = hash(pos.xyz);
+
+    direction[index] = direction[index] + .01 * vf;
+    posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+    // posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+    direction[index] *= .9;
+
+    return -1;
+  }
+
+  fn applyVF2(pos: vec3<f32>, index:u32) -> f32 {
+    let idx = hashPosition(pos);
+    var theta = 1. * atan2(pos.y, pos.x);
+
+    vectorFieldBuffer[idx] = 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+      var vf = hash(pos.xyz);
+
+    direction[index] = direction[index] + .01 * vf;
+    posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+    // posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+    direction[index] *= .9;
+
+    return -1;
+  }
+
+fn applyVF1(pos: vec3<f32>, index:u32) -> vec3<f32> {
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
   let idx = hashPosition(pos);
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
+//set velocity to 0 every frame 
 
-
-  //ribbon()
-var bounds = 5.;
+  ribbon(index);
+var bounds = 10.;
    if pos.x > bounds {
     posBuffer[index].x = 0.;
    }
@@ -1643,7 +1673,7 @@ fn dragon (index: u32) -> f32 {
 
   var pos = posBuffer[index];
   var vel = direction[index];
-  applyVF(pos.xyz, index);
+  //applyVF(pos.xyz, index);
   //use distanceTraveled to change group, direction
   //distanceTraveled += length(direction)
   //var lifetime = distanceTraveled[index];
@@ -1675,56 +1705,25 @@ fn dragon (index: u32) -> f32 {
   return -1;
 }
 
-fn mutateField(index: u32) -> f32 {
-  vectorFieldBuffer[index] = vec4<f32>(0, 0., 0., 0.);
-  return -1;
-} 
+
 
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
       let index: u32 = GlobalInvocationID.x;
-
-
-      if (groupBuffer[index] > 1) {
-        dragon(index);
-      }
-      //mutateField(index);
-      if (length(direction[index]) == 0.) {
-        direction[index] = vec3<f32>(0, 0, -1);
-      }
-        //  direction[index] = cross(direction[index], direction[index+1]);
-        //  posBuffer[index] =  vec4<f32>(direction[index], 1.) + posBuffer[index];
-        //  return;
-
       var pos = posBuffer[index];
-
       //applyMagnets(pos.xyz);
-
       var r = reset[index];
-      runAlongRoute(pos.xyz, f32(index));
-
-      //applyMagnets(pos.xyz);
-      var abc = posBuffer[index];
-
-      var vf = hash(pos.xyz);
+      //runAlongRoute(pos.xyz, f32(index));
+      applyVF(pos.xyz, index);
 
       let t = uniforms.time;
-    
-     //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
-     posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
-
-    //  direction[index] *= .0;
-   
+      var g = groupBuffer[index];
+  
      distancetraveled[index] += 1.;
       if (hasCollided(pos.xyz)) {
         posBuffer[index] = vec4<f32>(sin(uniforms.time) + sin(f32(pos.x)));
       }
-
-
-      //wind turbulence
-      //sphere
-
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
       if (distance(posBuffer[index].xy, mouse) < .1) {
         // direction[index].x = direction[index].y;
@@ -1734,25 +1733,12 @@ fn mutateField(index: u32) -> f32 {
         //direction[index]*= .001;
       }
       //helix(index);
-       direction[index] *= .0;
-
-       if (groupBuffer[index] > -1) {
-        direction[index] = direction[index] + .001 * vf;
-        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-      }
-
+       //direction[index] *= .0;
       //vector field toward camera with shapes superIMposed
-
-     
-
       //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
       //draw cool shapes and then dont deform them in the vector field until some time 
       //var group = groupBuffer[index];
       //runAlongRoute(pos.xyz, f32(index));
-
-      // if (groupBuffer[index] > 8) {
-      //   sphereEvaporate(pos, index);
-      // }
     }
     
     
