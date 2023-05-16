@@ -1603,17 +1603,38 @@ fn makeGreatStuff(idx:u32) -> f32 {
     //return vec4<f32>(,,,);
   }
 
+fn changeAcceleration () -> f32{
+
+  return -1;
+}
+
+
   fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
     let idx = hashPosition(pos);
     var theta = 1. * atan2(pos.y, pos.x);
+    var radius = distance(pos, vec3<f32>(0));
 
-    vectorFieldBuffer[idx] = 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
+
+    vectorFieldBuffer[idx] = radius
+    
+    * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);   
       var vf = hash(pos.xyz);
 
+
+      vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+
     direction[index] = direction[index] + .01 * vf;
+
     posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-    // posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+ 
     direction[index] *= .9;
+
+
+    if (hasCollided(pos.xyz)) {
+      posBuffer[index] = reset[index] * .1;
+      direction[index] = vec3<f32>(0.);
+    }
+
 
     return -1;
   }
@@ -1721,9 +1742,7 @@ fn dragon (index: u32) -> f32 {
       var g = groupBuffer[index];
   
      distancetraveled[index] += 1.;
-      if (hasCollided(pos.xyz)) {
-        posBuffer[index] = vec4<f32>(sin(uniforms.time) + sin(f32(pos.x)));
-      }
+      
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
       if (distance(posBuffer[index].xy, mouse) < .1) {
         // direction[index].x = direction[index].y;
@@ -1931,16 +1950,16 @@ let triangle = function (origin, side) {
 
   for (let i =0; i< 100; i++) {
     //change to concentric triangles + add rotation euler angles 
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   }
 
 
