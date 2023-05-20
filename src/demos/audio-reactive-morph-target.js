@@ -183,17 +183,17 @@ let makeVectorField = makeVectorField4
 let result = []
 let pickVF = function () {
   let list = [
-    keeptrying
+    //keeptrying
    //test999,
       //magnet, 
     //   makeVectorField2,
     //   makeVectorField8,
     //   makeVectorField10,
-    //   makeVectorField2, // no good - circle SDF
+   // makeVectorField2, // no good - circle SDF
     //   makeVectorField4,
     //   makeVectorField5,//needs improvement  // spiral grid
-    //   makeVectorField8, //good- make better
-    //  makeVectorField1, 
+      // makeVectorField8, //good- make better
+      makeVectorField1, 
   ]; //make these better
 //stream3, DELETE ME
   let idx = (Math.random() * list.length) | 0 
@@ -1055,7 +1055,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
-    var bounds = 3.;
+    var bounds = 10.;
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1599,16 +1599,13 @@ fn makeGreatStuff(idx:u32) -> f32 {
     return -1;
   }
 
-  fn makeVectorFieldSlot () {
-    //return vec4<f32>(,,,);
-  }
 
 fn changeAcceleration () -> f32{
 
   return -1;
 }
 
-fn applyPhi(index: u32) -> vec3<f32> {
+fn createVectorField(index: u32) -> vec3<f32> {
 var z = vectorFieldBuffer[index];
 var pos = posBuffer[index];
 var dir= direction[index];
@@ -1619,35 +1616,110 @@ var other = vectorFieldBuffer2[index];
 var groupIndex = groupBuffer[index];
 
 
+
+
+var magnets = array<vec3<f32>,3>();
+//return other.xyz;
+
+let g = groupIndex / 1e6;
+return 2 * vec3<f32>(g *  pos.z * pos.x * pos.y ,
+  length(dir) * g * pos.z * -pos.x,
+   1 / length(pos.xy));
+
+return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
+  -pos.x + sin(uniforms.time),
+   1 / length(pos.xy));
+
+
+return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
+
+// return  vec3<f32>(
+//   pos.x / pos.y, pos.y / pos.z, pos.z / pos.x
+//  );
+
+// return  vec3<f32>(
+//   pos.x * pos.y, pos.y * pos.z, pos.z  * pos.x
+//  ); cool
+
+// return  .1 * vec3<f32>(
+//    pos.x - pos.y, pos.y - pos.z, pos.z  - pos.x
+//   );
+
+
+// return  vec3<f32>(
+//  sqrt(pos.x), pos.y, pos.z 
+// );
+
+
+
+return  vec3<f32>(
+  2 * pos.y,  pos.z, sqrt(pos.x)
+);
+
 return vec3<f32>(
-  0, 1, 2
+  pos.y * pos.y, -5 * pos.x, sin(1. / pos.z)
+);
+
+return vec3<f32>(
+  5 * pos.y, -5 * pos.x, sin(1. / pos.z)
+);
+
+return vec3<f32>(
+  5 * pos.y, -5 * pos.x, (1. / pos.z)
+);
+
+//make a spiral by taking the spiral from earlier and make differeentiation
+
+return vec3<f32>(
+  5 * pos.y, -5 * pos.x,(1. - pos.z)
+);
+
+
+
+// return vec3<f32>(
+//   5 * pos.y * sin(pos.z * .5), -5 * pos.x * sin(pos.z * .5), pos.z - pos.x
+// );
+
+return vec3<f32>(
+  1,pos.x - pos.z, pos.y - pos.z
+);
+
+//distance
+return vec3<f32>(
+  1,pos.x - pos.z, reflect(pos, vec4<f32>(0,0,0, 0)).x
+);
+
+return vec3<f32>(
+  10 * sin(uniforms.time * .0001), 0, 0
 );
 
 //return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
 }
 
 
-fn applyVF0(pos: vec3<f32>, index:u32) -> f32 {
+fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
+
   let idx = hashPosition(pos);
   var theta = 1. * atan2(pos.y, pos.x);
   var radius = distance(pos, vec3<f32>(0));
 
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
-    // vectorFieldBuffer[idx] =  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    vectorFieldBuffer[idx] = vec4<f32>(applyPhi(index), 1);
+     vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
   //}
 
     var vf = hash(pos.xyz);
 
 
-    vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+    //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-  direction[index] = direction[index] + .01 * vf;
+    direction[index] *= .09;
+
+  direction[index] = direction[index] + .1 * vf;
 
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
 
-  direction[index] *= .9;
 
 
   if (hasCollided(pos.xyz)) {
@@ -1764,7 +1836,7 @@ fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
     return -1;
   }
 
-fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
+fn applyVF0(pos: vec3<f32>, index:u32) -> vec3<f32> {
   ribbon(index);
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
@@ -2357,7 +2429,7 @@ const device = webgpu.device
 let cosCounter = 0
 
 let camera = createCamera({
-  center: [0, 0.0, 0],
+  center: [2, 2.0, 2],
   damping: 0,
   noScroll: true,
   renderOnDirty: true,
@@ -2375,8 +2447,9 @@ function getCameraViewProjMatrix() {
     model,
     1,
     vec3.fromValues(
-      Math.sin(0),
-      Math.cos(1.5),
+      0,
+      Math.sin(1.5),
+      Math.cos(-1.5),
       0
     )
   );
@@ -2534,7 +2607,9 @@ function makeDrawCall (buffer, drawDescriptor) {
 
   
 
-  vsOut.position = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix *
+  vsOut.position = cam.projectionMatrix *
+  cam.viewMatrix  * 
+  cam.modelMatrix *
  
   
    vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
