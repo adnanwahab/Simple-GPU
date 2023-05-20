@@ -1606,7 +1606,6 @@ fn changeAcceleration () -> f32{
 }
 
 fn createVectorField(index: u32) -> vec3<f32> {
-var z = vectorFieldBuffer[index];
 var pos = posBuffer[index];
 var dir= direction[index];
 
@@ -1621,8 +1620,17 @@ var groupIndex = groupBuffer[index];
 var magnets = array<vec3<f32>,3>();
 //return other.xyz;
 
-let g = groupIndex / 1e6;
-return 2 * vec3<f32>(g *  pos.z * pos.x * pos.y ,
+var g = groupIndex / 1e5;
+//g = 1;
+
+// return vec3<f32>(
+//   sin(g), cos(g), tan(g)
+// );
+var x = pos.x;
+var y = pos.y;
+var z = pos.z;
+return  distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
+return vec3<f32>(g *  pos.z * pos.x * pos.y ,
   length(dir) * g * pos.z * -pos.x,
    1 / length(pos.xy));
 
@@ -1705,7 +1713,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
-     vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    // vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
     vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
   //}
 
@@ -1714,7 +1722,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
     //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-    direction[index] *= .09;
+    direction[index] *= .1; //changeme
 
   direction[index] = direction[index] + .1 * vf;
 
@@ -1724,7 +1732,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
-    direction[index] = vec3<f32>(0.);
+    //direction[index] = vec3<f32>(0.);
   }
 
 
