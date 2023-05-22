@@ -1812,7 +1812,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
     ribbon(index);
-     vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+     vectorFieldBuffer[index] +=  10 *vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
     //vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
   //}
 
@@ -1821,7 +1821,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
     //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-    direction[index] *= .1; //changeme
+    direction[index] *= 0.; //changeme
 
   direction[index] = direction[index] + .1 * vf;
 
@@ -1948,14 +1948,27 @@ fn applyVF0(pos: vec3<f32>, index:u32) -> vec3<f32> {
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
   let idx = hashPosition(pos);
+  if (length(direction[index]) == 0.) {
+    direction[index] = vec3<f32>(0, 0, -1);
+  }
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
 
-  var vf = vectorFieldBuffer[idx];
+//  var vf = vectorFieldBuffer[idx].xyz;
+var vf = hash(pos.xyz);
+
   direction[index] = vec3<f32>(0.);
 
-  direction[index] = direction[index] + .001 * vf.xyz;
+  direction[index] = direction[index] + .01 * vf.xyz; //1766
   ribbon(index);
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+
+
+  direction[index] = direction[index] + .001 * vf;
+        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+
+  if (length(direction[index]) == 0.) {
+    direction[index] = vec3<f32>(0, 0, -1);
+  }
 var bounds = 10.;
 
 var z = vectorFieldBuffer[index];
@@ -1968,28 +1981,28 @@ var z5 = vectorFieldBuffer2[index];
 var z6 = groupBuffer[index];
 
    if pos.x > bounds {
-    posBuffer[index].x = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
    if pos.y > bounds {
-    posBuffer[index].y = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
    if pos.z < -bounds {
-    posBuffer[index].z = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
    if pos.x < -bounds {
-    posBuffer[index].x = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
    if pos.y < -bounds {
-    posBuffer[index].y = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
    if pos.z > bounds {
-    posBuffer[index].z = 0.;
-   }
+    posBuffer[index] = vec4<f32>(0.);
+}
 
   return vec3<f32>(1.);
 }
