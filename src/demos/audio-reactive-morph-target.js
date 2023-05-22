@@ -181,7 +181,10 @@ function length2 (p) {
 
 let makeVectorField = makeVectorField4
 let result = []
+let cache = makeVectorField1()
 let pickVF = function () {
+  return cache
+
   let list = [
     //keeptrying
    //test999,
@@ -193,13 +196,12 @@ let pickVF = function () {
     //   makeVectorField4,
     //   makeVectorField5,//needs improvement  // spiral grid
       // makeVectorField8, //good- make better
-      makeVectorField1, 
+      //makeVectorField1, 
   ]; //make these better
 //stream3, DELETE ME
   let idx = (Math.random() * list.length) | 0 
   let ret =  list[0]()
 
-  return ret
 }
 
 function keeptrying () {
@@ -838,6 +840,7 @@ makeMagnets()
 
 let d = Date.now()
 function makeVectorField1() {
+  return []
   magnets.forEach(m => {
 //    let dist = 
 let e = d - Date.now()
@@ -1725,8 +1728,6 @@ if (otherPick < 5) {
     
     //    return coolShards + coolDist;
 }
-
-
 
 
 
