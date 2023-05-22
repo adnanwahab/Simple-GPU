@@ -1605,6 +1605,24 @@ fn changeAcceleration () -> f32{
   return -1;
 }
 
+
+fn sunkist (pos: vec3<f32>) -> vec3<f32> {
+    var x = pos.x;
+    
+    //take the determinant of a matrix defined by 8 points outside of screen
+    //determinant = sum of vectors within matrix
+    //multiply x by determinant 
+    //divide y by determinant
+    //exponentiate z by determinant
+
+    //to draw a curve
+    //add an increasing value to x
+    //do a spiral
+
+
+    return 10. * pos.xyz * pos.zyx;
+}
+
 fn createVectorField(index: u32) -> vec3<f32> {
 var pos = posBuffer[index];
 var dir= direction[index];
@@ -1631,6 +1649,8 @@ var y = pos.y;
 var z = pos.z;
 
 
+//return sunkist(pos.xyz);
+
 var pick = uniforms.time % 10;
 var otherPick = groupIndex % 10;
 
@@ -1644,7 +1664,7 @@ var otherPick = groupIndex % 10;
 //     pos.z, pos.y, pos.x
 // );
 
-var theta = atan2(y,x);
+var theta = atan2(pos.y, pos.x);
 var coef = 1.;
 //coef = otherPick;
 //distance to corner +
@@ -1654,16 +1674,47 @@ var coef = 1.;
 // } else {
 //     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
 // }
-return vec3<f32>(y, -x, 0) +
-vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
-+ .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
-pos.y, sin(pos.z * abs(pos.x))
-) * (3. - pos.z);
 
-if (otherPick < 11) {
-    return 3 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
-    pos.y, sin(pos.z * abs(pos.x))
-   ) * (3. - pos.z);
+
+var t = uniforms.time * .001;
+//reflect(pos.xyz, vec3<f32>(sin(t),cos(t),tan(t)))).
+var reft = reflect(pos.xyz, vec3<f32>(sin(t),cos(t),tan(t)));
+// var x = dot(reft, reft);
+// var y = cos(theta);
+// var z = x - y;
+
+
+// var x  = reft.x;
+// var y = reft.y;
+// var z = reft.z;
+
+//make up a function like curl noise that doesnt use any other functions
+// +, *. -. and / are allowed. exponentiation is allowed
+//return vec3<f32>(x, y, z);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// return vec3<f32>(y, -x, 0) +
+// vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
+// + .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+// pos.y, sin(pos.z * abs(pos.x))
+// ) * (3. - pos.z);
+
+if (otherPick < 5) {
+//     return 1 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+//     pos.y, sin(pos.z * abs(pos.x))
+//    ) * (3. - pos.z);
 } else {
     var coolDist = distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
 
@@ -1672,7 +1723,7 @@ if (otherPick < 11) {
       length(dir) * g * pos.z * -pos.x,
        1 / length(pos.xy));
     
-       return coolShards + coolDist;
+    //    return coolShards + coolDist;
 }
 
 
@@ -1680,12 +1731,12 @@ if (otherPick < 11) {
 
 
 
-return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
-  -pos.x + sin(uniforms.time),
-   1 / length(pos.xy));
+// return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
+//   -pos.x + sin(uniforms.time),
+//    1 / length(pos.xy));
 
 
-return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
+// return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
 
 // return  vec3<f32>(
 //   pos.x / pos.y, pos.y / pos.z, pos.z / pos.x
@@ -1706,9 +1757,9 @@ return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
 
 
 
-return  vec3<f32>(
-  2 * pos.y,  pos.z, sqrt(pos.x)
-);
+// return  vec3<f32>(
+//   2 * pos.y,  pos.z, sqrt(pos.x)
+// );
 
 return vec3<f32>(
   pos.y * pos.y, -5 * pos.x, sin(1. / pos.z)
@@ -1759,8 +1810,9 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
-    // vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
+    ribbon(index);
+     vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    //vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
   //}
 
     var vf = hash(pos.xyz);
@@ -1987,11 +2039,14 @@ fn dragon (index: u32) -> f32 {
       //applyMagnets(pos.xyz);
       var r = reset[index];
       //runAlongRoute(pos.xyz, f32(index));
-      applyVF(pos.xyz, index);
+      //applyVF(pos.xyz, index);
 
       let t = uniforms.time;
       var g = groupBuffer[index];
   
+
+      applyVF0(pos.xyz, index);
+
      distancetraveled[index] += 1.;
       var n = groupBuffer[index];
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
