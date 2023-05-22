@@ -1629,10 +1629,56 @@ var g = groupIndex / 1e5;
 var x = pos.x;
 var y = pos.y;
 var z = pos.z;
-return  distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
-return vec3<f32>(g *  pos.z * pos.x * pos.y ,
-  length(dir) * g * pos.z * -pos.x,
-   1 / length(pos.xy));
+
+
+var pick = uniforms.time % 10;
+var otherPick = groupIndex % 10;
+
+//know  that it looks cool
+
+// return groupIndex * vec3<f32>(
+//     x,y,z
+// );
+
+// return vec3<f32>(
+//     pos.z, pos.y, pos.x
+// );
+
+var theta = atan2(y,x);
+var coef = 1.;
+//coef = otherPick;
+//distance to corner +
+// if (otherPick < 5){
+//     return vec3<f32>(y, -x, 0);
+
+// } else {
+//     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
+// }
+return vec3<f32>(y, -x, 0) +
+vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
++ .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+pos.y, sin(pos.z * abs(pos.x))
+) * (3. - pos.z);
+
+if (otherPick < 11) {
+    return 3 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+    pos.y, sin(pos.z * abs(pos.x))
+   ) * (3. - pos.z);
+} else {
+    var coolDist = distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
+
+
+    var coolShards = vec3<f32>(g *  pos.z * pos.x * pos.y ,
+      length(dir) * g * pos.z * -pos.x,
+       1 / length(pos.xy));
+    
+       return coolShards + coolDist;
+}
+
+
+
+
+
 
 return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
   -pos.x + sin(uniforms.time),
@@ -1732,7 +1778,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
-    //direction[index] = vec3<f32>(0.);
+    direction[index] = vec3<f32>(0.);
   }
 
 
