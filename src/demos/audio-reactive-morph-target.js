@@ -1100,6 +1100,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
   }
 
   fn hashPosition(pos: vec3<f32>) ->  i32{
+    
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
@@ -1621,6 +1622,15 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   var z = pos.z;
 
 
+  // return (1 - dir) * vec3<f32>(
+  //   y,-x,0 
+  // );
+
+  //return groupIndex * vec3<f32>(y, -x, 0);
+
+  return  (z * (z / 1.5)) * vec3<f32>(
+    y,-x,0 
+  );
 
   return (y * (y / 1.5)) * vec3<f32>(
     y,-x,0 
@@ -1657,7 +1667,7 @@ var other = vectorFieldBuffer2[index];
 var groupIndex = groupBuffer[index];
 
 
-  return vectorFieldCreator(index);
+  //return vectorFieldCreator(index);
 
 
 
@@ -1719,7 +1729,7 @@ var i = f32(index);
 // );
 
 var theta = atan2(y,x);
-var coef = 1.;
+
 //coef = otherPick;
 //distance to corner +
 // if (otherPick < 5){
@@ -1733,26 +1743,38 @@ var coef = 1.;
 
 
 
+// return vec3<f32>(y, -x, 0) +
+// vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
+// + .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+// pos.y, sin(pos.z * abs(pos.x))
+// );
 
-return vec3<f32>(y, -x, 0) +
-vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
-+ .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
-pos.y, sin(pos.z * abs(pos.x))
-) * (3. - pos.z);
 
-if (otherPick < 11) {
-    return 3 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+var coef = 4.;// + sin(uniforms.time * .001);
+
+var noise = fract(uniforms.time  * .0001);
+
+var x1 = noise * (cos(theta * coef));
+var y1 = noise * (sin(theta * coef));
+var z1 = sin(pos.z * abs(pos.x)) + uniforms.time * (groupIndex / 1e8);
+if (distance(pos.xyz, vec3<f32>(0.)) < .1) { return vec3<f32>(x * x, y * y, z * z);} 
+return noise * 10. * vec3<f32>(x1, y1, .0001 * z1);
+
+
+if (otherPick < -1) {
+    return 1 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
     pos.y, sin(pos.z * abs(pos.x))
-   ) * (3. - pos.z);
+   );// * (3. - pos.z);
 } else {
     var coolDist = distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
 
-
-    var coolShards = vec3<f32>(g *  pos.z * pos.x * pos.y ,
-      length(dir) * g * pos.z * -pos.x,
+    g /= 10.;
+    var coolShards = vec3<f32>(pos.z * pos.x * pos.y ,
+      //length(dir) * 
+      pos.z * -pos.x,
        1 / length(pos.xy));
     
-       return coolShards + coolDist;
+       return coolShards;
 }
 
 
@@ -1856,10 +1878,10 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
 
 
-  // if (hasCollided(pos.xyz)) {
-  //   posBuffer[index] = reset[index];
-  //   direction[index] = vec3<f32>(0.);
-  // }
+  if (hasCollided(pos.xyz)) {
+    posBuffer[index] = reset[index];
+    direction[index] = vec3<f32>(0.);
+  }
 
 
   return -1;
@@ -2862,3 +2884,8 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
 
 }
 morph()
+
+//working hard = only working hard if you have access to knowledge + your own tools and abstractions and data
+//typging without any thing = wasted energy and life and time ZZZzz
+//demo has to be best demo on internet
+//no one wants to jelp you, they just want you to persevere
