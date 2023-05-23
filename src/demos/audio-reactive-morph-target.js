@@ -1,5 +1,5 @@
 //better algorithm for vector field 
-
+//good attempt
 
 //make particles larger based distance to camera 
 //color cycling looks cool
@@ -19,7 +19,6 @@ let {cos, sin, } = Math
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
-import bunny from 'bunny'
 import { mat4, vec3 } from 'gl-matrix'
 import simpleWebgpuInit from '../../lib/main';
 import utils from '../../lib/utils';
@@ -181,9 +180,11 @@ function length2 (p) {
 
 let makeVectorField = makeVectorField4
 let result = []
+let cache = keeptrying()
 let pickVF = function () {
+  return cache;
   let list = [
-    //keeptrying
+    keeptrying,
    //test999,
       //magnet, 
     //   makeVectorField2,
@@ -193,7 +194,7 @@ let pickVF = function () {
     //   makeVectorField4,
     //   makeVectorField5,//needs improvement  // spiral grid
       // makeVectorField8, //good- make better
-      makeVectorField1, 
+      //makeVectorField1, 
   ]; //make these better
 //stream3, DELETE ME
   let idx = (Math.random() * list.length) | 0 
@@ -814,9 +815,9 @@ function findPoint(d) {
   return [result[index], index, result]
 }
 
-let magnets
+
 function makeMagnets () {
-   magnets = []
+  let magnets = []
 for (let i = 0; i < 5; i++) {
   magnets.push([makeRand(), makeRand(), makeRand()])
   if (i < 1)
@@ -1605,7 +1606,48 @@ fn changeAcceleration () -> f32{
   return -1;
 }
 
+
+
+fn vectorFieldCreator(index: u32) -> vec3<f32> {
+  var pos = posBuffer[index];
+  var dir= direction[index];
+  
+  var soFar = distancetraveled[index];
+  var reset = reset[index];
+  var other = vectorFieldBuffer2[index];
+  var groupIndex = groupBuffer[index];
+  var x = pos.x;
+  var y = pos.y;
+  var z = pos.z;
+
+
+
+  return (y * (y / 1.5)) * vec3<f32>(
+    y,-x,0 
+  );
+
+
+  return (z * (z / 1.5)) * vec3<f32>(
+    0,z,-y 
+  );
+
+
+  return 10 * vec3<f32>(
+    0,z,-y 
+  );
+
+  //return vec3<f32>(10 * y * sin(uniforms.time * .1), dot(dir, dir) ,0 );
+}
+
 fn createVectorField(index: u32) -> vec3<f32> {
+
+
+
+
+
+
+
+
 var pos = posBuffer[index];
 var dir= direction[index];
 
@@ -1615,6 +1657,34 @@ var other = vectorFieldBuffer2[index];
 var groupIndex = groupBuffer[index];
 
 
+  return vectorFieldCreator(index);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// var x1 = cos(groupIndex);
+// var y1 = sin(groupIndex);
+
+//var y = pos.y;
 
 
 var magnets = array<vec3<f32>,3>();
@@ -1641,7 +1711,11 @@ var otherPick = groupIndex % 10;
 // );
 
 // return vec3<f32>(
-//     pos.z, pos.y, pos.x
+//     pos.x, pos.y, pos.z
+// );
+var i = f32(index);
+// return vec3<f32>(
+//   z , 0, x
 // );
 
 var theta = atan2(y,x);
@@ -1654,6 +1728,12 @@ var coef = 1.;
 // } else {
 //     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
 // }
+
+
+
+
+
+
 return vec3<f32>(y, -x, 0) +
 vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
 + .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
@@ -1776,10 +1856,10 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
 
 
-  if (hasCollided(pos.xyz)) {
-    posBuffer[index] = reset[index];
-    direction[index] = vec3<f32>(0.);
-  }
+  // if (hasCollided(pos.xyz)) {
+  //   posBuffer[index] = reset[index];
+  //   direction[index] = vec3<f32>(0.);
+  // }
 
 
   return -1;
@@ -2386,9 +2466,6 @@ function writeBuffer (device, buffer, array) {
   device.queue.writeBuffer(device, 0, buffer, 0, new Float32Array(16));
 }
 
-
-
-
 if (drawShapes)
 list.set(pointBuffer.slice(0, pointBufferCount) )
 
@@ -2396,7 +2473,6 @@ let happyBear = makeBuffer(list, 0, 'bear')
 
 let vf1 =  pickVF(), vf2 = pickVF()
 
-const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
 computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
 const blend = {
   color: {
@@ -2475,7 +2551,6 @@ async function basic () {
   //setInterval(vfPicker, 30000)
   drawScreen = makeDrawCall(happyBear, drawDescriptor) 
 
-shapes.push(posBuffer)
 shapes.push(dragonBuffer)
 
 const device = webgpu.device
