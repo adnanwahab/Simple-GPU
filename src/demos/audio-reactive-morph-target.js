@@ -1650,15 +1650,17 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
 }
 
 fn createVectorField(index: u32) -> vec3<f32> {
+  var pos = posBuffer[index];
+
+
+  // return vec3<f32>(
+  //   .1 * reflect(pos, vec4<f32>(0,0,0, 0)).xyz
+  // );
 
 
 
 
 
-
-
-
-var pos = posBuffer[index];
 var dir= direction[index];
 
 var soFar = distancetraveled[index];
@@ -1669,7 +1671,18 @@ var groupIndex = groupBuffer[index];
 
   //return vectorFieldCreator(index);
 
+  var x = pos.x;
+  var y = pos.y;
+  var z = pos.z;
 
+
+  var theta = atan2(y,x);
+  theta += 1.5;
+//   return .1 * vec3<f32>(
+//  pow(y, .5) + y ,
+//  -pow(x, .5) + x,
+//     0, 
+//   );
 
 
 
@@ -1706,9 +1719,7 @@ var g = groupIndex / 1e5;
 // return vec3<f32>(
 //   sin(g), cos(g), tan(g)
 // );
-var x = pos.x;
-var y = pos.y;
-var z = pos.z;
+
 
 
 var pick = uniforms.time % 10;
@@ -1727,19 +1738,20 @@ var i = f32(index);
 // return vec3<f32>(
 //   z , 0, x
 // );
+var coef = 4.;// + sin(uniforms.time * .001);
 
-var theta = atan2(y,x);
 
 //coef = otherPick;
 //distance to corner +
-// if (otherPick < 5){
-//     return vec3<f32>(y, -x, 0);
+if (otherPick < 5){
+    return vec3<f32>(y, -x, 0);
 
-// } else {
-//     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
-// }
+} else {
+    return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
+}
 
-
+//cross 
+//sdf flow 
 
 
 
@@ -1750,7 +1762,6 @@ var theta = atan2(y,x);
 // );
 
 
-var coef = 4.;// + sin(uniforms.time * .001);
 
 var noise = fract(uniforms.time  * .0001);
 
@@ -1870,7 +1881,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
     //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-    direction[index] *= .1; //changeme
+    direction[index] *= .9; //changeme
 
   direction[index] = direction[index] + .1 * vf;
 
@@ -1993,19 +2004,19 @@ fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
   }
 
 fn applyVF0(pos: vec3<f32>, index:u32) -> vec3<f32> {
-  ribbon(index);
+  //ribbon(index);
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
-  let idx = hashPosition(pos);
+  let idx = hashPosition(pos * .1);
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
 
   var vf = vectorFieldBuffer[idx];
   direction[index] = vec3<f32>(0.);
 
   direction[index] = direction[index] + .001 * vf.xyz;
-  ribbon(index);
+  //ribbon(index);
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-var bounds = 10.;
+var bounds = 3.;
 
 var z = vectorFieldBuffer[index];
 var z1 = posBuffer[index];
@@ -2017,27 +2028,27 @@ var z5 = vectorFieldBuffer2[index];
 var z6 = groupBuffer[index];
 
    if pos.x > bounds {
-    posBuffer[index].x = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
    if pos.y > bounds {
-    posBuffer[index].y = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
    if pos.z < -bounds {
-    posBuffer[index].z = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
    if pos.x < -bounds {
-    posBuffer[index].x = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
    if pos.y < -bounds {
-    posBuffer[index].y = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
    if pos.z > bounds {
-    posBuffer[index].z = 0.;
+    posBuffer[index] = vec4<f32>(0.);
    }
 
   return vec3<f32>(1.);
@@ -2089,7 +2100,7 @@ fn dragon (index: u32) -> f32 {
       //applyMagnets(pos.xyz);
       var r = reset[index];
       //runAlongRoute(pos.xyz, f32(index));
-      applyVF(pos.xyz, index);
+      applyVF0(pos.xyz, index);
 
       let t = uniforms.time;
       var g = groupBuffer[index];
