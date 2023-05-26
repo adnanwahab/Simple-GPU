@@ -1,3 +1,4 @@
+//streak
 export const  demo = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -651,24 +652,34 @@ var x = pos.x;
 var y = pos.y;
 var z = pos.z;
 
+var x5 = x * x;
 
 
+//+x +.25x 0 +.25x +x
+//x5 
+
+var y6 = x5 / y;
+//
+
+var z6 = y6 / x5;
 
 
+// return vec3<f32>(
+//     x5, y6, z6
+// );  
 
-return 
-
-groupIndex / 1e6 * 
-cross(vec3<f32>(
-     x, 
-    y,
-     z
-),  vec3<f32>(sin(uniforms.time * .001),cos(uniforms.time * .001),cos(uniforms.time * .01))
+// attenuation rate in w slot which is usually for camera transforms 
 
 
-);
+// return cross(vec3<f32>(
+//      x, 
+//     y,
+//      z
+// ),  vec3<f32>(sin(uniforms.time * .001),cos(uniforms.time * .001),cos(uniforms.time * .01))
+//  );
 
-
+//16 cool vector fields - acting on 8 regions - or 8 time slices 
+//reflections + post processing = done by monday deterministic - fun - cool- differential equations for fire and rainbow fire and smoke and 
 
   //return vectorFieldCreator(index);
 
@@ -742,15 +753,21 @@ var coef = 4.;// + sin(uniforms.time * .001);
 
 //coef = otherPick;
 //distance to corner +
-if (otherPick < 5){
-    return vec3<f32>(y, -x, 0);
 
-} else {
-    return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
-}
 
-//cross 
-//sdf flow 
+var x3 = x / y;
+var y3 = x / y;
+var z3 = x / x;
+
+//return vec3<f32>(x3, y3, z3 );
+
+
+// if (otherPick < 5){
+//     return vec3<f32>(y, -x, 0);
+
+// } else {
+//     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
+// }
 
 
 
@@ -767,9 +784,16 @@ var noise = fract(uniforms.time  * .0001);
 var x1 = noise * (cos(theta * coef));
 var y1 = noise * (sin(theta * coef));
 var z1 = sin(pos.z * abs(pos.x)) + uniforms.time * (groupIndex / 1e8);
-if (distance(pos.xyz, vec3<f32>(0.)) < .1) { return vec3<f32>(x * x, y * y, z * z);} 
-return noise * 10. * vec3<f32>(x1, y1, .0001 * z1);
+// if (distance(pos.xyz, vec3<f32>(0.)) < .1) { return vec3<f32>(x * x, y * y, z * z);} 
+// return noise * 10. * vec3<f32>(x1, y1, .0001 * z1);
+//no experimentation
 
+
+let j = 0.;
+let k = 0.;
+let m = 0.;
+
+return vec3<f32>(j, k, m);
 
 if (otherPick < -1) {
     return 1 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
@@ -1089,7 +1113,77 @@ fn dragon (index: u32) -> f32 {
   return -1;
 }
 
+fn trySpiral(idx:u32) -> f32{
+    var index = idx;
+    var z = vectorFieldBuffer[index];
+var z1 = posBuffer[index];
+var z2 = direction[index];
 
+var z3 = distancetraveled[index];
+var z4 = reset[index];
+var z5 = vectorFieldBuffer2[index];
+var z6 = groupBuffer[index];
+
+    var dt = distancetraveled[idx];
+    var pos = posBuffer[idx];
+    var theta = atan2(pos.y, pos.x);
+    distancetraveled[idx] += 1.;
+    //uniforms.time / 3000000
+    //.001 * 
+    
+    // if (idx > 256 ){
+    //       direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    // } else {
+    //   let radius = distance(vec2<f32>(0,0), pos.xy);
+    // direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    // }
+
+
+//rotate x, y , z  then -s -y - z
+
+    if dt > 10 {
+        direction[idx] = vec3<f32>(0, 1, 0);
+    }
+
+    // if dt > 10 {
+    //     direction[idx] = vec3<f32>(0, 1, 0);
+    //     direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    // }
+
+    if dt > 20 {
+        direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
+        distancetraveled[idx] = 1.;
+    }
+
+  
+
+    posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
+
+    return -1;
+}
+
+fn drawLines(index: u32) {
+    var p = posBuffer[index];
+    var x = p.x;
+    var y = p.y;
+    var z = p.z;
+    var w =1.;
+    var z6 = groupBuffer[index];
+
+    //for (var i = 0; i< 100; i++ ) {
+        posBuffer[index] = vec4<f32>(
+            .1, .1,  .0, 0.
+         );
+    //}
+
+    var z0 = vectorFieldBuffer[index];
+    var z1 = posBuffer[index];
+    var z2 = direction[index];
+    var z3 = distancetraveled[index];
+    var z4 = reset[index];
+    var z5 = vectorFieldBuffer2[index];
+   
+}
 
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -1099,8 +1193,11 @@ fn dragon (index: u32) -> f32 {
       //applyMagnets(pos.xyz);
       var r = reset[index];
       //runAlongRoute(pos.xyz, f32(index));
-      applyVF(pos.xyz, index);
+      //applyVF(pos.xyz, index);
+      
+      //trySpiral(index);
 
+      drawLines(index);
       let t = uniforms.time;
       var g = groupBuffer[index];
   
