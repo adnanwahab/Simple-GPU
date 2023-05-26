@@ -1170,11 +1170,22 @@ fn drawLines(index: u32) {
     var w =1.;
     var z6 = groupBuffer[index];
 
-    //for (var i = 0; i< 100; i++ ) {
-        posBuffer[index] = vec4<f32>(
-            .1, .1,  .0, 0.
+
+    //no state variables
+    //no trig functions
+    //y slopes at increasing rate 
+    //y = mx + b
+    //m has to be power, sqrt, 
+    //x = 0, 1,2, 3
+    //y = infiniity, 1, 1/2, 1/3
+    var test = vec3<f32>(0,0,0);
+    for (var i = 0; i < 1000; i++){
+        var yy = f32(i) / 1000.;
+        posBuffer[index + u32(i)] = vec4<f32>(
+            f32(i) / 1000., 1/yy,  .0, 0.
          );
-    //}
+        }
+
 
     var z0 = vectorFieldBuffer[index];
     var z1 = posBuffer[index];
@@ -1193,7 +1204,7 @@ fn drawLines(index: u32) {
       //applyMagnets(pos.xyz);
       var r = reset[index];
       //runAlongRoute(pos.xyz, f32(index));
-      //applyVF(pos.xyz, index);
+      applyVF(pos.xyz, index);
       
       //trySpiral(index);
 

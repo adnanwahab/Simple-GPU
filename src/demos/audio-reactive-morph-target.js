@@ -1203,16 +1203,16 @@ let triangle = function (origin, side) {
 
   for (let i =0; i< 100; i++) {
     //change to concentric triangles + add rotation euler angles 
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  //   rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+  // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   }
 
 
@@ -1666,7 +1666,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   vsOut.position = 
 
   c * 
-   vec4<f32>(inPosition.xy + (.1) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
