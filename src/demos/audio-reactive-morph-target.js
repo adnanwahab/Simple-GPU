@@ -814,6 +814,7 @@ function makeVectorFieldGeneric2D(cb, buffer ) {
 
 function makeVectorFieldGeneric(cb, buffer ) {
   var result = buffer || []
+
   for (let i = 0; i < width; i++) {
     for (let j = 0; j < height; j++) {
       for (let k = 0; k < zspace; k++) {

@@ -62,7 +62,7 @@ export const  demo = `
   fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
     var radius = distance(pos, mag);
     var theta = atan(pos.y / pos.x);
-    return 1;
+    return 1; 
   }
 
   fn applyMagnets(pos: vec3<f32>) -> f32 {
@@ -675,10 +675,15 @@ fn createVectorField(index: u32) -> vec3<f32> {
         var other = vectorFieldBuffer2[index];
         var groupIndex = groupBuffer[index];
         var pos = posBuffer[index];
-        var i = 0;
-        var j = 0;
-        
-        return vec3<f32>(i, j, 0);
+
+        var a1 = distance(pos.xyz, vec3<f32>(0));
+        // var a2 = distance(pos.xyz, vec3<f32>(1,1,1,));
+        var a3 = distance(pos.xyz, pos.zxy);
+        // vf is cool - w/o any functions 
+        var i = 10.;
+        var j = 0.;
+     
+        return vec3<f32>(i,0, 0);
     }
 
 fn createVectorField2(index: u32) -> vec3<f32> {
@@ -1070,15 +1075,15 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
     direction[index] *= .1; //changeme
 
-  direction[index] = direction[index] + .1 * vf;
+  direction[index] = direction[index] + .05 * vf;
 
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
 
 
 
   if (hasCollided(pos.xyz)) {
-    posBuffer[index] = reset[index];
-    direction[index] = vec3<f32>(0.);
+    posBuffer[index] = reset[index];//subtract the difference from the component that has gone over
+    //direction[index] = vec3<f32>(0.);
   }
 
 
@@ -1215,9 +1220,9 @@ var z5 = vectorFieldBuffer2[index];
 var z6 = groupBuffer[index];
 
 
-if hasCollided(pos) {
-    posBuffer[index] = vec4<f32>(0.);
-}
+// if hasCollided(pos) {
+//     posBuffer[index] = vec4<f32>(0.);
+// }
 
 //    if pos.x > bounds {
 //     posBuffer[index] = vec4<f32>(0.);
@@ -1417,11 +1422,17 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
     return false;
   }
 
+
+  fn docoolstuff (index:u32) {
+//    posBuffer[index]
+  }
+
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+        let index: u32 = GlobalInvocationID.x;
 
+      docoolstuff(index);
 
-      let index: u32 = GlobalInvocationID.x;
       solveDifficultProblem(index);
       var pos = posBuffer[index];
       //applyMagnets(pos.xyz);
