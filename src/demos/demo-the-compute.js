@@ -644,18 +644,26 @@ fn createVectorField(index: u32) -> vec3<f32> {
     //soh - sin opp hyp
     //toa - opposite / adjacent - 4/5
 
-    return vec3<f32>(
-
-    );
+    // return .1 * vec3<f32>(
+    //     sin(groupIndex / 1e6 * 6.14),cos(groupIndex/1e6 * 6.1415),0
+    // );
 //    return vec3<f32>(,z,-y);
 }
 
-fn tangent (y:f32, x:f32) -> f32 {
-    var unitCircle = array<f32, 8>;
-    var hypotenuse = sqrt(x * x + y * y);
+// fn tangent (y:f32, x:f32) -> f32 {
+//     var unitCircle = array<vec2<f32>, 8>;
 
-    return unitCircle[hypotenuse / 8  | 0];
-}
+
+//     unitCircle[0] = vec2<f32>(1, 0);
+//     var hypotenuse = sqrt(x * x + y * y);
+
+//     let arcDistance = 0;
+//     let less = floor(arcDistance);
+//     let on = ceiling(arcDistance);
+//     //arc distance of hypotenuse
+
+//     return unitCircle[];
+// }
 
 // fn createVectorField(index: u32) -> vec3<f32> {
 //     var dir= direction[index];
