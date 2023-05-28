@@ -640,7 +640,21 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var i = 0.;
     var j = 0.;
 
-    return 1. * vec3<f32>(pos.y, -pos.x, 10 * sin(pos.y));
+
+    //soh - sin opp hyp
+    //toa - opposite / adjacent - 4/5
+
+    return vec3<f32>(
+
+    );
+//    return vec3<f32>(,z,-y);
+}
+
+fn tangent (y:f32, x:f32) -> f32 {
+    var unitCircle = array<f32, 8>;
+    var hypotenuse = sqrt(x * x + y * y);
+
+    return unitCircle[hypotenuse / 8  | 0];
 }
 
 // fn createVectorField(index: u32) -> vec3<f32> {
