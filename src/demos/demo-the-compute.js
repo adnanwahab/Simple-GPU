@@ -633,6 +633,21 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   //return vec3<f32>(10 * y * sin(uniforms.time * .1), dot(dir, dir) ,0 );
 }
 
+fn createVectorField(index: u32) -> vec3<f32> {
+    var dir= direction[index];
+    var soFar = distancetraveled[index];
+    var reset = reset[index];
+    var other = vectorFieldBuffer2[index];
+    var groupIndex = groupBuffer[index];
+    var pos = posBuffer[index];
+ 
+    var i = 0.;
+    var j = 0.;
+
+    return 100. * vec3<f32>(pos.y, -pos.x, sin(pos.x *10));
+}
+
+
 // fn createVectorField(index: u32) -> vec3<f32> {
 //     var dir= direction[index];
 //     var soFar = distancetraveled[index];
@@ -645,8 +660,8 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
 //     var theta = atan2(pos.y, pos.x) * 1;
 //     var i = cos(theta) - pos.x;
 //     var j = sin(theta) - pos.y;
-// //    var k = sin(j * 3.1415);
-//     var radius = distance(pos.xyz, vec3<f32>(0)) * .1;
+//     //var k = sin(j * 3.1415);
+//     var radius = distance(pos.xyz, vec3<f32>(0));
 //     return radius * vec3<f32>(i, j, 0);
 // }
 
@@ -668,23 +683,23 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
 //     return vec3<f32>(i, j, 0);
 // }
 
-fn createVectorField(index: u32) -> vec3<f32> {
-        var dir= direction[index];
-        var soFar = distancetraveled[index];
-        var reset = reset[index];
-        var other = vectorFieldBuffer2[index];
-        var groupIndex = groupBuffer[index];
-        var pos = posBuffer[index];
+// fn createVectorField(index: u32) -> vec3<f32> {
+//         var dir= direction[index];
+//         var soFar = distancetraveled[index];
+//         var reset = reset[index];
+//         var other = vectorFieldBuffer2[index];
+//         var groupIndex = groupBuffer[index];
+//         var pos = posBuffer[index];
 
-        var a1 = distance(pos.xyz, vec3<f32>(0));
-        // var a2 = distance(pos.xyz, vec3<f32>(1,1,1,));
-        var a3 = distance(pos.xyz, pos.zxy);
-        // vf is cool - w/o any functions 
-        var i = 10.;
-        var j = 0.;
+//         var a1 = distance(pos.xyz, vec3<f32>(0));
+//         // var a2 = distance(pos.xyz, vec3<f32>(1,1,1,));
+//         var a3 = distance(pos.xyz, pos.zxy);
+//         // vf is cool - w/o any functions 
+//         var i = 10.;
+//         var j = 0.;
      
-        return vec3<f32>(i,0, 0);
-    }
+//         return vec3<f32>(y,-x, 0);
+//     }
 
 fn createVectorField2(index: u32) -> vec3<f32> {
   var pos = posBuffer[index];
