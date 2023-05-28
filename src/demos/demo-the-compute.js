@@ -1,7 +1,13 @@
-//streak
-//100 hours 
-//1000 lines of code 
-//dragon = hinokami kagura
+// high res vector field  +
+// reflection mapping - 
+// glow post processing -
+// coolness < (what am i missing) - do exactly what they say - consciously, slowly build using high degree of mental effort - to preclculate effect on particle mathematically 
+// no reactivity, no drama, no disobedience, every second of every hour for 2-3 weeks 
+//no lying - i shall not lie
+//better than published research - in one week continuously nonstop
+        //write particle position to vector field ->
+               //for each particle - pick 2 others and orbit around mid points or each other 
+        //change modes based when a certain amount of time has passed.
 export const  demo = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -19,6 +25,26 @@ export const  demo = `
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
     @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
+
+
+    fn surpriseEveryoneWithCoolIdeas(qqq:vec3<f32>) -> vec3<f32> {
+        //draw a circle then xy% start a new circle that is rotated by xy degrees
+        return vec3<f32>(qqq.x-qqq.x, qqq.y-qqq.z, qqq.x - qqq.y);
+    }
+
+
+
+    // fn makeOpportunity() -> f32 {
+    //     var v1 = vec3<f32>(0,2, 3);
+    //     var v2 = vec3<f32>(1,1,1);
+    //     //0 * 1 + 2 * 1 + 3 * 1
+    //     var m = dot(v1, v2);
+    //     //look at all 27 neighboring vectors and make current vector perpendicular to all of them if < sin time> 
+
+
+
+    // }
+
 
   
   fn sfrand () -> f32{
@@ -640,11 +666,47 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var i = 0.;
     var j = 0.;
 
-
+    return vec3<f32>(allIn());
     //soh - sin opp hyp
     //toa - opposite / adjacent - 4/5
 
-   return vec3<f32>(0,0,4);
+//serious means 20 hour work days for as long as it takes
+//400 hours
+    //8 data points - 4 per quadrant because coordinate system changes
+    // return vec3<f32>(
+    //     log(pos.x), 0, 0
+    // );
+//return vec3<f32>(sin(pos.x * 3.14), 0., 0.);
+    //return vec3<f32>((pos.x * 100 % 3)  * (pos.y * 100 % 3));
+    //return vec3<f32>(pos.x * pos.y, 0, 0);
+    //return vec3<f32>(pos.x / pos.y, 0, 0);
+   //return vec3<f32>(pos.x - pos.y, 0, 0);
+}
+
+//render buffer we're trying to teach you that our time has more value than youurs
+//if you waste our time then we wont let you do anything
+//you must work till a window of opportunity arises
+//story of a lifetime 
+//is it all about the story?
+//is a demop really of anything? 
+//then you will work for 100 hours straight without sleeping
+
+
+
+
+fn somethingFromNothing () -> vec3<f32> {
+    var jkl = 92.;
+    var ppp = jkl % 32;
+    var okm = jkl * 123123;
+    var vcf = modf(okm);
+
+
+    //var rty = dot(vec3<f32>(1., 2., 3.), vec3<f32>(4., 3., 2.));
+    return vec3<f32>(vcf.fract, jkl / 10., jkl / 21);
+}
+
+fn allIn() -> vec3<f32> {
+    return vec3<f32>(.1,0,0);
 }
 
 // fn tangent (y:f32, x:f32) -> f32 {
@@ -1332,7 +1394,7 @@ var z6 = groupBuffer[index];
     //.001 * 
     
     // if (idx > 256 ){
-    //       direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
+    //       direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), s`in`(theta * 1.1), 0.);
     // } else {
     //   let radius = distance(vec2<f32>(0,0), pos.xy);
     // direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
@@ -1502,4 +1564,14 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
     }
     
     
+
+
+    fn makeBobTheBuilderTheOnlyThing() -> f32 {
+
+
+
+
+
+        return -1;
+    }
     `
