@@ -1,4 +1,7 @@
 //streak
+//100 hours 
+//1000 lines of code 
+//dragon = hinokami kagura
 export const  demo = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -82,6 +85,9 @@ export const  demo = `
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
+
+
+
     //if (z < .1) {z = .9;}
     
     // 
@@ -604,7 +610,7 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   //   y,-x,0 
   // );
 
-  //return groupIndex * vec3<f32>(y, -x, 0);
+  return groupIndex * vec3<f32>(y, -x, 0);
 
   return  (z * (z / 1.5)) * vec3<f32>(
     y,-x,0 
@@ -628,6 +634,24 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
 }
 
 fn createVectorField(index: u32) -> vec3<f32> {
+    var dir= direction[index];
+    var soFar = distancetraveled[index];
+    var reset = reset[index];
+    var other = vectorFieldBuffer2[index];
+    var groupIndex = groupBuffer[index];
+    var pos = posBuffer[index];
+    //link the indices of 3-4 points and have them travel in clusters or orbit each other, swap places
+    //dont use position
+    var theta = atan2(pos.y, pos.x) * 1;
+    var i = cos(theta) - pos.x;
+    var j = sin(theta) - pos.y;
+//    var k = sin(j * 3.1415);
+    var radius = distance(pos.xyz, vec3<f32>(0)) * .1;
+    return radius * vec3<f32>(i, j, 0);
+}
+
+
+fn createVectorField2(index: u32) -> vec3<f32> {
   var pos = posBuffer[index];
 
 
@@ -635,7 +659,7 @@ fn createVectorField(index: u32) -> vec3<f32> {
 //     .1 * reflect(pos, vec4<f32>(0,0,0, 0)).xyz
 //   );
 
-
+//return vec3<f32>(0.,0., 0.);
 
 
 var dir= direction[index];
@@ -648,28 +672,127 @@ var groupIndex = groupBuffer[index];
 
 var cmu = groupIndex % 3.;
 
-var x = pos.x;
-var y = pos.y;
-var z = pos.z;
 
-var x5 = x * x;
+//terrence tao says 10 tricks is all you need
+//telepaths want a perfect shader thats typed up and from scratch 
+//you dont have a choice, you just have to make it 
+//dont sing or you cant code
+//lost privledges cause didnt do enough work
+//consciously code without making any mistakes - dont want 
+//you were given priveledges and didnt use them well thousands 
+
+//just make 1 shader without functions
+//then make a shader with functions and do it right and try to end it which means no experimentation and iteration- none
+//return vec3<f32>(pos.x - pos.y - pos.z, 0,0);
 
 
-//+x +.25x 0 +.25x +x
-//x5 
+//return vec3<f32>((pos.x - pos.y * pos.y) / pos.z,0,0);
 
-var y6 = x5 / y;
-//
 
-var z6 = y6 / x5;
 
 
 // return vec3<f32>(
-//     x5, y6, z6
-// );  
+//     pos.y / pos.z, -pos.x, 0
+// )  ; 
+
+
+//return vec3<f32>(1, 2, pos.z * pos.y);
+
+
+//left corner  = -2
+//right corner = 0
+// return vec3<f32>(
+//     pos.x - pos.y, 0, 0
+// );
+//divergence
+
+
+
+
+
+
+//yes geometric
+//fire, - simulate plasma differential equation 
+//magnets ?? maybe 
+//please finish this today
+//we want this done today
+//do it right 
+//plan it out in head and comments
+//xyz
+//invent something out of nothing 
+//rotation
+//triplet - each particle looks up the position of 3 linked particles  -- original but not cool
+//cross, dot
+//inverse sqrt 
+//sin, cos, tan
+//index?
+//sdf
+//-distance6
+
+
+
+//
+
+
+
+//produce enough original stuff by monday - wizards are satisifed that data cube level algorithim was created from nothing 
+//then add in like 20 other algorithms from looking stuff up 
+
+//binary stars like stellar bodies 
+//binary stars - orbiting around them
+
+//ternary star systems 
+
+
+//accretion disks like satturn
+
+
+//sphere - orbit along multiple angles - imaginary sphere - decompose sphere in 9, 16 , 25, 100 spheres and change oribts 
+//orbits can be in 6 dimensions and jump from one orbit to another 
+
+//make a buffer that links each point with 3 others - triad graph linkage - invention
+//these 3-4 dots orbit around each other like a quaternary or trinary star system
+//two binary star tuples 
+//we dont like this idea 
+
+
+
+
+//take distance to 4 corners or 8 corners of entire space 
+//turn that distance into a path that the point travels along to reach each one, sorted by least 
+//cancel 
+
+
+//no
+//take dot product to point from center of camera 
+//ricochet light from opposite edge to create velocity - heat of light - light leaves heat signature on light bulb 
+var x = pos.x;
+var y = pos.y;
+var z = pos.z;
+//
+//
+//
+let r = reset[index];
+
+
+//pivot between a  = y,-x, b = z,y,x, c = x,z,y
+var v1 = 2. * sin(uniforms.time * .001);
+var v2 = -2 * cos(uniforms.time * .001);
+
+//so good the aliens did it - 8 pyramid blocks 
+
+//return vec3<f32>(x * y,0,0);
+//return v1 * vec3<f32>(y,-x,0) + 
+//v2 * vec3<f32>(0,z,-y);
+
+//rotate 90degrees
+//reseting the location is good when it goes past the boundaries
+//this looks more cool when it goes past the boundary, so resetting it at different rates is what makes it look cool
+//so the vector field will look most cool when you vary the rebirth location
+
 
 // attenuation rate in w slot which is usually for camera transforms 
-
+//use the previous state of the vector in the vector field to adjust the next iteration somehow 
 
 // return cross(vec3<f32>(
 //      x, 
@@ -779,26 +902,37 @@ var z3 = x / x;
 
 
 
-var noise = fract(uniforms.time  * .0001);
+var noise = 1. + sin(uniforms.time  * .0001);
 
 var x1 = noise * (cos(theta * coef));
 var y1 = noise * (sin(theta * coef));
 var z1 = sin(pos.z * abs(pos.x)) + uniforms.time * (groupIndex / 1e8);
+
+
+//return vec3<f32>(pos.x - pos.z);
+
+
 // if (distance(pos.xyz, vec3<f32>(0.)) < .1) { return vec3<f32>(x * x, y * y, z * z);} 
-// return noise * 10. * vec3<f32>(x1, y1, .0001 * z1);
+// return noise * 10. * vec3<f32>(x1, y1, .0001 * z1); 
+
+//  vec3<f32>(
+//     10. * y,  10. * -x, sin(z) * 10
+// );  
 //no experimentation
 
 
-let j = 0.;
-let k = 0.;
-let m = 0.;
-
+let idx = f32(index);
+let rad = radians(idx );
+let j = 20. * cos(uniforms.time * .001)  * sin(rad);
+let k = 10. *cos(rad) ;
+let m = groupIndex / 1e6 ;
+//* distance(vec3<f32>(0.), pos);
 return vec3<f32>(j, k, m);
 
-if (otherPick < -1) {
+ if (otherPick < 3) {
     return 1 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
     pos.y, sin(pos.z * abs(pos.x))
-   );// * (3. - pos.z);
+   );
 } else {
     var coolDist = distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
 
@@ -816,12 +950,12 @@ if (otherPick < -1) {
 
 
 
-return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
-  -pos.x + sin(uniforms.time),
-   1 / length(pos.xy));
+// return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
+//   -pos.x + sin(uniforms.time),
+//    1 / length(pos.xy));
 
 
-return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
+// return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
 
 // return  vec3<f32>(
 //   pos.x / pos.y, pos.y / pos.z, pos.z / pos.x
@@ -842,27 +976,27 @@ return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
 
 
 
-return  vec3<f32>(
-  2 * pos.y,  pos.z, sqrt(pos.x)
-);
+// return  vec3<f32>(
+//   2 * pos.y,  pos.z, sqrt(pos.x)
+// );
 
-return vec3<f32>(
-  pos.y * pos.y, -5 * pos.x, sin(1. / pos.z)
-);
+// return vec3<f32>(
+//   pos.y * pos.y, -5 * pos.x, sin(1. / pos.z)
+// );
 
-return vec3<f32>(
-  5 * pos.y, -5 * pos.x, sin(1. / pos.z)
-);
+// return vec3<f32>(
+//   5 * pos.y, -5 * pos.x, sin(1. / pos.z)
+// );
 
-return vec3<f32>(
-  5 * pos.y, -5 * pos.x, (1. / pos.z)
-);
+// return vec3<f32>(
+//   5 * pos.y, -5 * pos.x, (1. / pos.z)
+// );
 
 //make a spiral by taking the spiral from earlier and make differeentiation
 
-return vec3<f32>(
-  5 * pos.y, -5 * pos.x,(1. - pos.z)
-);
+// return vec3<f32>(
+//   5 * pos.y, -5 * pos.x,(1. - pos.z)
+// );
 
 
 
@@ -870,17 +1004,17 @@ return vec3<f32>(
 //   5 * pos.y * sin(pos.z * .5), -5 * pos.x * sin(pos.z * .5), pos.z - pos.x
 // );
 
-return vec3<f32>(
-  1,pos.x - pos.z, pos.y - pos.z
-);
+// return vec3<f32>(
+//   1,pos.x - pos.z, pos.y - pos.z
+// );
 
 //distance
-return vec3<f32>(
-  1,pos.x - pos.z, reflect(pos, vec4<f32>(0,0,0, 0)).x
-);
+// return vec3<f32>(
+//   1,pos.x - pos.z, reflect(pos, vec4<f32>(0,0,0, 0)).x
+// );
 
 return vec3<f32>(
-  10 * sin(uniforms.time * .0001), 0, 0
+  10 * sin(uniforms.time * .0001), 0., 0.
 );
 
 //return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
@@ -904,7 +1038,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
     //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-    direction[index] *= .9; //changeme
+    direction[index] *= .1; //changeme
 
   direction[index] = direction[index] + .1 * vf;
 
@@ -1030,7 +1164,7 @@ fn applyVF0(pos: vec3<f32>, index:u32) -> vec3<f32> {
   //ribbon(index);
   var theta = 1. * atan2(pos.y, pos.x);
   var theta2 = atan2(pos.x, pos.z);
-  let idx = hashPosition(pos * .1);
+  let idx = hashPosition(pos);
   vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
 
   var vf = vectorFieldBuffer[idx];
@@ -1039,7 +1173,7 @@ fn applyVF0(pos: vec3<f32>, index:u32) -> vec3<f32> {
   direction[index] = direction[index] + .001 * vf.xyz;
   //ribbon(index);
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-var bounds = 3.;
+var bounds = 10.;
 
 var z = vectorFieldBuffer[index];
 var z1 = posBuffer[index];
@@ -1050,29 +1184,34 @@ var z4 = reset[index];
 var z5 = vectorFieldBuffer2[index];
 var z6 = groupBuffer[index];
 
-   if pos.x > bounds {
-    posBuffer[index] = vec4<f32>(0.);
-   }
 
-   if pos.y > bounds {
+if hasCollided(pos) {
     posBuffer[index] = vec4<f32>(0.);
-   }
+}
 
-   if pos.z < -bounds {
-    posBuffer[index] = vec4<f32>(0.);
-   }
+//    if pos.x > bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
 
-   if pos.x < -bounds {
-    posBuffer[index] = vec4<f32>(0.);
-   }
+//    if pos.y > bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
 
-   if pos.y < -bounds {
-    posBuffer[index] = vec4<f32>(0.);
-   }
+//    if pos.z < -bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
 
-   if pos.z > bounds {
-    posBuffer[index] = vec4<f32>(0.);
-   }
+//    if pos.x < -bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
+
+//    if pos.y < -bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
+
+//    if pos.z > bounds {
+//     posBuffer[index] = vec4<f32>(0.);
+//    }
 
   return vec3<f32>(1.);
 }
@@ -1162,6 +1301,7 @@ var z6 = groupBuffer[index];
     return -1;
 }
 
+
 fn drawLines(index: u32) {
     var p = posBuffer[index];
     var x = p.x;
@@ -1178,11 +1318,13 @@ fn drawLines(index: u32) {
     //m has to be power, sqrt, 
     //x = 0, 1,2, 3
     //y = infiniity, 1, 1/2, 1/3
-    var test = vec3<f32>(0,0,0);
+    //z = pos.x / pos.y
+    // 0 / infinity, 1 / 1, 2 / 1 / 2
+    //x/x
     for (var i = 0; i < 1000; i++){
         var yy = f32(i) / 1000.;
         posBuffer[index + u32(i)] = vec4<f32>(
-            f32(i) / 1000., 1/yy,  .0, 0.
+            f32(i) / 1000.,  x + y,  .0, 0.
          );
         }
 
@@ -1196,10 +1338,61 @@ fn drawLines(index: u32) {
    
 }
 
+fn solveDifficultProblem (index: u32) {
+  
+
+
+    var z0 = vectorFieldBuffer[index];
+    var z1 = posBuffer[index];
+    var z2 = direction[index];
+    var z3 = distancetraveled[index];
+    var z4 = reset[index];
+    var z5 = vectorFieldBuffer2[index];
+    //sphereEvaporate(z1, index);
+
+
+
+    // posBuffer[index] -= vec4<f32>(
+    //     .1 * cos(uniforms.time * .001), .1 * sin(uniforms.time * .001), .1 * sin(uniforms.time * .001), 0
+    //  );
+
+
+
+
+
+    //make points fly around box 
+    //make points swap positions with other point in box infinitely 
+    //make points go toward outside of box and run along the edge
+    //make points fly in a halo or mandala around box 
+    //make points 
+}
+
+fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
+  
+    var idx = f32(index);
+    var radius = idx / 256;
+     //4 / 3 * pow(idx / 256, 3);
+    //circle 
+    posBuffer[index] = vec4<f32>(
+      
+      cos(idx) , idx /2000., 
+      
+      sin(idx), 1.);
+  
+      posBuffer[index].x *= pow(cos(posBuffer[index].y), .5);
+      posBuffer[index].z *= pow(cos(posBuffer[index].y), .5);
+  
+    posBuffer[index].y *= .6;
+  
+    return false;
+  }
+
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
+
       let index: u32 = GlobalInvocationID.x;
+      solveDifficultProblem(index);
       var pos = posBuffer[index];
       //applyMagnets(pos.xyz);
       var r = reset[index];
@@ -1208,7 +1401,7 @@ fn drawLines(index: u32) {
       
       //trySpiral(index);
 
-      drawLines(index);
+      //drawLines(index);
       let t = uniforms.time;
       var g = groupBuffer[index];
   

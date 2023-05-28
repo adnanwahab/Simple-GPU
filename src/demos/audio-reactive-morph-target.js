@@ -137,7 +137,9 @@ function makeBuffer (stuff, flag, label) {
 let pointBuffer = new Float32Array(particlesCount)
 let pointBufferCount = 0
 let list = pointBuffer.slice()
-list = makeGrid().map(d => d)
+list = makeGrid()
+//.map(d => {return [d[0] * d[1], d[1], d[2], d[2]]})
+
 list = new Float32Array(list.flat())
 //list.set(pointBuffer)
 //if (window.writeMode() === 0)
@@ -146,7 +148,6 @@ list = new Float32Array(list.flat())
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
   let stuff = ((i % 1000) / 1e3) 
-  let interval = (Math.sin((stuff)) + 1) / 2.
   let color = d3.rgb( interpolateTurbo(stuff));
   rgb[3*i] = color.r / 255 
   rgb[3*i+1] = color.g / 255
@@ -167,17 +168,66 @@ function getDist(a, b) {
 
 const mouse = [0,0]
 
+
+function fib (n) {
+  if( n  < 2) return n
+  return fib(n-1) + fib(n-2)
+}
+
+function lerp (a, i) {
+  return a - (a * i) / a
+}
+
+//star
+
+function makeAngle(angle) {
+  return lerp ()
+}
+
+function sine(angle) {
+
+}
+function makeChair() {
+  let result = []
+
+
+  let row = 0
+  let x = -1
+  let y = -1
+  let z = -1
+//  let soFar = 0; 
+//cant use multiply loops
+  for (let i = 0; i < 1e6; i++) {
+    let mod = i % 36;
+    let m = 3;
+    x *= mod * m / 1e6;
+    result.push([x,y,z,0])
+  }
+
+  return result;
+}
+
+
+function makeSphere() {
+
+  //for (let i = 0; i < )
+}
+
+
+
 function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
-    return [x * 1, y * 1, z , 1]
+    return [x , y, z , 0]
   })
+  
+  //.filter(d => { return length2(d) < .5 });
 }
 
 let gridBuffer = makeGrid()
 
 function length2 (p) {
-  let [x, y] = p
-  return Math.sqrt(x*x + y*y)
+  let [x, y, z] = p
+  return Math.sqrt(x*x + y*y + z * z)
 }
 
 let makeVectorField = makeVectorField4
@@ -1156,7 +1206,6 @@ function line(a, b) {
   this.points = [];
   this.array = pointBuffer
   this.subdivide = function (resolution) {
-    // dont use the proper technique - bresenhams - cpu rasterizer 
     let {x1, y1, y2, x2}= this;
     let dy = y2 - y1;
     let dx = x2 - x1;
