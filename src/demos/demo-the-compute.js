@@ -81,15 +81,11 @@ export const  demo = `
   }
 
   fn hashPosition(pos: vec3<f32>) ->  i32{
-    
-    var x = (pos.x + 1) / 2.;
-    var y = (1. - (pos.y)) / 2.;
-    var z = (1. - (pos.z)) / 2.;
-
-
+    var x = clamp((pos.x + 1) / 2., 0, 1);
+    var y = clamp((1. - (pos.y)) / 2., 0, 1);
+    var z = clamp((1. - (pos.z)) / 2., 0, 1);
 
     //if (z < .1) {z = .9;}
-    
     // 
     // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
     // + floor(floor(z * 1000) * 1000) * 10
@@ -644,9 +640,8 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var i = 0.;
     var j = 0.;
 
-    return 100. * vec3<f32>(pos.y, -pos.x, sin(pos.x *10));
+    return 1. * vec3<f32>(pos.y, -pos.x, 10 * sin(pos.y));
 }
-
 
 // fn createVectorField(index: u32) -> vec3<f32> {
 //     var dir= direction[index];
@@ -832,7 +827,7 @@ var v2 = -2 * cos(uniforms.time * .001);
 //so good the aliens did it - 8 pyramid blocks 
 
 //return vec3<f32>(x * y,0,0);
-//return v1 * vec3<f32>(y,-x,0) + 
+//return v1 * vec3<f32w>(y,-x,0) + 
 //v2 * vec3<f32>(0,z,-y);
 
 //rotate 90degrees
@@ -1079,7 +1074,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
-    // vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
+    //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
     vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
   //}
 
@@ -1087,14 +1082,11 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
 
 
     //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
-
-    direction[index] *= .1; //changeme
+ direction[index] *= .9; 
 
   direction[index] = direction[index] + .05 * vf;
 
-  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-
-
+  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.);
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];//subtract the difference from the component that has gone over
