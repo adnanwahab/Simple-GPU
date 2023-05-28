@@ -644,10 +644,7 @@ fn createVectorField(index: u32) -> vec3<f32> {
     //soh - sin opp hyp
     //toa - opposite / adjacent - 4/5
 
-    // return .1 * vec3<f32>(
-    //     sin(groupIndex / 1e6 * 6.14),cos(groupIndex/1e6 * 6.1415),0
-    // );
-//    return vec3<f32>(,z,-y);
+   return vec3<f32>(0,0,4);
 }
 
 // fn tangent (y:f32, x:f32) -> f32 {
