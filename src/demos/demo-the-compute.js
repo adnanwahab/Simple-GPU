@@ -1137,53 +1137,45 @@ return vec3<f32>(
 //return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
 }
 
-
-
 fn rotatePointAlongCircle (index:u32) -> vec3<f32> {
     var pos = posBuffer[index];
     //ring orbiting like saturn or optometrist 
 
-    // posBuffer[index].x = .0;
-    // posBuffer[index].y = .0;
-    // posBuffer[index].z = .0;
-    var surprise = vec3<f32>(0.);
-    
-    //+-/*%^
-    //> !,~,*,&,, a.b
-    //
+    var a = 9.;
+    var z = 10.;
+    var p = 11.;
 
+    var list = array<f32,9>();
 
-
+    var vector = vec3<f32>(0.);
+    vector.x = 6000 / 555.;
+    vector.y = 5000 / 444.;
+    vector.z = 4000 / 333.;
     //set vectorfield based on strength of direction buffer and distance of dimension along axis
-    return surprise;
+    return vector * -1;
 }
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
-  var theta = 1. * atan2(pos.y, pos.x);
   var radius = distance(pos, vec3<f32>(0));
 
-var x = pos.x;
-var y = pos.y;
-var z = pos.z;
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
 
-vectorFieldBuffer[idx] = vec4<f32>(rotatePointAlongCircle(index), 1.);
+//vectorFieldBuffer[idx] = vec4<f32>(rotatePointAlongCircle(index), 1.);
 
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
-  direction[index] = direction[index] + .1 * vf;
+  direction[index] = direction[index] * vec3<f32>(-1, 1, 0);
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
-    //+ (vec4<f32>(10.) - posBuffer[index]);
-    
-    ;//subtract the difference from the component that has gone over
     direction[index] = vec3<f32>(0.);
   }
-
 
   return -1;
 }
