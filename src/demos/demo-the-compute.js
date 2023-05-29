@@ -8,7 +8,100 @@
         //write particle position to vector field ->
                //for each particle - pick 2 others and orbit around mid points or each other 
         //change modes based when a certain amount of time has passed.
-export const  demo = `
+
+//workgroup indices - 256,256,256 - cube 
+//use probability - fork and diverge and converge 
+//make an eye shape
+
+export const process = `
+
+@group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+@group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
+//@group(0) @binding(2) var<uniform> uniforms: Uniforms;
+@group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
+@group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
+@group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
+@group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
+@group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
+
+//spiral --acts on 8 - 2D xy,  yz
+//sphere
+//cube
+//make a cube with 100,000 x/y and 10 z
+//harmonic oscilations
+//walk indexes to create flow fields 
+
+fn diverge (idx: u32) {
+    //radius
+    vectorFieldBuffer[idx] = vec4<f32>(0);
+    vectorFieldBuffer[idx-1] = vec4<f32>(1,0,0, 0);
+    vectorFieldBuffer[idx+1] = vec4<f32>(-1,0,0, 0);
+    vectorFieldBuffer[idx-100] = vec4<f32>(0,1,0, 0);
+    vectorFieldBuffer[idx+100] = vec4<f32>(0,-1,0, 0);
+
+    vectorFieldBuffer[idx+101] = vec4<f32>(-1,-1,0, 0);
+    vectorFieldBuffer[idx-101] = vec4<f32>(1,1,0, 0);
+    vectorFieldBuffer[idx-99] = vec4<f32>(0,1,1, 0);
+    vectorFieldBuffer[idx+99] = vec4<f32>(0,1,1,0 );
+}
+
+fn converge (idx: u32) {
+    //radius
+    vectorFieldBuffer[idx] = vec4<f32>(0);
+    vectorFieldBuffer[idx-1] = vec4<f32>(1,0,0, 0);
+    vectorFieldBuffer[idx+1] = vec4<f32>(-1,0,0, 0);
+    vectorFieldBuffer[idx-100] = vec4<f32>(0,-1,0, 0);
+    vectorFieldBuffer[idx+100] = vec4<f32>(0,1,0, 0);
+
+    vectorFieldBuffer[idx+101] = vec4<f32>(-1,-1,0, 0);
+    vectorFieldBuffer[idx-101] = vec4<f32>(1,1,0, 0);
+    vectorFieldBuffer[idx-99] = vec4<f32>(1,1,0, 0);
+    vectorFieldBuffer[idx+99] = vec4<f32>(-1,-1,0,0 );
+}
+
+
+fn hashPosition(pos: vec3<f32>) ->  i32{
+    var x = clamp((pos.x + 1) / 2., 0, 1);
+    var y = clamp((1. - (pos.y)) / 2., 0, 1);
+    var z = clamp((1. - (pos.z)) / 2., 0, 1);
+
+    //if (z < .1) {z = .9;}
+    // 
+    // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
+    // + floor(floor(z * 1000) * 1000) * 10
+    // );
+
+
+    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
+    + floor(floor(z * 100) * 100) * 100
+    );
+    return idx;
+  }
+
+//fn alignX
+//fn alignY
+//fn alignZ
+
+@compute @workgroup_size(256)
+    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+        let index: u32 = GlobalInvocationID.x;
+        var z0 = vectorFieldBuffer[index];
+        var z1 = posBuffer[index];
+        var z2 = direction[index];
+        
+        var z3 = distancetraveled[index];
+        var z4 = reset[index];
+        var z5 = vectorFieldBuffer2[index];
+        var z6 = groupBuffer[index];
+
+        for (var i = 0; i < 100; i++) {
+            vectorFieldBuffer[index + u32(i) ] =  vec4<f32>(.0010, .003, .002, .0001);
+        }
+
+    converge(index);
+    }
+`
+        export const  demo = `
     struct Uniforms {
       mouse: vec2<f32>,
       time: f32,
@@ -34,16 +127,16 @@ export const  demo = `
 
 
 
-    // fn makeOpportunity() -> f32 {
-    //     var v1 = vec3<f32>(0,2, 3);
-    //     var v2 = vec3<f32>(1,1,1);
-    //     //0 * 1 + 2 * 1 + 3 * 1
-    //     var m = dot(v1, v2);
-    //     //look at all 27 neighboring vectors and make current vector perpendicular to all of them if < sin time> 
+    fn makeOpportunity() -> f32 {
+        var v1 = vec3<f32>(0,2, 3);
+        var v2 = vec3<f32>(1,1,1);
+        //0 * 1 + 2 * 1 + 3 * 1
+        var m = dot(v1, v2);
+        //look at all 27 neighboring vectors and make current vector perpendicular to all of them if < sin time> 
 
 
-
-    // }
+        return m;
+    }
 
 
   
@@ -60,6 +153,8 @@ export const  demo = `
   fn shift (x:f32)->f32 {
     return (x + 1.) / 2.;
   }
+
+
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
@@ -655,6 +750,11 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   //return vec3<f32>(10 * y * sin(uniforms.time * .1), dot(dir, dir) ,0 );
 }
 
+
+fn somethingNew () -> vec3<f32> {
+    return vec3<f32>(0.);
+}
+
 fn createVectorField(index: u32) -> vec3<f32> {
     var dir= direction[index];
     var soFar = distancetraveled[index];
@@ -666,7 +766,10 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var i = 0.;
     var j = 0.;
 
-    return vec3<f32>(allIn());
+    return vec3<f32>(.0001,0,0);
+    
+    //try hi-res, 2d, and 3d, and spherical 
+
     //soh - sin opp hyp
     //toa - opposite / adjacent - 4/5
 
@@ -705,9 +808,6 @@ fn somethingFromNothing () -> vec3<f32> {
     return vec3<f32>(vcf.fract, jkl / 10., jkl / 21);
 }
 
-fn allIn() -> vec3<f32> {
-    return vec3<f32>(.1,0,0);
-}
 
 // fn tangent (y:f32, x:f32) -> f32 {
 //     var unitCircle = array<vec2<f32>, 8>;
@@ -1156,7 +1256,7 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
     //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1);
+    vectorFieldBuffer[idx] += vec4<f32>(createVectorField(index), 1);
   //}
 
     var vf = hash(pos.xyz);
@@ -1394,7 +1494,7 @@ var z6 = groupBuffer[index];
     //.001 * 
     
     // if (idx > 256 ){
-    //       direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), s`in`(theta * 1.1), 0.);
+    //       direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
     // } else {
     //   let radius = distance(vec2<f32>(0,0), pos.xy);
     // direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
@@ -1574,4 +1674,4 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 
         return -1;
     }
-    `
+    `;

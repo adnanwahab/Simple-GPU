@@ -16,8 +16,7 @@
 //mirror world
 //generate vector field purely on GPU -> 10 million 
 let {cos, sin, } = Math
-
-import {demo} from './demo-the-compute'
+import {demo, process} from './demo-the-compute'
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
@@ -1072,7 +1071,70 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
 });
 
-  return  webgpu.initComputeCall({
+
+
+
+var shit = webgpu.initComputeCall({
+  label: `predictedPosition`,
+  code:  process,
+
+  exec: function (state){
+    const device = state.device
+    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
+
+    const computePass = commandEncoder.beginComputePass();
+    state.computePass.computePass = computePass;
+    
+  webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
+  let timeBuffer = new Float32Array(1)
+  window.writeTime = function (dt) {
+    timeBuffer[0] = dt
+    webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
+  }
+  let modeBuffer = new Float32Array(1)
+  let twistRate = new Float32Array(1)
+
+  window.writeDecayRate = function (decayRateNum) {
+    twistRate[0] = decayRateNum
+    webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  twistRate)
+  }
+  window.writeDecayRate(0)
+
+  window.writeMode = function (dt) {
+    modeBuffer[0] = dt
+    console.log(dt)
+    webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  modeBuffer)
+  }
+    computePass.setPipeline(state.computePass.pipeline);
+    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
+    computePass.dispatchWorkgroups(10000);
+    computePass.end();
+  },
+  bindGroups: function (state, computePipeline) {
+
+
+const descriptor = {
+  layout: computePipeline.getBindGroupLayout(0),
+  entries: [
+    {binding: 0, resource: {buffer: gridBuffer}},
+    {binding: 1, resource: {buffer: mesh || shapes[0]}},
+//    {binding: 2, resource: {buffer: uniformsBuffer}},
+    {binding: 3, resource: {buffer: direction}},
+    {binding: 4, resource: {buffer: distancetraveledBuffer}},
+    {binding: 5, resource: {buffer: reset }},
+    {binding: 6, resource: {buffer: gridBuffer2 }},
+    {binding: 7, resource: {buffer: groupBuffer}}
+  ]
+}
+
+let computeBindGroup = state.device.createBindGroup(descriptor)
+    return [computeBindGroup]
+  }
+})
+
+
+
+  var fart = webgpu.initComputeCall({
     label: `predictedPosition`,
     code:  demo,
   
@@ -1129,6 +1191,13 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       return [computeBindGroup]
     }
   })
+
+  return function ( ) {
+    
+    return shit() 
+    + fart()
+     + this()
+  }.bind(function () { console.log( 'blah blah blah ')} )
   }
 
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
