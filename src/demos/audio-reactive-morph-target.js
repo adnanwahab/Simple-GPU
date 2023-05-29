@@ -1193,7 +1193,7 @@ let computeBindGroup = state.device.createBindGroup(descriptor)
   })
 
   return function ( ) {
-    computeVectorField() 
+      computeVectorField() 
     return computeParticleState()
     }
   }

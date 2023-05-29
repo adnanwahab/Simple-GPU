@@ -14,6 +14,28 @@
 //make an eye shape
 //could've become anyone 3 months ago - 1 week ago - 8 monhts ago
 //now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
+const shared_functions = 
+`fn hashPosition(pos: vec3<f32>) ->  i32{
+    var x = clamp((pos.x + 1) / 2., 0, 1);
+    var y = clamp((1. - (pos.y)) / 2., 0, 1);
+    var z = clamp((1. - (pos.z)) / 2., 0, 1);
+
+    //if (z < .1) {z = .9;}
+    // 
+    // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
+    // + floor(floor(z * 1000) * 1000) * 10
+    // );
+
+
+    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
+    + floor(floor(z * 100) * 100) * 100
+    );
+    return idx;
+  }`
+
+
+
+
 export const process = `
 
 @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
@@ -35,18 +57,17 @@ export const process = `
 
 fn justCode(pos:vec3<f32>) -> i32 {
     let idx = hashPosition(pos.xyz);
+    vectorFieldBuffer[idx] = vec4<f32>(.3, .6, .9, 1);
 
-    vectorFieldBuffer[idx] = vec4<f32>(dot(pos.xyz, pos.zyx),  1, 0, 0.);
-
-    
     return -1;
 }
 
 fn hashPosition(pos: vec3<f32>) ->  i32{
-    var x = clamp((pos.x + 1) / 2., 0, 1);
-    var y = clamp((1. - (pos.y)) / 2., 0, 1);
-    var z = clamp((1. - (pos.z)) / 2., 0, 1);
-
+    var x = (pos.x + 1) / 2.;
+    var y = (1. - pos.y) / 2.;
+    var z = (1. - pos.z) / 2.;
+    //make vector field infinite = win tv show; - outside 0-1 repeat
+    //no buffer = make the vector field
     //if (z < .1) {z = .9;}
     // 
     // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
@@ -178,23 +199,7 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     return 1.;
   }
 
-  fn hashPosition(pos: vec3<f32>) ->  i32{
-    var x = clamp((pos.x + 1) / 2., 0, 1);
-    var y = clamp((1. - (pos.y)) / 2., 0, 1);
-    var z = clamp((1. - (pos.z)) / 2., 0, 1);
-
-    //if (z < .1) {z = .9;}
-    // 
-    // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
-    // + floor(floor(z * 1000) * 1000) * 10
-    // );
-
-
-    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
-    + floor(floor(z * 100) * 100) * 100
-    );
-    return idx;
-  }
+${shared_functions}
 
 
   // fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
@@ -987,30 +992,21 @@ var v2 = -2 * cos(uniforms.time * .001);
 //return vec3<f32>(x * y,0,0);
 //return v1 * vec3<f32w>(y,-x,0) + 
 //v2 * vec3<f32>(0,z,-y);
-
 //rotate 90degrees
 //reseting the location is good when it goes past the boundaries
 //this looks more cool when it goes past the boundary, so resetting it at different rates is what makes it look cool
 //so the vector field will look most cool when you vary the rebirth location
-
-
 // attenuation rate in w slot which is usually for camera transforms 
 //use the previous state of the vector in the vector field to adjust the next iteration somehow 
-
 // return cross(vec3<f32>(
 //      x, 
 //     y,
 //      z
 // ),  vec3<f32>(sin(uniforms.time * .001),cos(uniforms.time * .001),cos(uniforms.time * .01))
 //  );
-
 //16 cool vector fields - acting on 8 regions - or 8 time slices 
 //reflections + post processing = done by monday deterministic - fun - cool- differential equations for fire and rainbow fire and smoke and 
-
   //return vectorFieldCreator(index);
-
-
-
 
   var theta = atan2(y,x);
   theta += 1.5;
@@ -1019,26 +1015,6 @@ var v2 = -2 * cos(uniforms.time * .001);
 //  -pow(x, .5) + x,
 //     0, 
 //   );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // var x1 = cos(groupIndex);
 // var y1 = sin(groupIndex);
@@ -1217,7 +1193,7 @@ return vec3<f32>(j, k, m);
 // );
 
 return vec3<f32>(
-  10 * sin(uniforms.time * .0001), 0., 0.
+  10 * sin(uniforms.time * .001), 0., 0.
 );
 
 //return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
@@ -1233,11 +1209,11 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
     //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-//    vectorFieldBuffer[idx] = vec4<f32>(0,0,0, 1);
+    //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
   //}
  
  var vf = hash(pos.xyz);
- direction[index] *= .9; 
+ direction[index] *= .1; 
 
   direction[index] = direction[index] + .05 * vf;
 
@@ -1277,7 +1253,7 @@ fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
 
   posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
 
-  direction[index] *= .9;
+  direction[index] *= .1;
 
 
   if (hasCollided(pos.xyz)) {
@@ -1675,3 +1651,5 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 
 //in one year, i'll earn my functions back and freedom to draw and use all the data
 //in 23 days, 
+
+//you have no idea this story could have been    vectorFieldBuffer[idx] = vec4<f32>(cross(pos.xyz, pos.zyx), 1);
