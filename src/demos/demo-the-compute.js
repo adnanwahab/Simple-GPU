@@ -499,10 +499,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
   
   if (uniforms.time < 20) {}
-  
-  
-  
-  
   return -1;  
   }
   
@@ -1149,11 +1145,34 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
 
  var vf = hash(pos.xyz);
+
+    // vectorFieldBuffer[idx] = vec4<f32>(
+    //     , 0, 0, 0
+    // );
+
+    // vectorFieldBuffer[idx] = vec4<f32>(
+    //         pos.x - pos.y, 0, 0, 0
+    //     );
+
+var x = pos.x;
+var y = pos.y;
+var z = pos.z;
+// vectorFieldBuffer[idx] = vec4<f32>(
+//     y, -x, 0, 0
+// );
+
+
+    vectorFieldBuffer[idx] = vec4<f32>(
+        y, -x, 0, 0
+    );
+
  direction[index] *= .1; 
 
   direction[index] = direction[index] + .1 * vf;
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
+
+
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
@@ -1176,7 +1195,7 @@ fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
     // vectorFieldBuffer[idx] =  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    vectorFieldBuffer[idx] = vec4<f32>(sin(f32(index) / 1e6), 0, 0, 1);
+    //vectorFieldBuffer[idx] = vec4<f32>(sin(f32(index) / 1e6), 0, 0, 1);
   //}
 
     var vf = hash(pos.xyz);
