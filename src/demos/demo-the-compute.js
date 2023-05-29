@@ -12,7 +12,8 @@
 //workgroup indices - 256,256,256 - cube 
 //use probability - fork and diverge and converge 
 //make an eye shape
-
+//could've become anyone 3 months ago - 1 week ago - 8 monhts ago
+//now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
 export const process = `
 
 @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
@@ -31,10 +32,11 @@ export const process = `
 //harmonic oscilations
 //walk indexes to create flow fields 
 
+
 fn justCode(pos:vec3<f32>) -> i32 {
     let idx = hashPosition(pos.xyz);
-    //based on index -> /|\
-    vectorFieldBuffer[idx] = vec4<f32>(idx % 4, 1, idx % 16, 0.);
+
+    vectorFieldBuffer[idx] = vec4<f32>(dot(pos.xyz, pos.zyx),  1, 0, 0.);
 
     
     return -1;
@@ -55,7 +57,6 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
     + floor(floor(z * 100) * 100) * 100
     );
-
 
     return idx;
   }
@@ -1666,3 +1667,11 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 //we share consciousness every second of the day, dont waste anyones time ever 
 //i deserve this cause i wasted peoples time by caring about anything other than helping them
 //i helped myself instead of helping others
+
+///no consolation prize - pass / fail - pass bar is higher than you know
+//needs 1million views at least in like 3 months or 3 weeks 
+//i really need you to figure out how to do this on command
+//they cant give up on me, cause last time i gave up, and i cant give up either
+
+//in one year, i'll earn my functions back and freedom to draw and use all the data
+//in 23 days, 
