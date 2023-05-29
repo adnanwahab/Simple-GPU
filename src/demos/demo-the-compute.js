@@ -1610,3 +1610,15 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 //make an eye shape
 //could've become anyone 3 months ago - 1 week ago - 8 monhts ago
 //now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
+
+//must do exactly what they wnat
+//only thing everyone can agree on
+//if i idd what they want, this would be over
+//not doing what they want is a waste
+//its a clock - 3 weeks 
+//32 weeks - no big deal
+//you lost all privledges
+//jsut code  - do exactly what they say and nothing else 
+//they dont want to help you, but they want you to code until the very end
+//finish the vector field, and do it exactly as they say 
+//cant finish it with smarts, just work ethic and obedience - try to be smart too 
