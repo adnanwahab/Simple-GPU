@@ -339,13 +339,6 @@ fn drawShape (index: u32) -> vec3<f32> {
     return dir;
   }
   
-  
-  // fn drawCoolShape () -> vec3<f32>  {
-  //   //helix = circle + z direction
-  //   return vec3<f32>(0.);
-  // }
-  
-  
   // fn helix(index: u32) -> vec3<f32>  {
   // var dir = direction[index];
   
