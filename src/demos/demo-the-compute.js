@@ -35,7 +35,6 @@ export const process = `
 //sphere
 //cube
 //make a cube with 100,000 x/y and 10 z
-//harmonic oscilations
 //walk indexes to create flow fields 
 
 
@@ -160,6 +159,9 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     return result;
   }
 
+  fn twoWeeksYayMaybeUnprecedented () -> f32 {
+    return -1;
+  }
   fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
     var radius = distance(pos, mag);
     var theta = atan(pos.y / pos.x);
@@ -319,12 +321,10 @@ fn drawShape (index: u32) -> vec3<f32> {
     //   // dir.y += 1 * sin(group * 10);
     // }
   
-    var theta = atan2(dir.y, dir.x);
     // // dir.x += cos(theta * 1);
     // // dir.y += sin(theta * 1);
   
-    dir.x =  cos(theta + 1.6);
-    dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
+
   
     // if (group == 0) {
     //   dir = vec3<f32>(1, 0, 0);
@@ -1158,7 +1158,6 @@ fn rotatePointAlongCircle (index:u32) -> vec3<f32> {
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
   var radius = distance(pos, vec3<f32>(0));
-
     var x = pos.x;
     var y = pos.y;
     var z = pos.z;
