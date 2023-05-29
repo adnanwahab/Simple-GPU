@@ -57,7 +57,8 @@ export const process = `
 
 fn justCode(pos:vec3<f32>) -> i32 {
     let idx = hashPosition(pos.xyz);
-    vectorFieldBuffer[idx] = vec4<f32>(.3, .6, .9, 1);
+
+    vectorFieldBuffer[idx] = vec4<f32>(0, 0, 0, 1);
 
     return -1;
 }
@@ -1200,7 +1201,7 @@ return vec3<f32>(
 }
 
 
-fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
+fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
 
   let idx = hashPosition(pos);
   var theta = 1. * atan2(pos.y, pos.x);
@@ -1211,18 +1212,36 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
     //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
     //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
   //}
- 
+
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
+
+
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.y, -pos.x, 0, 1);
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.x - pos.y, 0, 0, 1);
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.x + pos.y, 0, 0, 1);
+
+
+  vectorFieldBuffer[idx] = vec4<f32>(pos.x * pos.y, 0, 0, 1);
+
+//vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0,pos.x, 1);
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0, -pos.x, 1);
+
+  //vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0, -pos.x, 1);
  var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
-  direction[index] = direction[index] + .05 * vf;
+  direction[index] = direction[index] + .1 * vf;
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
     //+ (vec4<f32>(10.) - posBuffer[index]);
-    
     
     ;//subtract the difference from the component that has gone over
     direction[index] = vec3<f32>(0.);
@@ -1579,7 +1598,7 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
       //applyMagnets(pos.xyz);
       var r = reset[index];
       //runAlongRoute(pos.xyz, f32(index));
-      applyVF(pos.xyz, index);
+      fixTheVectorFieldAndObey(pos.xyz, index);
       
       //trySpiral(index);
 
