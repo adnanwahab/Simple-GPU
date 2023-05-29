@@ -31,29 +31,14 @@ export const process = `
 //harmonic oscilations
 //walk indexes to create flow fields 
 
-fn 
+fn justCode(pos:vec3<f32>) -> i32 {
+    let idx = hashPosition(pos.xyz);
+    //based on index -> /|\
+    vectorFieldBuffer[idx] = vec4<f32>(idx % 4, 1, idx % 16, 0.);
 
-fn converge (idx: u32) {
-    //radius
-    //another way to solve this - subtract -x or -y from hashPosition()
-    vectorFieldBuffer[idx] = vec4<f32>(0);
-    vectorFieldBuffer[idx-1] = vec4<f32>(1,0,0, 0);
-    vectorFieldBuffer[idx+1] = vec4<f32>(-1,0,0, 0);
-    vectorFieldBuffer[idx-100] = vec4<f32>(0,-1,0, 0);
-    vectorFieldBuffer[idx+100] = vec4<f32>(0,1,0, 0);
-
-    //+width, + height
-    vectorFieldBuffer[idx+101] = vec4<f32>(-1,1,0, 0);
-    -width -height
-    vectorFieldBuffer[idx-101] = vec4<f32>(-1,-1,0, 0);
-
-    + width -height 
-    vectorFieldBuffer[idx-99] = vec4<f32>(-1,1,0, 0);
-
-    +height 
-    vectorFieldBuffer[idx+99] = vec4<f32>(1,1,0,0 );
+    
+    return -1;
 }
-
 
 fn hashPosition(pos: vec3<f32>) ->  i32{
     var x = clamp((pos.x + 1) / 2., 0, 1);
@@ -70,12 +55,10 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
     + floor(floor(z * 100) * 100) * 100
     );
+
+
     return idx;
   }
-
-//fn alignX
-//fn alignY
-//fn alignZ
 
 @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -89,11 +72,8 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
         var z5 = vectorFieldBuffer2[index];
         var z6 = groupBuffer[index];
 
-        for (var i = 0; i < 100; i++) {
-            vectorFieldBuffer[index + u32(i) ] =  vec4<f32>(.0010, .003, .002, .0001);
-        }
-
-    converge(index);
+        
+        justCode(z1.xyz);
     }
 `
         export const  demo = `
@@ -154,6 +134,7 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
     var bounds = 10.;
+    
     if (p.x < -bounds) {return true;}
      if (p.y <= -bounds) {return true;} //why is this backwards? 
         if (p.x >= bounds) {return true;}
@@ -1251,22 +1232,23 @@ fn applyVF(pos: vec3<f32>, index:u32) -> f32 {
   //theta *= 4. * (sin(uniforms.time * .001));
   //if (groupBuffer[index] > uniforms.time) {
     //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    vectorFieldBuffer[idx] += vec4<f32>(createVectorField(index), 1);
+//    vectorFieldBuffer[idx] = vec4<f32>(0,0,0, 1);
   //}
-
-    var vf = hash(pos.xyz);
-
-
-    //vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
+ 
+ var vf = hash(pos.xyz);
  direction[index] *= .9; 
 
   direction[index] = direction[index] + .05 * vf;
 
-  posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.);
+  posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
   if (hasCollided(pos.xyz)) {
-    posBuffer[index] = reset[index];//subtract the difference from the component that has gone over
-    //direction[index] = vec3<f32>(0.);
+    posBuffer[index] = reset[index];
+    //+ (vec4<f32>(10.) - posBuffer[index]);
+    
+    
+    ;//subtract the difference from the component that has gone over
+    direction[index] = vec3<f32>(0.);
   }
 
 
@@ -1512,7 +1494,6 @@ var z6 = groupBuffer[index];
         distancetraveled[idx] = 1.;
     }
 
-  
 
     posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
 
@@ -1614,9 +1595,9 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         let index: u32 = GlobalInvocationID.x;
 
-      docoolstuff(index);
+      //docoolstuff(index);
 
-      solveDifficultProblem(index);
+      //solveDifficultProblem(index);
       var pos = posBuffer[index];
       //applyMagnets(pos.xyz);
       var r = reset[index];
@@ -1670,3 +1651,18 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
         return -1;
     }
     `;
+
+
+    //this isnt the ending we wanted
+//you can earn your functions, data and demo back
+//you can lose them too
+//you cant give up, you must perservere
+//you must get everything right on the first time without drawing 
+//cant look anything up
+//i deserve this because i failed the water simulation, was negative, irresponsible and rude to people who were trying really hard to help me
+//i can get her back - looks unlikely
+//23 days left 
+
+//we share consciousness every second of the day, dont waste anyones time ever 
+//i deserve this cause i wasted peoples time by caring about anything other than helping them
+//i helped myself instead of helping others

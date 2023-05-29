@@ -259,7 +259,7 @@ function keeptrying () {
     let theta = Math.atan(y / x)
     let a = [x, y, z]
     let b = [0, 0, 0]
-    return [z,z,z, 1]
+    return [0,0,0, 1]
   })
 
   return vf
@@ -1074,8 +1074,8 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
 
 
-var shit = webgpu.initComputeCall({
-  label: `predictedPosition`,
+var computeVectorField = webgpu.initComputeCall({
+  label: `computeVectorField`,
   code:  process,
 
   exec: function (state){
@@ -1134,8 +1134,8 @@ let computeBindGroup = state.device.createBindGroup(descriptor)
 
 
 
-  var fart = webgpu.initComputeCall({
-    label: `predictedPosition`,
+  var computeParticleState = webgpu.initComputeCall({
+    label: `computeParticleState`,
     code:  demo,
   
     exec: function (state){
@@ -1193,11 +1193,9 @@ let computeBindGroup = state.device.createBindGroup(descriptor)
   })
 
   return function ( ) {
-    
-    return shit() 
-    + fart()
-     + this()
-  }.bind(function () { console.log( 'blah blah blah ')} )
+    computeVectorField() 
+    return computeParticleState()
+    }
   }
 
 const obj = (n) => `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/1/${n}myfile.bin`
