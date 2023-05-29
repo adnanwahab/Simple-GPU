@@ -31,32 +31,27 @@ export const process = `
 //harmonic oscilations
 //walk indexes to create flow fields 
 
-fn diverge (idx: u32) {
-    //radius
-    vectorFieldBuffer[idx] = vec4<f32>(0);
-    vectorFieldBuffer[idx-1] = vec4<f32>(1,0,0, 0);
-    vectorFieldBuffer[idx+1] = vec4<f32>(-1,0,0, 0);
-    vectorFieldBuffer[idx-100] = vec4<f32>(0,1,0, 0);
-    vectorFieldBuffer[idx+100] = vec4<f32>(0,-1,0, 0);
-
-    vectorFieldBuffer[idx+101] = vec4<f32>(-1,-1,0, 0);
-    vectorFieldBuffer[idx-101] = vec4<f32>(1,1,0, 0);
-    vectorFieldBuffer[idx-99] = vec4<f32>(0,1,1, 0);
-    vectorFieldBuffer[idx+99] = vec4<f32>(0,1,1,0 );
-}
+fn 
 
 fn converge (idx: u32) {
     //radius
+    //another way to solve this - subtract -x or -y from hashPosition()
     vectorFieldBuffer[idx] = vec4<f32>(0);
     vectorFieldBuffer[idx-1] = vec4<f32>(1,0,0, 0);
     vectorFieldBuffer[idx+1] = vec4<f32>(-1,0,0, 0);
     vectorFieldBuffer[idx-100] = vec4<f32>(0,-1,0, 0);
     vectorFieldBuffer[idx+100] = vec4<f32>(0,1,0, 0);
 
-    vectorFieldBuffer[idx+101] = vec4<f32>(-1,-1,0, 0);
-    vectorFieldBuffer[idx-101] = vec4<f32>(1,1,0, 0);
-    vectorFieldBuffer[idx-99] = vec4<f32>(1,1,0, 0);
-    vectorFieldBuffer[idx+99] = vec4<f32>(-1,-1,0,0 );
+    //+width, + height
+    vectorFieldBuffer[idx+101] = vec4<f32>(-1,1,0, 0);
+    -width -height
+    vectorFieldBuffer[idx-101] = vec4<f32>(-1,-1,0, 0);
+
+    + width -height 
+    vectorFieldBuffer[idx-99] = vec4<f32>(-1,1,0, 0);
+
+    +height 
+    vectorFieldBuffer[idx+99] = vec4<f32>(1,1,0,0 );
 }
 
 
