@@ -723,8 +723,10 @@ fn createVectorField(index: u32) -> vec3<f32> {
  
     var i = 0.;
     var j = 0.;
-
-    return vec3<f32>(.0001,0,0);
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+    return vec3<f32>(pos.y, -pos.x, 0);
     
     //try hi-res, 2d, and 3d, and spherical 
 
@@ -1136,43 +1138,43 @@ return vec3<f32>(
 }
 
 
-fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
 
+fn rotatePointAlongCircle (index:u32) -> vec3<f32> {
+    var pos = posBuffer[index];
+    //ring orbiting like saturn or optometrist 
+
+    // posBuffer[index].x = .0;
+    // posBuffer[index].y = .0;
+    // posBuffer[index].z = .0;
+    var surprise = vec3<f32>(0.);
+    
+    //+-/*%^
+    //> !,~,*,&,, a.b
+    //
+
+
+
+    //set vectorfield based on strength of direction buffer and distance of dimension along axis
+    return surprise;
+}
+
+fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
   var theta = 1. * atan2(pos.y, pos.x);
   var radius = distance(pos, vec3<f32>(0));
 
-  //theta *= 4. * (sin(uniforms.time * .001));
-
- var vf = hash(pos.xyz);
-
-    // vectorFieldBuffer[idx] = vec4<f32>(
-    //     , 0, 0, 0
-    // );
-
-    // vectorFieldBuffer[idx] = vec4<f32>(
-    //         pos.x - pos.y, 0, 0, 0
-    //     );
-
 var x = pos.x;
 var y = pos.y;
 var z = pos.z;
-// vectorFieldBuffer[idx] = vec4<f32>(
-//     y, -x, 0, 0
-// );
 
+vectorFieldBuffer[idx] = vec4<f32>(rotatePointAlongCircle(index), 1.);
 
-    vectorFieldBuffer[idx] = vec4<f32>(
-        y, -x, 0, 0
-    );
-
+var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
   direction[index] = direction[index] + .1 * vf;
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
-
-
 
   if (hasCollided(pos.xyz)) {
     posBuffer[index] = reset[index];
