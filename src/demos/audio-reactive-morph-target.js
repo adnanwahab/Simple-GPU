@@ -1123,7 +1123,7 @@ const descriptor = {
     {binding: 4, resource: {buffer: distancetraveledBuffer}},
     {binding: 5, resource: {buffer: reset }},
     {binding: 6, resource: {buffer: gridBuffer2 }},
-    {binding: 7, resource: {buffer: groupBuffer}}
+
   ]
 }
 
@@ -1183,7 +1183,6 @@ let computeBindGroup = state.device.createBindGroup(descriptor)
       {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
       {binding: 6, resource: {buffer: gridBuffer2 }},
-      {binding: 7, resource: {buffer: groupBuffer}}
     ]
   }
 

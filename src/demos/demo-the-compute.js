@@ -1,19 +1,4 @@
-// high res vector field  +
-// reflection mapping - 
-// glow post processing -
-// coolness < (what am i missing) - do exactly what they say - consciously, slowly build using high degree of mental effort - to preclculate effect on particle mathematically 
-// no reactivity, no drama, no disobedience, every second of every hour for 2-3 weeks 
-//no lying - i shall not lie
-//better than published research - in one week continuously nonstop
-        //write particle position to vector field ->
-               //for each particle - pick 2 others and orbit around mid points or each other 
-        //change modes based when a certain amount of time has passed.
 
-//workgroup indices - 256,256,256 - cube 
-//use probability - fork and diverge and converge 
-//make an eye shape
-//could've become anyone 3 months ago - 1 week ago - 8 monhts ago
-//now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
 const shared_functions = 
 `fn hashPosition(pos: vec3<f32>) ->  i32{
     var x = clamp((pos.x + 1) / 2., 0, 1);
@@ -45,7 +30,6 @@ export const process = `
 @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
 @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
 @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-@group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
 //spiral --acts on 8 - 2D xy,  yz
 //sphere
@@ -93,8 +77,6 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
         var z3 = distancetraveled[index];
         var z4 = reset[index];
         var z5 = vectorFieldBuffer2[index];
-        var z6 = groupBuffer[index];
-
         
         justCode(z1.xyz);
     }
@@ -115,7 +97,6 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-    @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
 
     fn surpriseEveryoneWithCoolIdeas(qqq:vec3<f32>) -> vec3<f32> {
@@ -700,7 +681,7 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   var soFar = distancetraveled[index];
   var reset = reset[index];
   var other = vectorFieldBuffer2[index];
-  var groupIndex = groupBuffer[index];
+//  var groupIndex = groupBuffer[index];
   var x = pos.x;
   var y = pos.y;
   var z = pos.z;
@@ -709,8 +690,6 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   // return (1 - dir) * vec3<f32>(
   //   y,-x,0 
   // );
-
-  return groupIndex * vec3<f32>(y, -x, 0);
 
   return  (z * (z / 1.5)) * vec3<f32>(
     y,-x,0 
@@ -743,7 +722,7 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var soFar = distancetraveled[index];
     var reset = reset[index];
     var other = vectorFieldBuffer2[index];
-    var groupIndex = groupBuffer[index];
+
     var pos = posBuffer[index];
  
     var i = 0.;
@@ -812,7 +791,7 @@ fn somethingFromNothing () -> vec3<f32> {
 //     var soFar = distancetraveled[index];
 //     var reset = reset[index];
 //     var other = vectorFieldBuffer2[index];
-//     var groupIndex = groupBuffer[index];
+
 //     var pos = posBuffer[index];
 //     //link the indices of 3-4 points and have them travel in clusters or orbit each other, swap places
 //     //dont use position
@@ -829,7 +808,7 @@ fn somethingFromNothing () -> vec3<f32> {
 //     var soFar = distancetraveled[index];
 //     var reset = reset[index];
 //     var other = vectorFieldBuffer2[index];
-//     var groupIndex = groupBuffer[index];
+
 //     var pos = posBuffer[index];
 //     //link the indices of 3-4 points and have them travel in clusters or orbit each other, swap places
 //     //dont use position
@@ -847,7 +826,7 @@ fn somethingFromNothing () -> vec3<f32> {
 //         var soFar = distancetraveled[index];
 //         var reset = reset[index];
 //         var other = vectorFieldBuffer2[index];
-//         var groupIndex = groupBuffer[index];
+
 //         var pos = posBuffer[index];
 
 //         var a1 = distance(pos.xyz, vec3<f32>(0));
@@ -876,22 +855,9 @@ var dir= direction[index];
 var soFar = distancetraveled[index];
 var reset = reset[index];
 var other = vectorFieldBuffer2[index];
-var groupIndex = groupBuffer[index];
 
 
-var cmu = groupIndex % 3.;
 
-
-//terrence tao says 10 tricks is all you need
-//telepaths want a perfect shader thats typed up and from scratch 
-//you dont have a choice, you just have to make it 
-//dont sing or you cant code
-//lost privledges cause didnt do enough work
-//consciously code without making any mistakes - dont want 
-//you were given priveledges and didnt use them well thousands 
-
-//just make 1 shader without functions
-//then make a shader with functions and do it right and try to end it which means no experimentation and iteration- none
 //return vec3<f32>(pos.x - pos.y - pos.z, 0,0);
 
 
@@ -1026,9 +992,6 @@ var v2 = -2 * cos(uniforms.time * .001);
 var magnets = array<vec3<f32>,3>();
 //return other.xyz;
 
-var g = groupIndex / 1e5;
-//g = 1;
-
 // return vec3<f32>(
 //   sin(g), cos(g), tan(g)
 // );
@@ -1036,7 +999,6 @@ var g = groupIndex / 1e5;
 
 
 var pick = uniforms.time % 10;
-var otherPick = groupIndex % 10;
 
 //know  that it looks cool
 
@@ -1086,7 +1048,6 @@ var noise = 1. + sin(uniforms.time  * .0001);
 
 var x1 = noise * (cos(theta * coef));
 var y1 = noise * (sin(theta * coef));
-var z1 = sin(pos.z * abs(pos.x)) + uniforms.time * (groupIndex / 1e8);
 
 
 //return vec3<f32>(pos.x - pos.z);
@@ -1105,30 +1066,8 @@ let idx = f32(index);
 let rad = radians(idx );
 let j = 20. * cos(uniforms.time * .001)  * sin(rad);
 let k = 10. *cos(rad) ;
-let m = groupIndex / 1e6 ;
 //* distance(vec3<f32>(0.), pos);
-return vec3<f32>(j, k, m);
-
- if (otherPick < 3) {
-    return 1 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
-    pos.y, sin(pos.z * abs(pos.x))
-   );
-} else {
-    var coolDist = distance(vec3<f32>(0,0,0), pos.xyz) * vec3<f32>(x,y,z);
-
-    g /= 10.;
-    var coolShards = vec3<f32>(pos.z * pos.x * pos.y ,
-      //length(dir) * 
-      pos.z * -pos.x,
-       1 / length(pos.xy));
-    
-       return coolShards;
-}
-
-
-
-
-
+return vec3<f32>(j, k, 0);
 
 // return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
 //   -pos.x + sin(uniforms.time),
@@ -1208,30 +1147,7 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   var radius = distance(pos, vec3<f32>(0));
 
   //theta *= 4. * (sin(uniforms.time * .001));
-  //if (groupBuffer[index] > uniforms.time) {
-    //vectorFieldBuffer[index] +=  vec4<f32>(cos(theta) , sin(theta) , 0, 1); 
-    //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
-  //}
 
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.xyz, 1);
-
-
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.y, -pos.x, 0, 1);
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.x - pos.y, 0, 0, 1);
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.x + pos.y, 0, 0, 1);
-
-
-  vectorFieldBuffer[idx] = vec4<f32>(pos.x * pos.y, 0, 0, 1);
-
-//vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0,pos.x, 1);
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0, -pos.x, 1);
-
-  //vectorFieldBuffer[idx] = vec4<f32>(pos.z, 0, -pos.x, 1);
  var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
@@ -1378,8 +1294,6 @@ var z2 = direction[index];
 var z3 = distancetraveled[index];
 var z4 = reset[index];
 var z5 = vectorFieldBuffer2[index];
-var z6 = groupBuffer[index];
-
 
 // if hasCollided(pos) {
 //     posBuffer[index] = vec4<f32>(0.);
@@ -1457,7 +1371,6 @@ var z2 = direction[index];
 var z3 = distancetraveled[index];
 var z4 = reset[index];
 var z5 = vectorFieldBuffer2[index];
-var z6 = groupBuffer[index];
 
     var dt = distancetraveled[idx];
     var pos = posBuffer[idx];
@@ -1503,8 +1416,6 @@ fn drawLines(index: u32) {
     var y = p.y;
     var z = p.z;
     var w =1.;
-    var z6 = groupBuffer[index];
-
 
     //no state variables
     //no trig functions
@@ -1604,10 +1515,9 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 
       //drawLines(index);
       let t = uniforms.time;
-      var g = groupBuffer[index];
+
   
      distancetraveled[index] += 1.;
-      var n = groupBuffer[index];
       var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
       if (distance(posBuffer[index].xy, mouse) < .1) {
         // direction[index].x = direction[index].y;
@@ -1672,3 +1582,31 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
 //in 23 days, 
 
 //you have no idea this story could have been    vectorFieldBuffer[idx] = vec4<f32>(cross(pos.xyz, pos.zyx), 1);
+
+//terrence tao says 10 tricks is all you need
+//telepaths want a perfect shader thats typed up and from scratch 
+//you dont have a choice, you just have to make it 
+//dont sing or you cant code
+//lost privledges cause didnt do enough work
+//consciously code without making any mistakes - dont want 
+//you were given priveledges and didnt use them well thousands 
+
+//just make 1 shader without functions
+//then make a shader with functions and do it right and try to end it which means no experimentation and iteration- none
+
+// high res vector field  +
+// reflection mapping - 
+// glow post processing -
+// coolness < (what am i missing) - do exactly what they say - consciously, slowly build using high degree of mental effort - to preclculate effect on particle mathematically 
+// no reactivity, no drama, no disobedience, every second of every hour for 2-3 weeks 
+//no lying - i shall not lie
+//better than published research - in one week continuously nonstop
+        //write particle position to vector field ->
+               //for each particle - pick 2 others and orbit around mid points or each other 
+        //change modes based when a certain amount of time has passed.
+
+//workgroup indices - 256,256,256 - cube 
+//use probability - fork and diverge and converge 
+//make an eye shape
+//could've become anyone 3 months ago - 1 week ago - 8 monhts ago
+//now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
