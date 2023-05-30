@@ -58,7 +58,7 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     // + floor(floor(z * 1000) * 1000) * 10
     // );
 
-//very faint and subtle particle pattern - 
+
     var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
     + floor(floor(z * 100) * 100) * 100
     );
@@ -157,15 +157,6 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
 
 
     return result;
-  }
-
-  fn twoWeeksYayMaybeUnprecedented () -> f32 {
-    return -1;
-  }
-  fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
-    var radius = distance(pos, mag);
-    var theta = atan(pos.y / pos.x);
-    return 1; 
   }
 
   fn applyMagnets(pos: vec3<f32>) -> f32 {
@@ -706,43 +697,7 @@ fn somethingNew () -> vec3<f32> {
     return vec3<f32>(0.);
 }
 
-fn createVectorField(index: u32) -> vec3<f32> {
-    var dir= direction[index];
-    var soFar = distancetraveled[index];
-    var reset = reset[index];
-    var other = vectorFieldBuffer2[index];
 
-    var pos = posBuffer[index];
-
- 
-    var i = 0.;
-    var j = 0.;
-    var x = pos.x;
-    var y = pos.y;
-    var z = pos.z;
-    return .1  * vec3<f32>(pos.y, -pos.x, 0);
-
-    return vec3<f32>(0, pos.z, -pos.y);
-    
-    // vec3<f32>(pos.y, -pos.x, 0) *
-    // vec3<f32>(0, pos.z, pos.y);
-    
-    //try hi-res, 2d, and 3d, and spherical 
-
-    //soh - sin opp hyp
-    //toa - opposite / adjacent - 4/5
-
-
-    //8 data points - 4 per quadrant because coordinate system changes
-    // return vec3<f32>(
-    //     log(pos.x), 0, 0
-    // );
-//return vec3<f32>(sin(pos.x * 3.14), 0., 0.);
-    //return vec3<f32>((pos.x * 100 % 3)  * (pos.y * 100 % 3));
-    //return vec3<f32>(pos.x * pos.y, 0, 0);
-    //return vec3<f32>(pos.x / pos.y, 0, 0);
-   //return vec3<f32>(pos.x - pos.y, 0, 0);
-}
 
 fn somethingFromNothing () -> vec3<f32> {
     var jkl = 92.;
@@ -755,6 +710,21 @@ fn somethingFromNothing () -> vec3<f32> {
     return vec3<f32>(vcf.fract, jkl / 10., jkl / 21);
 }
 
+//very faint and subtle particle pattern - 
+
+
+fn createVectorField(index: u32) -> vec3<f32> {
+    var dir= direction[index];
+    var soFar = distancetraveled[index];
+    var reset = reset[index];
+    var other = vectorFieldBuffer2[index];
+    var pos = posBuffer[index];
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+
+    return vec3<f32>(1.);
+}
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
@@ -768,7 +738,7 @@ vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
-  direction[index] = direction[index] + .1 * vf;
+  direction[index] = direction[index] + .01 * vf;
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
@@ -1139,7 +1109,7 @@ fn understandWhatYoureDoing ()  {
     fn makeRainbow3DLineWithWhiteOrbit (idx:u32) -> vec3<f32> {
         
 
-        posBuffer[idx];
+        //posBuffer[idx];
         return vec3<f32>(0.);
     }
 
@@ -1153,3 +1123,290 @@ fn understandWhatYoureDoing ()  {
 //     //may 30
 //     // - have to make forward progress today 4am-midnight w/o coffee 
 
+
+
+//    // fn createVectorField(index: u32) -> vec3<f32> {
+// //     var dir= direction[index];
+// //     var soFar = distancetraveled[index];
+// //     var reset = reset[index];
+// //     var other = vectorFieldBuffer2[index];
+
+// //     var pos = posBuffer[index];
+// //     //link the indices of 3-4 points and have them travel in clusters or orbit each other, swap places
+// //     //dont use position
+// //     var theta = atan2(pos.y, pos.x) * 1;
+// //     var i = cos(theta) - pos.x;
+// //     var j = sin(theta) - pos.y;
+// //     //var k = sin(j * 3.1415);
+// //     var radius = distance(pos.xyz, vec3<f32>(0));
+// //     return radius * vec3<f32>(i, j, 0);
+// // }
+
+// // fn createVectorField(index: u32) -> vec3<f32> {
+// //     var dir= direction[index];
+// //     var soFar = distancetraveled[index];
+// //     var reset = reset[index];
+// //     var other = vectorFieldBuffer2[index];
+
+// //     var pos = posBuffer[index];
+// //     //link the indices of 3-4 points and have them travel in clusters or orbit each other, swap places
+// //     //dont use position
+// //     var theta = atan2(pos.y, pos.x);
+// //     var angle = floor(degrees(theta) / 8);
+// //     var point = 10. * vec3<f32>(cos(angle), sin(angle), 0);
+// //     var i = point.x - pos.x;
+// //     var j = point.y - pos.y;
+// //     var m = 0.;
+// //     return vec3<f32>(i, j, 0);
+// // }
+
+// // fn createVectorField(index: u32) -> vec3<f32> {
+// //         var dir= direction[index];
+// //         var soFar = distancetraveled[index];
+// //         var reset = reset[index];
+// //         var other = vectorFieldBuffer2[index];
+
+// //         var pos = posBuffer[index];
+
+// //         var a1 = distance(pos.xyz, vec3<f32>(0));
+// //         // var a2 = distance(pos.xyz, vec3<f32>(1,1,1,));
+// //         var a3 = distance(pos.xyz, pos.zxy);
+// //         // vf is cool - w/o any functions 
+// //         var i = 10.;
+// //         var j = 0.;
+     
+// //         return vec3<f32>(y,-x, 0);
+// //     }
+
+// fn createVectorField2(index: u32) -> vec3<f32> {
+//     var pos = posBuffer[index];
+  
+  
+//   //   return vec3<f32>(
+//   //     .1 * reflect(pos, vec4<f32>(0,0,0, 0)).xyz
+//   //   );
+  
+//   //return vec3<f32>(0.,0., 0.);
+  
+  
+//   var dir= direction[index];
+  
+//   var soFar = distancetraveled[index];
+//   var reset = reset[index];
+//   var other = vectorFieldBuffer2[index];
+  
+  
+  
+//   //return vec3<f32>(pos.x - pos.y - pos.z, 0,0);
+  
+  
+//   //return vec3<f32>((pos.x - pos.y * pos.y) / pos.z,0,0);
+  
+  
+  
+  
+//   // return vec3<f32>(
+//   //     pos.y / pos.z, -pos.x, 0
+//   // )  ; 
+  
+  
+//   //return vec3<f32>(1, 2, pos.z * pos.y);
+  
+  
+  
+//   var x = pos.x;
+//   var y = pos.y;
+//   var z = pos.z;
+//   //
+//   //
+//   //
+//   let r = reset[index];
+  
+  
+//   var v1 = 2. * sin(uniforms.time * .001);
+//   var v2 = -2 * cos(uniforms.time * .001);
+  
+//   //so good the aliens did it - 8 pyramid blocks 
+  
+//   //return vec3<f32>(x * y,0,0);
+//   //return v1 * vec3<f32w>(y,-x,0) + 
+//   //v2 * vec3<f32>(0,z,-y);
+//   //rotate 90degrees
+//   //reseting the location is good when it goes past the boundaries
+//   //this looks more cool when it goes past the boundary, so resetting it at different rates is what makes it look cool
+//   //so the vector field will look most cool when you vary the rebirth location
+//   // attenuation rate in w slot which is usually for camera transforms 
+//   //use the previous state of the vector in the vector field to adjust the next iteration somehow 
+//   // return cross(vec3<f32>(
+//   //      x, 
+//   //     y,
+//   //      z
+//   // ),  vec3<f32>(sin(uniforms.time * .001),cos(uniforms.time * .001),cos(uniforms.time * .01))
+//   //  );
+//   //16 cool vector fields - acting on 8 regions - or 8 time slices 
+//   //reflections + post processing = done by monday deterministic - fun - cool- differential equations for fire and rainbow fire and smoke and 
+//     //return vectorFieldCreator(index);
+  
+//     var theta = atan2(y,x);
+//     theta += 1.5;
+//   //   return .1 * vec3<f32>(
+//   //  pow(y, .5) + y ,
+//   //  -pow(x, .5) + x,
+//   //     0, 
+//   //   );
+  
+//   // var x1 = cos(groupIndex);
+//   // var y1 = sin(groupIndex);
+  
+//   //var y = pos.y;
+  
+  
+//   var magnets = array<vec3<f32>,3>();
+//   //return other.xyz;
+  
+//   // return vec3<f32>(
+//   //   sin(g), cos(g), tan(g)
+//   // );
+  
+  
+  
+//   var pick = uniforms.time % 10;
+  
+//   //know  that it looks cool
+  
+//   // return groupIndex * vec3<f32>(
+//   //     x,y,z
+//   // );
+  
+//   // return vec3<f32>(
+//   //     pos.x, pos.y, pos.z
+//   // );
+//   var i = f32(index);
+//   // return vec3<f32>(
+//   //   z , 0, x
+//   // );
+//   var coef = 4.;// + sin(uniforms.time * .001);
+  
+  
+//   //coef = otherPick;
+//   //distance to corner +
+  
+  
+//   var x3 = x / y;
+//   var y3 = x / y;
+//   var z3 = x / x;
+  
+//   //return vec3<f32>(x3, y3, z3 );
+  
+  
+//   // if (otherPick < 5){
+//   //     return vec3<f32>(y, -x, 0);
+  
+//   // } else {
+//   //     return vec3<f32>(cos(theta * coef), sin(theta * coef), 0);
+//   // }
+  
+  
+  
+//   // return vec3<f32>(y, -x, 0) +
+//   // vec3<f32>(cos(theta * coef), sin(theta * coef), 0)
+//   // + .01 * vec3<f32>(.5  *abs(pos.x)-pos.y * tan(g),
+//   // pos.y, sin(pos.z * abs(pos.x))
+//   // );
+  
+  
+  
+//   var noise = 1. + sin(uniforms.time  * .0001);
+  
+//   var x1 = noise * (cos(theta * coef));
+//   var y1 = noise * (sin(theta * coef));
+  
+  
+//   //return vec3<f32>(pos.x - pos.z);
+  
+  
+//   // if (distance(pos.xyz, vec3<f32>(0.)) < .1) { return vec3<f32>(x * x, y * y, z * z);} 
+//   // return noise * 10. * vec3<f32>(x1, y1, .0001 * z1); 
+  
+//   //  vec3<f32>(
+//   //     10. * y,  10. * -x, sin(z) * 10
+//   // );  
+//   //no experimentation
+  
+  
+//   let idx = f32(index);
+//   let rad = radians(idx );
+//   let j = 20. * cos(uniforms.time * .001)  * sin(rad);
+//   let k = 10. *cos(rad) ;
+//   //* distance(vec3<f32>(0.), pos);
+//   return vec3<f32>(j, k, 0);
+  
+//   // return 2 * vec3<f32>(pos.y+ sin(uniforms.time) ,
+//   //   -pos.x + sin(uniforms.time),
+//   //    1 / length(pos.xy));
+  
+  
+//   // return vec3<f32>(pos.x, pos.y, abs(pos.z) * 2);
+  
+//   // return  vec3<f32>(
+//   //   pos.x / pos.y, pos.y / pos.z, pos.z / pos.x
+//   //  );
+  
+//   // return  vec3<f32>(
+//   //   pos.x * pos.y, pos.y * pos.z, pos.z  * pos.x
+//   //  ); cool
+  
+//   // return  .1 * vec3<f32>(
+//   //    pos.x - pos.y, pos.y - pos.z, pos.z  - pos.x
+//   //   );
+  
+  
+//   // return  vec3<f32>(
+//   //  sqrt(pos.x), pos.y, pos.z 
+//   // );
+  
+  
+  
+//   // return  vec3<f32>(
+//   //   2 * pos.y,  pos.z, sqrt(pos.x)
+//   // );
+  
+//   // return vec3<f32>(
+//   //   pos.y * pos.y, -5 * pos.x, sin(1. / pos.z)
+//   // );
+  
+//   // return vec3<f32>(
+//   //   5 * pos.y, -5 * pos.x, sin(1. / pos.z)
+//   // );
+  
+//   // return vec3<f32>(
+//   //   5 * pos.y, -5 * pos.x, (1. / pos.z)
+//   // );
+  
+//   //make a spiral by taking the spiral from earlier and make differeentiation
+  
+//   // return vec3<f32>(
+//   //   5 * pos.y, -5 * pos.x,(1. - pos.z)
+//   // );
+  
+  
+  
+//   // return vec3<f32>(
+//   //   5 * pos.y * sin(pos.z * .5), -5 * pos.x * sin(pos.z * .5), pos.z - pos.x
+//   // );
+  
+//   // return vec3<f32>(
+//   //   1,pos.x - pos.z, pos.y - pos.z
+//   // );
+  
+//   //distance
+//   // return vec3<f32>(
+//   //   1,pos.x - pos.z, reflect(pos, vec4<f32>(0,0,0, 0)).x
+//   // );
+  
+//   return vec3<f32>(
+//     10 * sin(uniforms.time * .001), 0., 0.
+//   );
+  
+//   //return   vec3<f32>(cos(groupIndex / 1e6), sin(groupIndex / 1e6), sin(groupIndex / 1e6));
+//   }
