@@ -720,15 +720,19 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var x = pos.x;
     var y = pos.y;
     var z = pos.z;
-    return vec3<f32>(pos.y, -pos.x, 0);
+    return .1  * vec3<f32>(pos.y, -pos.x, 0);
+
+    return vec3<f32>(0, pos.z, -pos.y);
+    
+    // vec3<f32>(pos.y, -pos.x, 0) *
+    // vec3<f32>(0, pos.z, pos.y);
     
     //try hi-res, 2d, and 3d, and spherical 
 
     //soh - sin opp hyp
     //toa - opposite / adjacent - 4/5
 
-//serious means 20 hour work days for as long as it takes
-//400 hours
+
     //8 data points - 4 per quadrant because coordinate system changes
     // return vec3<f32>(
     //     log(pos.x), 0, 0
@@ -739,16 +743,6 @@ fn createVectorField(index: u32) -> vec3<f32> {
     //return vec3<f32>(pos.x / pos.y, 0, 0);
    //return vec3<f32>(pos.x - pos.y, 0, 0);
 }
-
-//if you waste our time then we wont let you do anything
-//you must work till a window of opportunity arises
-//story of a lifetime 
-//is it all about the story?
-//is a demop really of anything? 
-//then you will work for 100 hours straight without sleeping
-
-
-
 
 fn somethingFromNothing () -> vec3<f32> {
     var jkl = 92.;
