@@ -1,9 +1,11 @@
 
 const shared_functions = 
-`fn hashPosition(pos: vec3<f32>) ->  i32{
-    var x = clamp((pos.x + 1) / 2., 0, 1);
-    var y = clamp((1. - (pos.y)) / 2., 0, 1);
-    var z = clamp((1. - (pos.z)) / 2., 0, 1);
+`fn hashPosition(p: vec3<f32>) ->  i32{
+    var pos = p % 1.;
+
+    var x = (pos.x + 1) / 2.;
+    var y = (1. - (pos.y)) / 2.;
+    var z = (1. - (pos.z)) / 2.;
 
     //if (z < .1) {z = .9;}
     // 
@@ -46,7 +48,15 @@ fn justCode(pos:vec3<f32>) -> i32 {
     return -1;
 }
 
-fn hashPosition(pos: vec3<f32>) ->  i32{
+fn hashPosition(p: vec3<f32>) ->  i32{
+
+
+
+    //modulo a percent
+
+
+    var pos = p % 1.;
+
     var x = (pos.x + 1) / 2.;
     var y = (1. - pos.y) / 2.;
     var z = (1. - pos.z) / 2.;
@@ -622,7 +632,7 @@ fn makeGreatStuff(idx:u32) -> f32 {
 
 //make it change through different phases - 5 phases 
 
-
+//All i have to do - only thing to do- is exactly what they want - best solution 4 all
 //improve the patterns
   fn ribbon(idx: u32) -> f32 {
     var dt = distancetraveled[idx];
@@ -692,9 +702,21 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   //return vec3<f32>(10 * y * sin(uniforms.time * .1), dot(dir, dir) ,0 );
 }
 
+fn endStream ( ) -> vec3<f32> {
+
+
+        return vec3<f32>(0.);
+}
+
 
 fn somethingNew () -> vec3<f32> {
-    return vec3<f32>(0.);
+    var vector = vec3<f32>(0.);
+    vector.x += 123.;
+    vector.y += 456.;
+    vector.z += 789.;
+    vector.z += 789.;
+
+    return vector;
 }
 
 
@@ -709,10 +731,50 @@ fn somethingFromNothing () -> vec3<f32> {
     //var rty = dot(vec3<f32>(1., 2., 3.), vec3<f32>(4., 3., 2.));
     return vec3<f32>(vcf.fract, jkl / 10., jkl / 21);
 }
+//1000 x 1000 x 10
+//sand - collision + vector field for wind - sand dune + sand storm
+//extremeley impressive 
+//planet simulation - gravity - galaxy - solar system 
+// magnet, wind 
+// oceans - vector fields - ships 
+//finish a few vector fields and combine them
+//impress everyone - a week ago they still wanted to be done - dont fuck around again
+//finish it this week or else life will go on 
+//do something thats never been done or that you've never seen including perlin noise
+//2-3 weeks - 2-3 miracle out of hat - most poeple would say not good enough
+//they want to see you work 24/7 to see how much you care - drink the fat 
+//no one wants to see demo online - want to see it through your eyes 
+//invent anything new - that is complex 
+//do whatever they say 
+//no one wants to do this for that long 
+//no random trying - consciouscly constructed 
+//18 hour work days 
+//we need you to commit - more than everyone combined
+// you have no idea how much we need you to work on it
+//we need you to work on it and finish it - 
+//demo finishes the story
+fn finishDemo (pos: vec3<f32>) -> vec3<f32> {
+    var finishItThisWeek = .5;
+    // make a vector field from scratch
+    // whatever you finish, turn that in, and we'll be done 
+    // 2-3 weeks 
+    // 1 week - OPTIMAL - gradually amazzing - more and more sophisticated each day
+    // 20 hours a day for 2 weeks - 300 hours - set a timer 
 
-//very faint and subtle particle pattern - 
 
 
+
+    return vec3<f32>(pos.x, pos.y, pos.z);
+}
+
+//ice magic simulation
+//each particle behaves differently 
+//knight mare frame simulation
+//kite simulation
+
+
+
+//vf 1 million moves through vf100 - every cell has wind behaviors
 fn createVectorField(index: u32) -> vec3<f32> {
     var dir= direction[index];
     var soFar = distancetraveled[index];
@@ -723,9 +785,10 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var y = pos.y;
     var z = pos.z;
 
+    //make a function like perlin noise
 
     var vet = vec3<f32>(0,0.,0.);
-    return vec3<f32>(z,0,-x);
+    return vec3<f32>(y,-x,sin(pos.y));
 }
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
@@ -735,7 +798,7 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
     var y = pos.y;
     var z = pos.z;
 
-vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
+vectorFieldBuffer[idx] += vec4<f32>(createVectorField(index), 1.);
 
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
