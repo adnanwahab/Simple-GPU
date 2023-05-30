@@ -58,7 +58,7 @@ fn hashPosition(pos: vec3<f32>) ->  i32{
     // + floor(floor(z * 1000) * 1000) * 10
     // );
 
-
+//very faint and subtle particle pattern - 
     var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
     + floor(floor(z * 100) * 100) * 100
     );
@@ -714,7 +714,6 @@ fn createVectorField(index: u32) -> vec3<f32> {
 
     var pos = posBuffer[index];
 
-    return vec3<f32>(0,0,0);
  
     var i = 0.;
     var j = 0.;
@@ -1161,7 +1160,7 @@ vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
 
-  direction[index] = direction[index] * vec3<f32>(-1, 1, 0);
+  direction[index] = direction[index] + .1 * vf;
 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
@@ -1515,7 +1514,7 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
     
     //finish the demo and build 100 vector fields
     //100 different particle animations 
-    //10 days - 20 hours - no food unless told to
+    //10 days - 200 hours - no food unless told to
 fn understandWhatYoureDoing ()  {
     //array<f32,9>
 
@@ -1526,10 +1525,22 @@ fn understandWhatYoureDoing ()  {
         var tinto = vec3<f32>(444.,222.,111.);
 
         rinto *= tinto.zyx;
-
+        rinto /= 123.;
 
         return vec3<f32>(0., 0., 0.);
     }
+
+
+    fn makeRainbow3DLineWithWhiteOrbit () -> vec3<f32> {
+
+        return vec3<f32>(0.);
+    }
+
+
+
+
+
+
     `;
 
     //may 30 - have to make forward progress today 4am-midnight w/o coffee 
