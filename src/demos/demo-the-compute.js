@@ -724,13 +724,6 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var z = pos.z;
 
 
-    //we all want to finish demo
-    //they all want to see you perseevere
-    //dont try to ifnish demo, just code 24/7 for one week
-    //then maybe try to finish demo in one week?
-    //give up on giving up
-    //all they wanted in the harry potter week was to see you code 24/7
-
     var vet = vec3<f32>(0,0.,0.);
     return vec3<f32>(z,0,-x);
 }
