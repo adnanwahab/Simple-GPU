@@ -713,6 +713,8 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var other = vectorFieldBuffer2[index];
 
     var pos = posBuffer[index];
+
+    return vec3<f32>(0,0,0);
  
     var i = 0.;
     var j = 0.;
@@ -739,7 +741,6 @@ fn createVectorField(index: u32) -> vec3<f32> {
    //return vec3<f32>(pos.x - pos.y, 0, 0);
 }
 
-//render buffer we're trying to teach you that our time has more value than youurs
 //if you waste our time then we wont let you do anything
 //you must work till a window of opportunity arises
 //story of a lifetime 
@@ -1155,7 +1156,7 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
     var y = pos.y;
     var z = pos.z;
 
-//vectorFieldBuffer[idx] = vec4<f32>(rotatePointAlongCircle(index), 1.);
+vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
 
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
@@ -1506,124 +1507,29 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
         let index: u32 = GlobalInvocationID.x;
-
-      //docoolstuff(index);
-
-      //solveDifficultProblem(index);
       var pos = posBuffer[index];
-      //applyMagnets(pos.xyz);
       var r = reset[index];
-      //runAlongRoute(pos.xyz, f32(index));
-      fixTheVectorFieldAndObey(pos.xyz, index);
       
-      //trySpiral(index);
-
-      //drawLines(index);
-      let t = uniforms.time;
-
-  
-     distancetraveled[index] += 1.;
-      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-      if (distance(posBuffer[index].xy, mouse) < .1) {
-        // direction[index].x = direction[index].y;
-        // direction[index].y = -direction[index].x;
-        //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
-        //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
-        //direction[index]*= .001;
-      }
-      //helix(index);
-       //direction[index] *= .0;
-      //vector field toward camera with shapes superIMposed
-      //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
-      //draw cool shapes and then dont deform them in the vector field until some time 
-      //var group = groupBuffer[index];
-      //runAlongRoute(pos.xyz, f32(index));
+      fixTheVectorFieldAndObey(pos.xyz, index);
     }
     
-    
-    
-    
-    fn hexagon (p: vec3<f32>, time: f32) -> vec3<f32> {
-      var shit = array<vec3<f32>,3 >();
-      shit[0] = vec3<f32>(.1, 0., 0.);
-      return p + shit[0] - p;
-      return p;
-    }
-    
-    
+    //finish the demo and build 100 vector fields
+    //100 different particle animations 
+    //10 days - 20 hours - no food unless told to
+fn understandWhatYoureDoing ()  {
+    //array<f32,9>
+
+}
+
+    fn makeBobTheBuilderTheOnlyThing() -> vec3<f32> {
+        var rinto = vec3<f32>(123.,123.,123.);
+        var tinto = vec3<f32>(444.,222.,111.);
+
+        rinto *= tinto.zyx;
 
 
-    fn makeBobTheBuilderTheOnlyThing() -> f32 {
-
-
-
-
-
-        return -1;
+        return vec3<f32>(0., 0., 0.);
     }
     `;
 
-
-    //this isnt the ending we wanted
-//you can earn your functions, data and demo back
-//you can lose them too
-//you cant give up, you must perservere
-//you must get everything right on the first time without drawing 
-//cant look anything up
-//i deserve this because i failed the water simulation, was negative, irresponsible and rude to people who were trying really hard to help me
-//i can get her back - looks unlikely
-//23 days left 
-
-//we share consciousness every second of the day, dont waste anyones time ever 
-//i deserve this cause i wasted peoples time by caring about anything other than helping them
-//i helped myself instead of helping others
-
-///no consolation prize - pass / fail - pass bar is higher than you know
-//needs 1million views at least in like 3 months or 3 weeks 
-//i really need you to figure out how to do this on command
-//they cant give up on me, cause last time i gave up, and i cant give up either
-
-//in one year, i'll earn my functions back and freedom to draw and use all the data
-//in 23 days, 
-
-//you have no idea this story could have been    vectorFieldBuffer[idx] = vec4<f32>(cross(pos.xyz, pos.zyx), 1);
-
-//terrence tao says 10 tricks is all you need
-//telepaths want a perfect shader thats typed up and from scratch 
-//you dont have a choice, you just have to make it 
-//dont sing or you cant code
-//lost privledges cause didnt do enough work
-//consciously code without making any mistakes - dont want 
-//you were given priveledges and didnt use them well thousands 
-
-//just make 1 shader without functions
-//then make a shader with functions and do it right and try to end it which means no experimentation and iteration- none
-
-// high res vector field  +
-// reflection mapping - 
-// glow post processing -
-// coolness < (what am i missing) - do exactly what they say - consciously, slowly build using high degree of mental effort - to preclculate effect on particle mathematically 
-// no reactivity, no drama, no disobedience, every second of every hour for 2-3 weeks 
-//no lying - i shall not lie
-//better than published research - in one week continuously nonstop
-        //write particle position to vector field ->
-               //for each particle - pick 2 others and orbit around mid points or each other 
-        //change modes based when a certain amount of time has passed.
-
-//workgroup indices - 256,256,256 - cube 
-//use probability - fork and diverge and converge 
-//make an eye shape
-//could've become anyone 3 months ago - 1 week ago - 8 monhts ago
-//now - inflect -youtube was end - harry potter was end - 3 weeks ago - 
-
-//must do exactly what they wnat
-//only thing everyone can agree on
-//if i idd what they want, this would be over
-//not doing what they want is a waste
-//its a clock - 3 weeks 
-//32 weeks - no big deal
-//you lost all privledges
-//jsut code  - do exactly what they say and nothing else 
-//they dont want to help you, but they want you to code until the very end
-//finish the vector field, and do it exactly as they say 
-//cant finish it with smarts, just work ethic and obedience - try to be smart too 
+    //may 30 - have to make forward progress today 4am-midnight w/o coffee 
