@@ -772,7 +772,21 @@ fn finishDemo (pos: vec3<f32>) -> vec3<f32> {
 //knight mare frame simulation
 //kite simulation
 
+fn newFunction() -> vec3<f32> {
+    var eee = vec3<f32>(1., 3, 2.);
+    var www = vec3<f32>(-5, 2., .5);
+    var zzz = vec3<f32>(.1, .2, .3);
+    var yyy = vec3<f32>(.4, .4, .2);
+    var sss = vec3<f32>(123, 123, 123);
+    var mmm = vec3<f32>(221, 21, 313);
+    var ret = vec3<f32>(123, 213, 321);
 
+    return eee - www + ret - ret + ret;
+}
+
+fn dotProduct(a:vec3<f32>, b:vec3<f32>) -> f32 {
+    return a.x + b.x;
+}
 
 //vf 1 million moves through vf100 - every cell has wind behaviors
 fn createVectorField(index: u32) -> vec3<f32> {
@@ -785,10 +799,14 @@ fn createVectorField(index: u32) -> vec3<f32> {
     var y = pos.y;
     var z = pos.z;
 
-    //make a function like perlin noise
 
-    var vet = vec3<f32>(0,0.,0.);
-    return vec3<f32>(y,-x,sin(pos.y));
+    //return vec3<f32>(0., 0., 0.);
+    return newFunction();
+    //var theta = atan2(y +.5, x + .5);
+    //return vec3<f32>(cos(theta),sin(theta),0);
+    //return notWind(pos.xyz);
+    //return vec3<f32>();
+    //return cross(pos.xyz, pos.zxy);
 }
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
@@ -798,7 +816,7 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
     var y = pos.y;
     var z = pos.z;
 
-vectorFieldBuffer[idx] += vec4<f32>(createVectorField(index), 1.);
+vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
 
 var vf = hash(pos.xyz);
  direction[index] *= .1; 
@@ -1152,7 +1170,11 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
       var pos = posBuffer[index];
       var r = reset[index];
       
+
+      //uniforms.time indexBuffer - 10 x 10 grid - 10 intervals - 10 groups - 1m cells 
+      //end by friday - flight would be bad for family 
       fixTheVectorFieldAndObey(pos.xyz, index);
+      //applyVF0(pos.xyz, index);
     }
     
 fn understandWhatYoureDoing ()  {
