@@ -206,14 +206,6 @@ function makeChair() {
   return result;
 }
 
-
-function makeSphere() {
-
-  //for (let i = 0; i < )
-}
-
-
-
 function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
     return [x , y, z , 0]
@@ -804,7 +796,7 @@ function makeVectorFieldGeneric2D(cb, buffer ) {
       //
       let idx = Math.round(x1 * w + y1 * w * h)
       
-      result[idx] = cb(x, y, 0, i, j, k, idx)
+      result[idx] = cb(x, y, 0, i, j, 0, idx)
    
     }
   }
@@ -1074,63 +1066,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
 
 
 
-var computeVectorField = webgpu.initComputeCall({
-  label: `computeVectorField`,
-  code:  process,
 
-  exec: function (state){
-    const device = state.device
-    const commandEncoder = state.ctx.commandEncoder = state.ctx.commandEncoder || device.createCommandEncoder();
-
-    const computePass = commandEncoder.beginComputePass();
-    state.computePass.computePass = computePass;
-    
-  webgpu.device.queue.writeBuffer(uniformsBuffer, 0,  new Float32Array(mouse))
-  let timeBuffer = new Float32Array(1)
-  window.writeTime = function (dt) {
-    timeBuffer[0] = dt
-    webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  timeBuffer)
-  }
-  let modeBuffer = new Float32Array(1)
-  let twistRate = new Float32Array(1)
-
-  window.writeDecayRate = function (decayRateNum) {
-    twistRate[0] = decayRateNum
-    webgpu.device.queue.writeBuffer(uniformsBuffer, 16,  twistRate)
-  }
-  window.writeDecayRate(0)
-
-  window.writeMode = function (dt) {
-    modeBuffer[0] = dt
-    console.log(dt)
-    webgpu.device.queue.writeBuffer(uniformsBuffer, 8,  modeBuffer)
-  }
-    computePass.setPipeline(state.computePass.pipeline);
-    computePass.setBindGroup(0, state.computePass.bindGroups[0]);
-    computePass.dispatchWorkgroups(10000);
-    computePass.end();
-  },
-  bindGroups: function (state, computePipeline) {
-
-
-const descriptor = {
-  layout: computePipeline.getBindGroupLayout(0),
-  entries: [
-    {binding: 0, resource: {buffer: gridBuffer}},
-    {binding: 1, resource: {buffer: mesh || shapes[0]}},
-//    {binding: 2, resource: {buffer: uniformsBuffer}},
-    {binding: 3, resource: {buffer: direction}},
-    {binding: 4, resource: {buffer: distancetraveledBuffer}},
-    {binding: 5, resource: {buffer: reset }},
-    {binding: 6, resource: {buffer: gridBuffer2 }},
-
-  ]
-}
-
-let computeBindGroup = state.device.createBindGroup(descriptor)
-    return [computeBindGroup]
-  }
-})
 
 
 
@@ -1180,7 +1116,6 @@ let computeBindGroup = state.device.createBindGroup(descriptor)
       {binding: 1, resource: {buffer: mesh || shapes[0]}},
       {binding: 2, resource: {buffer: uniformsBuffer}},
       {binding: 3, resource: {buffer: direction}},
-      {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
       {binding: 6, resource: {buffer: gridBuffer2 }},
     ]

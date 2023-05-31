@@ -29,7 +29,6 @@ export const process = `
 @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
 //@group(0) @binding(2) var<uniform> uniforms: Uniforms;
 @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-@group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
 @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
 @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
 
@@ -83,7 +82,6 @@ fn hashPosition(p: vec3<f32>) ->  i32{
         var z1 = posBuffer[index];
         var z2 = direction[index];
         
-        var z3 = distancetraveled[index];
         var z4 = reset[index];
         var z5 = vectorFieldBuffer2[index];
         
@@ -103,7 +101,6 @@ fn hashPosition(p: vec3<f32>) ->  i32{
     @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-    @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
     @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
 
@@ -260,13 +257,8 @@ fn drawShape (index: u32) -> vec3<f32> {
   dir.x = cos(theta + .7);
   dir.y = sin(theta + .7);
 
-  distancetraveled[index] += 1.;
-
-
-  if (distancetraveled[index] > 100) {
     direction[index] = dir; 
     posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
-  }
 
   return dir;
 }
@@ -379,9 +371,8 @@ fn drawShape (index: u32) -> vec3<f32> {
     
     let pos = posBuffer[index];
   //    dir.x = pos.x - pos.y;
-    if (distancetraveled[index] < 1000) {
       posBuffer[index] = vec4<f32>(0);
-    }
+    
     //f32(index)
   if (uniforms.time > 30000 - f32(index)) {
   
@@ -500,9 +491,9 @@ fn drawShape (index: u32) -> vec3<f32> {
   
   var index = f32(idx);
   //ditch conditionals in favor of building up a variable and then using it at the end 
-  if (distancetraveled[idx] < 10000) {
+
     posBuffer[idx] = vec4<f32>(0.);
-  }
+  
   if (idx < 256) {
     var i = f32(idx) - 128.;
     posBuffer[idx] = vec4<f32>(-i / 64., i / 64., 0., 1.) + vec4<f32>(-.5, -.5, 0, 0);
@@ -543,8 +534,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   var dt = sin(uniforms.time);
   
   var group = f32(index) % 20;
-    distancetraveled[idx] += 1;
-
     // if (group == 0 || group == 3) { 
     //   distancetraveled[idx] -= 100;
     //     //dir = drawCoolShape();
@@ -604,29 +593,12 @@ fn makeParticlesFly(idx: u32) -> bool {
   return false;
 }
 
-
-
-
-fn makeGreatStuff(idx:u32) -> f32 {
-  return -1;
-}
-
   fn makeCoolShader(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
     var index = f32(idx);
     var pos = posBuffer[idx];
 
     direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
 
-    if (dt > 10) {
-      direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
-    }
-
-    if (dt > 10) {
-      distancetraveled[idx]= 0;
-      posBuffer[idx] = reset[idx];
-      //vec4<f32>(0.);
-    }
     return -1;
   }
 
@@ -635,10 +607,8 @@ fn makeGreatStuff(idx:u32) -> f32 {
 //All i have to do - only thing to do- is exactly what they want - best solution 4 all
 //improve the patterns
   fn ribbon(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
-    distancetraveled[idx] += 1.;
     //uniforms.time / 3000000
     //.001 * 
     
@@ -668,7 +638,6 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
   var pos = posBuffer[index];
   var dir= direction[index];
   
-  var soFar = distancetraveled[index];
   var reset = reset[index];
   var other = vectorFieldBuffer2[index];
 //  var groupIndex = groupBuffer[index];
@@ -703,7 +672,7 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
 }
 
 fn endStream ( ) -> vec3<f32> {
-
+        var sdf = vec3<f32>(0.);
 
         return vec3<f32>(0.);
 }
@@ -711,10 +680,10 @@ fn endStream ( ) -> vec3<f32> {
 
 fn somethingNew () -> vec3<f32> {
     var vector = vec3<f32>(0.);
-    vector.x += 123.;
-    vector.y += 456.;
-    vector.z += 789.;
-    vector.z += 789.;
+
+
+    var left = vec3<f32>(-12, 0, 0);
+    var top = vec3<f32>(0, 12, 0);
 
     return vector;
 }
@@ -767,47 +736,14 @@ fn finishDemo (pos: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(pos.x, pos.y, pos.z);
 }
 
-//ice magic simulation
-//each particle behaves differently 
-//knight mare frame simulation
-//kite simulation
+fn buildVector(index:u32) -> vec3<f32> {
+    var vfb = vectorFieldBuffer2[index];
 
-fn newFunction() -> vec3<f32> {
-    var eee = vec3<f32>(1., 3, 2.);
-    var www = vec3<f32>(-5, 2., .5);
-    var zzz = vec3<f32>(.1, .2, .3);
-    var yyy = vec3<f32>(.4, .4, .2);
-    var sss = vec3<f32>(123, 123, 123);
-    var mmm = vec3<f32>(221, 21, 313);
-    var ret = vec3<f32>(123, 213, 321);
-
-    return eee - www + ret - ret + ret;
+    return vec3<f32>(2.);
 }
 
-fn dotProduct(a:vec3<f32>, b:vec3<f32>) -> f32 {
-    return a.x + b.x;
-}
-
-//vf 1 million moves through vf100 - every cell has wind behaviors
-fn createVectorField(index: u32) -> vec3<f32> {
-    var dir= direction[index];
-    var soFar = distancetraveled[index];
-    var reset = reset[index];
-    var other = vectorFieldBuffer2[index];
-    var pos = posBuffer[index];
-    var x = pos.x;
-    var y = pos.y;
-    var z = pos.z;
 
 
-    //return vec3<f32>(0., 0., 0.);
-    return newFunction();
-    //var theta = atan2(y +.5, x + .5);
-    //return vec3<f32>(cos(theta),sin(theta),0);
-    //return notWind(pos.xyz);
-    //return vec3<f32>();
-    //return cross(pos.xyz, pos.zxy);
-}
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
@@ -816,10 +752,10 @@ fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
     var y = pos.y;
     var z = pos.z;
 
-vectorFieldBuffer[idx] = vec4<f32>(createVectorField(index), 1.);
+    vectorFieldBuffer[idx] = vec4<f32>(buildVector(index), 1.);
 
-var vf = hash(pos.xyz);
- direction[index] *= .1; 
+    var vf = hash(pos.xyz);
+    direction[index] *= .1; 
 
   direction[index] = direction[index] + .01 * vf;
 
@@ -957,7 +893,6 @@ var z = vectorFieldBuffer[index];
 var z1 = posBuffer[index];
 var z2 = direction[index];
 
-var z3 = distancetraveled[index];
 var z4 = reset[index];
 var z5 = vectorFieldBuffer2[index];
 
@@ -1028,20 +963,23 @@ fn dragon (index: u32) -> f32 {
   return -1;
 }
 
+fn abc () -> vec3<f32> {
+    var sss = vec3<f32>(0.);
+
+    return sss;
+}
+
 fn trySpiral(idx:u32) -> f32{
     var index = idx;
     var z = vectorFieldBuffer[index];
 var z1 = posBuffer[index];
 var z2 = direction[index];
 
-var z3 = distancetraveled[index];
 var z4 = reset[index];
 var z5 = vectorFieldBuffer2[index];
 
-    var dt = distancetraveled[idx];
     var pos = posBuffer[idx];
     var theta = atan2(pos.y, pos.x);
-    distancetraveled[idx] += 1.;
     //uniforms.time / 3000000
     //.001 * 
     
@@ -1055,19 +993,11 @@ var z5 = vectorFieldBuffer2[index];
 
 //rotate x, y , z  then -s -y - z
 
-    if dt > 10 {
-        direction[idx] = vec3<f32>(0, 1, 0);
-    }
 
     // if dt > 10 {
     //     direction[idx] = vec3<f32>(0, 1, 0);
     //     direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
     // }
-
-    if dt > 20 {
-        direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-        distancetraveled[idx] = 1.;
-    }
 
 
     posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
@@ -1104,7 +1034,6 @@ fn drawLines(index: u32) {
     var z0 = vectorFieldBuffer[index];
     var z1 = posBuffer[index];
     var z2 = direction[index];
-    var z3 = distancetraveled[index];
     var z4 = reset[index];
     var z5 = vectorFieldBuffer2[index];
    
@@ -1117,7 +1046,6 @@ fn solveDifficultProblem (index: u32) {
     var z0 = vectorFieldBuffer[index];
     var z1 = posBuffer[index];
     var z2 = direction[index];
-    var z3 = distancetraveled[index];
     var z4 = reset[index];
     var z5 = vectorFieldBuffer2[index];
     //sphereEvaporate(z1, index);
@@ -1201,7 +1129,21 @@ fn understandWhatYoureDoing ()  {
     }
 
 
+fn codeAllDayAndAllNight() -> f32 {
+    var abc = 123.;
 
+    return -1;
+}
+
+fn tryToGetFunctionsAndDataBack() -> f32 {
+    var getThemBack = vec3<f32>(0,0,0);
+    var functions = vec3<f32>(0,0,0);
+
+
+    getThemBack.x = functions.r - functions.r;
+    return 31;
+}
+//if i receive instructions from the stream - do them immediately without hesitation
 
 
 
