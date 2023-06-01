@@ -1,13 +1,42 @@
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const shared_functions = 
 `fn hashPosition(p: vec3<f32>) ->  i32{
-    var pos = p % 1.;
+    var pos = p % 2.;
 
     var x = (pos.x + 1) / 2.;
     var y = (1. - (pos.y)) / 2.;
     var z = (1. - (pos.z)) / 2.;
 
-    //if (z < .1) {z = .9;}
+    //if (z < 7) {z = .9;}
     // 
     // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
     // + floor(floor(z * 1000) * 1000) * 10
@@ -93,7 +122,7 @@ fn hashPosition(p: vec3<f32>) ->  i32{
       mouse: vec2<f32>,
       time: f32,
       mode: f32,
-      decayRate: f32
+      attenuationRate: f32
     }
     
 
@@ -153,34 +182,6 @@ fn hashPosition(p: vec3<f32>) ->  i32{
         if (p.z >= bounds ){ return true;}
         return false;
   }
-
-  fn makeMagnets () -> array<vec3<f32>, 4> {
-    var result = array<vec3<f32>, 4>();
-
-    result[0] = vec3<f32>(0, 0, 0);
-    result[1] = vec3<f32>(0, 0, 0);
-    result[2] = vec3<f32>(0, 0, 0);
-    result[3] = vec3<f32>(0, 0, 0);
-
-
-    return result;
-  }
-
-  fn applyMagnets(pos: vec3<f32>) -> f32 {
-    var idx = hashPosition(pos);
-
-    var magnets = makeMagnets();
-
-
-    vectorFieldBuffer[idx] = vec4<f32>(0);
-    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y));
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
-    return 1.;
-  }
-
 ${shared_functions}
 
 
@@ -300,8 +301,8 @@ fn drawShape (index: u32) -> vec3<f32> {
 
 
 
-  fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
-    var dir = direction[index];// + vec3<f32>(1, 1, 1);
+  fn changeDirection (pos:vec3<f32>, j: u32) -> vec3<f32> {
+    var dir = direction[j];// + vec3<f32>(1, 1, 1);
     if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
   
     // if (false) {
@@ -328,34 +329,34 @@ fn drawShape (index: u32) -> vec3<f32> {
     // } else if (group == 3)  {
     //   dir = vec3<f32>(-1, 0, 0);
     // }
-    direction[index] = dir;
+    direction[j] = dir;
     return dir;
   }
   
   // fn helix(index: u32) -> vec3<f32>  {
-  // var dir = direction[index];
+  // var vel = vel[index];
   
   
-  // if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
+  // if (length(vel) == 0.){ vel = vec3<f32>(.1, 0., 0. );}
   
   
-  // var theta = atan2(dir.z, dir.x);
+  // var theta = atan2(vel.z, vel.x);
   
-  // // dir.x = cos(theta * 1.5);
-  // // dir.z = sin(theta * 1.5);
+  // // vel.x = cos(theta * 1.5);
+  // // vel.z = sin(theta * 1.5);
   
   
-  // dir.x =  cos(theta + 1.2);
-  // //dir.y = .1 * .000001;
-  // dir.z = sin(theta + 1.2);
+  // vel.x =  cos(theta + 1.2);
+  // //vel.y = .1 * .000001;
+
   
-  // // dir.x = .1;
-  // // dir.y = .1;
+  // // vel.x = .1;
+  // // vel.y = .1;
   
   // //posBuffer[index] = vec4<f32>(0.);
   
-  // direction[index] = dir;
-  // return dir;
+  // direction[index] = vel;
+  // return vel;
   // }
   
   //windowing function for direction ?? 
@@ -371,7 +372,7 @@ fn drawShape (index: u32) -> vec3<f32> {
     
     let pos = posBuffer[index];
   //    dir.x = pos.x - pos.y;
-      posBuffer[index] = vec4<f32>(0);
+      posBuffer[index] = vec4<f32>(7);
     
     //f32(index)
   if (uniforms.time > 30000 - f32(index)) {
@@ -490,7 +491,6 @@ fn drawShape (index: u32) -> vec3<f32> {
   fn web (pos: vec3<f32>, idx: u32) -> f32{
   
   var index = f32(idx);
-  //ditch conditionals in favor of building up a variable and then using it at the end 
 
     posBuffer[idx] = vec4<f32>(0.);
   
@@ -553,7 +553,7 @@ fn drawShape (index: u32) -> vec3<f32> {
         continue;
       }
         if (uniforms.mode == 0 && group < 20) {
- //          ribbon(idx);
+ //ribbon(idx);
           continue;
         }
       
@@ -602,7 +602,6 @@ fn makeParticlesFly(idx: u32) -> bool {
     return -1;
   }
 
-//make it change through different phases - 5 phases 
 
 //All i have to do - only thing to do- is exactly what they want - best solution 4 all
 //improve the patterns
@@ -626,21 +625,12 @@ fn makeParticlesFly(idx: u32) -> bool {
     return -1;
   }
 
-
-fn changeAcceleration () -> f32{
-
-  return -1;
-}
-
-
-
 fn vectorFieldCreator(index: u32) -> vec3<f32> {
   var pos = posBuffer[index];
   var dir= direction[index];
   
   var reset = reset[index];
-  var other = vectorFieldBuffer2[index];
-//  var groupIndex = groupBuffer[index];
+  var vfb2 = vectorFieldBuffer2[index];
   var x = pos.x;
   var y = pos.y;
   var z = pos.z;
@@ -668,7 +658,6 @@ fn vectorFieldCreator(index: u32) -> vec3<f32> {
     0,z,-y 
   );
 
-  //return vec3<f32>(10 * y * sin(uniforms.time * .1), dot(dir, dir) ,0 );
 }
 
 fn endStream ( ) -> vec3<f32> {
@@ -724,41 +713,36 @@ fn somethingFromNothing () -> vec3<f32> {
 //demo finishes the story
 fn finishDemo (pos: vec3<f32>) -> vec3<f32> {
     var finishItThisWeek = .5;
-    // make a vector field from scratch
-    // whatever you finish, turn that in, and we'll be done 
-    // 2-3 weeks 
-    // 1 week - OPTIMAL - gradually amazzing - more and more sophisticated each day
-    // 20 hours a day for 2 weeks - 300 hours - set a timer 
 
 
 
-
-    return vec3<f32>(pos.x, pos.y, pos.z);
+    return vec3<f32>(pos.y, pos.x, pos.y);
 }
 
-fn buildVector(index:u32) -> vec3<f32> {
-    var vfb = vectorFieldBuffer2[index];
-
-    return vec3<f32>(2.);
+fn onefourtyhours () -> f32 {
+    return 1;
 }
 
+fn makeDirection(index:u32) -> vec4<f32> {
+    var makeDemo = onefourtyhours();
+    
 
-
+    return vec4<f32>(0);
+}
 
 fn fixTheVectorFieldAndObey(pos: vec3<f32>, index:u32) -> f32 {
   let idx = hashPosition(pos);
-  var radius = distance(pos, vec3<f32>(0));
     var x = pos.x;
     var y = pos.y;
     var z = pos.z;
 
-    vectorFieldBuffer[idx] = vec4<f32>(buildVector(index), 1.);
+    vectorFieldBuffer[idx] = makeDirection(index);
 
     var vf = hash(pos.xyz);
     direction[index] *= .1; 
 
-  direction[index] = direction[index] + .01 * vf;
-
+  direction[index] = direction[index] + .1 * vf;
+ 
   posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.);
 
   if (hasCollided(pos.xyz)) {
@@ -815,7 +799,7 @@ fn applyVF9(pos: vec3<f32>, index:u32) -> f32 {
 
       vectorFieldBuffer[idx] = vectorFieldBuffer[idx].yxzw;
 
-    direction[index] = direction[index] + .01 * vf;
+    direction[index] = direction[index] + .1 * vf;
 
     posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
  
@@ -998,7 +982,7 @@ var z5 = vectorFieldBuffer2[index];
     //     direction[idx] = vec3<f32>(0, 1, 0);
     //     direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
     // }
-
+    //z
 
     posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
 
@@ -1067,17 +1051,17 @@ fn solveDifficultProblem (index: u32) {
     //make points 
 }
 
-fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
+fn flabberGast(pos: vec4<f32>, index: u32) -> bool {
   
-    var idx = f32(index);
-    var radius = idx / 256;
+    var flabbergasted = f32(index);
+    var radius = flabbergasted / 256;
      //4 / 3 * pow(idx / 256, 3);
     //circle 
     posBuffer[index] = vec4<f32>(
       
-      cos(idx) , idx /2000., 
+      cos(flabbergasted) , flabbergasted /1000., 
       
-      sin(idx), 1.);
+      sin(flabbergasted), 1.);
   
       posBuffer[index].x *= pow(cos(posBuffer[index].y), .5);
       posBuffer[index].z *= pow(cos(posBuffer[index].y), .5);
@@ -1100,9 +1084,9 @@ fn sphereEvaporate2(pos: vec4<f32>, index: u32) -> bool {
       
 
       //uniforms.time indexBuffer - 10 x 10 grid - 10 intervals - 10 groups - 1m cells 
-      //end by friday - flight would be bad for family 
       fixTheVectorFieldAndObey(pos.xyz, index);
       //applyVF0(pos.xyz, index);
+      var vfb = vectorFieldBuffer2[index];
     }
     
 fn understandWhatYoureDoing ()  {
@@ -1111,7 +1095,7 @@ fn understandWhatYoureDoing ()  {
 }
 
     fn makeBobTheBuilderTheOnlyThing() -> vec3<f32> {
-        var rinto = vec3<f32>(123.,123.,123.);
+        var rinto = vec3<f32>(123.,444.,123.);
         var tinto = vec3<f32>(444.,222.,111.);
 
         rinto *= tinto.zyx;
@@ -1135,14 +1119,6 @@ fn codeAllDayAndAllNight() -> f32 {
     return -1;
 }
 
-fn tryToGetFunctionsAndDataBack() -> f32 {
-    var getThemBack = vec3<f32>(0,0,0);
-    var functions = vec3<f32>(0,0,0);
-
-
-    getThemBack.x = functions.r - functions.r;
-    return 31;
-}
 //if i receive instructions from the stream - do them immediately without hesitation
 
 
