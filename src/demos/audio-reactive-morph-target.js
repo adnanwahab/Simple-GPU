@@ -146,11 +146,13 @@ list = new Float32Array(list.flat())
 
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
-  let stuff = ((i % 1000) / 1e3) 
-  let color = d3.rgb( interpolateTurbo(stuff));
-  rgb[3*i] = color.r / 255 
-  rgb[3*i+1] = color.g / 255
-  rgb[3*i+2] = color.b / 255
+  let r = i * (.00001);
+  let g = i 
+  let b = i 
+
+  rgb[3*i] = r / 200 
+  rgb[3*i+1] = g / 255
+  rgb[3*i+2] = b / 255
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
@@ -1727,8 +1729,6 @@ function makeDrawCall (buffer, drawDescriptor) {
   return vsOut;
   }
 
-
-
   const size = 4.0;
 
   const b = 0.3;//size of the smoothed border
@@ -1741,46 +1741,7 @@ if (x >= edge1) {return 1.;}
 let c = (x - edge0) / (edge1 - edge0);
 
 return c * c * (3 - 2 * c);
-}
-
-  fn mainImage(globalPosition: vec2<f32>, iResolution: vec2<f32>
-    ) -> vec4<f32> {
-    let aspect = iResolution.x/iResolution.y;
-    let position = (globalPosition.xy) * aspect;
-    let dist = distance(position, vec2<f32>(aspect*0.5, 0.5));
-    let offset=(uniforms.time) * 0.001;
-    let shit = uniforms.time;
-    let conv=4.;
-    let v=dist*4.-offset;
-    let ringr=floor(v);
-    
-    var stuff = 0.;
-    if (v % 3. > .5) {
-      stuff = 0.;
-    }
-
-var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
-    if (ringr % 2. ==1.) {
-     color=2.-color;
-    }
-
-  let distToMouseX = distance(1., globalPosition.x);
-  let distToMouseY = distance(2., globalPosition.y);
-
-  return vec4<f32>(
-    color, 
-    color, 
-    color, 
-   1.,
-    );
-};
-
-fn main(uv: vec2<f32>) -> vec4<f32> {
-  let fragCoord = vec2<f32>(uv.x, uv.y);
-  var base = vec4<f32>(cos(uniforms.time * .1), .5, sin(uniforms.time * 0.000001), 1.);
-  //let dist = distance( fragCoord, vec2<f32>(u.mouseX,  u.mouseY));
-  return mainImage(fragCoord, vec2<f32>(1000., 1000.));
-}
+  }
 
   @fragment
   fn main_fragment(@location(0) localPosition: vec2<f32>, @location(1) color:vec3<f32>,  @location(2) globalPosition:vec2<f32>) -> @location(0) vec4<f32> {
@@ -1788,6 +1749,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   if (distanceFromCenter > 1.0) {
       discard;
   }
+  var time = uniforms.time;
   var viewDir = vec3<f32>(0,0,0);
   var lightSpecularColor = vec3<f32>(0., 0., 1.);
   var lightSpecularPower = 1.;
@@ -1826,9 +1788,9 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   //sin(camera.time)
   //
 
-  var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
+  
   //color.rgb +
-  return vec4<f32>(color.rgb * c.rgb, 1.);
+  return vec4<f32>(color.rgb, 1.);
   }
   `}}));
   return drawRosePetals
