@@ -1521,7 +1521,6 @@ async function basic () {
 
  
 
-    vfPicker()
   //setInterval(vfPicker, 30000)
   drawScreen = makeDrawCall(happyBear, drawDescriptor) 
 
@@ -1784,11 +1783,7 @@ return c * c * (3 - 2 * c);
   //Sum up the specular light factoring
   let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
   let m = textureSample(myTexture, mySampler, localPosition);
-  //sin(camera.time)
-  //
 
-  
-  //color.rgb +
   return vec4<f32>(color.rgb, 1.);
   }
   `}}));

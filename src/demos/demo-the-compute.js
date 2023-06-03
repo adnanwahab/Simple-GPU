@@ -1,3 +1,18 @@
+///10 ideas to finish demo forever 
+//population future city simulation 24 hour s 3-30days depenidng on how long - 3 years depending on sophisitication
+//model growth of cities -> starts out wit like 5 housres and a pond and a city hall
+//grows into nyc with 8 million people or LA with 20 million 
+//minority report - add inicdiense - send cops and firefighters - add vehicles -- collisions 
+//resources like food and water have to be delivered 
+//mycelium - 3-7 days
+//economics - 3-7 days 
+// lava floes - 3-7 days
+//traffic floes ==  
+//try 7 simulations in 7 days 
+//take best one and polish for a week 
+//done by 17
+//dont do any of these - shodan 
+
 
 const shared_functions = 
 `fn hashPosition(p: vec3<f32>) ->  i32{
@@ -53,40 +68,29 @@ fn hasCollided (p: vec3<f32>)-> bool {
 
     ${shared_functions}
     fn hi(index:u32) {
-        var loc = location[index];
-        var idx = hashPosition(loc.xyz);
-        let theta = atan2(loc.y, loc.x);
+        var screenSpaceIndex = location[index];
+        var idx = hashPosition(screenSpaceIndex.xyz);
 
 
+        //modulo - checkerboard 3d converge + diverge
+        //modulo - checkerboard 3d - orbit 
+        //modulo checkerboard 3d - spiral 
+        //
 
+        //rainbow super algae - make it spread procedurally and blossom and send rainbow spiral smoke upward that makes atmosphere happy
+        //smoke simulation + algae simulation
 
-
-
-
-
-        graphicsRenderingBuffer[idx] = vec4<f32>(
-     
-       );
-
-
-
-
-
-
-
-
-
-
-
-
-
+        //mycellium simulation
 
         graphicsRenderingBuffer[idx] = vec4<f32>(
-             cross(loc.xyz,loc.zxy) /
-              distance(loc.xyz, vec3<f32>(0., 0., 0.)),1
+            
         );
+
+
+    //triangle a point based on every location and its reflected neighbors across 6 axis 
+
         rateOfChange[index] += .01 * graphicsRenderingBuffer[idx].xyz;
-        location[index] = loc + .01 * vec4<f32>(rateOfChange[index], 1.);
+        location[index] = screenSpaceIndex + .1 * vec4<f32>(rateOfChange[index], 1.);
     }
 
 
