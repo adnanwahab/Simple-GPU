@@ -81,23 +81,9 @@ fn hasCollided (p: vec3<f32>)-> bool {
 
 
 
-
-        // graphicsRenderingBuffer[idx] += vec4<f32>(
-        //     cos(theta), 
-        //     sin(theta), 
-        //     sin(theta), 
-        //     1.);
-        // graphicsRenderingBuffer[idx] += vec4<f32>(
-        //         cos(theta), 
-        //         sin(theta), 
-        //         sin(theta), 
-        //         1.);
-        //  graphicsRenderingBuffer[idx] = vec4<f32>(
-        //             1. - dot(loc.xyz,loc.zyx),
-        //             );
         graphicsRenderingBuffer[idx] = vec4<f32>(
-             dot(loc.xyz,loc.yxz) /
-              distance(loc.xyz, vec3<f32>(0., 0., 0.)),
+             cross(loc.xyz,loc.zxy) /
+              distance(loc.xyz, vec3<f32>(0., 0., 0.)),1
         );
         rateOfChange[index] += .01 * graphicsRenderingBuffer[idx].xyz;
         location[index] = loc + .01 * vec4<f32>(rateOfChange[index], 1.);
