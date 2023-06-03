@@ -20,6 +20,24 @@ struct Uniforms {
     mode: f32,
     attenuationRate: f32
 }
+fn hasCollided (p: vec3<f32>)-> bool {
+    var minX = -1; 
+    var bounds = 10.;
+    
+    if (p.x < -bounds) {return true;}
+     if (p.y <= -bounds) {return true;} //why is this backwards? 
+        if (p.x >= bounds) {return true;}
+        if (p.y >= bounds) {return true;}
+        if (p.z <= -bounds ) {return true;}
+        if (p.z >= bounds ){ return true;}
+        return false;
+    if (p.y <= -bounds) {return true;} //why is this backwards? 
+    if (p.x >= bounds) {return true;}
+    if (p.y >= bounds) {return true;}
+    if (p.z <= -bounds ) {return true;}
+    if (p.z >= bounds ){ return true;}
+    return false;
+  }
 
     @group(0) @binding(0) var<storage, read_write> graphicsRenderingBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage, read_write> location: array<vec4<f32>>;
@@ -28,15 +46,61 @@ struct Uniforms {
     @group(0) @binding(5) var<storage, read_write> recenter: array<vec4<f32>>;
     @group(0) @binding(6) var<storage, read_write> coolSixBuffer: array<vec4<f32>>;
 
-
+    fn createAcceleration () -> vec4<f32> {
+     
+        return vec4<f32>(0.);
+    }
 
     ${shared_functions}
     fn hi(index:u32) {
         var loc = location[index];
         var idx = hashPosition(loc.xyz);
-        graphicsRenderingBuffer[idx] += vec4<f32>(sin(uniforms.time), cos(uniforms.time), sin(uniforms.time), 1.);
-        rateOfChange[index] += .1 * graphicsRenderingBuffer[idx].xyz;
-        location[index] = loc + .1 * vec4<f32>(rateOfChange[index], 1.);
+        let theta = atan2(loc.y, loc.x);
+
+
+
+
+
+
+
+
+        graphicsRenderingBuffer[idx] = vec4<f32>(
+     
+       );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // graphicsRenderingBuffer[idx] += vec4<f32>(
+        //     cos(theta), 
+        //     sin(theta), 
+        //     sin(theta), 
+        //     1.);
+        // graphicsRenderingBuffer[idx] += vec4<f32>(
+        //         cos(theta), 
+        //         sin(theta), 
+        //         sin(theta), 
+        //         1.);
+        //  graphicsRenderingBuffer[idx] = vec4<f32>(
+        //             1. - dot(loc.xyz,loc.zyx),
+        //             );
+        graphicsRenderingBuffer[idx] = vec4<f32>(
+             dot(loc.xyz,loc.yxz) /
+              distance(loc.xyz, vec3<f32>(0., 0., 0.)),
+        );
+        rateOfChange[index] += .01 * graphicsRenderingBuffer[idx].xyz;
+        location[index] = loc + .01 * vec4<f32>(rateOfChange[index], 1.);
     }
 
 
@@ -101,7 +165,5 @@ struct Uniforms {
     }
     
 `;
-//do what they say = without thinking anything else 
-//make something line without index
-//only do what makes their experience of stream better, nothing else
 
+//finish demo today

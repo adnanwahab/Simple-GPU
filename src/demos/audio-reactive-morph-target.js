@@ -16,7 +16,7 @@
 //mirror world
 //generate vector field purely on GPU -> 10 million 
 let {cos, sin, } = Math
-import {demo, process} from './demo-the-compute'
+import {demo} from './demo-the-compute'
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
@@ -146,13 +146,11 @@ list = new Float32Array(list.flat())
 
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
-  let r = i * (.00001);
-  let g = i 
-  let b = i 
-
-  rgb[3*i] = r / 200 
-  rgb[3*i+1] = g / 255
-  rgb[3*i+2] = b / 255
+  let stuff = ((i % 1000) / 1e3) 
+  let color = d3.rgb( interpolateTurbo(stuff));
+  rgb[3*i] = color.r / 255 
+  rgb[3*i+1] = color.g / 255
+  rgb[3*i+2] = color.b / 255
 }
 
 const colorBuffer = makeBuffer(rgb, 0, 'color')
@@ -1110,6 +1108,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
     },
     bindGroups: function (state, computePipeline) {
 
+      var bufferIndex = new Float32Array(1e6);
 
   const descriptor = {
     layout: computePipeline.getBindGroupLayout(0),
