@@ -156,7 +156,6 @@ for (let i = 0; i < rgb.length; i++) {
 const colorBuffer = makeBuffer(rgb, 0, 'color')
 const dragonBuffer = makeBuffer(dragon.positions, 1, 'dragon')
 
-
 function getDist(a, b) {
   let dx = a[0] - b[0], dy =  a[1]-b[1], dz =  a[2] - b[2]
   return Math.sqrt([dx * dx, dy * dy, dz * dz, 0].reduce((a, b) => {
@@ -164,10 +163,7 @@ function getDist(a, b) {
   }))
 }
 
-
 const mouse = [0,0]
-
-
 function fib (n) {
   if( n  < 2) return n
   return fib(n-1) + fib(n-2)
@@ -1179,18 +1175,14 @@ function getFrames(model) {
 //   // }
 //   // shapes.push(dancer)
 //   //shapes.push(window.makeBuffer(dancer, 0,'leaf'))
-
 // })
 // getFrames(1)
 // getFrames(2)
 // getFrames(3)
 // getFrames(4)
-
-
 let indexPool = new Array(particlesCount / 4).fill(1).map((d, i) => i)
 indexPool.alloc = function (n) {
   let i = 0
-
   let result = []
   while (i < n) {
     result.push(this.shift())
@@ -1199,7 +1191,6 @@ indexPool.alloc = function (n) {
   pointBufferCount += n;
   return result;
 }
-
 function line(a, b) {
   this.x1 = a[0]
   this.y1 = a[1]

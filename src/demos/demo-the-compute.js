@@ -70,38 +70,21 @@ fn hasCollided (p: vec3<f32>)-> bool {
     fn hi(index:u32) {
         var screenSpaceIndex = location[index];
         var idx = hashPosition(screenSpaceIndex.xyz);
-
-
         //modulo - checkerboard 3d converge + diverge
         //modulo - checkerboard 3d - orbit 
         //modulo checkerboard 3d - spiral 
-        //
-
         //rainbow super algae - make it spread procedurally and blossom and send rainbow spiral smoke upward that makes atmosphere happy
         //smoke simulation + algae simulation
-
         //mycellium simulation
-
-        graphicsRenderingBuffer[idx] = vec4<f32>(
-            
-        );
-
-
-    //triangle a point based on every location and its reflected neighbors across 6 axis 
-
+        graphicsRenderingBuffer[idx] = vec4<f32>();
+        //triangle a point based on every location and its reflected neighbors across 6 axis 
         rateOfChange[index] += .01 * graphicsRenderingBuffer[idx].xyz;
         location[index] = screenSpaceIndex + .1 * vec4<f32>(rateOfChange[index], 1.);
     }
 
 
     fn initPlus () {
-        if (location[0].x  != 0.){
-            return;
-        }
-
-        // if (uniforms.time < 1000) {
-        //     return;
-        // }
+        if (location[0].x  != 0.){ return; }
         location[0] = vec4<f32>(.5,0.,0.,0.);
         location[1] = vec4<f32>(.6, 0., 0.,0.);
         location[2] = vec4<f32>(.7, 0.,0., 0.);
