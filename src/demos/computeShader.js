@@ -1,22 +1,3 @@
-import {noise} from './shader2'
-//fire
-//ice
-//wind - leaves 
-//earth - earthQuake
-//data Cube
-
-//orbit around decomposing things 
-//data cube
-//2-4 days
-  
-  //time, mode, attenuationRate, particleIndex, groupIndex 
-  //synchronized swimmers - all particles of certain color do similar stuff 
-  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
-
-  //dont think anything else - just fnish the shader
-  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
-  //make a new buffer that links particle to thet5 index in the buffer
-  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
 export const computeShader = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -25,15 +6,14 @@ export const computeShader = `
       decayRate: f32
     }
 
-    ${noise}
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
     @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
-    @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
-    @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
+    @group(0) @binding(5) var<storage, read_write> indexBuffer: array<f32>;
+    @group(0) @binding(6) var<storage,read_write> tetrad: array<vec4<f32>>;
     @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
   fn hasCollided (p: vec3<f32>)-> bool {
@@ -41,20 +21,20 @@ export const computeShader = `
     var bounds = 10.;
     if (p.x < -bounds) {return true;}
     if (p.y <= -bounds) {return true;} //why is this backwards? 
-      if (p.x >= bounds) {return true;}
-      if (p.y >= bounds) {return true;}
-      if (p.z <= -bounds ) {return true;}
-      if (p.z >= bounds ){ return true;}
-      return false;
+    if (p.x >= bounds) {return true;}
+    if (p.y >= bounds) {return true;}
+    if (p.z <= -bounds ) {return true;}
+    if (p.z >= bounds ){ return true;}
+    return false;
   }
 
   fn makeMagnets () -> array<vec3<f32>, 4> {
     var result = array<vec3<f32>, 4>();
 
-    result[0] = vec3<f32>(1, 0, 0);
-    result[1] = vec3<f32>(0, 1, 0);
+    result[0] = vec3<f32>(0, 0, 0);
+    result[1] = vec3<f32>(0, 0, 1);
     result[2] = vec3<f32>(1, 0, 0);
-    result[3] = vec3<f32>(0, 1, 0);
+    result[3] = vec3<f32>(0, 0, 1);
 
     return result;
   }
@@ -137,10 +117,10 @@ fn drawShape (index: u32) -> vec3<f32> {
 
     let vf = vectorFieldBuffer[idx];
 
-    let vf1 = vectorFieldBuffer2[idx];
+    //let vf1 = vectorFieldBuffer2[idx];
 
-    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
-                vec3<f32>(vectorFieldBuffer2[idx].xyz), 
+    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz),
+                vec3<f32>(vectorFieldBuffer[idx].xyz),
                 uniforms.time / 3000);
 
     return vf.xyz;
@@ -168,7 +148,6 @@ fn drawShape (index: u32) -> vec3<f32> {
       posBuffer[index] = vec4<f32>(0);
     }
 
-  if (uniforms.time > 30000 - f32(index)) {}
     if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
     var i = (uniforms.time  % 3);
     var theta = atan2(dir.z, dir.x);
@@ -305,8 +284,9 @@ fn makeCoolStuff(idx:u32) -> f32 {
 
     if (dt > 10) {
       distancetraveled[idx]= 0;
-      posBuffer[idx] = reset[idx];
+      //posBuffer[idx] = indexBuffer[idx];
     }
+
     return -1;
   }
 
@@ -342,12 +322,6 @@ if (hasCollided(pos.xyz)) {
   return vec3<f32>(1.);
 }
 
-fn makeDemo() -> bool { 
-
-
-  return true;
-}
-
 fn dragon (index: u32) -> f32 {
   var pos = posBuffer[index];
   var vel = direction[index];
@@ -357,7 +331,7 @@ fn dragon (index: u32) -> f32 {
     direction[index] = vec3<f32>(0, 0, -1);
   }
 
-  var r = reset[index];
+  var r = indexBuffer[index];
   runAlongRoute(pos.xyz, f32(index));
   var abc = posBuffer[index];
 
@@ -417,40 +391,99 @@ fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   return false;
 }
 
+// do gravity -> procedural gravity -> spheres made of point sand weighing down spacetime
+
 fn earth (index:u32) {
   var idx = f32(index);
 
-  var radius = 1.;
+  var pos = posBuffer[index];
+  var radius = .5;
+  var i = indexBuffer[index];
+  var n = i / 1e6;
+  var theta = acos(1 - (2 * n) / (1e6));
+  var phi = 2 * 3.14159263 * i;
+
+  var x = radius * sin(phi) * sin(theta);
+  var y = radius * cos(phi) * sin(theta);
+  var z = radius * cos(phi);
+
+
+  posBuffer[index] = vec4<f32>(x,y,z,1.); 
+
+  // if (distance(posBuffer[index+1]) < 1) {
+  //   posBuffer[index] = posBuffer[index] + vec4<f32>(0, -.1, 0., 0.);
+  // }
+
+
 }
 
 fn vf(index:u32) {
   earth(index);
 }
+
+
+fn makeUpCoolStuff(index:u32) {
+  var pos = posBuffer[index];
+  var vel = direction[index];
+  var r = indexBuffer[index];
+  var vf2 = tetrad[index];
+  var g = groupBuffer[index];
+  var time = uniforms.time;
+
+
+  var endPoint = vec4<f32>(1. * sign(pos.x),1. * sign(pos.y),
+  0., 0.);
+
+  var dist = distance(endPoint, posBuffer[index]) * endPoint;
+
+
+  posBuffer[index] = dist * .01 + posBuffer[index];
+///start with a momentum at moment 0
+//arc the momementum based on cross prodcut of origin and top right corner 
+  //direction[index] = cross(pos, sin());
+  //posBuffer[index] = vec4<f32>(pos.x + .01, pos.y +.01, pos.z + .01, 1.);
+  //posBuffer[index] = vec4<f32>(cos(r) * sin(uniforms.time * .001), sin(r) * sin(uniforms.time * .001), 0, 0);
+}
+
+
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
       let index: u32 = GlobalInvocationID.x;
       var pos = posBuffer[index];
       var vel = direction[index];
-      var r = reset[index];
+      var r = indexBuffer[index];
       var dt = distancetraveled[index];
-      var vf2 = vectorFieldBuffer2[index];
+      var vf2 = tetrad[index];
       var g = groupBuffer[index];
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
- 
-      applyMagnets(pos.xyz, index);
 
-      //sphereEvaporate(pos, index);
-      // if (g < 4) {
-      //   dragon(index);
-      // } else {
-      //   posBuffer[index] = posBuffer[index] 
-      //   +
-      //   .01 * 
-      //   sin(uniforms.time * .001) * vec4<f32>(curlNoise(pos.xyz), 1.);
+      makeUpCoolStuff(index);
+      return;
+      //earth(index);
+
+      // if (g < 1) {
+      //   sphereEvaporate(pos, index);
       // }
+      // if (g < 2) {
+      //   applyMagnets(pos.xyz, index);
+      // } else
+      if (g < 4) {
+        dragon(index);
+      } else {
+        posBuffer[index] = posBuffer[index] 
+        +
+        .01 * 
+        sin(uniforms.time * .001) * vec4<f32>(curlNoise(pos.xyz), 1.);
+      }
       //helix(index);
+
+
+      if (sin(uniforms.time * .01) < -.99)  {
+        tetradRotation(index);
+      }
+     
     }
 
     fn hexagon (p: vec3<f32>, time: f32) -> vec3<f32> {
@@ -459,4 +492,61 @@ fn vf(index:u32) {
       return p + shit[0] - p;
       return p;
     }
+
+    fn midPoint(a: vec4<f32>, b: vec4<f32>) -> vec4<f32>{
+      var mid = (b - a) / 2;
+
+
+      return vec4<f32>(0.);
+    }
+
+    //make particles orbit a centroid
+
+    //then pick 4 new particles to orbit centroid
+
+
+    //make particles orbit around a sphere then decompose spheres into smaller spheres
+
+    fn tetradRotation(index:u32) -> f32 {
+      var tetrad = tetrad[index];
+      var idx = f32(index);
+      var a = tetrad.x;
+      var b = tetrad.y;
+      var c = tetrad.z;
+      var d = tetrad.w;
+
+      //var triad = vec4<f32>(a, b, c, ,d);
+
+      //var midpoint = 
+
+      //posBuffer[index] = posBuffer[index] + vec4<f32>(0,0,0,0);
+      //pick 4 points and rotate around current orbit for 6 seconds then morph to ice
+
+
+      //posBuffer[index] += vec4<f32>(cos(uniforms.time),sin(uniforms.time),0,0);
+      return -1.;
+    }
+    ${noise}
+
 `
+
+
+import {noise} from './shader2'
+//fire
+//ice https://www.shadertoy.com/view/dldSRB
+//wind - leaves 
+//earth - earthQuake
+//data Cube
+
+//orbit around decomposing things 
+//data cube
+//2-4 days
+  
+  //time, mode, attenuationRate, particleIndex, groupIndex 
+  //synchronized swimmers - all particles of certain color do similar stuff 
+  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
+
+  //dont think anything else - just fnish the shader
+  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
+  //make a new buffer that links particle to thet5 index in the buffer
+  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index

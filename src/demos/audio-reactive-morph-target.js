@@ -17,7 +17,7 @@ import {computeShader} from './computeShader'
 
 //mirror world
 //generate vector field purely on GPU -> 10 million 
-let {cos, sin, } = Math
+let {cos, sin} = Math
 
 import * as d3 from 'd3'
 import {interpolateTurbo} from "d3-scale-chromatic";
@@ -30,9 +30,7 @@ import postProcessing from './archive/postProcessing'
 import dragon from 'stanford-dragon'
 import createCamera from './archive/createCamera'
 
-
 async function morph() { 
-
 const buffers = [
   {
       attributes: [
@@ -140,9 +138,6 @@ let pointBufferCount = 0
 let list = pointBuffer.slice()
 list = makeGrid().map(d => d)
 list = new Float32Array(list.flat())
-//list.set(pointBuffer)
-//if (window.writeMode() === 0)
-//list = new Float32Array(particlesCount)
 
 var rgb = new Float32Array(3e6);
 for (let i = 0; i < rgb.length; i++) {
@@ -172,12 +167,9 @@ function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
     return [x * 1, y * 1, z , 1]
   }).filter(vec => {
-    //return true
     return getDist([0,0,0], vec) < 1;
   })
 }
-
-let gridBuffer = makeGrid()
 
 function length2 (p) {
   let [x, y] = p
@@ -220,8 +212,6 @@ function keeptrying () {
 
 function test999() {
   let p = dragon.positions
-
-
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     let theta = Math.atan(y / x)
     let a = [x, y, z]
@@ -238,7 +228,6 @@ function test678() {
 
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     return [x, y ,z, 1]
-    //return j % 2 === i ? down : diagonalLeft
   })
 
   let i = 0;
@@ -274,12 +263,9 @@ function test456() {
   let down = [0, -1, 0, 0]
   let diagonalLeft = [-1, -1, 0, 0]
   let diagonalRight = [0, -1, 1, 0]
-   // if (i < 1e5 ) return [0,-1,0,0]
-   let wtf = .3 - dist 
  
   let vf =  makeVectorFieldGeneric(function (x, y, z, i, j, k, idx) {
     return [-y * 10 , x * 10, z, 10]
-    //return j % 2 === i ? down : diagonalLeft
   })
 
   return vf;
@@ -304,23 +290,15 @@ function magnet() {
   let i = 0;
   let dir = [1,0,0,1]
   let vf =  makeVectorFieldGeneric(function (x, y, z, ) {
-
-
     i++
     // if (i < 1000) dir = [0, 10, 0 , 0]
     // if (i > 1000) dir = [x,y,z,1]
     // if (i > 10000) dir = [0, -10, 0 , 0]
     let theta = Math.atan(y / x)
     return [ 10 * Math.cos(theta * 10), 10 * Math.sin(theta * 10) ,10 * Math.sin(theta),1]
-
-    // return dir.slice(0)
     let dist = distanceTo(pt[0], [x,y,z])
     return [  1 / dist ,  1 / dist ,1 / dist,1]
-    //flower petals are a primitive - apply them to some other equation and get something even more cool
-//    
-    // let dist = distanceTo(pt, [x,y,z])
-    // let theta = Math.atan(y / x)
-    // 
+    //flower petals are a primitive - apply them to some other equation and get something even more coo  
   })
 
 
@@ -540,10 +518,9 @@ function helloWorld() {
   let k = rotationVector
 
   let rotatedVector = function (v, theta) {
-let a= multiply(k, Math.cos(theta))
-let b = multiply(multiply(k, v), Math.sin(theta))
-
-    let ir = add(a,b)
+  let a= multiply(k, Math.cos(theta))
+  let b = multiply(multiply(k, v), Math.sin(theta))
+  let ir = add(a,b)
     return add(ir, multiply(multiply(k, dot(k,v)), Math.cos(theta)) )
   }
 
@@ -580,8 +557,6 @@ let b = multiply(multiply(k, v), Math.sin(theta))
     ]
   }
   let range = [...Array(5).keys()].map(d => [makeRand(),makeRand(),makeRand()])
-
-
 
   return makeVectorFieldGeneric(function (x, y, z ) {
      x = 10 *Math.cos(x)
@@ -964,7 +939,10 @@ function zeroToOne(x , y, z) {
 function makeRadius (i) {
   return Math.ceil(i / 1e4) / 10
 }
-const reset = makeBuffer(makeGrid(), 0, 'reset')
+
+var indexBuffer = [...Array(1e6).keys()];
+
+const reset = makeBuffer(indexBuffer, 0, 'reset')
 
 function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let directionBuffer = new Float32Array(particlesCount * 4)
@@ -1397,6 +1375,14 @@ list.set(pointBuffer.slice(0, pointBufferCount) )
 let happyBear = makeBuffer(list, 0, 'bear')
 
 let vf1 =  pickVF(), vf2 = pickVF()
+
+  vf2 = []
+
+  for (var i = 0; i< 1e6; i++) {
+    vf2[i] = [Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0]
+  }
+  console.log(vf2);
+
 
 const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
 computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)

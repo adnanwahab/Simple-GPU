@@ -21,27 +21,22 @@ fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
 
 
 fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  
   var idx = f32(index);
   var radius = idx / 256;
-   //4 / 3 * pow(idx / 256, 3);
-  //circle 
   posBuffer[index] = vec4<f32>(
     
     cos(idx) , idx /2000., 
     
     sin(idx), 1.);
 
-  //if (posBuffer[index].y > .74) {
-//    buffer.xz /= 
-    posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-    posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
- // }
-
+  posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+  posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
   posBuffer[index].y *= .6;
 
   return false;
 }
+
+
 
 // fn makeParticlesFly(idx: u32)  -> bool {
 //   var index = f32(idx);
