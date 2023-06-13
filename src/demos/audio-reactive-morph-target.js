@@ -1645,7 +1645,6 @@ function makeDrawCall (buffer, drawDescriptor) {
   @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
   @location(1) color: vec3<f32>,
   @location(2) globalPosition: vec2<f32>, // in {-1, +1}^2,
-
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -1659,36 +1658,29 @@ function makeDrawCall (buffer, drawDescriptor) {
   ) -> VSOut {
   var vsOut: VSOut;  
 
-  
-
   vsOut.position = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix *
  
-  
    vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
-
   
   vsOut.color = color;
   return vsOut;
   }
 
-
-
   const size = 4.0;
-
   const b = 0.3;//size of the smoothed border
 
-fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
-if (x < edge0) {return 0.;}
+  fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
+    if (x < edge0) {return 0.;}
 
-if (x >= edge1) {return 1.;}
+    if (x >= edge1) {return 1.;}
 
-let c = (x - edge0) / (edge1 - edge0);
+    let c = (x - edge0) / (edge1 - edge0);
 
-return c * c * (3 - 2 * c);
-}
+    return c * c * (3 - 2 * c);
+  }
 
   fn mainImage(globalPosition: vec2<f32>, iResolution: vec2<f32>
     ) -> vec4<f32> {
@@ -1718,7 +1710,7 @@ var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
     color, 
     color, 
     color, 
-   1.,
+    1.,
     );
 };
 
@@ -1746,9 +1738,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   
   lightDir = lightDir / distance; // = normalize(lightDir);
   distance = distance * distance; //This line may be optimised using Inverse square root
-  
-  
-  
+
   var normal = vec3(-1.,-1., 0.);
   
   //Intensity of the diffuse light. Saturate to keep within the 0-1 range.
@@ -1762,26 +1752,15 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   //This is typically slower than calculating the actual reflection vector
   // due to the normalize function's reciprocal square root
   var H = normalize(lightDir + viewDir);
-  
-  //Intensity of the specular light
   var NdotH = dot(normal, H);
   intensity = pow(saturate(NdotH), .1);
-  
-  //Sum up the specular light factoring
   let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
   let m = textureSample(myTexture, mySampler, localPosition);
-  //sin(camera.time)
-  //
-
   var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
-  //color.rgb +
   return vec4<f32>(color.rgb * c.rgb, 1.);
   }
   `}}));
   return drawRosePetals
 }
-
-
-
 }
 morph()

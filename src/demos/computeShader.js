@@ -95,44 +95,6 @@ export const computeShader = `
   }
 
 
-  // fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
-  //   var dir = direction[index];// + vec3<f32>(1, 1, 1);
-  //   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
- 
-  //   // if (false) {
-  //   //   dir.x += .5;
-  //   //   dir.y += .5;  
-  //   // } else {
-  //   //   dir.x += cos(1.75);
-  //   //   dir.y += sin(1.75);
-  //   //   // dir.x += 1. * cos(group *10 );
-  //   //   // dir.y += 1 * sin(group * 10);
-  //   // }
-
-  //   var theta = atan2(dir.y, dir.x);
-  //   // // dir.x += cos(theta * 1);
-  //   // // dir.y += sin(theta * 1);
-
-  //   dir.x =  cos(theta + 1.6);
-  //   dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
-
-  //   // if (group == 0) {
-  //   //   dir = vec3<f32>(1, 0, 0);
-  //   // } else if (group == 1)  {
-  //   //   dir = vec3<f32>(0, 1, 0);
-  //   // } else if (group == 2)  {
-  //   // dir = vec3<f32>(0, -1, 0);
-  //   // } else if (group == 3)  {
-  //   //   dir = vec3<f32>(-1, 0, 0);
-  //   // }
-  //   direction[index] = dir;
-  //   return dir;
-  // }
-  // fn drawCoolShape () -> vec3<f32>  {
-  //   //helix = circle + z direction
-  //   return vec3<f32>(0.);
-  // }
-
 fn helix(index: u32) -> vec3<f32>  {
   var dir = direction[index];
 
@@ -624,7 +586,8 @@ fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
   let vf = vectorFieldBuffer[idx];
 
 if (hasCollided(pos.xyz)) {
-  posBuffer[index] = vec4<f32>(cos(f32(index)), sin(f32(index)), 0.,0.);
+  posBuffer[index] = //f32(index) * 
+  vec4<f32>(cos(f32(index)), sin(f32(index)), 0.,0.);
 }
 
   // distancetraveled[index] += 1.;
@@ -643,33 +606,7 @@ fn dragon (index: u32) -> f32 {
   var pos = posBuffer[index];
   var vel = direction[index];
   applyVF(pos.xyz, index);
-  //use distanceTraveled to change group, direction
-  //distanceTraveled += length(direction)
-  //var lifetime = distanceTraveled[index];
-  
-  // if (length(direction[index]) == 0.) {
-  //   direction[index] = vec3<f32>(0, 0, -1);
-  // }
 
-  //   var theta = atan2(direction[index].z, direction[index].x);
-  //   direction[index] = vec3<f32>(cos(theta * f32(index) /256), 0., sin(theta * f32(index) /256 ));
-
-  //   //1 rotation in 6 dimensions in order 
-  //   var theta = atan2(direction[index].y, direction[index].x);
-  //   direction[index] = vec3<f32>(cos(theta), sin(theta ), 0);
-
-  // //change velocity every few frames 
-  // posBuffer[index] =  posBuffer[index]  + .1 * vec4<f32>(direction[index], 0.);
-
-  // if (pos.x < 0 ||
-  //   pos.x > 0 ||
-  //   pos.z > 0 ||
-  //   pos.z < 0 ) {
-  //   var swap = direction[index].z;
-  //   direction[index].z = direction[index].x;
-  //   direction[index].x = swap;
-  //   direction[index] = vec3<f32>(0.);
-  // }
 
   return -1;
 }
