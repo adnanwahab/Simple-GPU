@@ -432,10 +432,9 @@ fn makeUpCoolStuff(index:u32) {
 
 
   var endPoint = vec4<f32>(1. * sign(pos.x),1. * sign(pos.y),
-  0., 0.);
+   sign(pos.z), 0.);
 
   var dist = distance(endPoint, posBuffer[index]) * endPoint;
-
 
   posBuffer[index] = dist * .01 + posBuffer[index];
 ///start with a momentum at moment 0
