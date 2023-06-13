@@ -690,9 +690,8 @@ fn vf(index:u32) {
 
 
 
-      direction[index] = .01 *vec3<f32>(sin(time * .001));
-      posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(direction[index],1 );
-
+      //fractal reorganizing triplet rotation fields
+      //origami + paper machete
 
 
 
