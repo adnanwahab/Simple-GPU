@@ -607,6 +607,60 @@ fn dragon (index: u32) -> f32 {
   var vel = direction[index];
   applyVF(pos.xyz, index);
 
+  // if (groupBuffer[index] > 1) {
+    //   dragon(index);
+    // }
+
+    if (length(direction[index]) == 0.) {
+      direction[index] = vec3<f32>(0, 0, -1);
+    }
+    var r = reset[index];
+    runAlongRoute(pos.xyz, f32(index));
+    var abc = posBuffer[index];
+
+    var vf = hash(pos.xyz);
+
+    let t = uniforms.time;
+  
+   //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
+   posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
+
+  //  direction[index] *= .0;
+ 
+   distancetraveled[index] += 1.;
+    if (hasCollided(pos.xyz)) {
+      posBuffer[index] = vec4<f32>(0.);
+    }
+
+
+    //wind turbulence
+    //sphere
+
+    var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
+    if (distance(posBuffer[index].xy, mouse) < .1) {
+      // direction[index].x = direction[index].y;
+      // direction[index].y = -direction[index].x;
+      //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
+      //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
+      //direction[index]*= .001;
+    }
+    //helix(index);
+     direction[index] *= .0;
+
+     if (groupBuffer[index] > -1) {
+      direction[index] = direction[index] + .001 * vf;
+      posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
+    }
+
+    //vector field toward camera with shapes superIMpose
+    //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
+    //draw cool shapes and then dont deform them in the vector field until some time 
+    //var group = groupBuffer[index];
+    //runAlongRoute(pos.xyz, f32(index));
+
+    // if (groupBuffer[index] > 8) {
+    //   sphereEvaporate(pos, index);
+    // }
 
   return -1;
 }
@@ -616,73 +670,36 @@ fn mutateField(index: u32) -> f32 {
   return -1;
 } 
 
+
+fn vf(index:u32) {
+
+}
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
       let index: u32 = GlobalInvocationID.x;
-
-
-      if (groupBuffer[index] > 1) {
-        dragon(index);
-      }
-
-      if (length(direction[index]) == 0.) {
-        direction[index] = vec3<f32>(0, 0, -1);
-      }
-
-
       var pos = posBuffer[index];
-
+      var vel = direction[index];
       var r = reset[index];
-      runAlongRoute(pos.xyz, f32(index));
-      var abc = posBuffer[index];
+      var dt = distancetraveled[index];
+      var vf2 = vectorFieldBuffer2[index];
+      var g = groupBuffer[index];
+      var vf = vectorFieldBuffer[index];
 
-      var vf = hash(pos.xyz);
-
-      let t = uniforms.time;
-    
-     //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
-     posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
-
-    //  direction[index] *= .0;
-   
-     distancetraveled[index] += 1.;
-      if (hasCollided(pos.xyz)) {
-        posBuffer[index] = vec4<f32>(0.);
-      }
+      var time = uniforms.time;
 
 
-      //wind turbulence
-      //sphere
 
-      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-      if (distance(posBuffer[index].xy, mouse) < .1) {
-        // direction[index].x = direction[index].y;
-        // direction[index].y = -direction[index].x;
-        //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
-        //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
-        //direction[index]*= .001;
-      }
-      //helix(index);
-       direction[index] *= .0;
+      direction[index] = .01 *vec3<f32>(sin(time * .001));
+      posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(direction[index],1 );
 
-       if (groupBuffer[index] > -1) {
-        direction[index] = direction[index] + .001 * vf;
-        posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-      }
 
-      //vector field toward camera with shapes superIMposed
 
-     
 
-      //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
-      //draw cool shapes and then dont deform them in the vector field until some time 
-      //var group = groupBuffer[index];
-      //runAlongRoute(pos.xyz, f32(index));
 
-      // if (groupBuffer[index] > 8) {
-      //   sphereEvaporate(pos, index);
-      // }
+
+
+
     }
     
     
