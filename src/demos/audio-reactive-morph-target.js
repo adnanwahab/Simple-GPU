@@ -171,6 +171,9 @@ const mouse = [0,0]
 function makeGrid () {
   return makeVectorFieldGeneric(function (x, y, z) {
     return [x * 1, y * 1, z , 1]
+  }).filter(vec => {
+    //return true
+    return getDist([0,0,0], vec) < 1;
   })
 }
 
@@ -1206,13 +1209,12 @@ let triangle = function (origin, side) {
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-  triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   }
-
 
 window.addEventListener('click', function () {
   let timebetween = 1000
