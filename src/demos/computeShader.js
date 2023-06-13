@@ -431,17 +431,7 @@ fn makeUpCoolStuff(index:u32) {
   var time = uniforms.time;
 
 
-  var endPoint = vec4<f32>(1. * sign(pos.x),1. * sign(pos.y),
-   sign(pos.z), 0.);
 
-  var dist = distance(endPoint, posBuffer[index]) * endPoint;
-
-  posBuffer[index] = dist * .01 + posBuffer[index];
-///start with a momentum at moment 0
-//arc the momementum based on cross prodcut of origin and top right corner 
-  //direction[index] = cross(pos, sin());
-  //posBuffer[index] = vec4<f32>(pos.x + .01, pos.y +.01, pos.z + .01, 1.);
-  //posBuffer[index] = vec4<f32>(cos(r) * sin(uniforms.time * .001), sin(r) * sin(uniforms.time * .001), 0, 0);
 }
 
 
