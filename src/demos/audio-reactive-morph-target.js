@@ -949,8 +949,10 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   for (let i = 0; i < directionBuffer.length; i+=4) {
     let idx = ((i/4) % 360)* 1.5 ;
     let radius = .1  * makeRadius(i);
-    directionBuffer[i] = radius * Math.cos((idx)* Math.PI / 180)
-    directionBuffer[i+1] = radius * Math.sin((idx)* Math.PI / 180) 
+    directionBuffer[i] = 0
+    //radius * Math.cos((idx)* Math.PI / 180)
+    directionBuffer[i+1] = 0
+    //radius * Math.sin((idx)* Math.PI / 180) 
     directionBuffer[i+2] = 0//1 * Math.cos(i)
      directionBuffer[i+3] = 0
   }
@@ -1446,7 +1448,7 @@ function vfPicker() {
   vf1 = pickVF()
   vf2 =  vf2
   let happyBear = makeBuffer(list, 0, 'bear')
-//make everything toggleable
+
     computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
     if (! drawScreen)       drawScreen = makeDrawCall(happyBear, drawDescriptor)
     drawScreen.swapAttributeBuffer(happyBear, 0)
@@ -1605,6 +1607,7 @@ async function () {
     computeTransition()
   
     drawScreen()
+    console.log(123)
     }, 100) 
 }
 

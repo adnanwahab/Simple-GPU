@@ -28,14 +28,16 @@ export const computeShader = `
     return false;
   }
 
-  fn makeMagnets () -> array<vec3<f32>, 4> {
-    var result = array<vec3<f32>, 4>();
+  fn makeMagnets () -> array<vec3<f32>, 6> {
+    var result = array<vec3<f32>, 6>();
 
-    result[0] = vec3<f32>(0, 0, 0);
-    result[1] = vec3<f32>(0, 0, 1);
-    result[2] = vec3<f32>(1, 0, 0);
-    result[3] = vec3<f32>(0, 0, 1);
+    result[0] = vec3<f32>(0, 10, 0);
+    result[1] = vec3<f32>(0, 0, 10);
+    result[2] = vec3<f32>(10, 0, 0);
+    result[3] = vec3<f32>(0, 0, sin(uniforms.time * .0001));
 
+    result[4] = vec3<f32>(0, 10, 0);
+    result[5] = vec3<f32>(0, -10, 0);
     return result;
   }
 
@@ -51,12 +53,15 @@ export const computeShader = `
     var magnets = makeMagnets();
 
     vectorFieldBuffer[idx] = vec4<f32>(0);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[0] - pos,1);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[1] - pos,1);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[2] - pos,1);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[3] - pos,1);
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[0] - pos,1) / 1 / distance(magnets[0], pos);
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[1] - pos,1) / 1 / distance(magnets[1], pos);
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[2] - pos,1) / 1 / distance(magnets[2], pos);
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[3] - pos,1) / 1 / distance(magnets[3], pos);
 
-    direction[index] += .01 * vectorFieldBuffer[idx].xyz;
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[4] - pos,1) / 1 / distance(magnets[4], pos);
+    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[5] - pos,1) / 1 / distance(magnets[5], pos);
+
+    direction[index] += .1 * vectorFieldBuffer[idx].xyz;
 
     posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(direction[index], 1.);
 
@@ -268,6 +273,9 @@ fn makeParticlesFly(idx: u32) -> bool {
 }
 
 fn makeCoolStuff(idx:u32) -> f32 {
+
+
+
   return -1;
 }
 
@@ -413,8 +421,6 @@ fn earth (index:u32) {
   // if (distance(posBuffer[index+1]) < 1) {
   //   posBuffer[index] = posBuffer[index] + vec4<f32>(0, -.1, 0., 0.);
   // }
-
-
 }
 
 fn vf(index:u32) {
@@ -422,17 +428,121 @@ fn vf(index:u32) {
 }
 
 
-fn makeUpCoolStuff(index:u32) {
-  var pos = posBuffer[index];
-  var vel = direction[index];
-  var r = indexBuffer[index];
-  var vf2 = tetrad[index];
-  var g = groupBuffer[index];
-  var time = uniforms.time;
+// fn makeUpCoolStuff(index:u32) {
+//   var pos = posBuffer[index];
+//   var vel = direction[index];
+//   var r = indexBuffer[index];
+//   var vf2 = tetrad[index];
+//   var g = groupBuffer[index];
+//   var time = uniforms.time;
 
+// var endPoint = vec4<f32>(
+//   1. * sign(pos.x),
+//   1. * sign(pos.y),
+//   sign(pos.z), 0.);
 
+//   var dist = distance(endPoint, posBuffer[index]) * endPoint;
+//   posBuffer[index] = dist * .01 + posBuffer[index];
+//   direction[index] = cross(pos.xyz, vec4<f32>(1., 1., 1., 1.).xyz);
+//   posBuffer[index] = vec4<f32>(pos.x + .01, pos.y +.01, pos.z + .01, 1.);
+//   posBuffer[index] = vec4<f32>(cos(r) * sin(uniforms.time * .001), sin(r) * sin(uniforms.time * .001), 0, 0);
+// }
 
+// fn makeUpCoolStuff(index:u32) {
+//   var pos = posBuffer[index];
+//   var vel = direction[index];
+//   var r = indexBuffer[index];
+//   var vf2 = tetrad[index];
+//   var group = groupBuffer[index];
+//   direction[index] = vec3<f32>(sin(group), cos(group), 0);
+//   posBuffer[index] = pos + vec4<f32>(direction[index], 1.) * .01;
+// }
+
+// fn makeUpCoolStuff(index:u32) {
+//   var pos = posBuffer[index];
+//   var vel = direction[index];
+//   var r = indexBuffer[index];
+//   var group = groupBuffer[index];
+
+//   posBuffer[index] = pos + vec4<f32>()
+// }
+
+fn rot (a:vec2<f32>, theata:f32) -> vec2<f32> {
+  return a.xx * vec2<f32>(cos(theata), sin(theata)) + a.yy * vec2<f32>(-sin(theata), cos(theata));
 }
+
+fn cMul(a:vec2<f32>, b:vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(a.x*b.x-a.y*b.y,a.x*b.y+a.y*b.x);
+}
+
+fn cLog(a:vec2<f32>) -> vec2<f32> {
+  var b = atan2(a.y, a.x);
+  if (b<0.0) { b+= 2.0 * 3.14151926535; }
+  return vec2<f32>(log(length(a)), b);
+}
+
+fn cExp(z:vec2<f32>) -> vec2<f32> {
+  return exp(z.x) * vec2<f32>(cos(z.y), sin(z.y));
+}
+
+fn cDiv(a:vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  var d = dot(b,b);
+  return vec2<f32>(dot(a,b), a.y * b.x - a.x * b.y) /d; 
+}
+const PI=3.1415926535;
+
+fn rotClamp(pos:vec2<f32>, n:i32) -> vec2<f32> {
+  var alpha = - atan2(pos.x, pos.y);
+
+  var tmp = PI / f32(n);
+  return abs(rot(pos, -alpha+ (alpha % (2.*tmp)) -tmp));
+}
+
+fn cPow( z:vec2<f32>, a: vec2<f32>) -> vec2<f32> {
+	return cExp(cMul(cLog(z), a));
+}
+
+fn f( z: vec2<f32>, c:vec2<f32>) -> vec2<f32>{
+  return abs(cPow(z, vec2<f32>(3, 0))) - exp(1.) * abs(z) + c;
+}
+
+fn df(z:vec2<f32>, c:vec2<f32>) -> vec2<f32> { 
+  var e = vec2<f32>(0.001, 0.0);
+  return cDiv(f(z,c) - f(z+e,c), e);
+}
+
+fn color(pos0:vec2<f32>) -> vec4<f32> {
+  var pos = vec2<f32>(pos0.x, pos0.y);
+
+  const S = 256;
+  pos = rot(pos, -PI/6.);
+  pos=rotClamp(pos,6);
+
+  const offset=vec2<f32>(0.1, 0.);
+  pos += offset;
+  pos = rot(pos, -PI/4.);
+  pos -=offset;
+
+  var z1 = pos;
+  var p = abs(pos+vec2<f32>(0.25, -1.125));
+
+  var dz = vec2<f32>(1., 0.);
+  var j =0;
+  for (var i = 0; i <= S; i++) {
+    j=i;
+    if (dot(z1,z1) > 100000) { break; }
+
+    dz = cMul( dz, df(z1, p));
+
+    z1 = f( z1, p);
+  }
+  var h = 0.5 * log(dot(z1,z1)) * sqrt(dot(z1, z1) / dot(dz, dz));
+
+  var color = vec3<f32>(f32(j) / 2555. * 10.) * clamp(1.-abs(1.-h*50000) * 0.0125,0., 1.);
+  return vec4<f32>(color, 1);
+}
+
+
 
 
     @compute @workgroup_size(256)
@@ -448,16 +558,34 @@ fn makeUpCoolStuff(index:u32) {
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
 
-      makeUpCoolStuff(index);
-      return;
-      //earth(index);
+      // earth(index);
 
-      // if (g < 1) {
-      //   sphereEvaporate(pos, index);
-      // }
-      // if (g < 2) {
-      //   applyMagnets(pos.xyz, index);
-      // } else
+     //posBuffer[index] = color(pos.xy);
+
+      var salad = r / 1e3 % 10;
+      var salad2 = r / 1e3 % 100;
+
+     posBuffer[index] = vec4<f32>(
+      salad, salad2, mix(salad, 0, sin(uniforms.time * .000001 * r)), 0
+
+    );
+
+
+     return;
+      if (g < 1) {
+        sphereEvaporate(pos, index);
+      }
+      if (g < 2) {
+        
+
+
+
+        // posBuffer[index] = vec4<f32>(
+        //   sin(time), cos(time), posBuffer[index].z+.01, 0.
+
+        // );
+        //applyMagnets(pos.xyz, index);
+      } else
       if (g < 4) {
         dragon(index);
       } else {
@@ -469,9 +597,9 @@ fn makeUpCoolStuff(index:u32) {
       //helix(index);
 
 
-      if (sin(uniforms.time * .01) < -.99)  {
-        tetradRotation(index);
-      }
+      // if (sin(uniforms.time * .01) < -.99)  {
+      //   tetradRotation(index);
+      // }
      
     }
 
@@ -516,6 +644,9 @@ fn makeUpCoolStuff(index:u32) {
       return -1.;
     }
     ${noise}
+    
+
+
 
 `
 
