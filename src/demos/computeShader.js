@@ -560,15 +560,17 @@ fn color(pos0:vec2<f32>) -> vec4<f32> {
       // if (distance(posBuffer[index], vec4<f32>(0)) > 1) {
       //   posBuffer[index] = vec4<f32>(0.);
       // }
-     // return;
+
+      //posBuffer[index] = .1 * color(pos.xy);
+      //return;
       if (g < 1) {
        // sphereEvaporate(pos, index);
       }
       if (g < 2) {
-        posBuffer[index] = vec4<f32>(
-          sin(time), cos(time), posBuffer[index].z+.01, 0.
-        );
-        //applyMagnets(pos.xyz, index);
+        // posBuffer[index] = vec4<f32>(
+        //   sin(time), cos(time), posBuffer[index].z+.01, 0.
+        // );
+        applyMagnets(pos.xyz, index);
       } else
       if (g < 4) {
         dragon(index);
