@@ -81,7 +81,7 @@ const buffers = [
 
 
 let drawShapes = true
-let particlesCount = 2e6
+let particlesCount = 1e6
 let drawScreen
 let time = 0
 let stagingBuffer
@@ -1649,8 +1649,9 @@ function makeDrawCall (buffer, drawDescriptor) {
   ) -> VSOut {
   var vsOut: VSOut;  
 
-  vsOut.position = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix *
- 
+  var asdf = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix;
+  vsOut.position =
+   asdf *
    vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
@@ -1748,7 +1749,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
   let m = textureSample(myTexture, mySampler, localPosition);
   var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
-  return vec4<f32>(color.rgb * c.rgb, 1.);
+  return vec4<f32>(color.rgb, 1.);
   }
   `}}));
   return drawRosePetals

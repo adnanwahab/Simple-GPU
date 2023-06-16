@@ -541,10 +541,8 @@ fn color(pos0:vec2<f32>) -> vec4<f32> {
   var color = vec3<f32>(f32(j) / 2555. * 10.) * clamp(1.-abs(1.-h*50000) * 0.0125,0., 1.);
   return vec4<f32>(color, 1);
 }
-
-
-
-
+//thanks for the opportunity
+//do something never before done
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
 
@@ -557,33 +555,19 @@ fn color(pos0:vec2<f32>) -> vec4<f32> {
       var g = groupBuffer[index];
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
-
       // earth(index);
 
-     //posBuffer[index] = color(pos.xy);
-
-      var salad = r / 1e3 % 10;
-      var salad2 = r / 1e3 % 100;
-
-     posBuffer[index] = vec4<f32>(
-      salad, salad2, mix(salad, 0, sin(uniforms.time * .000001 * r)), 0
-
-    );
-
-
-     return;
+      // if (distance(posBuffer[index], vec4<f32>(0)) > 1) {
+      //   posBuffer[index] = vec4<f32>(0.);
+      // }
+     // return;
       if (g < 1) {
-        sphereEvaporate(pos, index);
+       // sphereEvaporate(pos, index);
       }
       if (g < 2) {
-        
-
-
-
-        // posBuffer[index] = vec4<f32>(
-        //   sin(time), cos(time), posBuffer[index].z+.01, 0.
-
-        // );
+        posBuffer[index] = vec4<f32>(
+          sin(time), cos(time), posBuffer[index].z+.01, 0.
+        );
         //applyMagnets(pos.xyz, index);
       } else
       if (g < 4) {
@@ -670,3 +654,14 @@ import {noise} from './shader2'
   //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
   //make a new buffer that links particle to thet5 index in the buffer
   //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
+
+
+
+//my name is renderbuffer
+//from the bottom of my heart
+//i let go of telepathy and the stream and the story and everything else
+//but i have to code
+//eat sleep, code repeat
+//no sleep
+//just code
+//i let go and i want to forget 
