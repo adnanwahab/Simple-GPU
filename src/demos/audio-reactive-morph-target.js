@@ -1,6 +1,13 @@
 import {computeShader} from './computeShader'
 
-//better algorithm for vector field 
+//no slideshow - 
+//visualization of world progress 
+//dont break it down into alan kay's 8 categories and scrape research
+//done by tomorrow evening 
+
+
+
+
 
 
 //make particles larger based distance to camera 
@@ -1563,7 +1570,7 @@ let hello = []
 let abc = new Float32Array(1)
 
 
-let elapsed = Date.now()
+let startTime = Date.now()
 setInterval(function () {
   abc[0] = performance.now() 
   device.queue.writeBuffer(
@@ -1574,7 +1581,7 @@ setInterval(function () {
     abc.byteLength
   );
   if (window.writeTime) {
-    elapsed = Date.now() % 3000
+    var elapsed = Date.now() - startTime
     window.writeTime(elapsed)
   } 
 }, 8)

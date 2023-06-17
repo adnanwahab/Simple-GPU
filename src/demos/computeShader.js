@@ -541,11 +541,73 @@ fn color(pos0:vec2<f32>) -> vec4<f32> {
   var color = vec3<f32>(f32(j) / 2555. * 10.) * clamp(1.-abs(1.-h*50000) * 0.0125,0., 1.);
   return vec4<f32>(color, 1);
 }
-//thanks for the opportunity
-//do something never before done
+
+
+fn InventSomethingNew (index:u32) -> vec4<f32> {
+  
+  posBuffer[index] = (f32(index) / 256) * vec4<f32>(cos(f32(index)), sin(f32(index)), 0, 0);
+
+
+  return vec4<f32>(0.);
+}
+
+
+
+
+fn sphere (offsetX: f32, index: u32) -> vec4<f32> {
+  var idx = indexBuffer[index];
+  var rho = 2.;
+  var phi = idx % 100.; //yz
+  var theta = idx / 100.; //yx
+  var polarAngle = idx; //xz
+  //each point is at the intersection of two overlapping circles
+  var x = rho * (cos(phi) + sin(polarAngle));
+  var y = rho * (cos(theta) + sin(phi));
+  var z = rho * (cos(polarAngle) + sin(phi));
+  return vec4<f32>(x + offsetX, y, z, 1.);
+}
+
+
+
+fn atomicFusion (index: u32) -> vec4<f32> {
+  var x = 0.;
+  if (index < 5000) {x = -1;} else { x = 1;}
+
+  if (uniforms.time < 1000) {
+    var y = 0.;
+    var z = 0.;
+    var w = 0.;
+    var idx = f32(index);
+    posBuffer[index] = sphere(x, index);
+  }
+
+   
+
+  direction[index]= vec3<f32>(-x, 0,0);
+  posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.) * .01;
+
+
+
+  return  posBuffer[index];
+}
+
+fn fire () {}
+
+
+
+//7. invention of fire - 
+//6. discovery of electrictiy  - draw a light bulb as cool as possible -> lightning or something morph
+//5. wright brothers to moon -> 60 years -> draw a paper airplane and then an apollo space ship going to moon - draw the date 
+//4. draw a globe with GDELT + data cube 
+//3. ai - visualize algorithm 
+//2. atomic fision [not doing]
+//1.  darwin 
+// cool morphing
+//10 diagrAms 4 hours each - 2 day
+//be delighted by the ingenuity of human collaboration
+//better algorithm for vector field 
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-
       let index: u32 = GlobalInvocationID.x;
       var pos = posBuffer[index];
       var vel = direction[index];
@@ -555,30 +617,39 @@ fn color(pos0:vec2<f32>) -> vec4<f32> {
       var g = groupBuffer[index];
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
+      atomicFusion(index);
+      return;
       // earth(index);
-
       // if (distance(posBuffer[index], vec4<f32>(0)) > 1) {
       //   posBuffer[index] = vec4<f32>(0.);
       // }
-
       //posBuffer[index] = .1 * color(pos.xy);
       //return;
-      if (g < 1) {
-       // sphereEvaporate(pos, index);
-      }
-      if (g < 2) {
-        // posBuffer[index] = vec4<f32>(
-        //   sin(time), cos(time), posBuffer[index].z+.01, 0.
-        // );
-        applyMagnets(pos.xyz, index);
-      } else
-      if (g < 4) {
-        dragon(index);
-      } else {
+      var keyframes = uniforms.time / 10000; 
+      if (keyframes < 1) {
+        sphereEvaporate(pos, index);
+      } else 
+      if (keyframes < 2){
         posBuffer[index] = posBuffer[index] 
         +
         .01 * 
         sin(uniforms.time * .001) * vec4<f32>(curlNoise(pos.xyz), 1.);
+        //applyMagnets(pos.xyz, index);
+      }
+      if (keyframes < 3) {
+        posBuffer[index] = vec4<f32>(
+          sin(time), cos(time), posBuffer[index].z+.01, 0.
+        );
+      } 
+      return;
+      if (g < 1) {
+       // 
+      }
+   //else
+      if (g < 4) {
+        dragon(index);
+      } else {
+
       }
       //helix(index);
 
@@ -656,6 +727,22 @@ import {noise} from './shader2'
   //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
   //make a new buffer that links particle to thet5 index in the buffer
   //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
