@@ -557,21 +557,22 @@ fn InventSomethingNew (index:u32) -> vec4<f32> {
 fn sphere (offsetX: f32, index: u32) -> vec4<f32> {
   var idx = indexBuffer[index];
   var rho = 2.;
-  var phi = idx % 100.; //yz
-  var theta = idx / 100.; //yx
-  var polarAngle = idx; //xz
+  var phi = floor(idx / 100); //yz
+  var theta = idx % 100.; //yx
   //each point is at the intersection of two overlapping circles
-  var x = rho * (cos(phi) + sin(polarAngle));
-  var y = rho * (cos(theta) + sin(phi));
-  var z = rho * (cos(polarAngle) + sin(phi));
+  var x = rho * (cos(phi) * sin(theta));
+  var y = rho * (cos(theta) * sin(phi));
+  var z = 0.;
+  //rho * (cos(theta));
+  
   return vec4<f32>(x + offsetX, y, z, 1.);
 }
 
-
-
 fn atomicFusion (index: u32) -> vec4<f32> {
   var x = 0.;
-  if (index < 5000) {x = -1;} else { x = 1;}
+  var idx = indexBuffer[index];
+
+  if (idx < 5e5) {x = -1;} else { x = 1;}
 
   if (uniforms.time < 1000) {
     var y = 0.;
@@ -581,34 +582,57 @@ fn atomicFusion (index: u32) -> vec4<f32> {
     posBuffer[index] = sphere(x, index);
   }
 
-   
+  if (uniforms.time < 2000) {
+    // var y = 0.;
+    // var z = 0.;
+    // var w = 0.;
+    // var idx = f32(index);
+    // posBuffer[index] = sphere(x, index);
+    direction[index]= vec3<f32>(-x, 0,0);
+    posBuffer[index] = posBuffer[index] + 10. * vec4<f32>(direction[index], 1.) * .01;
+  }
 
-  direction[index]= vec3<f32>(-x, 0,0);
-  posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.) * .01;
 
-
+  if (uniforms.time > 3000) {
+    // var y = 0.;
+    // var z = 0.;
+    // var w = 0.;
+    // var idx = f32(index);
+    // posBuffer[index] = sphere(x, index);
+    direction[index]= 10 * vec3<f32>(cos(idx), sin(idx), 0);
+    posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.) * .01;
+  }
 
   return  posBuffer[index];
 }
-
-fn fire () {}
-
 
 
 //7. invention of fire - 
 //6. discovery of electrictiy  - draw a light bulb as cool as possible -> lightning or something morph
 //5. wright brothers to moon -> 60 years -> draw a paper airplane and then an apollo space ship going to moon - draw the date 
-//4. draw a globe with GDELT + data cube 
-//3. ai - visualize algorithm 
-//2. atomic fision [not doing]
-//1.  darwin 
+//2. atomic fision [CHECK]
+//1. 
+//0.
+
+//the empire state building was built in a year
+// 
 // cool morphing
 //10 diagrAms 4 hours each - 2 day
 //be delighted by the ingenuity of human collaboration
 //better algorithm for vector field 
+
+
+
+//200,000 years ago
+fn proceduralFire() {
+
+}
+
+//48 hour countdown clock
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
+
       var pos = posBuffer[index];
       var vel = direction[index];
       var r = indexBuffer[index];
@@ -617,47 +641,35 @@ fn fire () {}
       var g = groupBuffer[index];
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
-      atomicFusion(index);
-      return;
-      // earth(index);
-      // if (distance(posBuffer[index], vec4<f32>(0)) > 1) {
-      //   posBuffer[index] = vec4<f32>(0.);
-      // }
-      //posBuffer[index] = .1 * color(pos.xy);
-      //return;
+
+  
       var keyframes = uniforms.time / 10000; 
       if (keyframes < 1) {
-        sphereEvaporate(pos, index);
-      } else 
-      if (keyframes < 2){
-        posBuffer[index] = posBuffer[index] 
-        +
-        .01 * 
-        sin(uniforms.time * .001) * vec4<f32>(curlNoise(pos.xyz), 1.);
-        //applyMagnets(pos.xyz, index);
+        proceduralFire();
+
+      }  
+      if (keyframes < 2) {
+        //atomicFusion(index);
       }
+
       if (keyframes < 3) {
-        posBuffer[index] = vec4<f32>(
-          sin(time), cos(time), posBuffer[index].z+.01, 0.
-        );
+        //gpu driven beziers wind = clean energy
       } 
-      return;
-      if (g < 1) {
-       // 
+
+      if (keyframes < 4) {
+      } 
+
+      if (keyframes < 5) {
+        //
       }
-   //else
-      if (g < 4) {
-        dragon(index);
-      } else {
 
+      if (keyframes < 6) {
+        //data cube - globe GDELT - 250 million things -> time
       }
-      //helix(index);
 
-
-      // if (sin(uniforms.time * .01) < -.99)  {
-      //   tetradRotation(index);
-      // }
-     
+      if (keyframes < 7 ){
+        //information theory
+      } 
     }
 
     fn hexagon (p: vec3<f32>, time: f32) -> vec3<f32> {
@@ -701,14 +713,9 @@ fn fire () {}
       return -1.;
     }
     ${noise}
-    
-
-
-
 `
-
-
 import {noise} from './shader2'
+///make it so good that the other stream is super impressed -> mr bean projected onto particle ->
 //fire
 //ice https://www.shadertoy.com/view/dldSRB
 //wind - leaves 
@@ -727,6 +734,7 @@ import {noise} from './shader2'
   //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
   //make a new buffer that links particle to thet5 index in the buffer
   //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
+
 
 
 
