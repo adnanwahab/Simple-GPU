@@ -606,7 +606,6 @@ fn atomicFusion (index: u32) -> vec4<f32> {
   return  posBuffer[index];
 }
 
-
 //7. invention of fire - 
 //6. discovery of electrictiy  - draw a light bulb as cool as possible -> lightning or something morph
 //5. wright brothers to moon -> 60 years -> draw a paper airplane and then an apollo space ship going to moon - draw the date 
@@ -624,8 +623,58 @@ fn atomicFusion (index: u32) -> vec4<f32> {
 
 
 //200,000 years ago
-fn proceduralFire() {
+fn proceduralFire(index:u32) {
+  var pos = posBuffer[index];
+  var idx = hashPosition(pos.xyz);
+    //wood = source of particles = block of cinder 
+    //each particle has a temperature 
+    //when temperature of particle exceeds a certain threshold like 212 farenheit 
+    //then particle becomes super-heated plasma which means its breaks the molecular bond between itself and its neighbors 
+    //each particle moves back and forth between things 
 
+    let id= f32(index);
+
+
+    //main force = heat = plasma = move fire upwards 
+    //distance traveled = rebirth after heat lowers to 0.
+
+
+    var dt = distancetraveled[index];
+  vectorFieldBuffer[idx] = vec4<f32>(curlNoise(vec3<f32>(pos.xyz) * dt), 1.);
+  vectorFieldBuffer[idx].y = max(vectorFieldBuffer[idx].y, 0.);//min , max
+  vectorFieldBuffer[idx].y *= 50.;
+  vectorFieldBuffer[idx].z *= 50.;
+  //vectorFieldBuffer[idx] = sin(vec4<f32>(uniforms.time * .1 * id, uniforms.time * .001 * id, 0., 0.));
+  //vectorFieldBuffer[idx].y = vectorFieldBuffer[idx].y + 1. / 2.;
+
+
+  direction[index] = .1 * vectorFieldBuffer[idx].xyz;
+  posBuffer[index] = posBuffer[index] + .1 * vec4<f32>(direction[index], 1.);
+
+  distancetraveled[index] += 1.;
+  if (distancetraveled[index] > 50.) {
+    posBuffer[index] = (id / 256000) * vec4<f32>(cos(id),sin(id), 0., 0.);
+    distancetraveled[index] = (0.);
+  }
+}
+//figure lots of cool shit out in like 48 hours.
+
+
+fn somethingAmazing (index: u32) {
+  posBuffer[index] = vec4<f32>(distancetraveled[index]);
+
+  distancetraveled[index] += 1.;
+  let id= f32(index);
+
+  if (distancetraveled[index] > 50.) {
+    posBuffer[index] = vec4<f32>(cos(id),sin(id), 0., 0.);
+    distancetraveled[index] = (0.);
+  }
+
+  //procedural city => 
+  //LSD fountain -> adds an 8 hour trait of relaxation and enhanced communication
+  //Fusion Reactor -> Electrical Grid -> light bulb -> smart grid -> torches 
+  //each citizen has a visibility based on the light of sorrounding light emitters 
 }
 
 //48 hour countdown clock
@@ -644,9 +693,9 @@ fn proceduralFire() {
 
   
       var keyframes = uniforms.time / 10000; 
-      if (keyframes < 1) {
-        proceduralFire();
 
+      if (keyframes < 1) {
+        //proceduralFire(index);
       }  
       if (keyframes < 2) {
         //atomicFusion(index);
@@ -657,18 +706,19 @@ fn proceduralFire() {
       } 
 
       if (keyframes < 4) {
-      } 
+        somethingAmazing(index);
+      }
 
       if (keyframes < 5) {
-        //
+        //atom discovery
       }
 
       if (keyframes < 6) {
-        //data cube - globe GDELT - 250 million things -> time
+        //globe
       }
 
-      if (keyframes < 7 ){
-        //information theory
+      if (keyframes < 7) {
+        //information theory -> signal processing 
       } 
     }
 

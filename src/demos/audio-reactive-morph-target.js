@@ -1614,7 +1614,6 @@ async function () {
     computeTransition()
   
     drawScreen()
-    console.log(123)
     }, 100) 
 }
 
