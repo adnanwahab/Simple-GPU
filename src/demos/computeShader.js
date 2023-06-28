@@ -1,3 +1,8 @@
+ // AoE - cx , cy
+ // visiion hypnotizes worker to build a building
+ // hi-res 3d vector field 1000x1000x10
+//  //go here to 
+
 export const computeShader = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -15,6 +20,13 @@ export const computeShader = `
     @group(0) @binding(5) var<storage, read_write> indexBuffer: array<f32>;
     @group(0) @binding(6) var<storage,read_write> tetrad: array<vec4<f32>>;
     @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
+
+fn  isAreaOfEffect (pos: vec3<f32>) {
+  if (distance(pos.xy, vec2<f32>(uniforms.spellOrigin)) < uniforms.radius) {
+    //adds demo to schedule
+  } 
+}
+
 
   fn hasCollided (p: vec3<f32>)-> bool {
     var minX = -1; 
@@ -670,6 +682,10 @@ fn somethingAmazing (index: u32) {
     posBuffer[index] = vec4<f32>(cos(id),sin(id), 0., 0.);
     distancetraveled[index] = (0.);
   }
+
+  //get angle from point to corner of moving matrix 
+  ///bend row of points along angle until it reaches other side 
+
 
   //procedural city => 
   //LSD fountain -> adds an 8 hour trait of relaxation and enhanced communication
