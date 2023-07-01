@@ -706,7 +706,7 @@ var keyframes = (uniforms.time % 10000) / 5000;
       distancetraveled[index] += 1.;
 
         if (dt > 100) {
-          var idx = f32(index);
+          var idx = f32(index) / 3000;
           posBuffer[index] = idx * vec4<f32>(cos(idx), sin(idx), 0, 0);
           distancetraveled[index] = 0.;
         }
