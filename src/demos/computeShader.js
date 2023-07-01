@@ -674,8 +674,10 @@ fn travelingGustsOfWind(index:u32) {
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
 
-//      var keyframes = uniforms.time / 10000; 
-  var keyframes = indexBuffer[index] / 1e5; 
+      
+var keyframes = (uniforms.time % 10000) / 5000;
+ //10 second cycle, 5 second interals
+  //var keyframes = indexBuffer[index] / 1e5; 
 
       if (keyframes > -1) {
         applyMagnets(pos.xyz, index);
@@ -686,22 +688,28 @@ fn travelingGustsOfWind(index:u32) {
         atomicFusion(index);
       }
 
-      if (keyframes < 3) {
+      if (keyframes > 3) {
         travelingGustsOfWind(index);
       } 
 
       
 
 
-      // if (keyframes < 4) {
-      //   somethingAmazing(index);
-      // }
-
-      if (keyframes < 5) {
-        //atom discovery
-        //sphereEvaporate(pos, index);
+      if (keyframes > 4) {
+        somethingAmazing(index);
       }
 
+      if (keyframes > 5) {
+        //atom discovery
+        sphereEvaporate(pos, index);
+      }
+      distancetraveled[index] += 1.;
+
+        if (dt > 100) {
+          var idx = f32(index);
+          posBuffer[index] = idx * vec4<f32>(cos(idx), sin(idx), 0, 0);
+          distancetraveled[index] = 0.;
+        }
       return;
 
 
