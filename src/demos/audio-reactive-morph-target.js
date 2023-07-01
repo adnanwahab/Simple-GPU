@@ -1390,8 +1390,6 @@ let vf1 =  pickVF(), vf2 = pickVF()
   for (var i = 0; i< 1e6; i++) {
     vf2[i] = [Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0]
   }
-  console.log(vf2);
-
 
 const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
 computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
