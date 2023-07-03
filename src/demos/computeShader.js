@@ -659,6 +659,9 @@ fn travelingGustsOfWind(index:u32) {
   .01 * vec4<f32>(cos(idx), sin(idx), 0., 0.);
 }
 
+
+
+
 //48 hour countdown clock
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
@@ -680,37 +683,37 @@ var keyframes = (uniforms.time % 10000) / 5000;
   //var keyframes = indexBuffer[index] / 1e5; 
 
       if (keyframes > -1) {
-        applyMagnets(pos.xyz, index);
+        //applyMagnets(pos.xyz, index);
 
         //proceduralFire(index);
       }  
-      if (keyframes > 1) {
-        atomicFusion(index);
-      }
+      // if (keyframes > 1) {
+      //   atomicFusion(index);
+      // }
 
-      if (keyframes > 3) {
-        travelingGustsOfWind(index);
-      } 
+      // if (keyframes > 3) {
+      //   travelingGustsOfWind(index);
+      // } 
 
       
 
 
-      if (keyframes > 4) {
-        somethingAmazing(index);
-      }
+      // if (keyframes > 4) {
+      //   somethingAmazing(index);
+      // }
 
-      if (keyframes > 5) {
-        //atom discovery
-        sphereEvaporate(pos, index);
-      }
-      distancetraveled[index] += 1.;
+      // if (keyframes > 5) {
+      //   //atom discovery
+      //   sphereEvaporate(pos, index);
+      // }
+      //distancetraveled[index] += 1.;
 
-        if (dt > 100) {
-          var idx = f32(index) / 3000;
-          posBuffer[index] = idx * vec4<f32>(cos(idx), sin(idx), 0, 0);
-          distancetraveled[index] = 0.;
-        }
-      return;
+      //   if (dt > 100) {
+      //     var idx = f32(index) / 3000;
+      //     posBuffer[index] = idx * vec4<f32>(cos(idx), sin(idx), 0, 0);
+      //     distancetraveled[index] = 0.;
+      //   }
+      // return;
 
 
       if (keyframes < 7) {
