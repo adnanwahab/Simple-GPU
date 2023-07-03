@@ -470,7 +470,7 @@ fn travelingGustsOfWind(index:u32) {
 }
 
 const destinations = array<vec4<f32>, 12>(
-  vec4<f32>(${Math.random()}, 0, 0, 0), //0
+  vec4<f32>(1, 0, 0, 0), //0
   vec4<f32>(0, 1, 0, 0),
   vec4<f32>(0, 0, 0, 0),
 
@@ -486,7 +486,7 @@ const destinations = array<vec4<f32>, 12>(
   //9
   vec4<f32>(0, 0, 0, 0), //gemstone mine location
   vec4<f32>(0, -1, 0, 0), //refinery/ science lab / build new science labs - upgrade them - rare minerals 
-  vec4<f32>(${Math.random()}, 0, 0, 0), //destination location
+  vec4<f32>(1, 0, 0, 0), //destination location
 );
 
 //generate and represent places as fast as you can.
@@ -512,12 +512,26 @@ fn simulationStep(id: u32) {
   var idx = 3 * (i32(id) % 4);
   if (distance(map[id], posBuffer[id]) < .1) {
     map[id] = destinations[i32(personBuffer[id].x+1.)];
-    personBuffer[id].x += 1;
+    //if destinations.next == -1, personBuffer.destination = vec3<f32>(0.);
+    //if ()
+    //personBuffer[id].x += 1;
   }
-
-
-  
 }
+
+struct place {
+  next: f32,
+  prev: f32,
+  terrain: f32, //blank, iron ore, gold ore, silver ore, 
+  quantity: f32 //when quantity reaches 0, must go to next 
+}
+
+struct person {
+  next: f32,
+  prev: f32,
+  pos: vec3<f32>,
+  inventory: f32
+}
+
 
 //map - random from 0-100 -> 0-50 blank
 //50-53,54-56, 57-60 = gold, copper, titanium
@@ -525,11 +539,6 @@ fn simulationStep(id: u32) {
 //
 
 //finsh today so tomorrow can be a holiday 
-
-struct person {
-  destination: f32,
-
-}
 
 fn init (index: u32) {
   let person = personBuffer[index];
