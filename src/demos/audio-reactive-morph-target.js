@@ -1189,6 +1189,12 @@ let triangle = function (origin, side) {
   lines.forEach( line => line.draw() )
 }
 
+
+
+setTimeout(function () {
+  window.location.reload();
+}, 1000 * 60 * 60 * 24)
+
   for (let i =0; i< 100; i++) {
     //change to concentric triangles + add rotation euler angles 
     rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)

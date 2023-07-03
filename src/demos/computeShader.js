@@ -660,9 +660,24 @@ fn travelingGustsOfWind(index:u32) {
 }
 
 
+fn tryStuff(id: u32) {
+  var i = f32(id);
+  posBuffer[id] = .001 * (i + 1000) * vec4<f32>(cos(i), sin(i), 0, 0);
+}
+//know what it is before building
 
 
-//48 hour countdown clock
+
+//
+
+
+
+//watch citizens build a 2d future city that turns into a spaceship
+//24 hour simultion. start it and check back every hour and see it made
+//add ability to suggest instructions with click + visions + queue scheduler
+//24 hour countdown clock
+//future city builds 
+//get a phone - 
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
      
@@ -677,6 +692,8 @@ fn travelingGustsOfWind(index:u32) {
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
 
+
+      tryStuff(index);
       
 var keyframes = (uniforms.time % 10000) / 5000;
  //10 second cycle, 5 second interals
