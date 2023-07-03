@@ -13,7 +13,7 @@ export const computeShader = `
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
     @group(0) @binding(5) var<storage, read_write> indexBuffer: array<f32>;
-    @group(0) @binding(6) var<storage,read_write> tetrad: array<vec4<f32>>;
+    @group(0) @binding(6) var<storage,read_write> destination: array<vec4<f32>>;
     @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
 
 fn  isAreaOfEffect (pos: vec3<f32>) {
@@ -662,22 +662,30 @@ fn travelingGustsOfWind(index:u32) {
 
 fn tryStuff(id: u32) {
   var i = f32(id);
-  posBuffer[id] = .001 * (i + 1000) * vec4<f32>(cos(i), sin(i), 0, 0);
+  var dt = distancetraveled[id];
+if (dt < 10) {
+  //destination[id] = (i / 25000. + .5) * vec4<f32>(sin(i), cos(i), 0, 0);
+  posBuffer[id] += (destination[id] - posBuffer[id]) * .2;
+  //distancetraveled[id] = 0.;
+} else {
+  
+} 
+
+
+distancetraveled[id] += .5;
+  // if (groupBuffer[id] < 1) {
+  //   posBuffer[id] = (i / 25000. + .5) * vec4<f32>(cos(i), sin(i), 0, 0);
+  // } else {
+  //   posBuffer[id] = vec4<f32>(1. - (i / 250000));
+
+  // } 
 }
-//know what it is before building
 
+struct Particle {
+  actionPoints: f32, //
+  holdingResource: bool
+}
 
-
-//
-
-
-
-//watch citizens build a 2d future city that turns into a spaceship
-//24 hour simultion. start it and check back every hour and see it made
-//add ability to suggest instructions with click + visions + queue scheduler
-//24 hour countdown clock
-//future city builds 
-//get a phone - 
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
      
@@ -687,7 +695,7 @@ fn tryStuff(id: u32) {
       var vel = direction[index];
       var r = indexBuffer[index];
       var dt = distancetraveled[index];
-      var vf2 = tetrad[index];
+      var vf2 = destination[index];
       var g = groupBuffer[index];
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
@@ -750,33 +758,6 @@ var keyframes = (uniforms.time % 10000) / 5000;
 
 
       return vec4<f32>(0.);
-    }
-
-    //make particles orbit a centroid
-
-    //then pick 4 new particles to orbit centroid
-
-
-    //make particles orbit around a sphere then decompose spheres into smaller spheres
-
-    fn tetradRotation(index:u32) -> f32 {
-      var tetrad = tetrad[index];
-      var idx = f32(index);
-      var a = tetrad.x;
-      var b = tetrad.y;
-      var c = tetrad.z;
-      var d = tetrad.w;
-
-      //var triad = vec4<f32>(a, b, c, ,d);
-
-      //var midpoint = 
-
-      //posBuffer[index] = posBuffer[index] + vec4<f32>(0,0,0,0);
-      //pick 4 points and rotate around current orbit for 6 seconds then morph to ice
-
-
-      //posBuffer[index] += vec4<f32>(cos(uniforms.time),sin(uniforms.time),0,0);
-      return -1.;
     }
     ${noise}
 `

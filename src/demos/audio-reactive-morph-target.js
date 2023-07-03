@@ -4,7 +4,8 @@ import {computeShader} from './computeShader'
 //visualization of world progress 
 //dont break it down into alan kay's 8 categories and scrape research
 //done by tomorrow evening 
-
+//https://blog.logrocket.com/creating-custom-mouse-cursor-css/
+//https://www.google.com/search?q=sdf+inilgo+quilez&oq=sdf+inilgo+quilez&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQABgNGIAEMgoIAhAAGIYDGIoFMgoIAxAAGIYDGIoFMgoIBBAAGIYDGIoFMgoIBRAAGIYDGIoF0gEINjMxN2owajeoAgCwAgA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:ff65a941,vid:62-pRVZuS5c,st:387
 
 
 
@@ -171,11 +172,32 @@ function getDist(a, b) {
 const mouse = [0,0]
 
 function makeGrid () {
-  return makeVectorFieldGeneric(function (x, y, z) {
-    return [x * 1, y * 1, z , 1]
-  }).filter(vec => {
-    return getDist([0,0,0], vec) < 1;
-  })
+
+  var result = [];
+  for (let i = 0; i < 1e6; i++){
+//    posBuffer[id] = (i / 25000. + .5) * vec4<f32>(cos(i), sin(i), 0, 0);
+    let radius = i / 1e6 + .5;
+    if (i < 1e4)
+    result.push([
+      radius * Math.cos(i), radius * Math.sin(i),0 ,0
+    ])
+
+    else {
+      result.push([
+       //10 * Math.random(), 10. * Math.random(), 0,0
+       0,0,0,0
+      ])
+    }
+  } 
+
+
+  return result;
+  // return makeVectorFieldGeneric(function (x, y, z) {
+  //   return [x * 1, y * 1, z , 1]
+  // })
+  // .filter(vec => {
+  //   return getDist([0,0,0], vec) < 1;
+  // })
 }
 
 function length2 (p) {
@@ -964,9 +986,20 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
      directionBuffer[i+3] = 0
   }
 
+  let destinationBuffer = new Float32Array(particlesCount * 4);
+  for (let i = 0; i < destinationBuffer.length; i+=4) {
+
+    destinationBuffer[i] = 0
+    //radius * Math.cos((idx)* Math.PI / 180)
+    destinationBuffer[i+1] = 0
+    //radius * Math.sin((idx)* Math.PI / 180) 
+    destinationBuffer[i+2] = 0//1 * Math.cos(i)
+    destinationBuffer[i+3] = 0
+  }
+
   let direction = makeBuffer(directionBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
-  let gridBuffer2 = makeBuffer(vf2.flat(), 0, 'result')
+  let gridBuffer2 = makeBuffer(destinationBuffer, 0, 'result')
 
   let particledistancetraveled = new Float32Array(particlesCount)
   // for(let i =0; i < particledistancetraveled.length; i++) {
@@ -1058,7 +1091,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       {binding: 3, resource: {buffer: direction}},
       {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
-      {binding: 6, resource: {buffer: gridBuffer2 }},
+      {binding: 6, resource: {buffer: gridBuffer2 }}, //destination
       {binding: 7, resource: {buffer: groupBuffer}}
     ]
   }
@@ -1197,16 +1230,16 @@ setTimeout(function () {
 
   for (let i =0; i< 100; i++) {
     //change to concentric triangles + add rotation euler angles 
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
-    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
-    triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // rhomboid([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
+    // triangle([makeRand() * 5, makeRand() * 5], .9, 1.)
   }
 
 window.addEventListener('click', function () {
