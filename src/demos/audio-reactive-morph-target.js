@@ -504,7 +504,7 @@ let pt = [x,y,z]
   let destination = [-1,-1,-1]
   for (var i = 0; i < vf.length; i++ ) {
     let pt = vf[i];
-    let [x,y,z]= pt;
+  let [x,y,z]= pt;
     let originDist = dist(pt, origin);
     let destinationDist = dist(pt, destination);
     //negative = converge, positive = diverge
@@ -894,7 +894,6 @@ function makeVectorField2() {
 // draw shapes in by index
 let computeTransition
 let camera = {position: {x: 0, y: 0, z: 0} }
-const gui = new dat.GUI();
 let props = {}
 let toggleMode = 0;
 props.resetAnimation = function () {
@@ -988,10 +987,16 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let destinationBuffer = new Float32Array(particlesCount * 4);
   for (let i = 0; i < destinationBuffer.length; i+=4) {
-
-    destinationBuffer[i] = 0
+    let[ x,y] = [1, 1];
+    if (Math.random() < .5){
+      x *= -1
+    }
+    if ( Math.random() < .5){
+      y *= -1
+    }
+    destinationBuffer[i] = x
     //radius * Math.cos((idx)* Math.PI / 180)
-    destinationBuffer[i+1] = 0
+    destinationBuffer[i+1] = y
     //radius * Math.sin((idx)* Math.PI / 180) 
     destinationBuffer[i+2] = 0//1 * Math.cos(i)
     destinationBuffer[i+3] = 0

@@ -12,9 +12,11 @@ export const computeShader = `
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
-    @group(0) @binding(5) var<storage, read_write> indexBuffer: array<f32>;
-    @group(0) @binding(6) var<storage,read_write> destination: array<vec4<f32>>;
-    @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
+
+    @group(0) @binding(5) var<storage, read_write> mapAttributes: array<f32>;
+    @group(0) @binding(6) var<storage,read_write> map: array<vec4<f32>>;
+
+    @group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
 
 fn  isAreaOfEffect (pos: vec3<f32>) {
 }
@@ -335,63 +337,6 @@ if (hasCollided(pos.xyz)) {
   return vec3<f32>(1.);
 }
 
-fn dragon (index: u32) -> f32 {
-  var pos = posBuffer[index];
-  var vel = direction[index];
-  applyVF(pos.xyz, index);
-
-  if (length(direction[index]) == 0.) {
-    direction[index] = vec3<f32>(0, 0, -1);
-  }
-
-  var r = indexBuffer[index];
-  runAlongRoute(pos.xyz, f32(index));
-  var abc = posBuffer[index];
-
-  var vf = hash(pos.xyz);
-  let t = uniforms.time;
-  
-   posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
- 
-   distancetraveled[index] += 1.;
-    if (hasCollided(pos.xyz)) {
-      var idx = f32(index);
-      posBuffer[index] = vec4<f32>(cos(idx), sin(idx), 0., 0.);
-    }
-
-    var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-    // if (distance(posBuffer[index].xy, mouse) < .1) {
-    //   direction[index].x = direction[index].y;
-    //   direction[index].y = -direction[index].x;
-    //   posBuffer[index] = vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posBuffer[index].xy, mouse)), 0., 1.);
-    //   posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
-    //   direction[index] *= .001;
-    // }
-
-     direction[index] *= .00;
-
-     if (groupBuffer[index] > -1) {
-      var attenuation = array<f32, 10>();
-      attenuation[0] = .001;
-      attenuation[1] = .002;
-      attenuation[2] = .003;
-      attenuation[3] = .004;
-      attenuation[4] = .005;
-      attenuation[5] = .006;
-      attenuation[6] = .007;
-      attenuation[7] = .008;
-      attenuation[8] = .009;
-      attenuation[9] = .010;
-      var attenuationFactor = attenuation[i32(groupBuffer[index])];
-
-      attenuationFactor = .001;
-      direction[index] = direction[index] + attenuationFactor * vf;
-      posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-    }
-
-  return -1;
-}
-
 fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   var idx = f32(index);
   var radius = idx / 256;
@@ -403,30 +348,6 @@ fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   posBuffer[index].y *= .6;
 
   return false;
-}
-
-fn earth (index:u32) {
-  var idx = f32(index);
-
-  var pos = posBuffer[index];
-  var radius = .5;
-  var i = indexBuffer[index];
-  var n = i / 1e6;
-  var theta = acos(1 - (2 * n) / (1e6));
-  var phi = 2 * 3.14159263 * i;
-
-  var x = radius * sin(phi) * sin(theta);
-  var y = radius * cos(phi) * sin(theta);
-  var z = radius * cos(phi);
-
-  posBuffer[index] = vec4<f32>(x,y,z,1.); 
-  // if (distance(posBuffer[index+1]) < 1) {
-  //   posBuffer[index] = posBuffer[index] + vec4<f32>(0, -.1, 0., 0.);
-  // }
-}
-
-fn vf(index:u32) {
-  earth(index);
 }
 
 fn rot (a:vec2<f32>, theata:f32) -> vec2<f32> {
@@ -513,119 +434,9 @@ fn InventSomethingNew (index:u32) -> vec4<f32> {
   return vec4<f32>(0.);
 }
 
-
-
-
-fn sphere (offsetX: f32, index: u32) -> vec4<f32> {
-  var idx = indexBuffer[index];
-  var rho = 2.;
-  var phi = floor(idx / 100); //yz
-  var theta = idx % 100.; //yx
-  //each point is at the intersection of two overlapping circles
-  var x = rho * (cos(phi) * sin(theta));
-  var y = rho * (cos(theta) * sin(phi));
-  var z = 0.;
-  //rho * (cos(theta));
-  
-  return vec4<f32>(x + offsetX, y, z, 1.);
-}
-
-fn atomicFusion (index: u32) -> vec4<f32> {
-  var x = 0.;
-  var idx = indexBuffer[index];
-
-  if (idx < 5e5) {x = -1;} else { x = 1;}
-
-  if (uniforms.time < 1000) {
-    var y = 0.;
-    var z = 0.;
-    var w = 0.;
-    var idx = f32(index);
-    posBuffer[index] = sphere(x, index);
-  }
-
-  if (uniforms.time < 2000) {
-    // var y = 0.;
-    // var z = 0.;
-    // var w = 0.;
-    // var idx = f32(index);
-    // posBuffer[index] = sphere(x, index);
-    direction[index]= vec3<f32>(-x, 0,0);
-    posBuffer[index] = posBuffer[index] + 10. * vec4<f32>(direction[index], 1.) * .01;
-  }
-
-
-  if (uniforms.time > 3000) {
-    // var y = 0.;
-    // var z = 0.;
-    // var w = 0.;
-    // var idx = f32(index);
-    // posBuffer[index] = sphere(x, index);
-    direction[index]= 10 * vec3<f32>(cos(idx), sin(idx), 0);
-    posBuffer[index] = posBuffer[index] + vec4<f32>(direction[index], 1.) * .01;
-  }
-
-  return  posBuffer[index];
-}
-
-//7. invention of fire - 
-//6. discovery of electrictiy  - draw a light bulb as cool as possible -> lightning or something morph
-//5. wright brothers to moon -> 60 years -> draw a paper airplane and then an apollo space ship going to moon - draw the date 
-//2. atomic fision [CHECK]
-//1. 
-//0.
-
-//the empire state building was built in a year
-// cool morphing
-//10 diagrAms 4 hours each - 2 day
-//be delighted by the ingenuity of human collaboration
-//better algorithm for vector field 
-//200,000 years ago
-fn proceduralFire(index:u32) {
-  var pos = posBuffer[index];
-  var idx = hashPosition(pos.xyz);
-    //wood = source of particles = block of cinder 
-    //each particle has a temperature 
-    //when temperature of particle exceeds a certain threshold like 212 farenheit 
-    //then particle becomes super-heated plasma which means its breaks the molecular bond between itself and its neighbors 
-    //each particle moves back and forth between things 
-
-    let id= f32(index);
-
-
-    //main force = heat = plasma = move fire upwards 
-    //distance traveled = rebirth after heat lowers to 0.
-
-
-    var dt = distancetraveled[index];
-  vectorFieldBuffer[idx] = vec4<f32>(curlNoise(vec3<f32>(pos.xyz) * dt), 1.);
-  vectorFieldBuffer[idx].y = max(vectorFieldBuffer[idx].y, 0.);//min , max
-  vectorFieldBuffer[idx].y *= 50.;
-  vectorFieldBuffer[idx].z *= 50.;
-  vectorFieldBuffer[idx] = sin(vec4<f32>(uniforms.time * .1 * id, uniforms.time * .001 * id, 0., 0.));
-  vectorFieldBuffer[idx].y = vectorFieldBuffer[idx].y + 1. / 2.;
-
-
-  //direction[index] = .1 * vectorFieldBuffer[idx].xyz;
-//   posBuffer[index] = posBuffer[index] + .1 * vec4<f32>(direction[index], 1.);
-
-  var divisor = indexBuffer[index] / 3e7;
-  posBuffer[index] =   posBuffer[index]  + divisor *vec4<f32>(curlNoise(vec3<f32>(pos.xyz)), 1.);
-
-  distancetraveled[index] += 1.;
-  // if (distancetraveled[index] > 50.) {
-  //   //posBuffer[index] = (id / 256000) * vec4<f32>(cos(id),sin(id), 0., 0.);
-  //   distancetraveled[index] = (0.);
-  // }
-}
-//figure lots of cool shit out in like 48 hours.
-
-
 fn somethingAmazing (index: u32) {
-
   distancetraveled[index] += 1.;
   let id= f32(index);
-
 
   posBuffer[index] = posBuffer[index] + .2 * vec4<f32>(
 
@@ -637,7 +448,6 @@ fn somethingAmazing (index: u32) {
   //   posBuffer[index] = vec4<f32>(cos(id),sin(id), 0., 0.);
   //   distancetraveled[index] = (0.);
   // }
-
 
   //posBuffer[index] = vec4<f32>(distancetraveled[index]);
 
@@ -659,53 +469,107 @@ fn travelingGustsOfWind(index:u32) {
   .01 * vec4<f32>(cos(idx), sin(idx), 0., 0.);
 }
 
+const destinations = array<vec4<f32>, 12>(
+  vec4<f32>(${Math.random()}, 0, 0, 0), //0
+  vec4<f32>(0, 1, 0, 0),
+  vec4<f32>(0, 0, 0, 0),
 
-fn tryStuff(id: u32) {
+  vec4<f32>(-1, 0, 0, 0), //3
+  vec4<f32>(0, 0, 0, 0),
+  vec4<f32>(0, 1, 0, 0),
+
+
+  vec4<f32>(0, -1, 0, 0), //6
+  vec4<f32>(-1, 0, 0, 0),
+  vec4<f32>(0, 0, 0, 0),
+
+  //9
+  vec4<f32>(0, 0, 0, 0), //gemstone mine location
+  vec4<f32>(0, -1, 0, 0), //refinery/ science lab / build new science labs - upgrade them - rare minerals 
+  vec4<f32>(${Math.random()}, 0, 0, 0), //destination location
+);
+
+//generate and represent places as fast as you can.
+//pos, next=w
+// stage, mineralCount, mineralMax, mineralType
+
+//map = 
+//mapAttributes = 4 things of each pixel
+//drill for ore -> minecraft 
+//vectorfield can be 10 million = 1000x1000x10
+
+fn simulationStep(id: u32) {
   var i = f32(id);
   var dt = distancetraveled[id];
-if (dt < 10) {
-  //destination[id] = (i / 25000. + .5) * vec4<f32>(sin(i), cos(i), 0, 0);
-  posBuffer[id] += (destination[id] - posBuffer[id]) * .2;
-  //distancetraveled[id] = 0.;
-} else {
+  var pos = posBuffer[id].xyz;
+  var noise = 0.;
+  var velocity = 0.;
+
+  velocity = .1;
+
+  posBuffer[id] += (map[id] - posBuffer[id]) * velocity;
+
+  var idx = 3 * (i32(id) % 4);
+  if (distance(map[id], posBuffer[id]) < .1) {
+    map[id] = destinations[i32(personBuffer[id].x+1.)];
+    personBuffer[id].x += 1;
+  }
+
+
   
-} 
-
-
-distancetraveled[id] += .5;
-  // if (groupBuffer[id] < 1) {
-  //   posBuffer[id] = (i / 25000. + .5) * vec4<f32>(cos(i), sin(i), 0, 0);
-  // } else {
-  //   posBuffer[id] = vec4<f32>(1. - (i / 250000));
-
-  // } 
 }
 
-struct Particle {
-  actionPoints: f32, //
-  holdingResource: bool
+//map - random from 0-100 -> 0-50 blank
+//50-53,54-56, 57-60 = gold, copper, titanium
+//place refinery on start for now (mouse input later)
+//
+
+//finsh today so tomorrow can be a holiday 
+
+struct person {
+  destination: f32,
+
 }
 
+fn init (index: u32) {
+  let person = personBuffer[index];
+  let dest = person.x;
+  let prev = person.y;
+  let inventory = person.z;
+  let activeVision = person.w;
+
+  var idx = 3 * (i32(index) % 4);
+  if (personBuffer[index].x == 0. ) {
+    personBuffer[index].x = f32(idx);
+    personBuffer[index].y = f32(idx);
+  }
+}
+
+
+//super mario galaxy + spaceShip
+//meteor coming in 24 hours -> make a meteor animation
+//go from goldmine to refinery to spaceship and accumulate particles within mesh position
+//make a dancer mesh that is an antenna that cir·cum·am·bu·lates thoughts + hallucinations
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-     
       let index: u32 = GlobalInvocationID.x;
 
       var pos = posBuffer[index];
       var vel = direction[index];
-      var r = indexBuffer[index];
+      var r = mapAttributes[index];
       var dt = distancetraveled[index];
-      var vf2 = destination[index];
-      var g = groupBuffer[index];
+      var vf2 = map[index];
+      var person = personBuffer[index]; 
+      //destination, prev, inventory, activeVision
+      //destinationIndex -> points to vectorFieldBuffer 
+      //use vectorFieldBuffer - draw a map of the vectorField which is 1kx1k
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
 
-
-      tryStuff(index);
-      
-var keyframes = (uniforms.time % 10000) / 5000;
- //10 second cycle, 5 second interals
-  //var keyframes = indexBuffer[index] / 1e5; 
+      init(index);
+      simulationStep(index);
+      return;
+      var keyframes = (uniforms.time % 10000) / 5000;
 
       if (keyframes > -1) {
         //applyMagnets(pos.xyz, index);
@@ -744,20 +608,6 @@ var keyframes = (uniforms.time % 10000) / 5000;
       if (keyframes < 7) {
         //information theory -> signal processing 
       } 
-    }
-
-    fn hexagon (p: vec3<f32>, time: f32) -> vec3<f32> {
-      var shit = array<vec3<f32>,3 >();
-      shit[0] = vec3<f32>(.2, 0., 0.);
-      return p + shit[0] - p;
-      return p;
-    }
-
-    fn midPoint(a: vec4<f32>, b: vec4<f32>) -> vec4<f32>{
-      var mid = (b - a) / 2;
-
-
-      return vec4<f32>(0.);
     }
     ${noise}
 `
