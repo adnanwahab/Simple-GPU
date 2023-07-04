@@ -513,8 +513,8 @@ velocity = .02;
    posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .01) {
-    personBuffer[id].y = pers.next;
+  if (distance(currentPosition.xy, map[next].zw) < .02) {
+    personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.next == -1) { //person has reached spaceship, send to ore
       personBuffer[id].x = f32(id);
@@ -535,25 +535,6 @@ struct Person {
   inventory: f32,
   posBufferIndex: i32,
 }
-const destinations = array<vec4<f32>, 12>(
-  vec4<f32>(1, 0, 0, 0), //0
-  vec4<f32>(0, 1, 0, 0),
-  vec4<f32>(0, 0, 0, 0),
-
-  vec4<f32>(-1, 0, 0, 0), //3
-  vec4<f32>(0, 0, 0, 0),
-  vec4<f32>(0, 1, 0, 0),
-
-
-  vec4<f32>(0, -1, 0, 0), //6
-  vec4<f32>(-1, 0, 0, 0),
-  vec4<f32>(0, 0, 0, 0),
-
-  //9
-  vec4<f32>(0, 0, 0, 0), //gemstone mine location
-  vec4<f32>(0, -1, 0, 0), //refinery/ science lab / build new science labs - upgrade them - rare minerals 
-  vec4<f32>(1, 0, 0, 0), //destination location
-);
 
 
 fn init (index: u32) {
