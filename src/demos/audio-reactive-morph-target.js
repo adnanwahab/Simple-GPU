@@ -1741,6 +1741,42 @@ function makeDrawCall (buffer, drawDescriptor) {
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
   
+  const sphereRadius = 1.;
+  fn xProj(theta:f32, phi:f32) -> f32 {
+    return sphereRadius * sin(theta) * cos(phi);
+  }
+  
+  fn yProj(theta:f32) -> f32 {
+    return sphereRadius * cos(theta);
+  }
+  
+  fn zProj(theta: f32, phi: f32) -> f32 {
+    return 1 + .5 * sin(theta) * sin(phi);
+  }
+  
+  fn toSpherical(pos:vec3<f32>) -> vec3<f32> {
+  
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+  
+    var r = sqrt(x * x + y* y + z * z);
+    var θ = acos(z / r);
+    var φ = atan(y / x);
+  
+  
+    var x1 = r * sin(θ) * cos(φ);
+    var y1 = r * sin(θ) * sin(φ);
+    var z1 = r * cos(θ);
+  
+    return vec3<f32>(x1, y1, z1);
+    return vec3<f32>(xProj(θ, φ),
+                      yProj(θ),
+                      zProj(θ, φ)
+    );
+  }
+  
+
   @vertex
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
   @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
@@ -1754,6 +1790,7 @@ function makeDrawCall (buffer, drawDescriptor) {
    asdf *
    vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner, inPosition.z, 1.);
   
+   //vsOut.position = vec4<f32>(toSpherical(vsOut.position.xyz), 1.);
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
   

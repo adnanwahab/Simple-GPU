@@ -328,94 +328,6 @@ if (hasCollided(pos.xyz)) {
   return vec3<f32>(1.);
 }
 
-fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  var idx = f32(index);
-  var radius = idx / 256;
-  posBuffer[index] = vec4<f32>(cos(idx) , idx /2000., sin(idx), 1.);
-
-  posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-  posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-
-  posBuffer[index].y *= .6;
-
-  return false;
-}
-
-fn rot (a:vec2<f32>, theata:f32) -> vec2<f32> {
-  return a.xx * vec2<f32>(cos(theata), sin(theata)) + a.yy * vec2<f32>(-sin(theata), cos(theata));
-}
-
-fn cMul(a:vec2<f32>, b:vec2<f32>) -> vec2<f32> {
-  return vec2<f32>(a.x*b.x-a.y*b.y,a.x*b.y+a.y*b.x);
-}
-
-fn cLog(a:vec2<f32>) -> vec2<f32> {
-  var b = atan2(a.y, a.x);
-  if (b<0.0) { b+= 2.0 * 3.14151926535; }
-  return vec2<f32>(log(length(a)), b);
-}
-
-fn cExp(z:vec2<f32>) -> vec2<f32> {
-  return exp(z.x) * vec2<f32>(cos(z.y), sin(z.y));
-}
-
-fn cDiv(a:vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-  var d = dot(b,b);
-  return vec2<f32>(dot(a,b), a.y * b.x - a.x * b.y) /d; 
-}
-const PI=3.1415926535;
-
-fn rotClamp(pos:vec2<f32>, n:i32) -> vec2<f32> {
-  var alpha = - atan2(pos.x, pos.y);
-
-  var tmp = PI / f32(n);
-  return abs(rot(pos, -alpha+ (alpha % (2.*tmp)) -tmp));
-}
-
-fn cPow( z:vec2<f32>, a: vec2<f32>) -> vec2<f32> {
-	return cExp(cMul(cLog(z), a));
-}
-
-fn f( z: vec2<f32>, c:vec2<f32>) -> vec2<f32>{
-  return abs(cPow(z, vec2<f32>(3, 0))) - exp(1.) * abs(z) + c;
-}
-
-fn df(z:vec2<f32>, c:vec2<f32>) -> vec2<f32> { 
-  var e = vec2<f32>(0.001, 0.0);
-  return cDiv(f(z,c) - f(z+e,c), e);
-}
-
-fn color(pos0:vec2<f32>) -> vec4<f32> {
-  var pos = vec2<f32>(pos0.x, pos0.y);
-
-  const S = 256;
-  pos = rot(pos, -PI/6.);
-  pos=rotClamp(pos,6);
-
-  const offset=vec2<f32>(0.1, 0.);
-  pos += offset;
-  pos = rot(pos, -PI/4.);
-  pos -=offset;
-
-  var z1 = pos;
-  var p = abs(pos+vec2<f32>(0.25, -1.125));
-
-  var dz = vec2<f32>(1., 0.);
-  var j =0;
-  for (var i = 0; i <= S; i++) {
-    j=i;
-    if (dot(z1,z1) > 100000) { break; }
-
-    dz = cMul( dz, df(z1, p));
-
-    z1 = f( z1, p);
-  }
-  var h = 0.5 * log(dot(z1,z1)) * sqrt(dot(z1, z1) / dot(dz, dz));
-
-  var color = vec3<f32>(f32(j) / 2555. * 10.) * clamp(1.-abs(1.-h*50000) * 0.0125,0., 1.);
-  return vec4<f32>(color, 1);
-}
-
 
 fn InventSomethingNew (index:u32) -> vec4<f32> {
   
@@ -517,10 +429,15 @@ velocity = .02;
   var pl = Place(place.x, place.y, place.z, place.w);
   
   
-  var changePosBuffer = vec4<f32>(
-    (map[next].zw - map[previous].zw) * velocity,
-    0, 0);
+  var changePosBuffer = 
+  
+  // vec4<f32>(toSpherical(vec3<f32>(
+  //   (map[next].zw - map[previous].zw) * velocity,
+  //   0)), 0.);
 
+    (vec4<f32>(
+      (map[next].zw - map[previous].zw) * velocity,
+      0, 0));
 
    posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
@@ -574,9 +491,7 @@ fn init (index: u32) {
     posBuffer[index].y  = place.w;
 }
 
-fn sphericalToCartesian() {
 
-}
 
 fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
   var x = pos.x;
@@ -594,12 +509,40 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
   return vec3<f32>(x1, y1, z1);
 }
 
+fn sphericalToCartesian(θ: f32, φ:f32) -> vec3<f32> {
+var r = 3.;
+ var x = r * sin(θ) * cos(φ);
+  var y = r * sin(θ) * sin(φ);
+  var z = r * cos(θ);
+
+  return vec3<f32>(x, y, z);
+}
+
+//store place phi, theta = 180-180, 90-90
+//every frame, as person's dt as a percent of the two waypoints
+//
+//output to posBuffer when person's DT changes 
+
+
+fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
+  var idx = f32(index);
+  var radius = idx / 256;
+  posBuffer[index] = vec4<f32>(cos(idx) , idx /2000., sin(idx), 1.);
+
+  posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
+  posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
+
+  posBuffer[index].y *= .6;
+
+  return false;
+}
+
+const sphereRadius = 1.;
+
 @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
 @group(0) @binding(2) var<uniform> uniforms: Uniforms;
 @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
 @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
-
-
 
 @group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
 
@@ -635,8 +578,6 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
       simulationStep(index);
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
-
-     
     }
     ${noise}
 `
