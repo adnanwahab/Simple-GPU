@@ -8,12 +8,17 @@ export const computeShader = `
     }
 
     @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
     @group(0) @binding(2) var<uniform> uniforms: Uniforms;
     @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
     @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
 
     @group(0) @binding(5) var<storage, read_write> mapAttributes: array<f32>;
+
+
+
+
+    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
+
     @group(0) @binding(6) var<storage,read_write> map: array<vec4<f32>>;
 
     @group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
@@ -508,9 +513,12 @@ velocity = .1;
    posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .5) {
+  if (distance(currentPosition.xy, map[next].zw) < .1) {
     personBuffer[id].y = pers.next;
-    personBuffer[id].x = 0;
+    personBuffer[id].x = pl.next;
+    if (pl.next == -1) { //person has reached spaceship, send to ore
+      personBuffer[id].x = f32(id);
+    } 
   }
 }
 
@@ -643,27 +651,6 @@ fn init (index: u32) {
     ${noise}
 `
 import {noise} from './shader2'
-///make it so good that the other stream is super impressed -> mr bean projected onto particle ->
-//fire
-//ice https://www.shadertoy.com/view/dldSRB
-//wind - leaves 
-//earth - earthQuake
-//data Cube
-
-//orbit around decomposing things 
-//data cube
-//2-4 days
-  
-  //time, mode, attenuationRate, particleIndex, groupIndex 
-  //synchronized swimmers - all particles of certain color do similar stuff 
-  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
-
-  //dont think anything else - just fnish the shader
-  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
-  //make a new buffer that links particle to thet5 index in the buffer
-  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
-
-
 
 
 

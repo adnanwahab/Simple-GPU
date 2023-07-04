@@ -123,7 +123,7 @@ let placeList = []
   //place = next, terrrain, long, lat
   //1 = ore, 2 = refinery
 
-  placeList.unshift([0,0,-1,-1])
+  placeList.unshift([-1,0,-1,-1])
 
   return  placeList
 }
