@@ -108,12 +108,12 @@ let placeList = []
     // ])
 
     let terrain = Math.random() > .5 ? 1 : 2;
-    let radius = terrain === 2 ? .5 : 2.5
+    let radius = terrain === 2 ? .5 : 3.5
     placeList.push([
       0, //next
       terrain,  //terrain
 
-      radius * Math.cos(i / 1e5 * Math.PI * 2),  //x
+      radius * Math.cos(i / 1e5 * Math.PI * 2), //x
       radius * Math.sin(i / 1e5 * Math.PI * 2) //y
     ])
   }
@@ -124,7 +124,8 @@ let placeList = []
     if (pick[1] === 2) {
        //if the terrain is a refinery, send to spaceship(0)
        //if the terrain is an ore, send to refinery
-       //
+       //If the terrain is a spaceShip -> send to Ore designated by person-index
+
     next = Math.random() * 1e5 | 0
     while (placeList[next][1] === pick[1]) {
       next =  Math.random() * 1e5 | 0
@@ -136,7 +137,7 @@ let placeList = []
   //place = next, terrrain, long, lat
   //1 = ore, 2 = refinery
 
-  placeList.unshift([-1,0,-6,0])
+  placeList.unshift([-1,0,0,0])
 
   return  placeList
 }

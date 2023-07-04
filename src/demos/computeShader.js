@@ -513,7 +513,7 @@ velocity = .02;
    posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .02) {
+  if (distance(currentPosition.xy, map[next].zw) < .001) {
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.next == -1) { //person has reached spaceship, send to ore
