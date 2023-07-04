@@ -445,7 +445,7 @@ velocity = .02;
 
       
 //   posBuffer[id] += changePosBuffer;
-personBuffer[id].w += .1;
+personBuffer[id].w += .01;
 
 let theta = personBuffer[id].w * destination.latitude - personBuffer[id].w * prev.latitude;
 
@@ -453,6 +453,7 @@ let phi = personBuffer[id].w * destination.longitude - personBuffer[id].w * prev
 
 posBuffer[id] = sphericalToCartesian(theta, phi);
 
+posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
 
   var currentPosition = posBuffer[id];
 
@@ -524,12 +525,12 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
 }
 
 fn sphericalToCartesian(θ: f32, φ:f32) -> vec4<f32> {
-var r = 3. + sin(uniforms.time * .01);
+var r = 3.;
  var x = r * sin(θ) * cos(φ);
   var y = r * sin(θ) * sin(φ);
   var z = r * cos(θ);
 
-  return vec4<f32>(x, y, z, 0);
+  return vec4<f32>(x, z, y, 0);
 }
 
 //store place phi, theta = 180-180, 90-90
