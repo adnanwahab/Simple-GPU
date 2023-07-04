@@ -96,32 +96,36 @@ let makeNumbers = function *() {
     yield parseFloat(PI.slice(i, i+= 2)) * 2.;
 }
 
-function makeBoard () {
-let game = []
+function makePlaceList () {
+let placeList = []
 
-  for (var i = 0; i < 1e6; i++) { //outer ring
-    game.push([
-      0, 
-      Math.random() > .5 ? 1 : 2, 
-      Math.random(), 
-      Math.random() 
+  for (var i = 0; i < 1e5; i++) { //outer ring
+    placeList.push([
+      0, //next
+      Math.random() > .5 ? 1 : 2,  //terrain
+      sin(i / 1e5) - .5 ,  //x
+      cos(Math.random())  //y
     ])
   }
-  for (var i = 0; i < 1e6; i++) { //outer ring
-   game[i][0] = Math.random() * 1e6 | 0
+  for (var i = 0; i < 1e5; i++) { //outer ring
+    var pick = placeList[i];
+
+    var next
+    if (pick[1] === 2) {
+    next = Math.random() * 1e5 | 0
+    while (placeList[next][1] === pick[1]) {
+      next =  Math.random() * 1e5 | 0
+    }
+  } else next = 0;
+    pick[0] = next;
   }
 
-  //place = x,y type, quantity 
-  //ore buffer 
-  //refinery buffer 
+  //place = next, terrrain, long, lat
+  //1 = ore, 2 = refinery
 
-//next: f32,
-//terrain: f32, //blank, iron ore, gold ore, silver ore, 
-//latitude: f32,
-//longitude: f32
-game.unshift([0,0,0,0])
-console.log(game)
-  return  game
+  placeList.unshift([0,0,-1,-1])
+
+  return  placeList
 }
 
 
@@ -1029,10 +1033,11 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
     destinationBuffer[i+3] = 0
   }
 
+  let placeList = makePlaceList()
   let direction = makeBuffer(directionBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
   //let gridBuffer2 = makeBuffer(destinationBuffer, 0, 'result')
-  let gridBuffer2 = makeBuffer(makeBoard(), 0, 'result')
+  let gridBuffer2 = makeBuffer(placeList, 0, 'result')
 
   let particledistancetraveled = new Float32Array(particlesCount)
   // for(let i =0; i < particledistancetraveled.length; i++) {
@@ -1041,12 +1046,15 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   let distancetraveledBuffer = makeBuffer(particledistancetraveled, 0, 'vectorField')
 
 
-  let groupIndexBuffer = new Float32Array(particlesCount)
+  let personBuffer = []
   for (var i =0 ; i< particlesCount; i++ ){
-    groupIndexBuffer[i] = Math.floor(i / 1e5)
+    let next = i / 10 | 0
+    let prev = 0;
+    personBuffer[i] = [next, prev,0,i]
   }
 
-  let groupBuffer = makeBuffer(groupIndexBuffer, 0, 'groupBuffer')
+  console.log(personBuffer)
+  let groupBuffer = makeBuffer(personBuffer, 0, 'groupBuffer')
 
 let max = {
   x: 0,
@@ -1124,7 +1132,7 @@ for(let i = 0; i < mesh.source.length; i+=4) {
       {binding: 3, resource: {buffer: direction}},
       {binding: 4, resource: {buffer: distancetraveledBuffer}},
       {binding: 5, resource: {buffer: reset }},
-      {binding: 6, resource: {buffer: gridBuffer2 }}, //destination
+      {binding: 6, resource: {buffer: gridBuffer2 }}, //map
       {binding: 7, resource: {buffer: groupBuffer}}
     ]
   }

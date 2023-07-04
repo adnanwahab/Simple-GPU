@@ -498,15 +498,19 @@ velocity = .1;
   var place = map[next]; //next, terrain, x, y
 
   var pl = Place(place.x, place.y, place.z, place.w);
-  posBuffer[id] += vec4<f32>(
+  
+  
+  var changePosBuffer = vec4<f32>(
     (map[next].zw - map[previous].zw) * velocity,
     0, 0);
 
+
+   posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .1) {
-    personBuffer[id].y = personBuffer[id].x;
-    personBuffer[id].x = place.z;
+  if (distance(currentPosition.xy, map[next].zw) < .5) {
+    personBuffer[id].y = pers.next;
+    personBuffer[id].x = 0;
   }
 }
 
@@ -551,17 +555,27 @@ const destinations = array<vec4<f32>, 12>(
 
 fn init (index: u32) {
   let person = personBuffer[index];
-  let dest = person.x;
+  let next = person.x;
   let prev = person.y;
   let inventory = person.z;
   let activeVision = person.w;
 
   var idx = 3 * (i32(index) % 4);
-  if (personBuffer[index].x == 0. ) {
-    let place = map[index];
-    personBuffer[index].x = place.z;
-    personBuffer[index].y = place.w;
-  }
+  
+    let place = map[i32(prev)];
+//    let pl = Place();
+    // posBuffer[index].x += cos(f32(index));
+    // posBuffer[index].y  += sin(f32(index));
+
+    // personBuffer[index].x = place.z;
+    // personBuffer[index].y = place.w;
+
+
+    // posBuffer[index].x = place.z + f32(index) / 100.;
+    // posBuffer[index].y  += place.w;
+
+    posBuffer[index].x = place.z + cos(f32(index));
+    posBuffer[index].y  = place.w + sin(f32(index));
 }
 
 
@@ -584,8 +598,10 @@ fn init (index: u32) {
       //use vectorFieldBuffer - draw a map of the vectorField which is 1kx1k
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
-
-      init(index);
+      distancetraveled[index] += 1.;
+      if (dt < 1) {
+        init(index);
+      }
       simulationStep(index);
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
