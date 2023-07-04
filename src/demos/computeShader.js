@@ -492,7 +492,7 @@ fn simulationStep(id: u32) {
   var noise = 0.;
   var velocity = 0.;
 
-velocity = .1;
+velocity = .02;
 
   var person = personBuffer[id];
   var pers = Person(person.x, person.y, person.z, i32(person.w));
@@ -513,7 +513,7 @@ velocity = .1;
    posBuffer[id] += changePosBuffer;
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .1) {
+  if (distance(currentPosition.xy, map[next].zw) < .01) {
     personBuffer[id].y = pers.next;
     personBuffer[id].x = pl.next;
     if (pl.next == -1) { //person has reached spaceship, send to ore
@@ -555,11 +555,6 @@ const destinations = array<vec4<f32>, 12>(
   vec4<f32>(1, 0, 0, 0), //destination location
 );
 
-//map - random from 0-100 -> 0-50 blank
-//50-53,54-56, 57-60 = gold, copper, titanium
-//place refinery on start for now (mouse input later)
-
-//finsh today so tomorrow can be a holiday 
 
 fn init (index: u32) {
   let person = personBuffer[index];
@@ -582,8 +577,8 @@ fn init (index: u32) {
     // posBuffer[index].x = place.z + f32(index) / 100.;
     // posBuffer[index].y  += place.w;
 
-    posBuffer[index].x = place.z + cos(f32(index));
-    posBuffer[index].y  = place.w + sin(f32(index));
+    posBuffer[index].x = place.z;
+    posBuffer[index].y  = place.w;
 }
 
 

@@ -100,11 +100,19 @@ function makePlaceList () {
 let placeList = []
 
   for (var i = 0; i < 1e5; i++) { //outer ring
+    // placeList.push([
+    //   0, //next
+    //   Math.random() > .5 ? 1 : 2,  //terrain
+    //   sin(i / 1e5) - .5 ,  //x
+    //   cos(Math.random())  //y
+    // ])
+
+    let terrain = Math.random() > .5 ? 1 : 2;
     placeList.push([
       0, //next
-      Math.random() > .5 ? 1 : 2,  //terrain
-      sin(i / 1e5) - .5 ,  //x
-      cos(Math.random())  //y
+      terrain,  //terrain
+      Math.random(),  //x
+      Math.random() //y
     ])
   }
   for (var i = 0; i < 1e5; i++) { //outer ring
