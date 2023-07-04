@@ -88,6 +88,43 @@ const buffers = [
 ]
 
 
+let makeNumbers = function *() {
+  let PI = Math.PI.toPrecision(50).slice(2);
+
+  let i = 0;
+  while (true)
+    yield parseFloat(PI.slice(i, i+= 2)) * 2.;
+}
+
+function makeBoard () {
+let game = []
+
+  for (var i = 0; i < 1e6; i++) { //outer ring
+    game.push([
+      0, 
+      Math.random() > .5 ? 1 : 2, 
+      Math.random(), 
+      Math.random() 
+    ])
+  }
+  for (var i = 0; i < 1e6; i++) { //outer ring
+   game[i][0] = Math.random() * 1e6 | 0
+  }
+
+  //place = x,y type, quantity 
+  //ore buffer 
+  //refinery buffer 
+
+//next: f32,
+//terrain: f32, //blank, iron ore, gold ore, silver ore, 
+//latitude: f32,
+//longitude: f32
+game.unshift([0,0,0,0])
+console.log(game)
+  return  game
+}
+
+
 let drawShapes = true
 let particlesCount = 1e6
 let drawScreen
@@ -175,19 +212,9 @@ function makeGrid () {
 
   var result = [];
   for (let i = 0; i < 1e6; i++){
-//    posBuffer[id] = (i / 25000. + .5) * vec4<f32>(cos(i), sin(i), 0, 0);
-    let radius = i / 1e6 + .5;
-    if (i < 1e4)
-    result.push([
-      radius * Math.cos(i), radius * Math.sin(i),0 ,0
-    ])
-
-    else {
       result.push([
-       //10 * Math.random(), 10. * Math.random(), 0,0
-       0,0,0,0
+       i / 1e6,0,0,0
       ])
-    }
   } 
 
 
@@ -1004,7 +1031,8 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let direction = makeBuffer(directionBuffer, 0, 'vectorField')
   let gridBuffer = makeBuffer(vf1.flat(), 0, 'result')
-  let gridBuffer2 = makeBuffer(destinationBuffer, 0, 'result')
+  //let gridBuffer2 = makeBuffer(destinationBuffer, 0, 'result')
+  let gridBuffer2 = makeBuffer(makeBoard(), 0, 'result')
 
   let particledistancetraveled = new Float32Array(particlesCount)
   // for(let i =0; i < particledistancetraveled.length; i++) {
@@ -1425,7 +1453,7 @@ function writeBuffer (device, buffer, array) {
 if (drawShapes)
 list.set(pointBuffer.slice(0, pointBufferCount) )
 
-let happyBear = makeBuffer(list, 0, 'bear')
+let posBuffer = makeBuffer(list, 0, 'bear')
 
 let vf1 =  pickVF(), vf2 = pickVF()
 
@@ -1435,8 +1463,8 @@ let vf1 =  pickVF(), vf2 = pickVF()
     vf2[i] = [Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0]
   }
 
-const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
-computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2)
+//const posBuffer = makeBuffer(bunny.positions.map(d => d.concat(0)).flat(), 1, 'bunny')
+computeTransition = makeComputeShader(webgpu, posBuffer, vf1, vf2)
 const blend = {
   color: {
     srcFactor: 'src-alpha',
@@ -1453,8 +1481,8 @@ let drawDescriptor = {
   blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
-    happyBear
-    , quadBuffer, happyBear, colorBuffer
+    posBuffer
+    , quadBuffer, posBuffer, colorBuffer
   ],
   count: 6,
   instances: particlesCount ,

@@ -469,6 +469,60 @@ fn travelingGustsOfWind(index:u32) {
   .01 * vec4<f32>(cos(idx), sin(idx), 0., 0.);
 }
 
+
+
+//generate and represent places as fast as you can.
+//pos, next=w
+// stage, mineralCount, mineralMax, mineralType
+
+//map = 
+//mapAttributes = 4 things of each pixel
+//drill for ore -> minecraft 
+//vectorfield can be 10 million = 1000x1000x10
+
+fn simulationStep(id: u32) {
+  var i = f32(id);
+  var dt = distancetraveled[id];
+  var pos = posBuffer[id].xyz;
+  var noise = 0.;
+  var velocity = 0.;
+
+velocity = .1;
+
+  var person = personBuffer[id];
+  var pers = Person(person.x, person.y, person.z, i32(person.w));
+ 
+
+  var previous = i32(person.y);
+  var next = i32(person.x);
+  var place = map[next]; //next, terrain, x, y
+
+  var pl = Place(place.x, place.y, place.z, place.w);
+  posBuffer[id] += vec4<f32>(
+    (map[next].zw - map[previous].zw) * velocity,
+    0, 0);
+
+  var currentPosition = posBuffer[id];
+
+  if (distance(currentPosition.xy, map[next].zw) < .1) {
+    personBuffer[id].y = personBuffer[id].x;
+    personBuffer[id].x = place.z;
+  }
+}
+
+struct Place {
+  next: f32,
+  terrain: f32, //blank, iron ore, gold ore, silver ore, 
+  latitude: f32,
+  longitude: f32
+}
+
+struct Person {
+  next: f32,
+  prev: f32,
+  inventory: f32,
+  posBufferIndex: i32,
+}
 const destinations = array<vec4<f32>, 12>(
   vec4<f32>(1, 0, 0, 0), //0
   vec4<f32>(0, 1, 0, 0),
@@ -489,54 +543,9 @@ const destinations = array<vec4<f32>, 12>(
   vec4<f32>(1, 0, 0, 0), //destination location
 );
 
-//generate and represent places as fast as you can.
-//pos, next=w
-// stage, mineralCount, mineralMax, mineralType
-
-//map = 
-//mapAttributes = 4 things of each pixel
-//drill for ore -> minecraft 
-//vectorfield can be 10 million = 1000x1000x10
-
-fn simulationStep(id: u32) {
-  var i = f32(id);
-  var dt = distancetraveled[id];
-  var pos = posBuffer[id].xyz;
-  var noise = 0.;
-  var velocity = 0.;
-
-  velocity = .1;
-
-  posBuffer[id] += (map[id] - posBuffer[id]) * velocity;
-
-  var idx = 3 * (i32(id) % 4);
-  if (distance(map[id], posBuffer[id]) < .1) {
-    map[id] = destinations[i32(personBuffer[id].x+1.)];
-    //if destinations.next == -1, personBuffer.destination = vec3<f32>(0.);
-    //if ()
-    //personBuffer[id].x += 1;
-  }
-}
-
-struct place {
-  next: f32,
-  prev: f32,
-  terrain: f32, //blank, iron ore, gold ore, silver ore, 
-  quantity: f32 //when quantity reaches 0, must go to next 
-}
-
-struct person {
-  next: f32,
-  prev: f32,
-  pos: vec3<f32>,
-  inventory: f32
-}
-
-
 //map - random from 0-100 -> 0-50 blank
 //50-53,54-56, 57-60 = gold, copper, titanium
 //place refinery on start for now (mouse input later)
-//
 
 //finsh today so tomorrow can be a holiday 
 
@@ -549,8 +558,9 @@ fn init (index: u32) {
 
   var idx = 3 * (i32(index) % 4);
   if (personBuffer[index].x == 0. ) {
-    personBuffer[index].x = f32(idx);
-    personBuffer[index].y = f32(idx);
+    let place = map[index];
+    personBuffer[index].x = place.z;
+    personBuffer[index].y = place.w;
   }
 }
 
@@ -592,10 +602,6 @@ fn init (index: u32) {
       // if (keyframes > 3) {
       //   travelingGustsOfWind(index);
       // } 
-
-      
-
-
       // if (keyframes > 4) {
       //   somethingAmazing(index);
       // }
@@ -659,12 +665,3 @@ import {noise} from './shader2'
 
 
 
-
-//my name is renderbuffer
-//from the bottom of my heart
-//i let go of telepathy and the stream and the story and everything else
-//but i have to code
-//eat sleep, code repeat
-//no sleep
-//just code
-//i let go and i want to forget 
