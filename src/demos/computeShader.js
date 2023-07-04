@@ -451,9 +451,14 @@ let theta = personBuffer[id].w * destination.latitude - personBuffer[id].w * pre
 
 let phi = personBuffer[id].w * destination.longitude - personBuffer[id].w * prev.longitude;
 
-posBuffer[id] = sphericalToCartesian(theta, phi);
+if (id % 2 == 0) {
+  posBuffer[id] = sphericalToCartesian(theta, phi);
 
-posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
+} else {
+  posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
+
+}
+
 
   var currentPosition = posBuffer[id];
 
@@ -524,14 +529,18 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
 
   return vec3<f32>(x1, y1, z1);
 }
-
-fn sphericalToCartesian(θ: f32, φ:f32) -> vec4<f32> {
-var r = 3.;
- var x = r * sin(θ) * cos(φ);
+const PI = 3.14159;
+fn sphericalToCartesian(theta: f32, phi:f32) -> vec4<f32> {
+  // var φ = phi / 180 * PI;
+  // var θ = theta / 180 * PI;
+  var φ = phi;
+  var θ = theta;
+  var r = 3.;
+  var x = r * sin(θ) * cos(φ);
   var y = r * sin(θ) * sin(φ);
   var z = r * cos(θ);
 
-  return vec4<f32>(x, z, y, 0);
+  return vec4<f32>(x, y, z, 0);
 }
 
 const sphereRadius = 1.;

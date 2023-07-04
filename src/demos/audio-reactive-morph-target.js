@@ -112,9 +112,8 @@ let placeList = []
     placeList.push([
       0, //next
       terrain,  //terrain
-
-      radius * Math.cos(i / 1e5 * Math.PI * 2), //x
-      radius * Math.sin(i / 1e5 * Math.PI * 2) //y
+      Math.random() * Math.cos(i / 1e5 * Math.PI * 2), //x
+      Math.random() * Math.sin(i / 1e5 * Math.PI * 2) //y
     ])
   }
   for (var i = 0; i < 1e5; i++) { //outer ring
