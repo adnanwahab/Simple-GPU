@@ -1500,7 +1500,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-  blend: blend,
+//  blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     posBuffer
@@ -1748,9 +1748,11 @@ function makeDrawCall (buffer, drawDescriptor) {
   var vsOut: VSOut;  
 
   var asdf = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix;
+
+  var eyeMagnitude = .5;//determinant(cam.viewMatrix);
   vsOut.position =
    asdf *
-   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner, inPosition.z, 1.);
   
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;

@@ -7,21 +7,7 @@ export const computeShader = `
       decayRate: f32
     }
 
-    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-    @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-    @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-    @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
-
-    @group(0) @binding(5) var<storage, read_write> mapAttributes: array<f32>;
-
-
-
-
-    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
-
-    @group(0) @binding(6) var<storage,read_write> map: array<vec4<f32>>;
-
-    @group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
+   
 
 fn  isAreaOfEffect (pos: vec3<f32>) {
 }
@@ -485,7 +471,33 @@ fn travelingGustsOfWind(index:u32) {
 //drill for ore -> minecraft 
 //vectorfield can be 10 million = 1000x1000x10
 
+fn castSpell(spellId: f32, index: u32) {
+  let pos = posBuffer[index];
+
+}
+
+fn syncBoardState (index:u32) {
+  var mineralsGathered = worldState[0];
+  var researchPoints = worldState[2];
+  var hasWon =  researchPoints > 100. && mineralsGathered > 1e6;
+  var spellUsed = worldState[4];
+
+
+  if (spellUsed > -1) {
+    castSpell(spellUsed, index);
+  }
+
+  if (hasWon) {
+    reInit();
+  }
+}
+
+fn reInit() {
+
+}
+
 fn simulationStep(id: u32) {
+  syncBoardState(id);
   var i = f32(id);
   var dt = distancetraveled[id];
   var pos = posBuffer[id].xyz;
@@ -562,6 +574,40 @@ fn init (index: u32) {
     posBuffer[index].y  = place.w;
 }
 
+fn sphericalToCartesian() {
+
+}
+
+fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
+  var x = pos.x;
+  var y = pos.y;
+  var z = pos.z;
+
+  var r = sqrt(x * x + y* y + z * z);
+  var θ = acos(z / r);
+  var φ = atan(y / x);
+
+  var x1 = r * sin(θ) * cos(φ);
+  var y1 = r * sin(θ) * sin(φ);
+  var z1 = r * cos(θ);
+
+  return vec3<f32>(x1, y1, z1);
+}
+
+@group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> uniforms: Uniforms;
+@group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
+@group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
+
+
+
+@group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
+
+@group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
+
+@group(0) @binding(6) var<storage,read_write> map: array<vec4<f32>>;
+
+@group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
 
 //super mario galaxy + spaceShip
 //meteor coming in 24 hours -> make a meteor animation
@@ -573,7 +619,7 @@ fn init (index: u32) {
 
       var pos = posBuffer[index];
       var vel = direction[index];
-      var r = mapAttributes[index];
+      var r = worldState[index];
       var dt = distancetraveled[index];
       var vf2 = map[index];
       var person = personBuffer[index]; 
@@ -590,39 +636,7 @@ fn init (index: u32) {
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
 
-      if (keyframes > -1) {
-        //applyMagnets(pos.xyz, index);
-
-        //proceduralFire(index);
-      }  
-      // if (keyframes > 1) {
-      //   atomicFusion(index);
-      // }
-
-      // if (keyframes > 3) {
-      //   travelingGustsOfWind(index);
-      // } 
-      // if (keyframes > 4) {
-      //   somethingAmazing(index);
-      // }
-
-      // if (keyframes > 5) {
-      //   //atom discovery
-      //   sphereEvaporate(pos, index);
-      // }
-      //distancetraveled[index] += 1.;
-
-      //   if (dt > 100) {
-      //     var idx = f32(index) / 3000;
-      //     posBuffer[index] = idx * vec4<f32>(cos(idx), sin(idx), 0, 0);
-      //     distancetraveled[index] = 0.;
-      //   }
-      // return;
-
-
-      if (keyframes < 7) {
-        //information theory -> signal processing 
-      } 
+     
     }
     ${noise}
 `
