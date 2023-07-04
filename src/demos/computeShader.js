@@ -457,7 +457,8 @@ posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
 
   var currentPosition = posBuffer[id];
 
-  if (personBuffer[id].w == 1.) {
+  if (personBuffer[id].w > 1.) {
+    personBuffer[id].w  = 0.;
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.next == -1) { //person has reached spaceship, send to ore
@@ -531,24 +532,6 @@ var r = 3.;
   var z = r * cos(θ);
 
   return vec4<f32>(x, z, y, 0);
-}
-
-//store place phi, theta = 180-180, 90-90
-//every frame, as person's dt as a percent of the two waypoints
-//
-//output to posBuffer when person's DT changes 
-
-fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
-  var idx = f32(index);
-  var radius = idx / 256;
-  posBuffer[index] = vec4<f32>(cos(idx) , idx /2000., sin(idx), 1.);
-
-  posBuffer[index].x *= pow(sin(posBuffer[index].y), .5);
-  posBuffer[index].z *= pow(sin(posBuffer[index].y), .5);
-
-  posBuffer[index].y *= .6;
-
-  return false;
 }
 
 const sphereRadius = 1.;
