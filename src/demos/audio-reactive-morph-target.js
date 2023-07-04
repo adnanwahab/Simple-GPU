@@ -1064,7 +1064,7 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
   for (var i =0 ; i< particlesCount; i++ ){
     let next = i / 10 | 0
     let prev = 0;
-    personBuffer[i] = [next, prev,0,i]
+    personBuffer[i] = [next, prev,0,0]
   }
 
   console.log(personBuffer)

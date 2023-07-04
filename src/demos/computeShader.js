@@ -439,10 +439,24 @@ velocity = .02;
       (map[next].zw - map[previous].zw) * velocity,
       0, 0));
 
-   posBuffer[id] += changePosBuffer;
+      let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
+
+      let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
+
+      
+//   posBuffer[id] += changePosBuffer;
+personBuffer[id].w += .1;
+
+let theta = personBuffer[id].w * destination.latitude - personBuffer[id].w * prev.latitude;
+
+let phi = personBuffer[id].w * destination.longitude - personBuffer[id].w * prev.longitude;
+
+posBuffer[id] = sphericalToCartesian(theta, phi);
+
+
   var currentPosition = posBuffer[id];
 
-  if (distance(currentPosition.xy, map[next].zw) < .001) {
+  if (personBuffer[id].w == 1.) {
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.next == -1) { //person has reached spaceship, send to ore
@@ -509,20 +523,19 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
   return vec3<f32>(x1, y1, z1);
 }
 
-fn sphericalToCartesian(θ: f32, φ:f32) -> vec3<f32> {
-var r = 3.;
+fn sphericalToCartesian(θ: f32, φ:f32) -> vec4<f32> {
+var r = 3. + sin(uniforms.time * .01);
  var x = r * sin(θ) * cos(φ);
   var y = r * sin(θ) * sin(φ);
   var z = r * cos(θ);
 
-  return vec3<f32>(x, y, z);
+  return vec4<f32>(x, y, z, 0);
 }
 
 //store place phi, theta = 180-180, 90-90
 //every frame, as person's dt as a percent of the two waypoints
 //
 //output to posBuffer when person's DT changes 
-
 
 fn sphereEvaporate(pos: vec4<f32>, index: u32) -> bool {
   var idx = f32(index);
