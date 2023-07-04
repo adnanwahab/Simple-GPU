@@ -145,40 +145,35 @@ let placeList = []
   
     const triangle = [];
     for (let i = 0; i < 3; i++) {
-      const vertexX = Math.random() * (maxVertexCoordX - minVertexCoord) + minVertexCoord;
-      const vertexY = Math.random() * (maxVertexCoordY - minVertexCoord) + minVertexCoord;
-      triangle.push({ x: vertexX / 1000, y: vertexY / 1000});
+      const vertexX = makeRand() * (maxVertexCoordX - minVertexCoord) + minVertexCoord;
+      const vertexY = makeRand() * (maxVertexCoordY - minVertexCoord) + minVertexCoord;
+      triangle.push({ x: vertexX / 200, y: vertexY / 100});
     }
   
     return triangle;
   }
 
-  for ( let i = 0 ; i < 1e5; i+=3) {
+  for ( let i = 0 ; i < 1e5; i+=2) {
     let terrain = Math.random() > .5 ? 1 : 2;
-    let radius = 10 * (i / 1e5);
+    let radius = terrain == 2 ? 3.5 : .5;
 
-    // placeList.push([i+1, terrain, radius * cos(i / 180), radius * sin(i /  180)])
-    // placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
+    placeList.push([i+1, terrain, 3 + radius * cos(i / 180), radius * sin(i /  180)])
+    placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
 
     // placeList.push([i+1, terrain, radius * cos(i / 180), radius * sin(i /  180)])
     // placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
 
     let s = i / 1e3
     let π = 3.14159265358979323846264338327950288419716939937510
-    // let [x1, y1] = [s * cos(0), s * sin(0)]
-    // let [x2, y2] = [s * cos(2*π/3), s * sin(2*π/3)]
-    let [x3, y3] = [s * cos(4*π/3), s * sin(4*π/3)]
+
 
     let x = i % 100;
     let y = Math.floor(i / 100)
 
     let test = generateTriangle()
-    placeList.push([i+1, terrain, test[0].x, test[0].y])
-    placeList.push([i+2, terrain, test[1].x, test[1].y])
-
-    placeList.push([0, terrain, test[1].x, test[1].y])
-
-
+    //placeList.push([i+1, terrain, 2  * s * test[0].x, 2 * s * test[0].y])
+    // placeList.push([i+2, terrain, 2 * s * test[1].x, 2 * s * test[1].y])
+    // placeList.push([i, terrain, 3 * s * test[2].x, 30 *  s * test[2].y])
   }
 
   //place = next, terrrain, long, lat

@@ -364,6 +364,17 @@ fn somethingAmazing (index: u32) {
   //each citizen has a visibility based on the light of sorrounding light emitters 
 }
 
+
+fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
+  // if (x < edge0) {return 0.;}
+  
+  // if (x >= edge1) {return 1.;}
+  
+  let c = (x - edge0) / (edge1 - edge0);
+  
+  return c * c * (3 - 2 * c);
+  }
+
 fn travelingGustsOfWind(index:u32) {
   var idx = f32(index);
 
@@ -408,6 +419,41 @@ fn reInit() {
 
 }
 
+
+fn slerp(start: vec3<f32>, end: vec3<f32>, t: f32) -> vec3<f32> {
+  // Convert the start and end vectors to unit vectors
+  var uStart: vec3<f32> = normalize(start);
+  var uEnd: vec3<f32> = normalize(end);
+
+  var dotProduct: f32 = dot(uStart, uEnd);
+  dotProduct = clamp(dotProduct, -1.0, 1.0);
+
+  if (dotProduct == 1.0) {
+      // The start and end vectors are the same, return either vector
+      return uStart;
+  }
+
+  var theta: f32 = acos(dotProduct);
+  var sinTheta: f32 = sin(theta);
+
+  var weightStart: f32 = sin((1.0 - t) * theta) / sinTheta;
+  var weightEnd: f32 = sin(t * theta) / sinTheta;
+
+  var interpolated: vec3<f32> = weightStart * uStart + weightEnd * uEnd;
+
+  return normalize(interpolated);
+}
+
+fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
+  // Linear interpolation for the radius
+  var radiusInterpolated: f32 = mix(start.x, end.x, t);
+
+  // Circular interpolation for the angle
+  var angleInterpolated: f32 = mix(start.y, end.y, t);
+
+  return vec2<f32>(radiusInterpolated, angleInterpolated);
+}
+
 fn simulationStep(id: u32) {
   syncBoardState(id);
   var i = f32(id);
@@ -427,35 +473,22 @@ velocity = .02;
   var place = map[next]; //next, terrain, x, y
 
   var pl = Place(place.x, place.y, place.z, place.w);
-  
-  
-  var changePosBuffer = 
-  
-  // vec4<f32>(toSpherical(vec3<f32>(
-  //   (map[next].zw - map[previous].zw) * velocity,
-  //   0)), 0.);
-
-    (vec4<f32>(
-      (map[next].zw - map[previous].zw) * velocity,
-      0, 0));
 
       let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
 
       let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
+personBuffer[id].w += .1;
 
-      
-//   posBuffer[id] += changePosBuffer;
-personBuffer[id].w += .01;
 
-let theta = (1. - personBuffer[id].w) * destination.latitude - prev.latitude;
 
-let phi = (1. - personBuffer[id].w) * destination.longitude -  prev.longitude;
+let interpolated =
+ mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
 
 //if (id % 2 == 0) {
-  posBuffer[id] = sphericalToCartesian(theta, phi);
+  posBuffer[id] = sphericalToCartesian(interpolated);
 
 //} else {
-  posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
+  posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0);
 //}
 
 
@@ -529,11 +562,11 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
   return vec3<f32>(x1, y1, z1);
 }
 const PI = 3.14159;
-fn sphericalToCartesian(theta: f32, phi:f32) -> vec4<f32> {
+fn sphericalToCartesian(coords:vec2<f32>) -> vec4<f32> {
   // var φ = phi / 180 * PI;
   // var θ = theta / 180 * PI;
-  var φ = phi;
-  var θ = theta;
+  var φ = coords.x;
+  var θ = coords.y;
   var r = 3.;
   var x = r * sin(θ) * cos(φ);
   var y = r * sin(θ) * sin(φ);
