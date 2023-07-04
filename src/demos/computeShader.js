@@ -447,17 +447,16 @@ velocity = .02;
 //   posBuffer[id] += changePosBuffer;
 personBuffer[id].w += .01;
 
-let theta = personBuffer[id].w * destination.latitude - personBuffer[id].w * prev.latitude;
+let theta = (1. - personBuffer[id].w) * destination.latitude - prev.latitude;
 
-let phi = personBuffer[id].w * destination.longitude - personBuffer[id].w * prev.longitude;
+let phi = (1. - personBuffer[id].w) * destination.longitude -  prev.longitude;
 
-if (id % 2 == 0) {
+//if (id % 2 == 0) {
   posBuffer[id] = sphericalToCartesian(theta, phi);
 
-} else {
+//} else {
   posBuffer[id] = vec4<f32>(theta, phi, 0, 0);
-
-}
+//}
 
 
   var currentPosition = posBuffer[id];

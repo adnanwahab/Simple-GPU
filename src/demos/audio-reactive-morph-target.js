@@ -108,12 +108,12 @@ let placeList = []
     // ])
 
     let terrain = Math.random() > .5 ? 1 : 2;
-    let radius = terrain === 2 ? .5 : 3.5
+    let radius = Math.floor(i / 1e4);
     placeList.push([
       0, //next
       terrain,  //terrain
-      Math.random() * Math.cos(i / 1e5 * Math.PI * 2), //x
-      Math.random() * Math.sin(i / 1e5 * Math.PI * 2) //y
+      radius  * Math.cos(i / 1e5 * Math.PI * 2), //x
+      radius  * Math.sin(i / 1e5 * Math.PI * 2) //y
     ])
   }
   for (var i = 0; i < 1e5; i++) { //outer ring
@@ -133,9 +133,57 @@ let placeList = []
     pick[0] = next;
   }
 
+
+
+
+  placeList = [];
+
+  function generateTriangle() {
+    const minVertexCoord = 50;
+    const maxVertexCoordX = 1000 - 50;
+    const maxVertexCoordY = 1000 - 50;
+  
+    const triangle = [];
+    for (let i = 0; i < 3; i++) {
+      const vertexX = Math.random() * (maxVertexCoordX - minVertexCoord) + minVertexCoord;
+      const vertexY = Math.random() * (maxVertexCoordY - minVertexCoord) + minVertexCoord;
+      triangle.push({ x: vertexX / 1000, y: vertexY / 1000});
+    }
+  
+    return triangle;
+  }
+
+  for ( let i = 0 ; i < 1e5; i+=3) {
+    let terrain = Math.random() > .5 ? 1 : 2;
+    let radius = 10 * (i / 1e5);
+
+    // placeList.push([i+1, terrain, radius * cos(i / 180), radius * sin(i /  180)])
+    // placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
+
+    // placeList.push([i+1, terrain, radius * cos(i / 180), radius * sin(i /  180)])
+    // placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
+
+    let s = i / 1e3
+    let π = 3.14159265358979323846264338327950288419716939937510
+    // let [x1, y1] = [s * cos(0), s * sin(0)]
+    // let [x2, y2] = [s * cos(2*π/3), s * sin(2*π/3)]
+    let [x3, y3] = [s * cos(4*π/3), s * sin(4*π/3)]
+
+    let x = i % 100;
+    let y = Math.floor(i / 100)
+
+    let test = generateTriangle()
+    placeList.push([i+1, terrain, test[0].x, test[0].y])
+    placeList.push([i+2, terrain, test[1].x, test[1].y])
+
+    placeList.push([0, terrain, test[1].x, test[1].y])
+
+
+  }
+
   //place = next, terrrain, long, lat
   //1 = ore, 2 = refinery
-
+  //generate musac
   placeList.unshift([-1,0,0,0])
 
   return  placeList
