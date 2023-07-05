@@ -114,9 +114,9 @@ let placeList = []
     if (terrain == 2) {
       theta += 5
 
-      placeList.push([i+1, 1, -3. + sin(theta),
-                       1 * cos(i /  180)])
-      placeList.push([0, 2,  2.5 * sin(theta),
+      placeList.push([i, 1, -3. + sin(theta),
+                       1 * cos(theta)])
+      placeList.push([0, 2,  2.5 * sin(i / 180),
                              5 * cos(i / 180)])
       i+=2
     } else {

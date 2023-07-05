@@ -53,159 +53,6 @@ fn  isAreaOfEffect (pos: vec3<f32>) {
     return dir;
   }
  
-  fn test123 (index: u32, flag: f32) {
-    var dir = direction[index];
-    var idx = f32(index);
-    
-    let pos = posBuffer[index];
-    if (distancetraveled[index] < 1000) {
-      posBuffer[index] = vec4<f32>(0);
-    }
-
-    if (length(dir) == 0.){ 
-      dir = vec3<f32>(.1, 0., 0. );
-    }
-    var i = (uniforms.time  % 3);
-    var theta = atan2(dir.z, dir.x);
-    if (i == 0) { 
-      var theta = atan2(dir.z, dir.x);
-      dir.x +=  cos(idx);
-      dir.z += sin(idx);
-    }
-
-    if (i == 1) { 
-      var theta = atan2(dir.y, dir.x);
-      dir.x +=  cos(idx);
-      dir.y += sin(idx);
-    }
-
-    if (i == 2) { 
-      var theta = atan2(dir.z, dir.y);
-      dir.y +=  cos(idx);
-      dir.z += sin(idx);
-    }
-  
-    dir.y = dir.x;
-    dir.x = dir.y;
-    dir.y = cos(idx);
-    dir.x = sin(idx);
-    direction[index] = dir;
-    return;
-  }
-  
-
-  
-fn makeParticlesFly(idx: u32) -> bool {
-  var index = f32(idx);
-  var pos = posBuffer[idx];
-
-  posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  var vel = direction[idx];
-  direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
-  if (pos.z != 0.) {
-    posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  }
-  return false;
-}
-
-fn makeCoolStuff(idx:u32) -> f32 {
-
-
-
-  return -1;
-}
-
-  fn makeCoolShader(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
-    var index = f32(idx);
-    var pos = posBuffer[idx];
-
-    direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
-
-    if (dt > 10) {
-      direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
-    }
-
-    if (dt > 10) {
-      distancetraveled[idx]= 0;
-      //posBuffer[idx] = indexBuffer[idx];
-    }
-
-    return -1;
-  }
-
-  fn ribbon(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
-    var pos = posBuffer[idx];
-    var theta = atan2(pos.y, pos.x);
-    distancetraveled[idx] += 1.;
-    
-    if (idx > 256 ){
-      direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    } else {
-      let radius = distance(vec2<f32>(0,0), pos.xy);
-      direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    }
-    direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-    return -1;
-  }
-
-fn InventSomethingNew (index:u32) -> vec4<f32> {
-  
-  posBuffer[index] = (f32(index) / 256) * vec4<f32>(cos(f32(index)), sin(f32(index)), 0, 0);
-
-
-  return vec4<f32>(0.);
-}
-
-fn somethingAmazing (index: u32) {
-  distancetraveled[index] += 1.;
-  let id= f32(index);
-
-  posBuffer[index] = posBuffer[index] + .2 * vec4<f32>(
-
-    cos(distancetraveled[index]),
-    .5 * sin(distancetraveled[index]),
-    0,0
-  );
-  // if (distancetraveled[index] > 50.) {
-  //   posBuffer[index] = vec4<f32>(cos(id),sin(id), 0., 0.);
-  //   distancetraveled[index] = (0.);
-  // }
-
-  //posBuffer[index] = vec4<f32>(distancetraveled[index]);
-
-
-  //get angle from point to corner of moving matrix 
-  ///bend row of points along angle until it reaches other side 
-
-
-  //procedural city => 
-  //Fusion Reactor -> Electrical Grid -> light bulb -> smart grid -> torches 
-  //each citizen has a visibility based on the light of sorrounding light emitters 
-}
-
-
-fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
-  // if (x < edge0) {return 0.;}
-  
-  // if (x >= edge1) {return 1.;}
-  
-  let c = (x - edge0) / (edge1 - edge0);
-  
-  return c * c * (3 - 2 * c);
-  }
-
-fn travelingGustsOfWind(index:u32) {
-  var idx = f32(index);
-
-  var flip = 1.; //sign(cos(uniforms.time * .001 ));
-  posBuffer[index] = posBuffer[index] - flip * 
-  .01 * vec4<f32>(cos(idx), sin(idx), 0., 0.);
-}
-
-
 
 //generate and represent places as fast as you can.
 //pos, next=w
@@ -237,34 +84,7 @@ fn syncBoardState (index:u32) {
   }
 }
 
-fn reInit() {
-
-}
-
-
-fn slerp(start: vec3<f32>, end: vec3<f32>, t: f32) -> vec3<f32> {
-  // Convert the start and end vectors to unit vectors
-  var uStart: vec3<f32> = normalize(start);
-  var uEnd: vec3<f32> = normalize(end);
-
-  var dotProduct: f32 = dot(uStart, uEnd);
-  dotProduct = clamp(dotProduct, -1.0, 1.0);
-
-  if (dotProduct == 1.0) {
-      // The start and end vectors are the same, return either vector
-      return uStart;
-  }
-
-  var theta: f32 = acos(dotProduct);
-  var sinTheta: f32 = sin(theta);
-
-  var weightStart: f32 = sin((1.0 - t) * theta) / sinTheta;
-  var weightEnd: f32 = sin(t * theta) / sinTheta;
-
-  var interpolated: vec3<f32> = weightStart * uStart + weightEnd * uEnd;
-
-  return normalize(interpolated);
-}
+fn reInit() {}
 
 fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
   // Linear interpolation for the radius
@@ -289,7 +109,6 @@ velocity = .02;
   var person = personBuffer[id];
   var pers = Person(person.x, person.y, person.z, i32(person.w));
  
-
   var previous = i32(person.y);
   var next = i32(person.x);
   var place = map[next]; //next, terrain, x, y
@@ -302,19 +121,10 @@ velocity = .02;
 
 personBuffer[id].w += .01;
 
+let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
 
-
-let interpolated =
- mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
-
-//if (id % 2 == 0) {
-  if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated);
-  }
-//} else {
+  if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated); }
   if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
-
-
-//}
 
   var currentPosition = posBuffer[id];
 
