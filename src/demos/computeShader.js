@@ -38,16 +38,6 @@ fn  isAreaOfEffect (pos: vec3<f32>) {
     return vf.xyz;
   }
 
-
-//generate and represent places as fast as you can.
-//pos, next=w
-// stage, mineralCount, mineralMax, mineralType
-
-//map = 
-//mapAttributes = 4 things of each pixel
-//drill for ore -> minecraft 
-//vectorfield can be 10 million = 1000x1000x10
-
 fn castSpell(spellId: f32, index: u32) {
   let pos = posBuffer[index];
 
@@ -84,7 +74,6 @@ fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
 fn simulationStep(id: u32) {
   syncBoardState(id);
   var i = f32(id);
-  var dt = distancetraveled[id];
   var pos = posBuffer[id].xyz;
   var noise = 0.;
   var velocity = 0.;
@@ -94,17 +83,17 @@ fn simulationStep(id: u32) {
  
   var previous = i32(person.y);
   var next = i32(person.x);
-  var place = map[next]; //next, terrain, x, y
+  var place = places[next]; //next, terrain, x, y
 
   var pl = Place(place.x, place.y, place.z, place.w);
 
-  let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
+  let destination = Place(places[next].x, places[next].y, places[next].z, places[next].w);
 
-  let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
+  let prev = Place(places[previous].x, places[previous].y, places[previous].z, places[previous].w);
 
   personBuffer[id].w += .01;
 
-  let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
+  let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
 
   if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated); }
   if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
@@ -116,11 +105,11 @@ fn simulationStep(id: u32) {
 
     personBuffer[id].w  = 0.;
     personBuffer[id].y = personBuffer[id].x;
-    personBuffer[id].x = pl.next;
+    personBuffer[id].x += 1.;//pl.next;
     if (pl.terrain == 0) { //person has reached spaceship, send to ore
-      map[0].x = map[0].x + 2;
-      if (map[0].x > 1e5) {map[0].x = 1;}
-      personBuffer[id].x = map[i32(i)].x + 0.;
+      places[0].x = places[0].x + 2;
+      if (places[0].x > 1e5) { places[0].x = 1; }
+      personBuffer[id].x = places[i32(i)].x + 0.;
     } 
   }
 }
@@ -149,7 +138,7 @@ fn init (index: u32) {
 
   var idx = 3 * (i32(index) % 4);
   
-    let place = map[i32(prev)];
+    let place = places[i32(prev)];
 //    let pl = Place();
     // posBuffer[index].x += cos(f32(index));
     // posBuffer[index].y  += sin(f32(index));
@@ -184,8 +173,6 @@ fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
 }
 const PI = 3.14159;
 fn sphericalToCartesian(coords:vec2<f32>) -> vec4<f32> {
-  // var φ = phi / 180 * PI;
-  // var θ = theta / 180 * PI;
   var φ = coords.x;
   var θ = coords.y;
   var r = 3.;
@@ -199,43 +186,38 @@ fn sphericalToCartesian(coords:vec2<f32>) -> vec4<f32> {
 const sphereRadius = 1.;
 
 @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+@group(0) @binding(3) var<storage,read_write> distanceTraveled: array<f32>;
+
 @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-@group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-@group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
 
+
+
+@group(0) @binding(4) var<storage, read_write> neighborhoods: array<f32>;
 @group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
-
 @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
-
-@group(0) @binding(6) var<storage,read_write> map: array<vec4<f32>>;
-
+@group(0) @binding(6) var<storage,read_write> places: array<vec4<f32>>;
 @group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
 
-//super mario galaxy + spaceShip
-//meteor coming in 24 hours -> make a meteor animation
-//go from goldmine to refinery to spaceship and accumulate particles within mesh position
-//make a dancer mesh that is an antenna that cir·cum·am·bu·lates thoughts + hallucinations
     @compute @workgroup_size(256)
     fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
       let index: u32 = GlobalInvocationID.x;
 
       var pos = posBuffer[index];
-      var vel = direction[index];
+      var dt = distanceTraveled[index];
       var r = worldState[index];
-      var dt = distancetraveled[index];
-      var vf2 = map[index];
+      var neighborhoods = neighborhoods[index];
+      var vf2 = places[index];
       var person = personBuffer[index]; 
-      //destination, prev, inventory, activeVision
-      //destinationIndex -> points to vectorFieldBuffer 
-      //use vectorFieldBuffer - draw a map of the vectorField which is 1kx1k
+
+
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
-      distancetraveled[index] += 1.;
+      distanceTraveled[index] += 1.;
       if (dt < 1) {
         init(index);
       }
       simulationStep(index);
-      posBuffer[index].z = f32(index) / 1e9;
+      posBuffer[index].z += f32(index) / 1e9;
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
     }

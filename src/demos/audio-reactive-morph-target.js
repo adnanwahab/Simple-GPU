@@ -104,12 +104,14 @@ let placeList = [[-1,0,0,0]];
 
   for (let i = 1; i < 1e2; i++) {
     for (let j = 1; j < 1e2; j++) {
-      placeList.push(
-        [Math.random() * 1e6, 1, -5 - j / 10,  5 + i / 10 ]
-      );
+      for (let k = 0; k < 10; k++) {
+        placeList.push(
+          [j+1, 1, j / 10 + Math.cos(k), i / 10 + Math.sin(k)]
+          //[Math.random() * 1e6, 1, -5 - Math.cos(j / 10),  5 + Math.sin(i / 10) ]
+        );
+      }
     }
   }
-
   return  placeList
 }
 
@@ -1768,7 +1770,7 @@ function makeDrawCall (buffer, drawDescriptor) {
   var eyeMagnitude = pow(determinant(cam.viewMatrix), 100);
   vsOut.position =
    asdf *
-   vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner, inPosition.z, 1.);
+   vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner - vec2<f32>(2.), inPosition.z + 2., 1.);
   
    //vsOut.position = vec4<f32>(toSpherical(vsOut.position.xyz), 1.);
   vsOut.localPosition = quadCorner;
