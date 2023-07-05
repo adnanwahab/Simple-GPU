@@ -1,5 +1,5 @@
 //figure out something new every single second of the day
-const DRAW_ON_SPHERE = false;
+const DRAW_ON_SPHERE = true;
 export const computeShader = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -95,25 +95,31 @@ fn simulationStep(id: u32) {
 
   let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
 
-  if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated); }
+  if (${DRAW_ON_SPHERE}) { 
+    
+    posBuffer[id] = sphericalToCartesian(interpolated); 
+  
+   // posBuffer[id] = sphericalToCartesian(interpolated) + .01 * vec4<f32>(curlNoise(sphericalToCartesian(interpolated).xyz), 1.); 
+
+  }
   if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
 
   var currentPosition = posBuffer[id];
 
+  //open question - whats better, person arrives at location when distance < epsilon or when dt = 100% 
+  //if distance, person.pos += .001 in unit-vector of position
   if (personBuffer[id].w > 1.) {
-    personBuffer[id].w  = -f32(id) / 100000.;
+    personBuffer[id].w = -f32(id) / 100000.;
 
-    personBuffer[id].w  = 0.;
+    personBuffer[id].w = 0.;
     personBuffer[id].y = personBuffer[id].x;
-    personBuffer[id].x += 1.;//pl.next;
-    if (pl.terrain == 0) { //person has reached spaceship, send to ore
-      places[0].x = places[0].x + 2;
-      if (places[0].x > 1e5) { places[0].x = 1; }
-      personBuffer[id].x = places[i32(i)].x + 0.;
-    } 
+    personBuffer[id].x += 1;//pl.next;
+    //person doesnt need a previous
+    //person only needs a destination -> move a fixed rate toward the destination until 
+    //distance is less than epsilon
   }
 }
-
+ 
 struct Place {
   next: f32,
   terrain: f32, //blank, iron ore, gold ore, silver ore, 
