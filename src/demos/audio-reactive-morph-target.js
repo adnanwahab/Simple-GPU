@@ -102,34 +102,16 @@ let placeList = [[-1,0,0,0]];
   //use a theta -> 
   let origin  = [Math.random(), Math.random()]
 
-  // function makeHexagon2(x, y, r, i, j=0) { 
-  //   let deg1 = (i / 3)  * 60
-  //   let deg2 = (i / 3 + 1) * 60
-  //   xCoord.push(x)
-  //   yCoord.push(y)
-  //   xCoord.push(x + r * Math.cos(deg1 * DEG2RAD))
-  //   yCoord.push(y + r * Math.sin(deg1 * DEG2RAD))
-  //   xCoord.push(x + r * Math.cos(deg2  * DEG2RAD))
-  //   yCoord.push(y + r * Math.sin(deg2 * DEG2RAD))
-  // } 
-  // makeHexagon2(x + (3/2 * .2) * j, y + vert * k, r, i, 18 * (j + k))
-
-
-
-  for ( let i = 1 ; i < 1e5; ) {
-      let x1 = (i % 100) /  100
-      let y1 =  (i / 1e4)
-      let x2 = (i % 100) /  100 + .5
-      let y2 = (i / 1e4) + .5
-
-      placeList.push([i+1, 1, x1, y1 ])
-      placeList.push([i+2, 2, x2, y2])
-
-      i+=2
+  for (let i = 1; i < 1e2; i++) {
+    for (let j = 1; j < 1e2; j++) {
+      placeList.push(
+        [Math.random() * 1e6, 1, -5 - j / 10,  5 + i / 10 ]
+      );
+    }
   }
+
   return  placeList
 }
-
 
 let drawShapes = true
 let particlesCount = 1e5
@@ -1050,8 +1032,8 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let personBuffer = []
   for (var i =0 ; i< particlesCount; i++ ){
-    let next = 0
-    let prev = 0;
+    let next = i+1
+    let prev = i;
     personBuffer[i] = [next, prev,0,0]
   }
 
