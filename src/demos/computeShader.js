@@ -38,21 +38,6 @@ fn  isAreaOfEffect (pos: vec3<f32>) {
     return vf.xyz;
   }
 
-  fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
-    var dir = direction[index];// + vec3<f32>(1, 1, 1);
-    if (length(dir) == 0.) { 
-      dir = vec3<f32>(.1, 0., 0. );
-    }
-  
-    var theta = atan2(dir.y, dir.x);
-  
-    dir.x =  cos(theta + 1.6);
-    dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
-  
-    direction[index] = dir;
-    return dir;
-  }
- 
 
 //generate and represent places as fast as you can.
 //pos, next=w
@@ -136,9 +121,9 @@ let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
     personBuffer[id].x = pl.next;
     if (pl.terrain == 0) { //person has reached spaceship, send to ore
 
-      map[0].x = map[0].x + 1;
+      map[0].x = map[0].x + 2;
       if (map[0].x > 1e5) {map[0].x = 1;}
-      personBuffer[id].x = map[i32(i)].x + 1.;
+      personBuffer[id].x = map[i32(i)].x + 0.;
 
       //person.next -> 
           // SpaceShip -> 
@@ -262,6 +247,7 @@ const sphereRadius = 1.;
         init(index);
       }
       simulationStep(index);
+      //posBuffer[index].z = f32(index) / 1e9;
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
     }

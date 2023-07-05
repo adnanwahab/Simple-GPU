@@ -106,18 +106,32 @@ let placeList = []
 
 
   //use a theta -> 
-  let theta  = 0
+  let origin  = [Math.random(), Math.random()]
 
   for ( let i = 1 ; i < 1e5; ) {
     let terrain = Math.random() > .5 ? 1 : 2;
 
     if (terrain == 2) {
-      theta += 5
+      let theta = Math.random() * 180
+      let dx = Math.cos(theta)
+      let dy = Math.sin(theta)
+      // placeList.push([i+1, 1, -3. + sin(theta),
+      //                  1 * cos(theta)])
+      // placeList.push([0, 2,  .3 + 2.5 * sin(i / 180),
+      //                        5 * cos(i / 180)])
+      let x1 = origin[0]
+      let y1 = origin[1]
+      let x2 = origin[0] + dx
+      let y2 = origin[1] + dy
+      origin = [x2, y2]
+      placeList.push([i+1, 1, 
+        x1, y1
+      ])
 
-      placeList.push([i, 1, -3. + sin(theta),
-                       1 * cos(theta)])
-      placeList.push([0, 2,  2.5 * sin(i / 180),
-                             5 * cos(i / 180)])
+      placeList.push([0, 2, 
+        x2, y2
+
+      ])
       i+=2
     } else {
       // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
@@ -1489,7 +1503,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-  blend: blend,
+//  blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     posBuffer
@@ -1774,7 +1788,7 @@ function makeDrawCall (buffer, drawDescriptor) {
 
   var asdf = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix;
 
-  var eyeMagnitude = .5;//determinant(cam.viewMatrix);
+  var eyeMagnitude = pow(determinant(cam.viewMatrix), 2);
   vsOut.position =
    asdf *
    vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner, inPosition.z, 1.);
