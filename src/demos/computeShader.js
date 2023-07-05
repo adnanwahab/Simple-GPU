@@ -235,7 +235,7 @@ const sphereRadius = 1.;
         init(index);
       }
       simulationStep(index);
-      //posBuffer[index].z = f32(index) / 1e9;
+      posBuffer[index].z = f32(index) / 1e9;
       return;
       var keyframes = (uniforms.time % 10000) / 5000;
     }

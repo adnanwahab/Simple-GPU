@@ -98,88 +98,41 @@ let makeNumbers = function *() {
 
 let finishToday = makeNumbers()
 function makePlaceList () {
-let placeList = []
-
-  placeList = [[-1,0,0,0]];
+let placeList = [[-1,0,0,0]];
   //use a theta -> 
   let origin  = [Math.random(), Math.random()]
 
-  var wayPoints = [
-    [-1, 0],
+  // function makeHexagon2(x, y, r, i, j=0) { 
+  //   let deg1 = (i / 3)  * 60
+  //   let deg2 = (i / 3 + 1) * 60
+  //   xCoord.push(x)
+  //   yCoord.push(y)
+  //   xCoord.push(x + r * Math.cos(deg1 * DEG2RAD))
+  //   yCoord.push(y + r * Math.sin(deg1 * DEG2RAD))
+  //   xCoord.push(x + r * Math.cos(deg2  * DEG2RAD))
+  //   yCoord.push(y + r * Math.sin(deg2 * DEG2RAD))
+  // } 
+  // makeHexagon2(x + (3/2 * .2) * j, y + vert * k, r, i, 18 * (j + k))
 
-    [1, 0],
 
-    [0, 1],
-
-    [0, -1],
-  ]
 
   for ( let i = 1 ; i < 1e5; ) {
- 
-    
-    let terrain = Math.random() > .5 ? 1 : 2;
-
-    if (terrain == 2) {
-      continue;
-      let theta = Math.random() * 180
-      //let theta = finishToday.next() * 180
-
-      let dx = Math.cos(theta)
-      let dy = Math.sin(theta)
-      // placeList.push([i+1, 1, -3. + sin(theta),
-      //                  1 * cos(theta)])
-      // placeList.push([0, 2,  .3 + 2.5 * sin(i / 180),
-      //                        5 * cos(i / 180)])
-      let x1 = origin[0]
-      let y1 = origin[1]
-      let x2 = origin[0] + dx
-      let y2 = origin[1] + dy
-      origin = [x2, y2]
-
-      placeList.push([i+1, 1, x1, y1 ])
-      placeList.push([i+2, 2, x2, y2])
-      //placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
-
-      i+=2
-    } else {
-// placeList.push([0, 2,  
-      
-//       ])
-
-
-
-      // placeList.push([0, 2,  
-      //   1 * cos(i /  180), 
-      //   1 * sin(i / 180)
-      // ])
-      //https://www.jasondavies.com/maps/random-points/
-
-      // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
-      // placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
-
-      // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
-      // placeList.push([i+2, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
-      //placeList.push([0, 2,  5 * cos(i * 2 /  180), 5 * sin(i * 2 / 180)])
-
-      let x1 = (i % 100) /  1e4
-      let y1 =  (i / 1e5)| 0
-      let x2 = (i % 100) /  1e4 + .5
-      let y2 = (i / 1e5)| 0 + .5
+      let x1 = (i % 100) /  100
+      let y1 =  (i / 1e4)
+      let x2 = (i % 100) /  100 + .5
+      let y2 = (i / 1e4) + .5
 
       placeList.push([i+1, 1, x1, y1 ])
       placeList.push([i+2, 2, x2, y2])
 
       i+=2
-    }
   }
-
-
   return  placeList
 }
 
 
 let drawShapes = true
-let particlesCount = 1e6
+let particlesCount = 1e5
 let drawScreen
 let time = 0
 let stagingBuffer
@@ -1819,6 +1772,8 @@ function makeDrawCall (buffer, drawDescriptor) {
     );
   }
   
+//billboarding - https://glmatrix.net/docs/mat4.js.html#line1224
+
 
   @vertex
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
@@ -1828,7 +1783,7 @@ function makeDrawCall (buffer, drawDescriptor) {
 
   var asdf = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix;
 
-  var eyeMagnitude = pow(determinant(cam.viewMatrix), 2);
+  var eyeMagnitude = pow(determinant(cam.viewMatrix), 100);
   vsOut.position =
    asdf *
    vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner, inPosition.z, 1.);
