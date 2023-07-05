@@ -93,9 +93,10 @@ let makeNumbers = function *() {
 
   let i = 0;
   while (true)
-    yield parseFloat(PI.slice(i, i+= 2)) * 2.;
+    yield parseFloat(PI.slice(i, i+= 2)) * .2;
 }
 
+let finishToday = makeNumbers()
 function makePlaceList () {
 let placeList = []
 
@@ -113,6 +114,8 @@ let placeList = []
 
     if (terrain == 2) {
       let theta = Math.random() * 180
+      //let theta = finishToday.next() * 180
+
       let dx = Math.cos(theta)
       let dy = Math.sin(theta)
       // placeList.push([i+1, 1, -3. + sin(theta),
