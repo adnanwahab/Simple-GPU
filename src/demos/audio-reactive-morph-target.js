@@ -1480,7 +1480,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-//  blend: blend,
+  blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     posBuffer
@@ -1821,7 +1821,7 @@ var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
     color, 
     color, 
     color, 
-    1.,
+    .5,
     );
 };
 
