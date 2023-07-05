@@ -99,87 +99,25 @@ let makeNumbers = function *() {
 function makePlaceList () {
 let placeList = []
 
-  for (var i = 0; i < 1e5; i++) { //outer ring
-    // placeList.push([
-    //   0, //next
-    //   Math.random() > .5 ? 1 : 2,  //terrain
-    //   sin(i / 1e5) - .5 ,  //x
-    //   cos(Math.random())  //y
-    // ])
+  placeList = [[-1,0,0,0]];
 
-    let terrain = Math.random() > .5 ? 1 : 2;
-    let radius = Math.floor(i / 1e4);
-    placeList.push([
-      0, //next
-      terrain,  //terrain
-      radius  * Math.cos(i / 1e5 * Math.PI * 2), //x
-      radius  * Math.sin(i / 1e5 * Math.PI * 2) //y
-    ])
-  }
-  for (var i = 0; i < 1e5; i++) { //outer ring
-    var pick = placeList[i];
-
-    var next
-    if (pick[1] === 2) {
-       //if the terrain is a refinery, send to spaceship(0)
-       //if the terrain is an ore, send to refinery
-       //If the terrain is a spaceShip -> send to Ore designated by person-index
-
-    next = Math.random() * 1e5 | 0
-    while (placeList[next][1] === pick[1]) {
-      next =  Math.random() * 1e5 | 0
-    }
-  } else next = 0;
-    pick[0] = next;
-  }
-
-
-
-
-  placeList = [];
-
-  function generateTriangle() {
-    const minVertexCoord = 50;
-    const maxVertexCoordX = 1000 - 50;
-    const maxVertexCoordY = 1000 - 50;
-  
-    const triangle = [];
-    for (let i = 0; i < 3; i++) {
-      const vertexX = makeRand() * (maxVertexCoordX - minVertexCoord) + minVertexCoord;
-      const vertexY = makeRand() * (maxVertexCoordY - minVertexCoord) + minVertexCoord;
-      triangle.push({ x: vertexX / 200, y: vertexY / 100});
-    }
-  
-    return triangle;
-  }
-
-  for ( let i = 0 ; i < 1e5; i+=2) {
+  for ( let i = 1 ; i < 1e5; ) {
     let terrain = Math.random() > .5 ? 1 : 2;
     let radius = terrain == 2 ? 3.5 : .5;
 
-    placeList.push([i+1, terrain, 3 + radius * cos(i / 180), radius * sin(i /  180)])
-    placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
 
-    // placeList.push([i+1, terrain, radius * cos(i / 180), radius * sin(i /  180)])
-    // placeList.push([0, terrain, radius * cos(i /  180), radius * sin(i / 180)])
+    if (terrain == 2) {
+    //placeList.push([i+1, 1, 3 + radius * cos(i / 180), radius * sin(i /  180)])
+    //placeList.push([0, 2, radius * cos(i /  180), radius * sin(i / 180)])
+    //i+=2
+    } else {
+      placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
+      placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
 
-    let s = i / 1e3
-    let π = 3.14159265358979323846264338327950288419716939937510
-
-
-    let x = i % 100;
-    let y = Math.floor(i / 100)
-
-    let test = generateTriangle()
-    //placeList.push([i+1, terrain, 2  * s * test[0].x, 2 * s * test[0].y])
-    // placeList.push([i+2, terrain, 2 * s * test[1].x, 2 * s * test[1].y])
-    // placeList.push([i, terrain, 3 * s * test[2].x, 30 *  s * test[2].y])
+      i+=2
+    }
   }
 
-  //place = next, terrrain, long, lat
-  //1 = ore, 2 = refinery
-  //generate musac
-  placeList.unshift([-1,0,0,0])
 
   return  placeList
 }
@@ -1104,12 +1042,12 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   let personBuffer = []
   for (var i =0 ; i< particlesCount; i++ ){
-    let next = i / 10 | 0
+    let next = 0
     let prev = 0;
     personBuffer[i] = [next, prev,0,0]
   }
 
-  console.log(personBuffer)
+  
   let groupBuffer = makeBuffer(personBuffer, 0, 'groupBuffer')
 
 let max = {

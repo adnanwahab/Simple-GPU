@@ -477,6 +477,7 @@ velocity = .02;
       let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
 
       let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
+
 personBuffer[id].w += .1;
 
 
@@ -491,15 +492,26 @@ let interpolated =
   posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0);
 //}
 
-
   var currentPosition = posBuffer[id];
 
   if (personBuffer[id].w > 1.) {
-    personBuffer[id].w  = 0.;
+    personBuffer[id].w  = -f32(id) / 10000.;
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
-    if (pl.next == -1) { //person has reached spaceship, send to ore
-      personBuffer[id].x = f32(id);
+    if (pl.terrain == 0) { //person has reached spaceship, send to ore
+
+      map[0].x = map[0].x + 1;
+      if (map[0].x > 1e5) {map[0].x = 1;}
+      personBuffer[id].x = map[i32(i)].x + 1.;
+
+      //person.next -> 
+          // SpaceShip -> 
+          // nextMin -> 
+          // nextRefinery 
+
+      //every frame, readback the personList
+      //makeSure the next reference is incrementing 
+      //next reference is incrementing to placeList.
     } 
   }
 }
