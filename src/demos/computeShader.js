@@ -89,8 +89,6 @@ fn simulationStep(id: u32) {
   var noise = 0.;
   var velocity = 0.;
 
-velocity = .02;
-
   var person = personBuffer[id];
   var pers = Person(person.x, person.y, person.z, i32(person.w));
  
