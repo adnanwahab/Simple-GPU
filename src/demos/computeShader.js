@@ -1,4 +1,5 @@
 //figure out something new every single second of the day
+const DRAW_ON_SPHERE = false;
 export const computeShader = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -7,62 +8,8 @@ export const computeShader = `
       decayRate: f32
     }
 
-   
-
 fn  isAreaOfEffect (pos: vec3<f32>) {
 }
-
-  fn hasCollided (p: vec3<f32>)-> bool {
-    var minX = -1; 
-    var bounds = 10.;
-    if (p.x < -bounds) {return true;}
-    if (p.y <= -bounds) {return true;} //why is this backwards? 
-    if (p.x >= bounds) {return true;}
-    if (p.y >= bounds) {return true;}
-    if (p.z <= -bounds ) {return true;}
-    if (p.z >= bounds ){ return true;}
-    return false;
-  }
-
-  fn makeMagnets () -> array<vec3<f32>, 6> {
-    var result = array<vec3<f32>, 6>();
-
-    result[0] = vec3<f32>(0, 10, 0);
-    result[1] = vec3<f32>(0, 0, 10);
-    result[2] = vec3<f32>(10, 0, 0);
-    result[3] = vec3<f32>(0, 0, sin(uniforms.time * .0001));
-
-    result[4] = vec3<f32>(0, 10, 0);
-    result[5] = vec3<f32>(0, -10, 0);
-    return result;
-  }
-
-  fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
-    var radius = distance(pos, mag);
-    var theta = atan(pos.y / pos.x);
-    return 1;
-  }
-
-  fn applyMagnets(pos: vec3<f32>, index:u32) -> f32 {
-    var idx = hashPosition(pos);
-
-    var magnets = makeMagnets();
-
-    vectorFieldBuffer[idx] = vec4<f32>(0);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[0] - pos,1) / 1 / distance(magnets[0], pos);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[1] - pos,1) / 1 / distance(magnets[1], pos);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[2] - pos,1) / 1 / distance(magnets[2], pos);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[3] - pos,1) / 1 / distance(magnets[3], pos);
-
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[4] - pos,1) / 1 / distance(magnets[4], pos);
-    vectorFieldBuffer[idx] +=  vec4<f32>(magnets[5] - pos,1) / 1 / distance(magnets[5], pos);
-
-    direction[index] += .1 * vectorFieldBuffer[idx].xyz;
-
-    posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(direction[index], 1.);
-
-    return 1.;
-  }
 
   fn hashPosition(pos: vec3<f32>) ->  i32{
     var x = (pos.x + 1) / 2.;
@@ -73,40 +20,6 @@ fn  isAreaOfEffect (pos: vec3<f32>) {
     );
     return idx;
   }
-
-
-fn helix(index: u32) -> vec3<f32>  {
-  var dir = direction[index];
-  if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  var theta = atan2(dir.z, dir.x);
-
-  dir.x = cos(theta + 1.2);
-  dir.z = sin(theta + 1.2);
-
-  direction[index] = dir;
-
-  posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(direction[index], 1.);
-
-  return dir;
-}
-
-fn drawShape (index: u32) -> vec3<f32> {
-  var dir = direction[index];
-
-  var theta = atan2(dir.y, dir.x);
-
-  dir.x = cos(theta + .7);
-  dir.y = sin(theta + .7);
-
-  distancetraveled[index] += 1.;
-
-  if (distancetraveled[index] > 100) {
-    direction[index] = dir; 
-    posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
-  }
-
-  return dir;
-}
 
   fn hash(p: vec3<f32>) -> vec3<f32> {
     var pos = p * .1;
@@ -180,83 +93,8 @@ fn drawShape (index: u32) -> vec3<f32> {
     return;
   }
   
-  fn vortex (index: u32) {
-    var dir = direction[index];
-    var idx = f32(index);
-  
-  if (uniforms.time > 30000 - f32(index)) {}
-  if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  
-    dir.y = .1;
-    if (idx > 128){
-      dir.y *= -1;
-    }
 
-    direction[index] = dir;
-    let pos = posBuffer[index];
-    dir.x = pos.x - pos.y;
   
-    if (hasCollided(posBuffer[index].xyz)) {
-      dir.y = -dir.x;
-      dir.x = -dir.y;
-    }
-  } 
-  
-  fn web (pos: vec3<f32>, idx: u32) -> f32{
-  
-  var index = f32(idx);
-  if (distancetraveled[idx] < 10000) {
-    posBuffer[idx] = vec4<f32>(0.);
-  }
-  if (idx < 256) {
-    var i = f32(idx) - 128.;
-    posBuffer[idx] = vec4<f32>(-i / 64., i / 64., 0., 1.) + vec4<f32>(-.5, -.5, 0, 0);
-  }
-  if (idx < 128){
-    posBuffer[idx] = vec4<f32>(index / 64., index / 64., 0., 1.) + vec4<f32>(-.5, -.5,0 , 0);
-  } 
-    return -1;
-  }
-  
-  fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
-    let index = f32(idx);
-    let i = index / 10000;
-    posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);  
-    return -1;
-  }
-
-  fn runAlongRoute (pos:vec3<f32>, index:f32) -> vec3<f32> {
-  var idx = u32(index);
-  
-  var dir =  direction[idx];
-
-  var dt = sin(uniforms.time);
-  
-  var group = f32(index) % 20;
-  distancetraveled[idx] += 1;
-  
-    for (var i = 0.; i < 20.; i += 1.) {
-      if (uniforms.mode == 1) {
-        continue;
-      }
-      if (uniforms.mode == 0 && group < 20) {
-        ribbon(idx);
-        continue;
-      }
-      
-    }
-  
-  posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
-  
-  return dir;
-  }
-
-  fn makeASpiralWithoutSinCosineOrIndex(idx: u32) -> bool {
-    var pos = posBuffer[idx];
-    direction[idx] = - vec3<f32>(pos.y, -pos.x, pos.z);
-    return false;
-  }
-
 fn makeParticlesFly(idx: u32) -> bool {
   var index = f32(idx);
   var pos = posBuffer[idx];
@@ -312,22 +150,6 @@ fn makeCoolStuff(idx:u32) -> f32 {
     direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
     return -1;
   }
-
-fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
-  var theta = 1. * atan2(pos.y, pos.x);
-  var theta2 = atan2(pos.x, pos.z);
-  let idx = hashPosition(pos);
-  let t = uniforms.time * .0001; 
-  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta) , sin(theta) ,  sin(theta), 1);
-  let vf = vectorFieldBuffer[idx];
-
-if (hasCollided(pos.xyz)) {
-  posBuffer[index] = sin(uniforms.time * .001) * 
-  vec4<f32>(cos(f32(index)), sin(f32(index)), 0.,0.);
-}
-  return vec3<f32>(1.);
-}
-
 
 fn InventSomethingNew (index:u32) -> vec4<f32> {
   
@@ -478,7 +300,7 @@ velocity = .02;
 
       let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
 
-personBuffer[id].w += .1;
+personBuffer[id].w += .01;
 
 
 
@@ -486,16 +308,20 @@ let interpolated =
  mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
 
 //if (id % 2 == 0) {
-  posBuffer[id] = sphericalToCartesian(interpolated);
-
+  if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated);
+  }
 //} else {
-  posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0);
+  if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
+
+
 //}
 
   var currentPosition = posBuffer[id];
 
   if (personBuffer[id].w > 1.) {
-    personBuffer[id].w  = -f32(id) / 10000.;
+    personBuffer[id].w  = -f32(id) / 100000.;
+
+   personBuffer[id].w  = 0.;
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.terrain == 0) { //person has reached spaceship, send to ore

@@ -101,20 +101,29 @@ let placeList = []
 
   placeList = [[-1,0,0,0]];
 
+
+
+
+
+  //use a theta -> 
+  let theta  = 0
+
   for ( let i = 1 ; i < 1e5; ) {
     let terrain = Math.random() > .5 ? 1 : 2;
-    let radius = terrain == 2 ? 3.5 : .5;
-
 
     if (terrain == 2) {
-    //placeList.push([i+1, 1, 3 + radius * cos(i / 180), radius * sin(i /  180)])
-    //placeList.push([0, 2, radius * cos(i /  180), radius * sin(i / 180)])
-    //i+=2
-    } else {
-      placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
-      placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+      theta += 5
 
+      placeList.push([i+1, 1, -3. + sin(theta),
+                       1 * cos(i /  180)])
+      placeList.push([0, 2,  2.5 * sin(theta),
+                             5 * cos(i / 180)])
       i+=2
+    } else {
+      // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
+      // placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+
+      // i+=2
     }
   }
 
@@ -1480,7 +1489,7 @@ const blend = {
   },
 }
 let drawDescriptor = {
-//  blend: blend,
+  blend: blend,
   attributeBuffers: buffers,
   attributeBufferData: [
     posBuffer
