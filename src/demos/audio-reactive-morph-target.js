@@ -109,10 +109,27 @@ let placeList = []
   //use a theta -> 
   let origin  = [Math.random(), Math.random()]
 
+
+
+  
+
+
+
+  var wayPoints = [
+    [-1, 0],
+
+    [1, 0],
+
+    [0, 1],
+
+    [0, -1],
+  ]
+
   for ( let i = 1 ; i < 1e5; ) {
     let terrain = Math.random() > .5 ? 1 : 2;
 
     if (terrain == 2) {
+      //continue;
       let theta = Math.random() * 180
       //let theta = finishToday.next() * 180
 
@@ -127,20 +144,29 @@ let placeList = []
       let x2 = origin[0] + dx
       let y2 = origin[1] + dy
       origin = [x2, y2]
-      placeList.push([i+1, 1, 
-        x1, y1
-      ])
+      placeList.push([i+1, 1, x1, y1 ])
 
-      placeList.push([0, 2, 
-        x2, y2
-
-      ])
+      placeList.push([i+2, 2, x2, y2])
       i+=2
     } else {
+
+//  placeList.push([i+1, 1,
+//     ...wayPoints[i % 4]
+//   ])
+
+      // placeList.push([0, 2,  
+      //   1 * cos(i /  180), 
+      //   1 * sin(i / 180)
+      // ])
+
+
       // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
       // placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
 
-      // i+=2
+      placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
+      placeList.push([i+2, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+
+      i+=2
     }
   }
 
@@ -1075,6 +1101,14 @@ function makeComputeShader(webgpu, mesh, vf1, vf2) {
 
   
   let groupBuffer = makeBuffer(personBuffer, 0, 'groupBuffer')
+
+  setInterval(async function () {
+    // let debug = await utils.readBuffer(webgpu.state, groupBuffer)
+    // let debug2 = await utils.readBuffer(webgpu.state, groupBuffer, true)
+
+
+    // console.log(debug, debug2)
+  }, 25)
 
 let max = {
   x: 0,

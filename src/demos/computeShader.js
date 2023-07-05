@@ -98,13 +98,13 @@ fn simulationStep(id: u32) {
 
   var pl = Place(place.x, place.y, place.z, place.w);
 
-      let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
+  let destination = Place(map[next].x, map[next].y, map[next].z, map[next].w);
 
-      let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
+  let prev = Place(map[previous].x, map[previous].y, map[previous].z, map[previous].w);
 
-personBuffer[id].w += .01;
+  personBuffer[id].w += .01;
 
-let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
+  let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
 
   if (${DRAW_ON_SPHERE}) { posBuffer[id] = sphericalToCartesian(interpolated); }
   if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
@@ -122,15 +122,6 @@ let interpolated = mix(map[previous].zw, map[next].zw  ,personBuffer[id].w);
       map[0].x = map[0].x + 2;
       if (map[0].x > 1e5) {map[0].x = 1;}
       personBuffer[id].x = map[i32(i)].x + 0.;
-
-      //person.next -> 
-          // SpaceShip -> 
-          // nextMin -> 
-          // nextRefinery 
-
-      //every frame, readback the personList
-      //makeSure the next reference is incrementing 
-      //next reference is incrementing to placeList.
     } 
   }
 }
