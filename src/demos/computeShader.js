@@ -114,11 +114,10 @@ fn simulationStep(id: u32) {
   if (personBuffer[id].w > 1.) {
     personBuffer[id].w  = -f32(id) / 100000.;
 
-   personBuffer[id].w  = 0.;
+    personBuffer[id].w  = 0.;
     personBuffer[id].y = personBuffer[id].x;
     personBuffer[id].x = pl.next;
     if (pl.terrain == 0) { //person has reached spaceship, send to ore
-
       map[0].x = map[0].x + 2;
       if (map[0].x > 1e5) {map[0].x = 1;}
       personBuffer[id].x = map[i32(i)].x + 0.;

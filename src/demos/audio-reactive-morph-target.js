@@ -101,19 +101,8 @@ function makePlaceList () {
 let placeList = []
 
   placeList = [[-1,0,0,0]];
-
-
-
-
-
   //use a theta -> 
   let origin  = [Math.random(), Math.random()]
-
-
-
-  
-
-
 
   var wayPoints = [
     [-1, 0],
@@ -126,10 +115,12 @@ let placeList = []
   ]
 
   for ( let i = 1 ; i < 1e5; ) {
+ 
+    
     let terrain = Math.random() > .5 ? 1 : 2;
 
     if (terrain == 2) {
-      //continue;
+      continue;
       let theta = Math.random() * 180
       //let theta = finishToday.next() * 180
 
@@ -144,27 +135,39 @@ let placeList = []
       let x2 = origin[0] + dx
       let y2 = origin[1] + dy
       origin = [x2, y2]
-      placeList.push([i+1, 1, x1, y1 ])
 
+      placeList.push([i+1, 1, x1, y1 ])
       placeList.push([i+2, 2, x2, y2])
+      //placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+
       i+=2
     } else {
+// placeList.push([0, 2,  
+      
+//       ])
 
-//  placeList.push([i+1, 1,
-//     ...wayPoints[i % 4]
-//   ])
+
 
       // placeList.push([0, 2,  
       //   1 * cos(i /  180), 
       //   1 * sin(i / 180)
       // ])
-
+      //https://www.jasondavies.com/maps/random-points/
 
       // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
       // placeList.push([0, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
 
-      placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
-      placeList.push([i+2, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+      // placeList.push([i+1, 1, 1. * cos(i / 180) + Math.random(), .5 * sin(i /  180)])
+      // placeList.push([i+2, 2,  5 * cos(i /  180), 5 * sin(i / 180)])
+      //placeList.push([0, 2,  5 * cos(i * 2 /  180), 5 * sin(i * 2 / 180)])
+
+      let x1 = (i % 100) /  1e4
+      let y1 =  (i / 1e5)| 0
+      let x2 = (i % 100) /  1e4 + .5
+      let y2 = (i / 1e5)| 0 + .5
+
+      placeList.push([i+1, 1, x1, y1 ])
+      placeList.push([i+2, 2, x2, y2])
 
       i+=2
     }
