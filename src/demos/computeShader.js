@@ -1,7 +1,7 @@
 //delight, surprise, love, connection 
 //intention
 //figure out something new every single second of the day
-const DRAW_ON_SPHERE = true;
+const DRAW_ON_SPHERE = false;
 export const computeShader = `
     struct Uniforms {
       mouse: vec2<f32>,
@@ -17,32 +17,7 @@ fn castSpell(spellId: f32, index: u32) {
   let pos = posBuffer[index];
 }
 
-// fn changeLocation (person: Person) {
-//   //person only has a currentIndex and a neighborhood
-//   //person doesnt have a posBufferIndex because the indices for both buffers line up
-//   //person - currentIndex, neighborhood, inventory, spellActive{0-1024 for multiple spells
-//   let currentIndex = person.currentIndex;
-//   let previous = places[currentIndex];
-//   let destination = places[currentIndex+1];
-//   var neighborhood = neighborhoods[person.neighborhood];
 
-  
-//   posBuffer[person.index] += (destination  - previous) * .1;
-
-//   if (distance(posBuffer[person.index], destination) < .05) {
-//     personBuffer[person.index].x += 1.;
-
-//     if (currentIndex > neighborhoods.y) {
-//       personBuffer[person.index].x = neighborhood.x;
-//     }
-//   }
-//   //neighborhood has startPlaceIndex, endPlaceIndex, 
-
-//   //worldState needs a lastVisitedNeighborhood - 
-//   //to change neighborhood, person has to iterate through neighborhoods and find one with a population < 50
-//   //keep neighborhoods balanced
-//   //6 neighbors
-// }
 
 
 fn syncBoardState (index:u32) {
@@ -73,6 +48,39 @@ fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
   return vec2<f32>(radiusInterpolated, angleInterpolated);
 }
 
+
+fn changeLocation (person: Person) {
+  //person only has a currentIndex and a neighborhood
+  //person doesnt have a posBufferIndex because the indices for both buffers line up
+  //person - currentIndex, neighborhood, inventory, spellActive{0-1024 for multiple spells
+
+  //on cpu, set person's neighborhood to 1
+  //when person makes a new spaceship component, set neighborhood to next one 
+
+  let currentIndex = i32(person.index);
+  let previous = places[currentIndex];
+  let destination = places[currentIndex+1];
+
+  let index = i32(person.index);
+
+  posBuffer[index] += vec4<f32>(destination.zw  - previous.zw, 0,0 ) * .1 ;
+
+  var neighborhood = neighborhoods[i32(person.neighborhood)];
+
+  if (distance(posBuffer[index].xy, destination.zw) < .5) {
+    personBuffer[index].x += 1.;
+
+    if (currentIndex > i32(neighborhood.y)) {
+      personBuffer[index].x = neighborhood.x;
+    }
+  }
+  //neighborhood has startPlaceIndex, endPlaceIndex, 
+  //worldState needs a lastVisitedNeighborhood - 
+  //to change neighborhood, person has to iterate through neighborhoods and find one with a population < 50
+  //keep neighborhoods balanced
+  //6 neighbors
+}
+
 fn simulationStep(id: u32) {
   syncBoardState(id);
   var i = f32(id);
@@ -81,8 +89,9 @@ fn simulationStep(id: u32) {
   var velocity = 0.;
 
   var person = personBuffer[id];
-  var pers = Person(person.x, person.y, person.z, i32(person.w));
- 
+  var pers = Person(person.x, person.y, person.z, i32(i));
+  changeLocation(pers); 
+  return;
   var previous = i32(person.y);
   var next = i32(person.x);
   var place = places[next]; //next, terrain, x, y
@@ -93,8 +102,6 @@ fn simulationStep(id: u32) {
 
   let prev = Place(places[previous].x, places[previous].y, places[previous].z, places[previous].w);
 
-  personBuffer[id].w += .1;
-
   let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
 
   if (${DRAW_ON_SPHERE}) {   
@@ -103,36 +110,38 @@ fn simulationStep(id: u32) {
    // posBuffer[id] = sphericalToCartesian(interpolated) + .01 * vec4<f32>(curlNoise(sphericalToCartesian(interpolated).xyz), 1.); 
 
   }
-  if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
+//  if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
 
-  var currentPosition = posBuffer[id];
 
-  //open question - whats better, person arrives at location when distance < epsilon or when dt = 100% 
-  //if distance, person.pos += .001 in unit-vector of position
-  if (personBuffer[id].w > 1.) {
-    personBuffer[id].w = -f32(id) / 100000.;
 
-    personBuffer[id].w = 0.;
-    personBuffer[id].y = personBuffer[id].x;
-    personBuffer[id].x += f32(id);//pl.next;
-    //person doesnt need a previous
-    //person only needs a destination -> move a fixed rate toward the destination until 
-    //distance is less than epsilon
-  }
+  // var currentPosition = posBuffer[id];
+
+  // //open question - whats better, person arrives at location when distance < epsilon or when dt = 100% 
+  // //if dxistance, person.pos += .001 in unit-vector of position
+  // if (personBuffer[id].w > 1.) {
+  //   personBuffer[id].w = -f32(id) / 100000.;
+
+  //   personBuffer[id].w = 0.;
+  //   personBuffer[id].y = personBuffer[id].x;
+  //   personBuffer[id].x += floor(f32(id) / 100);//pl.next;
+  //   //person doesnt need a previous
+  //   //person only needs a destination -> move a fixed rate toward the destination until 
+  //   //distance is less than epsilon
+  // }
 }
  
 struct Place {
   next: f32,
-  terrain: f32, //blank, iron ore, gold ore, silver ore, 
+  terrain: f32, // iron ore, gold ore, silver ore, 
   latitude: f32,
   longitude: f32
 }
 
 struct Person {
-  next: f32,
-  prev: f32,
+  currentPlaceIndex: f32,
+  neighborhood: f32,
   inventory: f32,
-  posBufferIndex: i32,
+  index: i32,
 }
 
 
@@ -146,27 +155,10 @@ fn init (index: u32) {
   var idx = 3 * (i32(index) % 4);
   
     let place = places[i32(prev)];
-    // let pl = Place();
-    // posBuffer[index].x += cos(f32(index));
-    // posBuffer[index].y  += sin(f32(index));
-
-    // personBuffer[index].x = place.z;
-    // personBuffer[index].y = place.w;
-
-    // posBuffer[index].x = place.z + f32(index) / 100.;
-    // posBuffer[index].y  += place.w;
-
+  
     posBuffer[index].x = place.z;
     posBuffer[index].y  = place.w;
-
-    posBuffer[index].x = place.z;
-    posBuffer[index].y  = place.w;
-
-    personBuffer[index].x = 0;
-    personBuffer[index].y = 0;
 }
-
-
 
 fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
   var x = pos.x;
@@ -202,7 +194,7 @@ const sphereRadius = 1.;
 
 @group(0) @binding(2) var<uniform> uniforms: Uniforms;
 
-@group(0) @binding(4) var<storage, read_write> neighborhoods: array<f32>;
+@group(0) @binding(4) var<storage, read_write> neighborhoods: array<vec4<f32>>;
 @group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
 @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
 @group(0) @binding(6) var<storage,read_write> places: array<vec4<f32>>;
@@ -219,7 +211,6 @@ const sphereRadius = 1.;
       var vf2 = places[index];
       var person = personBuffer[index]; 
 
-
       var vf1 = vectorFieldBuffer[index];
       var time = uniforms.time;
       distanceTraveled[index] += 1.;
@@ -227,8 +218,8 @@ const sphereRadius = 1.;
         init(index);
       }
       simulationStep(index);
-      posBuffer[index].z += f32(index) / 1e9;
-      return;
+      posBuffer[index].z = f32(index) / 1e9;
+      //return;
       var keyframes = (uniforms.time % 10000) / 5000;
     }
     ${noise}
