@@ -51,29 +51,49 @@ fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
 
 fn changeLocation (person: Person) {
   //person only has a currentIndex and a neighborhood
-  //person doesnt have a posBufferIndex because the indices for both buffers line up
   //person - currentIndex, neighborhood, inventory, spellActive{0-1024 for multiple spells
-
   //on cpu, set person's neighborhood to 1
   //when person makes a new spaceship component, set neighborhood to next one 
+  //start for
+  let index = i32(person.index);
 
-  let currentIndex = i32(person.index);
+ 
+  //end for
+  let currentIndex = u32(personBuffer[index].y) ;//i32(person.index);
+  for (var i = currentIndex; i < currentIndex+100u; i+=1u) {
+    var neighborhood2 = neighborhoods[i];
+    if (neighborhood2.z < 100) {
+      neighborhoods[i].z += 1.;
+      personBuffer[index].y = f32(i);
+      break;
+    }
+  }
+
   let previous = places[currentIndex];
   let destination = places[currentIndex+1];
 
-  let index = i32(person.index);
 
   posBuffer[index] += vec4<f32>(destination.zw  - previous.zw, 0,0 ) * .1 ;
 
   var neighborhood = neighborhoods[i32(person.neighborhood)];
 
-  if (distance(posBuffer[index].xy, destination.zw) < .5) {
+  if (distance(posBuffer[index].xy, destination.zw) < .1) {
     personBuffer[index].x += 1.;
 
-    if (currentIndex > i32(neighborhood.y)) {
+    if (currentIndex > u32(neighborhood.y)) {
       personBuffer[index].x = neighborhood.x;
-    }
+ 
   }
+
+}
+
+
+  //after particles have completed one circuit to neighborhood.endIndex -> 
+  //iterate on neighborhoods until find one with neighborhood.population < 100
+  //then transfer particle to that neighborhood
+  //terraform means that 1m particles are evenly distributed amongst 10,000 neighborhoods which is just a 100x100square
+
+
   //neighborhood has startPlaceIndex, endPlaceIndex, 
   //worldState needs a lastVisitedNeighborhood - 
   //to change neighborhood, person has to iterate through neighborhoods and find one with a population < 50
@@ -91,7 +111,7 @@ fn simulationStep(id: u32) {
   var person = personBuffer[id];
   var pers = Person(person.x, person.y, person.z, i32(i));
   changeLocation(pers); 
-  return;
+
   var previous = i32(person.y);
   var next = i32(person.x);
   var place = places[next]; //next, terrain, x, y
@@ -156,8 +176,8 @@ fn init (index: u32) {
   
     let place = places[i32(prev)];
   
-    posBuffer[index].x = place.z;
-    posBuffer[index].y  = place.w;
+    // posBuffer[index].x = place.z;
+    // posBuffer[index].y  = place.w;
 }
 
 fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
@@ -218,7 +238,7 @@ const sphereRadius = 1.;
         init(index);
       }
       simulationStep(index);
-      posBuffer[index].z = f32(index) / 1e9;
+      //posBuffer[index].z = f32(index) / 1e9;
       //return;
       var keyframes = (uniforms.time % 10000) / 5000;
     }
