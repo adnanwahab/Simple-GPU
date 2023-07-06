@@ -1,3 +1,5 @@
+//delight, surprise, love, connection 
+//intention
 //figure out something new every single second of the day
 const DRAW_ON_SPHERE = true;
 export const computeShader = `
@@ -11,37 +13,37 @@ export const computeShader = `
 fn  isAreaOfEffect (pos: vec3<f32>) {
 }
 
-  fn hashPosition(pos: vec3<f32>) ->  i32{
-    var x = (pos.x + 1) / 2.;
-    var y = (1. - (pos.y)) / 2.;
-    var z = (1. - (pos.z)) / 2.;
-    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
-    + floor(floor(z * 100) * 100) * 100
-    );
-    return idx;
-  }
-
-  fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .1;
-    let idx = hashPosition(pos);
-
-    var x = pos.x;
-    var y = pos.y;
-    var z = pos.z;
-
-    let vf = vectorFieldBuffer[idx];
-
-    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz),
-                vec3<f32>(vectorFieldBuffer[idx].xyz),
-                uniforms.time / 3000);
-
-    return vf.xyz;
-  }
-
 fn castSpell(spellId: f32, index: u32) {
   let pos = posBuffer[index];
-
 }
+
+// fn changeLocation (person: Person) {
+//   //person only has a currentIndex and a neighborhood
+//   //person doesnt have a posBufferIndex because the indices for both buffers line up
+//   //person - currentIndex, neighborhood, inventory, spellActive{0-1024 for multiple spells
+//   let currentIndex = person.currentIndex;
+//   let previous = places[currentIndex];
+//   let destination = places[currentIndex+1];
+//   var neighborhood = neighborhoods[person.neighborhood];
+
+  
+//   posBuffer[person.index] += (destination  - previous) * .1;
+
+//   if (distance(posBuffer[person.index], destination) < .05) {
+//     personBuffer[person.index].x += 1.;
+
+//     if (currentIndex > neighborhoods.y) {
+//       personBuffer[person.index].x = neighborhood.x;
+//     }
+//   }
+//   //neighborhood has startPlaceIndex, endPlaceIndex, 
+
+//   //worldState needs a lastVisitedNeighborhood - 
+//   //to change neighborhood, person has to iterate through neighborhoods and find one with a population < 50
+//   //keep neighborhoods balanced
+//   //6 neighbors
+// }
+
 
 fn syncBoardState (index:u32) {
   var mineralsGathered = worldState[0];
@@ -91,14 +93,13 @@ fn simulationStep(id: u32) {
 
   let prev = Place(places[previous].x, places[previous].y, places[previous].z, places[previous].w);
 
-  personBuffer[id].w += .01;
+  personBuffer[id].w += .1;
 
   let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
 
-  if (${DRAW_ON_SPHERE}) { 
-    
+  if (${DRAW_ON_SPHERE}) {   
     posBuffer[id] = sphericalToCartesian(interpolated); 
-  
+    //tween to spherical projection
    // posBuffer[id] = sphericalToCartesian(interpolated) + .01 * vec4<f32>(curlNoise(sphericalToCartesian(interpolated).xyz), 1.); 
 
   }
@@ -113,7 +114,7 @@ fn simulationStep(id: u32) {
 
     personBuffer[id].w = 0.;
     personBuffer[id].y = personBuffer[id].x;
-    personBuffer[id].x += 1;//pl.next;
+    personBuffer[id].x += f32(id);//pl.next;
     //person doesnt need a previous
     //person only needs a destination -> move a fixed rate toward the destination until 
     //distance is less than epsilon
@@ -145,19 +146,24 @@ fn init (index: u32) {
   var idx = 3 * (i32(index) % 4);
   
     let place = places[i32(prev)];
-//    let pl = Place();
+    // let pl = Place();
     // posBuffer[index].x += cos(f32(index));
     // posBuffer[index].y  += sin(f32(index));
 
     // personBuffer[index].x = place.z;
     // personBuffer[index].y = place.w;
 
-
     // posBuffer[index].x = place.z + f32(index) / 100.;
     // posBuffer[index].y  += place.w;
 
     posBuffer[index].x = place.z;
     posBuffer[index].y  = place.w;
+
+    posBuffer[index].x = place.z;
+    posBuffer[index].y  = place.w;
+
+    personBuffer[index].x = 0;
+    personBuffer[index].y = 0;
 }
 
 
@@ -181,12 +187,12 @@ const PI = 3.14159;
 fn sphericalToCartesian(coords:vec2<f32>) -> vec4<f32> {
   var φ = coords.x;
   var θ = coords.y;
-  var r = 3.;
+  var r = 5.;
   var x = r * sin(θ) * cos(φ);
   var y = r * sin(θ) * sin(φ);
   var z = r * cos(θ);
 
-  return vec4<f32>(x, y, z, 0);
+  return vec4<f32>(x, z, y, 0);
 }
 
 const sphereRadius = 1.;
@@ -195,8 +201,6 @@ const sphereRadius = 1.;
 @group(0) @binding(3) var<storage,read_write> distanceTraveled: array<f32>;
 
 @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-
-
 
 @group(0) @binding(4) var<storage, read_write> neighborhoods: array<f32>;
 @group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
