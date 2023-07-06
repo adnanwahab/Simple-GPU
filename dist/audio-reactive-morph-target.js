@@ -411,6 +411,413 @@
     }
   });
 
+  // src/demos/shader2.js
+  var noise = `
+
+    fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
+    {
+      return 1.79284291400159 - 0.85373472095314 * r;
+    }
+    
+    fn snoise( v: vec3<f32>) -> f32
+      {
+        var  C = vec2(1.0/6.0, 1.0/3.0) ;
+        var  D = vec4(0.0, 0.5, 1.0, 2.0);
+    
+    // First corner
+    var i = floor(v + dot(v, C.yyy) );
+    var x0 =   v - i + dot(i, C.xxx) ;
+    
+    // Other corners
+    var g = step(x0.yzx, x0.xyz);
+    var l = 1.0 - g;
+    var i1 = min( g.xyz, l.zxy );
+    var i2 = max( g.xyz, l.zxy );
+    
+      var x1 = x0 - i1 + C.xxx;
+      var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
+      var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
+    
+    // Permutations
+      i = mod289(i);
+      var p = permute( permute( permute(
+                 i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+               + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+               + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+    
+    // Gradients: 7x7 points over a square, mapped onto an octahedron.
+    // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
+    let n_ = 0.142857142857; // 1.0/7.0
+    let  ns = n_ * D.wyz - D.xzx;
+    
+    let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+    
+    let x_ = floor(j * ns.z);
+    let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+    
+    let x = x_ *ns.x + ns.yyyy;
+    let y = y_ *ns.x + ns.yyyy;
+    let h = 1.0 - abs(x) - abs(y);
+    
+    let b0 = vec4( x.xy, y.xy );
+    let b1 = vec4( x.zw, y.zw );
+    
+      //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
+      //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
+      let s0 = floor(b0)*2.0 + 1.0;
+      let s1 = floor(b1)*2.0 + 1.0;
+      let sh = -step(h, vec4(0.0));
+    
+      let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+      let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+    
+      var p0 = vec3(a0.xy,h.x);
+      var p1 = vec3(a0.zw,h.y);
+      var p2 = vec3(a1.xy,h.z);
+      var p3 = vec3(a1.zw,h.w);
+    
+    //Normalise gradients
+      var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+      p0 *= norm.x;
+      p1 *= norm.y;
+      p2 *= norm.z;
+      p3 *= norm.w;
+    
+    // Mix final noise value
+    //t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+      
+    var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
+      m = m * m;
+      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                    dot(p2,x2), dot(p3,x3) ) );
+      }
+    
+    //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
+    
+    const list=5.;
+    
+    fn curl_noise (pos:vec4<f32>, t: f32) -> vec4<f32> {
+      //make unit cube
+      //take 8 gradients of trilinear interpolations |-|
+      var x = pos.x;
+      var y = pos.y;
+      var z = pos.z;
+      var x0 = x + 1.;
+      return vec4<f32>(sfrand(), sfrand(), sfrand(), sfrand());
+    }
+    
+    fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
+      var s  = snoise(vec3( x ));
+      var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
+      var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
+      var c = vec3( s , s1 , s2 );
+      return c;
+    
+    }
+    
+    fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
+      var e = .00001;
+      var dx = vec3( e   , 0.0 , 0.0 );
+      var dy = vec3( 0.0 , e   , 0.0 );
+      var dz = vec3( 0.0 , 0.0 , e   );
+    
+      var p_x0 = snoiseVec3( p - dx );
+      var p_x1 = snoiseVec3( p + dx );
+      var p_y0 = snoiseVec3( p - dy );
+      var p_y1 = snoiseVec3( p + dy );
+      var p_z0 = snoiseVec3( p - dz );
+      var p_z1 = snoiseVec3( p + dz );
+    
+      var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
+      var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
+      var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
+    
+      var divisor = 1.0 / ( 2.0 * e );
+      return normalize( vec3( x , y , z ) * divisor );
+    }
+    
+     fn mod289( x: vec3<f32>) -> vec3<f32> {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    fn mod289v( x: vec4<f32>)  ->vec4<f32>
+    {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+    
+    fn permute( x: vec4<f32>) -> vec4<f32>
+    {
+      return mod289v(((x*34.0)+1.0)*x);
+    }
+    
+    
+    fn fade( t: vec3<f32>) -> vec3<f32> {
+      return t*t*t*(t*(t*6.0-15.0)+10.0);
+    }
+    
+    fn sfrand () -> f32{
+      let co = vec2<f32>(${Math.random()}, ${Math.random()});
+      return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+    
+    
+  //   fn mrand() ->  f32{
+  //     return (sfrand() * 2.) - 1.;
+  //   }
+  
+  //   fn shift (x:f32)->f32 {
+  //     return (x + 1.) / 2.;
+  //   }
+  
+  //   fn hash (pos: vec3<f32>) -> i32 {
+  //     //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
+  
+    
+  //     var x = (pos.x + 1) / 2.;
+  //     var y = ((pos.y  * -1) + 1) / 2.;
+  //     //if y > .99999 { y = 0; }
+  //     //if x < -.5 { x = 0; }
+  
+  // //    return i32(0);
+  //     return i32(x * 10 + y * 100);
+  //     //return vec2<i32>(i32(x * 10), i32(y * 100));
+  //   }
+  `;
+
+  // src/demos/computeShader.js
+  var DRAW_ON_SPHERE = true;
+  var computeShader = `
+    struct Uniforms {
+      mouse: vec2<f32>,
+      time: f32,
+      mode: f32,
+      decayRate: f32
+    }
+
+fn  isAreaOfEffect (pos: vec3<f32>) {
+}
+
+fn castSpell(spellId: f32, index: u32) {
+  let pos = posBuffer[index];
+}
+
+// fn changeLocation (person: Person) {
+//   //person only has a currentIndex and a neighborhood
+//   //person doesnt have a posBufferIndex because the indices for both buffers line up
+//   //person - currentIndex, neighborhood, inventory, spellActive{0-1024 for multiple spells
+//   let currentIndex = person.currentIndex;
+//   let previous = places[currentIndex];
+//   let destination = places[currentIndex+1];
+//   var neighborhood = neighborhoods[person.neighborhood];
+
+  
+//   posBuffer[person.index] += (destination  - previous) * .1;
+
+//   if (distance(posBuffer[person.index], destination) < .05) {
+//     personBuffer[person.index].x += 1.;
+
+//     if (currentIndex > neighborhoods.y) {
+//       personBuffer[person.index].x = neighborhood.x;
+//     }
+//   }
+//   //neighborhood has startPlaceIndex, endPlaceIndex, 
+
+//   //worldState needs a lastVisitedNeighborhood - 
+//   //to change neighborhood, person has to iterate through neighborhoods and find one with a population < 50
+//   //keep neighborhoods balanced
+//   //6 neighbors
+// }
+
+
+fn syncBoardState (index:u32) {
+  var mineralsGathered = worldState[0];
+  var researchPoints = worldState[2];
+  var hasWon =  researchPoints > 100. && mineralsGathered > 1e6;
+  var spellUsed = worldState[4];
+
+
+  if (spellUsed > -1) {
+    castSpell(spellUsed, index);
+  }
+
+  if (hasWon) {
+    reInit();
+  }
+}
+
+fn reInit() {}
+
+fn interpolatePolar(start: vec2<f32>, end: vec2<f32>, t: f32) -> vec2<f32> {
+  // Linear interpolation for the radius
+  var radiusInterpolated: f32 = mix(start.x, end.x, t);
+
+  // Circular interpolation for the angle
+  var angleInterpolated: f32 = mix(start.y, end.y, t);
+
+  return vec2<f32>(radiusInterpolated, angleInterpolated);
+}
+
+fn simulationStep(id: u32) {
+  syncBoardState(id);
+  var i = f32(id);
+  var pos = posBuffer[id].xyz;
+  var noise = 0.;
+  var velocity = 0.;
+
+  var person = personBuffer[id];
+  var pers = Person(person.x, person.y, person.z, i32(person.w));
+ 
+  var previous = i32(person.y);
+  var next = i32(person.x);
+  var place = places[next]; //next, terrain, x, y
+
+  var pl = Place(place.x, place.y, place.z, place.w);
+
+  let destination = Place(places[next].x, places[next].y, places[next].z, places[next].w);
+
+  let prev = Place(places[previous].x, places[previous].y, places[previous].z, places[previous].w);
+
+  personBuffer[id].w += .01;
+
+  let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
+
+  if (${DRAW_ON_SPHERE}) {   
+    posBuffer[id] = sphericalToCartesian(interpolated); 
+    //tween to spherical projection
+   // posBuffer[id] = sphericalToCartesian(interpolated) + .01 * vec4<f32>(curlNoise(sphericalToCartesian(interpolated).xyz), 1.); 
+
+  }
+  if (! ${DRAW_ON_SPHERE}) {posBuffer[id] = vec4<f32>(interpolated.x, interpolated.y, 0, 0); } 
+
+  var currentPosition = posBuffer[id];
+
+  //open question - whats better, person arrives at location when distance < epsilon or when dt = 100% 
+  //if distance, person.pos += .001 in unit-vector of position
+  if (personBuffer[id].w > 1.) {
+    personBuffer[id].w = -f32(id) / 100000.;
+
+    personBuffer[id].w = 0.;
+    personBuffer[id].y = personBuffer[id].x;
+    personBuffer[id].x += f32(id);//pl.next;
+    //person doesnt need a previous
+    //person only needs a destination -> move a fixed rate toward the destination until 
+    //distance is less than epsilon
+  }
+}
+ 
+struct Place {
+  next: f32,
+  terrain: f32, //blank, iron ore, gold ore, silver ore, 
+  latitude: f32,
+  longitude: f32
+}
+
+struct Person {
+  next: f32,
+  prev: f32,
+  inventory: f32,
+  posBufferIndex: i32,
+}
+
+
+fn init (index: u32) {
+  let person = personBuffer[index];
+  let next = person.x;
+  let prev = person.y;
+  let inventory = person.z;
+  let activeVision = person.w;
+
+  var idx = 3 * (i32(index) % 4);
+  
+    let place = places[i32(prev)];
+    // let pl = Place();
+    // posBuffer[index].x += cos(f32(index));
+    // posBuffer[index].y  += sin(f32(index));
+
+    // personBuffer[index].x = place.z;
+    // personBuffer[index].y = place.w;
+
+    // posBuffer[index].x = place.z + f32(index) / 100.;
+    // posBuffer[index].y  += place.w;
+
+    posBuffer[index].x = place.z;
+    posBuffer[index].y  = place.w;
+
+    posBuffer[index].x = place.z;
+    posBuffer[index].y  = place.w;
+
+    personBuffer[index].x = 0;
+    personBuffer[index].y = 0;
+}
+
+
+
+fn cartesianToSpherical(pos: vec3<f32>) -> vec3<f32> {
+  var x = pos.x;
+  var y = pos.y;
+  var z = pos.z;
+
+  var r = sqrt(x * x + y* y + z * z);
+  var \u03B8 = acos(z / r);
+  var \u03C6 = atan(y / x);
+
+  var x1 = r * sin(\u03B8) * cos(\u03C6);
+  var y1 = r * sin(\u03B8) * sin(\u03C6);
+  var z1 = r * cos(\u03B8);
+
+  return vec3<f32>(x1, y1, z1);
+}
+const PI = 3.14159;
+fn sphericalToCartesian(coords:vec2<f32>) -> vec4<f32> {
+  var \u03C6 = coords.x;
+  var \u03B8 = coords.y;
+  var r = 5.;
+  var x = r * sin(\u03B8) * cos(\u03C6);
+  var y = r * sin(\u03B8) * sin(\u03C6);
+  var z = r * cos(\u03B8);
+
+  return vec4<f32>(x, z, y, 0);
+}
+
+const sphereRadius = 1.;
+
+@group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
+@group(0) @binding(3) var<storage,read_write> distanceTraveled: array<f32>;
+
+@group(0) @binding(2) var<uniform> uniforms: Uniforms;
+
+@group(0) @binding(4) var<storage, read_write> neighborhoods: array<f32>;
+@group(0) @binding(5) var<storage, read_write> worldState: array<f32>;
+@group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
+@group(0) @binding(6) var<storage,read_write> places: array<vec4<f32>>;
+@group(0) @binding(7) var<storage,read_write> personBuffer: array<vec4<f32>>;
+
+    @compute @workgroup_size(256)
+    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
+      let index: u32 = GlobalInvocationID.x;
+
+      var pos = posBuffer[index];
+      var dt = distanceTraveled[index];
+      var r = worldState[index];
+      var neighborhoods = neighborhoods[index];
+      var vf2 = places[index];
+      var person = personBuffer[index]; 
+
+
+      var vf1 = vectorFieldBuffer[index];
+      var time = uniforms.time;
+      distanceTraveled[index] += 1.;
+      if (dt < 1) {
+        init(index);
+      }
+      simulationStep(index);
+      posBuffer[index].z += f32(index) / 1e9;
+      return;
+      var keyframes = (uniforms.time % 10000) / 5000;
+    }
+    ${noise}
+`;
+
   // node_modules/d3-dispatch/src/dispatch.js
   var noop = { value: () => {
   } };
@@ -4908,6 +5315,7 @@
       primitive: {
         topology: state2?.options?.primitive || "triangle-list"
       },
+      cullMode: "back",
       depthStencil: {
         depthWriteEnabled: true,
         depthCompare: "less",
@@ -7583,7 +7991,6 @@
       c2.updateDisplay();
     });
   }
-  var GUI$1 = GUI;
 
   // src/demos/audio-reactive-morph-target.js
   var import_stanford_dragon = __toESM(require__());
@@ -7715,138 +8122,6 @@
   var createCamera_default = createCamera;
 
   // src/demos/audio-reactive-morph-target.js
-  var useCurlNoise = false;
-  var curl_noise = `  
-fn snoise( v: vec3<f32>) -> f32 {
-      var  C = vec2(1.0/6.0, 1.0/3.0) ;
-      var  D = vec4(0.0, 0.5, 1.0, 2.0);
-    
-    // First corner
-    var i = floor(v + dot(v, C.yyy) );
-    var x0 =   v - i + dot(i, C.xxx) ;
-    
-    // Other corners
-    var g = step(x0.yzx, x0.xyz);
-    var l = 1.0 - g;
-    var i1 = min( g.xyz, l.zxy );
-    var i2 = max( g.xyz, l.zxy );
-    
-      var x1 = x0 - i1 + C.xxx;
-      var x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y
-      var x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
-    
-    // Permutations
-      i = mod289(i);
-      var p = permute( permute( permute(
-                 i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-               + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-               + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-    
-    // Gradients: 7x7 points over a square, mapped onto an octahedron.
-    // The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)
-    let n_ = 0.142857142857; // 1.0/7.0
-    let  ns = n_ * D.wyz - D.xzx;
-    
-    let j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
-    
-    let x_ = floor(j * ns.z);
-    let y_ = floor(j - 7.0 * x_ );    // mod(j,N)
-    
-    let x = x_ *ns.x + ns.yyyy;
-    let y = y_ *ns.x + ns.yyyy;
-    let h = 1.0 - abs(x) - abs(y);
-    
-    let b0 = vec4( x.xy, y.xy );
-    let b1 = vec4( x.zw, y.zw );
-    
-      //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;
-      //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;
-      let s0 = floor(b0)*2.0 + 1.0;
-      let s1 = floor(b1)*2.0 + 1.0;
-      let sh = -step(h, vec4(0.0));
-    
-      let a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-      let a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-    
-      var p0 = vec3(a0.xy,h.x);
-      var p1 = vec3(a0.zw,h.y);
-      var p2 = vec3(a1.xy,h.z);
-      var p3 = vec3(a1.zw,h.w);
-    
-    //Normalise gradients
-      var norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-      p0 *= norm.x;
-      p1 *= norm.y;
-      p2 *= norm.z;
-      p3 *= norm.w;
-    
-    // Mix final noise value
-    //t m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-      
-    var m = (0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)));
-      m = m * m;
-      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
-                                    dot(p2,x2), dot(p3,x3) ) );
-      }
-    
-    //ramp function = f(x) -> x .0-.2 = 1 [1,2,3,4,5]
-    
-    const list=5.;
-
-  fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32> {
-      return 1.79284291400159 - 0.85373472095314 * r;
-    }
-
-  fn snoiseVec3(  x: vec3<f32> ) -> vec3<f32>{
-    var s  = snoise(vec3( x ));
-    var s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));
-    var s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));
-    var c = vec3( s , s1 , s2 );
-    return c;
-  
-  }
-  
-  fn curlNoise(  p:vec3<f32> ) -> vec3<f32>{
-    var e = .00001;
-    var dx = vec3( e   , 0.0 , 0.0 );
-    var dy = vec3( 0.0 , e   , 0.0 );
-    var dz = vec3( 0.0 , 0.0 , e   );
-  
-    var p_x0 = snoiseVec3( p - dx );
-    var p_x1 = snoiseVec3( p + dx );
-    var p_y0 = snoiseVec3( p - dy );
-    var p_y1 = snoiseVec3( p + dy );
-    var p_z0 = snoiseVec3( p - dz );
-    var p_z1 = snoiseVec3( p + dz );
-  
-    var x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
-    var y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
-    var z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
-  
-    var divisor = 1.0 / ( 2.0 * e );
-    return normalize( vec3( x , y , z ) * divisor );
-  }
-  
-   fn mod289( x: vec3<f32>)  -> vec3<f32> {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-  }
-  
-  fn mod289v( x: vec4<f32>)  ->vec4<f32>
-  {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-  }
-  
-  fn permute( x: vec4<f32>) -> vec4<f32>
-  {
-    return mod289v(((x*34.0)+1.0)*x);
-  }
-  
-  
-  fn fade( t: vec3<f32>) -> vec3<f32> {
-    return t*t*t*(t*(t*6.0-15.0)+10.0);
-  }
-
-`;
   var { cos, sin } = Math;
   async function morph() {
     const buffers = [
@@ -7895,8 +8170,39 @@ fn snoise( v: vec3<f32>) -> f32 {
         stepMode: "instance"
       }
     ];
+    let makeNumbers = function* () {
+      let PI = Math.PI.toPrecision(50).slice(2);
+      let i2 = 0;
+      while (true)
+        yield parseFloat(PI.slice(i2, i2 += 2)) * 0.2;
+    };
+    let finishToday = makeNumbers();
+    function makePlaceList() {
+      let placeList = [];
+      let neighborhoodList = [];
+      var wayPoints = [
+        [0.1, 0],
+        [0.1, 0],
+        [0, 0.1]
+        //    [0, -1],
+      ];
+      let idx = 0;
+      for (let i2 = 0; i2 < 100; i2++) {
+        for (let j = 0; j < 100; j++) {
+          for (let k2 = 0; k2 < 10; k2++) {
+            idx = placeList.push(
+              [idx + 1, 1, j / 10 + Math.cos(k2), i2 / 10 + Math.sin(k2)]
+              //[idx, k, j / 10 , i / 10]
+            );
+            let wp = wayPoints[k2];
+          }
+        }
+      }
+      console.log(placeList);
+      return [placeList, neighborhoodList];
+    }
     let drawShapes = true;
-    let particlesCount = 2e6;
+    let particlesCount = 1e5;
     let drawScreen;
     let time = 0;
     let stagingBuffer;
@@ -7956,13 +8262,13 @@ fn snoise( v: vec3<f32>) -> f32 {
     list = makeGrid().map((d2) => d2);
     list = new Float32Array(list.flat());
     var rgb2 = new Float32Array(3e6);
-    for (let i = 0; i < rgb2.length; i++) {
-      let stuff = i % 1e3 / 1e3;
+    for (let i2 = 0; i2 < rgb2.length; i2++) {
+      let stuff = i2 % 1e3 / 1e3;
       let interval2 = (Math.sin(stuff) + 1) / 2;
       let color2 = rgb(turbo_default(stuff));
-      rgb2[3 * i] = color2.r / 255;
-      rgb2[3 * i + 1] = color2.g / 255;
-      rgb2[3 * i + 2] = color2.b / 255;
+      rgb2[3 * i2] = color2.r / 255;
+      rgb2[3 * i2 + 1] = color2.g / 255;
+      rgb2[3 * i2 + 2] = color2.b / 255;
     }
     const colorBuffer = makeBuffer2(rgb2, 0, "color");
     const dragonBuffer = makeBuffer2(import_stanford_dragon.default.positions, 1, "dragon");
@@ -7974,11 +8280,17 @@ fn snoise( v: vec3<f32>) -> f32 {
     }
     const mouse = [0, 0];
     function makeGrid() {
-      return makeVectorFieldGeneric(function(x, y, z) {
-        return [x * 1, y * 1, z, 1];
-      });
+      var result3 = [];
+      for (let i2 = 0; i2 < 1e6; i2++) {
+        result3.push([
+          i2 / 1e6,
+          0,
+          0,
+          0
+        ]);
+      }
+      return result3;
     }
-    let gridBuffer = makeGrid();
     function length22(p) {
       let [x, y] = p;
       return Math.sqrt(x * x + y * y);
@@ -8004,7 +8316,7 @@ fn snoise( v: vec3<f32>) -> f32 {
       return ret;
     };
     function keeptrying() {
-      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
         let theta = Math.atan(y / x);
         let a = [x, y, z];
         let b = [0, 0, 0];
@@ -8014,7 +8326,7 @@ fn snoise( v: vec3<f32>) -> f32 {
     }
     function test999() {
       let p = import_stanford_dragon.default.positions;
-      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
         let theta = Math.atan(y / x);
         let a = [x, y, z];
         let b = [0, 0, 0];
@@ -8023,10 +8335,10 @@ fn snoise( v: vec3<f32>) -> f32 {
       return vf;
     }
     function test678() {
-      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i3, j, k2, idx) {
         return [x, y, z, 1];
       });
-      let i = 0;
+      let i2 = 0;
       let prev = 1e5 / 2;
       let right = [1, 0, 0, 0];
       let left = [-1, 0, 0, 0];
@@ -8034,8 +8346,8 @@ fn snoise( v: vec3<f32>) -> f32 {
       let up = [0, 1, 0, 0];
       let dir = [up, down, left, right];
       let going = right;
-      while (i < 1e7) {
-        i++;
+      while (i2 < 1e7) {
+        i2++;
         vf[prev] = going;
         if (Math.random() > 0.9)
           going = dir[Math.random() * dir.choice | length];
@@ -8059,18 +8371,17 @@ fn snoise( v: vec3<f32>) -> f32 {
       let down = [0, -1, 0, 0];
       let diagonalLeft = [-1, -1, 0, 0];
       let diagonalRight = [0, -1, 1, 0];
-      let wtf = 0.3 - dist2;
-      let vf = makeVectorFieldGeneric(function(x, y, z, i, j, k2, idx) {
+      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
         return [-y * 10, x * 10, z, 10];
       });
       return vf;
     }
     function test123() {
-      let i = 0;
+      let i2 = 0;
       let point = [0, 1, 0];
       let point2 = [0, 1, 0];
-      i++;
-      let vf = makeVectorFieldGeneric(function(x, y, z, i2, j, k2, idx) {
+      i2++;
+      let vf = makeVectorFieldGeneric(function(x, y, z, i3, j, k2, idx) {
         return [Math.cos(x), Math.sin(y), -z, 1];
         return [x, y, z, 1];
       });
@@ -8078,10 +8389,10 @@ fn snoise( v: vec3<f32>) -> f32 {
     }
     function magnet() {
       let pt = [...Array(5).keys()].map((data) => [makeRand(), makeRand(), 0]);
-      let i = 0;
+      let i2 = 0;
       let dir = [1, 0, 0, 1];
       let vf = makeVectorFieldGeneric(function(x, y, z) {
-        i++;
+        i2++;
         let theta = Math.atan(y / x);
         return [10 * Math.cos(theta * 10), 10 * Math.sin(theta * 10), 10 * Math.sin(theta), 1];
         let dist3 = distanceTo(pt[0], [x, y, z]);
@@ -8103,9 +8414,9 @@ fn snoise( v: vec3<f32>) -> f32 {
       let vf = makeVectorFieldGeneric(function(x, y, z) {
         return [x, y, z, 1];
       });
-      for (let i = 0; i < vf.length; i++) {
-        let [x, y, z] = vf[i];
-        vf[i] = [
+      for (let i2 = 0; i2 < vf.length; i2++) {
+        let [x, y, z] = vf[i2];
+        vf[i2] = [
           100 * Math.tanh(z + y),
           0,
           0,
@@ -8118,12 +8429,12 @@ fn snoise( v: vec3<f32>) -> f32 {
       let vf = makeVectorFieldGeneric(function(x, y, z) {
         return [x, y, z, 1];
       });
-      for (let i = 0; i < vf.length; i++) {
-        let [x, y, z] = vf[i];
-        vf[i] = [
+      for (let i2 = 0; i2 < vf.length; i2++) {
+        let [x, y, z] = vf[i2];
+        vf[i2] = [
           1 / Math.tan(z) * y,
           1 / Math.cos(z) * x,
-          1 / Math.cos(i * z) * z,
+          1 / Math.cos(i2 * z) * z,
           1
         ];
       }
@@ -8133,12 +8444,12 @@ fn snoise( v: vec3<f32>) -> f32 {
       let vf = makeVectorFieldGeneric(function(x, y, z) {
         return [x, y, z, 1];
       });
-      for (let i = 0; i < vf.length; i++) {
-        let [x, y, z] = vf[i];
-        vf[i] = [
+      for (let i2 = 0; i2 < vf.length; i2++) {
+        let [x, y, z] = vf[i2];
+        vf[i2] = [
           1 / Math.tan(z) * y,
           y,
-          1 / Math.cos(i * z) * z,
+          1 / Math.cos(i2 * z) * z,
           1
         ];
       }
@@ -8148,12 +8459,12 @@ fn snoise( v: vec3<f32>) -> f32 {
       let vf = makeVectorFieldGeneric(function(x, y, z) {
         return [x, y, z, 1];
       });
-      for (let i = 0; i < vf.length; i++) {
-        let [x, y, z] = vf[i];
-        vf[i] = [
+      for (let i2 = 0; i2 < vf.length; i2++) {
+        let [x, y, z] = vf[i2];
+        vf[i2] = [
           Math.tan(z) * y,
           Math.cos(z) * x,
-          Math.cos(i * z),
+          Math.cos(i2 * z),
           1
         ];
       }
@@ -8166,28 +8477,27 @@ fn snoise( v: vec3<f32>) -> f32 {
       let visited = 0;
       let movedX = 0;
       let dirZ = 1;
-      let moveZ = (i2) => {
+      let moveZ = (i3) => {
         movedX = 0;
-        return i2 + 1e4 * dirZ;
+        return i3 + 1e4 * dirZ;
       };
       var dir = moveZ;
-      let moveY = (i2) => i2 + 100;
-      let moveX = (i2) => {
+      let moveY = (i3) => i3 + 100;
+      let moveX = (i3) => {
         movedX += 1;
         if (movedX > 5) {
           dir = moveZ;
           dirZ *= -1;
         }
-        return i2 + 1;
+        return i3 + 1;
       };
-      let i = 0;
+      let i2 = 0;
       moveX.nim = "x";
       moveZ.nim = "Z";
       while (visited < 1e3) {
-        if (i > 9e5)
+        if (i2 > 9e5)
           dir = moveX;
-        let cell = vf[i = dir(i)];
-        console.log(i, dir.nim, dirZ);
+        let cell = vf[i2 = dir(i2)];
         if (dir === moveZ)
           cell[2] = 10;
         else
@@ -8202,11 +8512,11 @@ fn snoise( v: vec3<f32>) -> f32 {
         let maxDist = Infinity;
         let origin2;
         let pt = [x, y, z];
-        for (let i2 = 0; i2 < range.length; i2++) {
-          let dist3 = getDist(pt, range[i2]);
+        for (let i3 = 0; i3 < range.length; i3++) {
+          let dist3 = getDist(pt, range[i3]);
           if (dist3 < maxDist) {
             maxDist = dist3;
-            origin2 = range[i2];
+            origin2 = range[i3];
           }
         }
         if (maxDist < 0.25) {
@@ -8219,17 +8529,17 @@ fn snoise( v: vec3<f32>) -> f32 {
       });
       let origin = [1, 1, 1];
       let destination = [-1, -1, -1];
-      for (var i = 0; i < vf.length; i++) {
-        let pt = vf[i];
+      for (var i2 = 0; i2 < vf.length; i2++) {
+        let pt = vf[i2];
         let [x, y, z] = pt;
         let originDist = dist2(pt, origin);
         let destinationDist = dist2(pt, destination);
         if (originDist < 0.25) {
-          vf[i] = [x, y, z, 1];
+          vf[i2] = [x, y, z, 1];
         } else if (originDist < 0.5) {
-          vf[i] = [y, -x, -z, 1];
+          vf[i2] = [y, -x, -z, 1];
         } else {
-          vf[i] = [-x, -y, -z, 1];
+          vf[i2] = [-x, -y, -z, 1];
         }
       }
       return vf;
@@ -8269,8 +8579,8 @@ fn snoise( v: vec3<f32>) -> f32 {
       }
       let theta = Math.random() * Math.PI / 180;
       function matrixMultVec(m2, v) {
-        return v.map((d2, i) => {
-          return d2 * m2[i][0] + d2 * m2[i][1] + d2 * m2[i][2];
+        return v.map((d2, i2) => {
+          return d2 * m2[i2][0] + d2 * m2[i2][1] + d2 * m2[i2][2];
         });
       }
       function rotatePointAroundAxis(theta2, pt) {
@@ -8332,17 +8642,17 @@ fn snoise( v: vec3<f32>) -> f32 {
       let idx = x + y + z;
       let distance2 = distanceTo(origin, destination);
       origin = [0, 0, 0];
-      for (var i = 0; i < vf.length; i++) {
-        let pt = vf[i];
+      for (var i2 = 0; i2 < vf.length; i2++) {
+        let pt = vf[i2];
         let [x2, y2, z2] = pt;
         let originDist = dist2(pt, origin);
         let destinationDist = dist2(pt, destination);
         if (originDist < 0.25) {
-          vf[i] = [x2, y2, z2, 1];
+          vf[i2] = [x2, y2, z2, 1];
         } else if (originDist < 0.5) {
-          vf[i] = [y2, -x2, -z2, 1];
+          vf[i2] = [y2, -x2, -z2, 1];
         } else {
-          vf[i] = [-x2, -y2, -z2, 1];
+          vf[i2] = [-x2, -y2, -z2, 1];
         }
       }
       return vf;
@@ -8406,13 +8716,13 @@ fn snoise( v: vec3<f32>) -> f32 {
     function makeVectorFieldGenericCool(cb, buffer2) {
       let w = width * 10, h = height * 10, zspace2 = 10;
       var result3 = buffer2 || [];
-      for (let i = 0; i < w; i++) {
+      for (let i2 = 0; i2 < w; i2++) {
         for (let j = 0; j < h; j++) {
           for (let k2 = 0; k2 < zspace2; k2++) {
-            let [x, y, z] = clipSpace(i, j, k2, w, h);
+            let [x, y, z] = clipSpace(i2, j, k2, w, h);
             let [x1, y1, z1] = zeroToOne(x, y, z);
             let idx = Math.round(x1 * w + y1 * w * h);
-            result3[idx] = cb(x, y, 0, i, j, k2, idx);
+            result3[idx] = cb(x, y, 0, i2, j, k2, idx);
           }
         }
       }
@@ -8421,27 +8731,27 @@ fn snoise( v: vec3<f32>) -> f32 {
     function makeVectorFieldGeneric2D(cb, buffer2) {
       let w = width * 10, h = height * 10;
       var result3 = buffer2 || [];
-      for (let i = 0; i < w; i++) {
+      for (let i2 = 0; i2 < w; i2++) {
         for (let j = 0; j < h; j++) {
-          let [x, y, z] = clipSpace(i, j, 0, w, h);
+          let [x, y, z] = clipSpace(i2, j, 0, w, h);
           let [x1, y1, z1] = zeroToOne(x, y, 0);
           let idx = Math.round(x1 * w + y1 * w * h);
-          result3[idx] = cb(x, y, 0, i, j, k, idx);
+          result3[idx] = cb(x, y, 0, i2, j, k, idx);
         }
       }
       return result3;
     }
     function makeVectorFieldGeneric(cb, buffer2) {
       var result3 = buffer2 || [];
-      for (let i = 0; i < width; i++) {
+      for (let i2 = 0; i2 < width; i2++) {
         for (let j = 0; j < height; j++) {
           for (let k2 = 0; k2 < zspace; k2++) {
-            let [x, y, z] = clipSpace(k2, j, i, width, height);
+            let [x, y, z] = clipSpace(k2, j, i2, width, height);
             let [x1, y1, z1] = zeroToOne(x, y, z);
             let idx = Math.round(
               x1 * width + y1 * width * height + z1 * width * width * width
             );
-            result3[idx] = cb(x, y, z, i, j, k2, idx);
+            result3[idx] = cb(x, y, z, i2, j, k2, idx);
           }
         }
       }
@@ -8474,9 +8784,9 @@ fn snoise( v: vec3<f32>) -> f32 {
     let magnets;
     function makeMagnets() {
       magnets = [];
-      for (let i = 0; i < 5; i++) {
+      for (let i2 = 0; i2 < 5; i2++) {
         magnets.push([makeRand(), makeRand(), makeRand()]);
-        if (i < 1)
+        if (i2 < 1)
           magnets.push([
             makeRand(),
             makeRand(),
@@ -8502,7 +8812,7 @@ fn snoise( v: vec3<f32>) -> f32 {
       makeVectorFieldGeneric(function(x, y, z) {
         let vec = [0, 0, 0, 0];
         let p = [x, y, 0];
-        magnets.forEach((mag, i) => {
+        magnets.forEach((mag, i2) => {
           let dist3 = getDist(mag, p);
           let dx = unitVector(distanceTo(mag, p));
           vec = add4(vec, dx.map((d2) => d2 * 1 / dist3));
@@ -8529,7 +8839,6 @@ fn snoise( v: vec3<f32>) -> f32 {
     }
     let computeTransition;
     let camera = { position: { x: 0, y: 0, z: 0 } };
-    const gui = new GUI$1();
     let props = {};
     let toggleMode = 0;
     props.resetAnimation = function() {
@@ -8561,30 +8870,50 @@ fn snoise( v: vec3<f32>) -> f32 {
       var z1 = (1 - z) / 2;
       return [x1, y1, z1];
     }
-    function makeRadius(i) {
-      return Math.ceil(i / 1e4) / 10;
+    function makeRadius(i2) {
+      return Math.ceil(i2 / 1e4) / 10;
     }
-    const reset = makeBuffer2(makeGrid(), 0, "reset");
+    var indexBuffer = [...Array(1e6).keys()];
+    const reset = makeBuffer2(indexBuffer, 0, "reset");
     function makeComputeShader(webgpu2, mesh, vf12, vf22) {
       let directionBuffer = new Float32Array(particlesCount * 4);
-      for (let i2 = 0; i2 < directionBuffer.length; i2 += 4) {
-        let idx = i2 / 4 % 360 * 1.5;
-        let radius = 0.1 * makeRadius(i2);
-        directionBuffer[i2] = radius * Math.cos(idx * Math.PI / 180);
-        directionBuffer[i2 + 1] = radius * Math.sin(idx * Math.PI / 180);
-        directionBuffer[i2 + 2] = 0;
-        directionBuffer[i2 + 3] = 0;
+      for (let i3 = 0; i3 < directionBuffer.length; i3 += 4) {
+        let idx = i3 / 4 % 360 * 1.5;
+        let radius = 0.1 * makeRadius(i3);
+        directionBuffer[i3] = 0;
+        directionBuffer[i3 + 1] = 0;
+        directionBuffer[i3 + 2] = 0;
+        directionBuffer[i3 + 3] = 0;
       }
+      let destinationBuffer = new Float32Array(particlesCount * 4);
+      for (let i3 = 0; i3 < destinationBuffer.length; i3 += 4) {
+        let [x, y] = [1, 1];
+        if (Math.random() < 0.5) {
+          x *= -1;
+        }
+        if (Math.random() < 0.5) {
+          y *= -1;
+        }
+        destinationBuffer[i3] = x;
+        destinationBuffer[i3 + 1] = y;
+        destinationBuffer[i3 + 2] = 0;
+        destinationBuffer[i3 + 3] = 0;
+      }
+      let [placeList, neighborhoodList] = makePlaceList();
       let direction = makeBuffer2(directionBuffer, 0, "vectorField");
-      let gridBuffer2 = makeBuffer2(vf12.flat(), 0, "result");
-      let gridBuffer22 = makeBuffer2(vf22.flat(), 0, "result");
+      let gridBuffer = makeBuffer2(neighborhoodList, 0, "result");
+      let gridBuffer2 = makeBuffer2(placeList, 0, "result");
       let particledistancetraveled = new Float32Array(particlesCount);
       let distancetraveledBuffer = makeBuffer2(particledistancetraveled, 0, "vectorField");
-      let groupIndexBuffer = new Float32Array(particlesCount);
-      for (var i = 0; i < particlesCount; i++) {
-        groupIndexBuffer[i] = Math.floor(i / 1e5);
+      let personBuffer = [];
+      for (var i2 = 0; i2 < particlesCount; i2++) {
+        let next = i2 + 1;
+        let prev = i2;
+        personBuffer[i2] = [next, prev, 0, 0];
       }
-      let groupBuffer = makeBuffer2(groupIndexBuffer, 0, "groupBuffer");
+      let groupBuffer = makeBuffer2(personBuffer, 0, "groupBuffer");
+      setInterval(async function() {
+      }, 25);
       let max3 = {
         x: 0,
         y: 0,
@@ -8595,10 +8924,10 @@ fn snoise( v: vec3<f32>) -> f32 {
         y: 0,
         z: 0
       };
-      for (let i2 = 0; i2 < mesh.source.length; i2 += 4) {
-        let x = mesh.source[i2];
-        let y = mesh.source[i2 + 1];
-        let z = mesh.source[i2 + 2];
+      for (let i3 = 0; i3 < mesh.source.length; i3 += 4) {
+        let x = mesh.source[i3];
+        let y = mesh.source[i3 + 1];
+        let z = mesh.source[i3 + 2];
         max3.x = Math.max(x, max3.x);
         max3.y = Math.max(y, max3.y);
         max3.z = Math.max(z, max3.z);
@@ -8612,714 +8941,7 @@ fn snoise( v: vec3<f32>) -> f32 {
       });
       return webgpu2.initComputeCall({
         label: `predictedPosition`,
-        code: `
-    struct Uniforms {
-      mouse: vec2<f32>,
-      time: f32,
-      mode: f32,
-      decayRate: f32
-    }
-    
-
-    ${curl_noise}
-
-    @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-    @group(0) @binding(1) var<storage,read_write> posBuffer: array<vec4<f32>>;
-    @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-    @group(0) @binding(3) var<storage,read_write> direction: array<vec3<f32>>;
-    @group(0) @binding(4) var<storage, read_write> distancetraveled: array<f32>;
-    @group(0) @binding(5) var<storage, read_write> reset: array<vec4<f32>>;
-    @group(0) @binding(6) var<storage,read_write> vectorFieldBuffer2: array<vec4<f32>>;
-    @group(0) @binding(7) var<storage,read_write> groupBuffer: array<f32>;
-
-  
-  fn sfrand () -> f32{
-    let co = vec2<f32>(${Math.random()}, ${Math.random()});
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-  }
-  
-  
-  fn mrand() -> f32 {
-    return (sfrand() * 2.) - 1.;
-  }
-
-  fn shift (x:f32)->f32 {
-    return (x + 1.) / 2.;
-  }
-
-  fn hasCollided (p: vec3<f32>)-> bool {
-    var minX = -1; 
-    var bounds = 1.;
-    if (p.x < -bounds) {return true;}
-     if (p.y <= -bounds) {return true;} //why is this backwards? 
-        if (p.x >= bounds) {return true;}
-        if (p.y >= bounds) {return true;}
-        if (p.z <= -bounds ) {return true;}
-        if (p.z >= bounds ){ return true;}
-        return false;
-  }
-
-  fn makeMagnets () -> array<vec3<f32>, 4> {
-    var result = array<vec3<f32>, 4>();
-
-    result[0] = vec3<f32>(0, 0, 0);
-    result[1] = vec3<f32>(0, 0, 0);
-    result[2] = vec3<f32>(0, 0, 0);
-    result[3] = vec3<f32>(0, 0, 0);
-
-
-    return result;
-  }
-
-  fn getField(pos: vec3<f32>, mag: vec3<f32>) -> f32{
-    var radius = distance(pos, mag);
-    var theta = atan(pos.y / pos.x);
-    return 1;
-  }
-
-  fn applyMagnets(pos: vec3<f32>) -> f32 {
-    var idx = hashPosition(pos);
-
-    var magnets = makeMagnets();
-
-
-    vectorFieldBuffer[idx] = vec4<f32>(0);
-    //sin(distance(pos.x, mag.x)), cos(distance(pos.y, mag.y));
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[0] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[1] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[2] - pos),1);
-    vectorFieldBuffer[idx] +=  vec4<f32>((magnets[3] - pos),1);
-    return 1.;
-  }
-
-  fn hashPosition(pos: vec3<f32>) ->  i32{
-    var x = (pos.x + 1) / 2.;
-    var y = (1. - (pos.y)) / 2.;
-    var z = (1. - (pos.z)) / 2.;
-    //if (z < .1) {z = .9;}
-    
-    // 
-    // var idx = i32(floor(x * 1000) + floor(floor(y * 1000) * 1000)
-    // + floor(floor(z * 1000) * 1000) * 10
-    // );
-
-
-    var idx = i32(floor(x * 100) + floor(floor(y * 100) * 100)
-    + floor(floor(z * 100) * 100) * 100
-    );
-    return idx;
-  }
-
-
-  // fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
-  //   var dir = direction[index];// + vec3<f32>(1, 1, 1);
-  //   if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
- 
-  //   // if (false) {
-  //   //   dir.x += .5;
-  //   //   dir.y += .5;  
-  //   // } else {
-  //   //   dir.x += cos(1.75);
-  //   //   dir.y += sin(1.75);
-  //   //   // dir.x += 1. * cos(group *10 );
-  //   //   // dir.y += 1 * sin(group * 10);
-  //   // }
-
-  //   var theta = atan2(dir.y, dir.x);
-  //   // // dir.x += cos(theta * 1);
-  //   // // dir.y += sin(theta * 1);
-
-  //   dir.x =  cos(theta + 1.6);
-  //   dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
-
-  //   // if (group == 0) {
-  //   //   dir = vec3<f32>(1, 0, 0);
-  //   // } else if (group == 1)  {
-  //   //   dir = vec3<f32>(0, 1, 0);
-  //   // } else if (group == 2)  {
-  //   // dir = vec3<f32>(0, -1, 0);
-  //   // } else if (group == 3)  {
-  //   //   dir = vec3<f32>(-1, 0, 0);
-  //   // }
-  //   direction[index] = dir;
-  //   return dir;
-  // }
-  // fn drawCoolShape () -> vec3<f32>  {
-  //   //helix = circle + z direction
-  //   return vec3<f32>(0.);
-  // }
-
-fn helix(index: u32) -> vec3<f32>  {
-  var dir = direction[index];
-
-
-  if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-
-
-  var theta = atan2(dir.z, dir.x);
-
-  // dir.x = cos(theta * 1.5);
-  // dir.z = sin(theta * 1.5);
-
-
-  dir.x =  cos(theta + 1.2);
-  //dir.y = .1 * .000001;
-  dir.z = sin(theta + 1.2);
-
-  // dir.x = .1;
-  // dir.y = .1;
-
-  //posBuffer[index] = vec4<f32>(0.);
-
-  direction[index] = dir;
-  return dir;
-}
-
-fn drawShape (index: u32) -> vec3<f32> {
-  var dir = direction[index];
-
-
-  var theta = atan2(dir.y, dir.x);
-
-  dir.x = cos(theta + .7);
-  dir.y = sin(theta + .7);
-
-  distancetraveled[index] += 1.;
-
-
-  if (distancetraveled[index] > 100) {
-    direction[index] = dir; 
-    posBuffer[index]= posBuffer[index] + vec4<f32>(.1 * dir, 1.);
-  }
-
-  return dir;
-}
-
-  fn hash(p: vec3<f32>) -> vec3<f32> {
-    var pos = p * .1;
-    //pos += .05;
-    //pos.z -= 1.1;
-    let idx = hashPosition(pos);
-
-    var x = pos.x;
-    var y = pos.y;
-    var z = pos.z;
-  //if uniforms.mode == 2 ?
-    // if (idx < 0) {
-    //   //return vec3<f32>(-x, -y, 0);
-    // }
-    // if (idx > 1000000) {
-    //   //return vec3<f32>(-x, -y, 0);
-    // }
-
-    let vf = vectorFieldBuffer[idx];
-
-    var shit = uniforms.time;
-    //vectorFieldBuffer[idx] += vec4<f32>(abs(pos.x), abs(pos.y), 0, 1);
-
-
-
-    let vf1 = vectorFieldBuffer2[idx];
-    var vt = mix(vec3<f32>(vectorFieldBuffer[idx].xyz) ,
-                vec3<f32>(vectorFieldBuffer2[idx].xyz), 
-                uniforms.time / 3000);
-
-                //return vec3<f32>(-x, -y, -z);
-                // if (uniforms.mode ==0 )
-                //  { return vec3<f32>(0,); }
-    return vf.xyz;
-  }
-
-
-
-  fn changeDirection (pos:vec3<f32>, index: u32) -> vec3<f32> {
-    var dir = direction[index];// + vec3<f32>(1, 1, 1);
-    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  
-    // if (false) {
-    //   dir.x += .5;
-    //   dir.y += .5;  
-    // } else {
-    //   dir.x += cos(1.75);
-    //   dir.y += sin(1.75);
-    //   // dir.x += 1. * cos(group *10 );
-    //   // dir.y += 1 * sin(group * 10);
-    // }
-  
-    var theta = atan2(dir.y, dir.x);
-    // // dir.x += cos(theta * 1);
-    // // dir.y += sin(theta * 1);
-  
-    dir.x =  cos(theta + 1.6);
-    dir.y = .1 * sin(theta + 1.6 * f32(index) / 100);
-  
-    // if (group == 0) {
-    //   dir = vec3<f32>(1, 0, 0);
-    // } else if (group == 1)  {
-    //   dir = vec3<f32>(0, 1, 0);
-    // } else if (group == 2)  {
-    // dir = vec3<f32>(0, -1, 0);
-    // } else if (group == 3)  {
-    //   dir = vec3<f32>(-1, 0, 0);
-    // }
-    direction[index] = dir;
-    return dir;
-  }
-  
-  
-  // fn drawCoolShape () -> vec3<f32>  {
-  //   //helix = circle + z direction
-  //   return vec3<f32>(0.);
-  // }
-  
-  
-  // fn helix(index: u32) -> vec3<f32>  {
-  // var dir = direction[index];
-  
-  
-  // if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  
-  
-  // var theta = atan2(dir.z, dir.x);
-  
-  // // dir.x = cos(theta * 1.5);
-  // // dir.z = sin(theta * 1.5);
-  
-  
-  // dir.x =  cos(theta + 1.2);
-  // //dir.y = .1 * .000001;
-  // dir.z = sin(theta + 1.2);
-  
-  // // dir.x = .1;
-  // // dir.y = .1;
-  
-  // //posBuffer[index] = vec4<f32>(0.);
-  
-  // direction[index] = dir;
-  // return dir;
-  // }
-  
-  //windowing function for direction ?? 
-  
-  //distance traveled is on a per index basis
-  //distance traveled vs time elapsed = 
-  
-  
-  fn test123 (index: u32, flag: f32) {
-    var dir = direction[index];
-//    var idx = indexBuffer[index];
-  var idx = f32(index);
-    
-    let pos = posBuffer[index];
-  //    dir.x = pos.x - pos.y;
-    if (distancetraveled[index] < 1000) {
-      posBuffer[index] = vec4<f32>(0);
-    }
-    //f32(index)
-  if (uniforms.time > 30000 - f32(index)) {
-  
-    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
-    //return;
-  }
-    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  
-
-    var i = (uniforms.time  % 3);
-  
-    //choose 2/3 indices based on a timer 
-    var theta = atan2(dir.z, dir.x);
-  
-    // dir.z =  cos(theta + 1.2);
-    // dir.x = sin(theta + 1.2);
-  
-    if (i == 0) { 
-      var theta = atan2(dir.z, dir.x);
-      dir.x +=  cos(idx);
-      dir.z += sin(idx);
-    }
-
-    if (i == 1) { 
-      var theta = atan2(dir.y, dir.x);
-      dir.x +=  cos(idx);
-      dir.y += sin(idx);
-    }
-
-    if (i == 2) { 
-      var theta = atan2(dir.z, dir.y);
-      dir.y +=  cos(idx);
-      dir.z += sin(idx);
-    }
-  
-    dir.y = dir.x;//cos(idx);
-    dir.x = dir.y;// sin(idx);
-  
-  
-    dir.y = cos(idx);
-    dir.x = sin(idx);
-
-    // if (length(dir) > 5) {
-    //   dir.x *= -1;
-    //   dir.y *= -1;
-   
-    // }
-  
-  //show the demo to people and demo has to be really good 
-  //the process has to be good too
-  
-    //if (u32(uniforms.time) <= index * 1000) {
-    //  dir = vec3<f32>(-1000);
-    //}
-    //if (shouldAnimate(direction[index])) {
-      direction[index] = dir;
-    //}
-    return;
-  }
-  
-  fn vortex (index: u32) {
-    var dir = direction[index];
-    var idx = f32(index);
-  
-    //f32(index)
-  if (uniforms.time > 30000 - f32(index)) {
-  
-    //posBuffer[index]= vec4<f32>(idx / 256., idx / 256., 0., 1.);
-    //return;
-  }
-    if (length(dir) == 0.){ dir = vec3<f32>(.1, 0., 0. );}
-  
-    dir.y = .1;
-    if (idx > 128){
-      dir.y *= -1;
-    }
-    // * idx * cos(idx);
-    direction[index] = dir;
-    let pos = posBuffer[index];
-    dir.x = pos.x - pos.y;
-  
-  
-    if (hasCollided(posBuffer[index].xyz)) {
-      dir.y = -dir.x;
-      dir.x = -dir.y;
-    }
-  } 
-  
-  //   fn lastWeek(pos: vec3<f32>, idx: u32) -> f32{
-  //     //rotate hues so that rainbow flies toward camera 
-  //     //no direction
-  //     let index = f32(idx);
-  // let i = index / 10000;
-  //     posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
-  
-  //     //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
-  
-  //     return -1;
-  //   }
-  
-  fn vines (idx: u32) -> f32{
-  return -1;
-  }
-  
-  
-  fn Mandala (pos:vec3<f32>, idx: u32) -> f32{
-  
-  
-  //cpu graphics = draw 20 lines in a spiral curved from 4 attachment points 
-  
-  if (uniforms.time < 20) {}
-  
-  
-  
-  
-  return -1;  
-  }
-  
-  fn web (pos: vec3<f32>, idx: u32) -> f32{
-  
-  var index = f32(idx);
-  //ditch conditionals in favor of building up a variable and then using it at the end 
-  if (distancetraveled[idx] < 10000) {
-    posBuffer[idx] = vec4<f32>(0.);
-  }
-  if (idx < 256) {
-    var i = f32(idx) - 128.;
-    posBuffer[idx] = vec4<f32>(-i / 64., i / 64., 0., 1.) + vec4<f32>(-.5, -.5, 0, 0);
-  }
-  if (idx < 128){
-    posBuffer[idx] = vec4<f32>(index / 64., index / 64., 0., 1.) + vec4<f32>(-.5, -.5,0 , 0);
-  } 
-  
-  
-  
-  return -1;
-  }
-  
-  fn lastMonth(pos: vec3<f32>, idx: u32) -> f32{
-    //rotate hues so that rainbow flies toward camera 
-    //no direction
-    let index = f32(idx);
-    let i = index / 10000;
-    posBuffer[idx] = vec4<f32>(3. * i * cos(index + uniforms.time * .001), 3. * i * sin(index + uniforms.time * .001), index / 256, 1.);
-  
-    //posBuffer[idx] = vec4<f32>(3. * cos(index + uniforms.time * .001), 3. * sin(index + uniforms.time * .001), index / 256, 1.);
-  
-    return -1;
-  }
-  
-  //dont think anything else - just fnish the shader
-  //delete group -> implicit group created by index -> 1-1e5 = group 1, 1e5-2e5   = group 2
-  //make a new buffer that links particle to thet5 index in the buffer
-  //buffer that has a range of 0-1e6 ? so instead of thread index its a particle index
-  fn runAlongRoute (pos:vec3<f32>, index:f32) -> vec3<f32> {
-  var idx = u32(index);
-  
-  var dir =  direction[idx];
-  
-  //time, mode, attenuationRate, particleIndex, groupIndex 
-  //synchronized swimmers - all particles of certain color do similar stuff 
-  //noise Buffer = unique ID = Math.random () * coefficent for each particle 
-  var dt = sin(uniforms.time);
-  
-  var group = f32(index) % 20;
-    distancetraveled[idx] += 1;
-
-    // if (group == 0 || group == 3) { 
-    //   distancetraveled[idx] -= 100;
-    //     //dir = drawCoolShape();
-    //     lastMonth(pos,idx);
-    //     dir = changeDirection(pos,idx);
-    // }
-  
-    for (var i = 0.; i < 20.; i += 1.) {
-     // if (distancetraveled[idx] < 100)  {
-      if (uniforms.mode == 1) {
-        //makeParticlesFly(idx);
-        //test123(idx, 1.);
-        // vortex(idx);
-         //makeCoolShader(idx);
-        //helix(idx);
-        //makeASpiralWithoutSinCosineOrIndex(idx);
-        continue;
-      }
-        if (uniforms.mode == 0 && group < 20) {
-           ribbon(idx);
-          continue;
-        }
-      
-      //}
-    }
-    // if (hasCollided(pos.xyz))  {
-    //   var vel = direction[idx];
-    //   direction[idx] = vec3<f32>(vel.y, -vel.x, vel.z);
-    //   direction[idx] *= .0;
-    //   //direction[index] = direction[index] + .1 * vf;
-    // }
-
-  
-  posBuffer[idx] += .1 * vec4<f32>(direction[idx], 1.);
-  
-  return dir;
-  }
-
-  fn makeASpiralWithoutSinCosineOrIndex(idx: u32) -> bool {
-
-    var pos = posBuffer[idx];
-    direction[idx] = - vec3<f32>(pos.y, -pos.x, pos.z);
-    return false;
-  }
-
-fn makeParticlesFly(idx: u32) -> bool {
-  var index = f32(idx);
-  var pos = posBuffer[idx];
-
-
-  posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  var vel = direction[idx];
-  direction[idx] = vec3<f32>(pos.x, pos.y * 10., pos.z * 10.);
-  if (pos.z != 0.) {
-    posBuffer[idx] = vec4<f32>(0., 1., 1., 1.);
-  }
-  return false;
-}
-
-
-
-
-fn makeGreatStuff(idx:u32) -> f32 {
-  return -1;
-}
-
-  fn makeCoolShader(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
-    var index = f32(idx);
-    var pos = posBuffer[idx];
-
-    direction[idx] += vec3<f32>(0, cos(index * 1.1), sin(index * 1.1));
-
-    if (dt > 10) {
-      direction[idx] = vec3<f32>(cos(index * 1.1), pos.y, cos(index * 1.1));
-    }
-
-    if (dt > 10) {
-      distancetraveled[idx]= 0;
-      posBuffer[idx] = reset[idx];
-      //vec4<f32>(0.);
-    }
-    return -1;
-  }
-
-//make it change through different phases - 5 phases 
-
-
-//improve the patterns
-  fn ribbon(idx: u32) -> f32 {
-    var dt = distancetraveled[idx];
-    var pos = posBuffer[idx];
-    var theta = atan2(pos.y, pos.x);
-    distancetraveled[idx] += 1.;
-    //uniforms.time / 3000000
-    //.001 * 
-    
-    if (idx > 256 ){
-          direction[idx] = -.001 * f32(idx) * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    } else {
-      let radius = distance(vec2<f32>(0,0), pos.xy);
-    direction[idx] =  1/ radius * vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-    }
-
-    direction[idx] = vec3<f32>(cos(theta * 1.1), sin(theta * 1.1), 0.);
-
-    direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-
-    // if (distancetraveled[idx] > 1000) {
-    //   distancetraveled[idx]= 0;
-    //   posBuffer[idx] = vec4<f32>(0.);
-    //   //direction[idx] = vec3<f32>(direction[idx].y, -direction[idx].x, 0.);
-    //   // f32(idx) / 256.
-    // }
-    return -1;
-  }
-
-fn applyVF(pos: vec3<f32>, index:u32) -> vec3<f32> {
-  var theta = atan2(pos.y, pos.x);
-  let idx = hashPosition(pos);
-  vectorFieldBuffer[idx] += 10 * vec4<f32>(cos(theta), sin(theta),  sin(theta), 1);
-
-  return vec3<f32>(1.);
-}
-  // fn rotate (vel: vec3<f32>) -> vec3<f32>{
-
-  //   return vec3<f32>();
-  // }
-
-fn dragon (index: u32) -> f32 {
-
-  var pos = posBuffer[index];
-  var vel = direction[index];
-  applyVF(pos.xyz, index);
-  //use distanceTraveled to change group, direction
-  //distanceTraveled += length(direction)
-  //var lifetime = distanceTraveled[index];
-  
-  // if (length(direction[index]) == 0.) {
-  //   direction[index] = vec3<f32>(0, 0, -1);
-  // }
-
-  //   var theta = atan2(direction[index].z, direction[index].x);
-  //   direction[index] = vec3<f32>(cos(theta * f32(index) /256), 0., sin(theta * f32(index) /256 ));
-
-  //   //1 rotation in 6 dimensions in order 
-  //   var theta = atan2(direction[index].y, direction[index].x);
-  //   direction[index] = vec3<f32>(cos(theta), sin(theta ), 0);
-
-  // //change velocity every few frames 
-  // posBuffer[index] =  posBuffer[index]  + .1 * vec4<f32>(direction[index], 0.);
-
-  // if (pos.x < 0 ||
-  //   pos.x > 0 ||
-  //   pos.z > 0 ||
-  //   pos.z < 0 ) {
-  //   var swap = direction[index].z;
-  //   direction[index].z = direction[index].x;
-  //   direction[index].x = swap;
-  //   direction[index] = vec3<f32>(0.);
-  // }
-
-  return -1;
-}
-
-fn mutateField(index: u32) -> f32 {
-  vectorFieldBuffer[index] = vec4<f32>(0, 0., 0., 0.);
-  return -1;
-} 
-
-    @compute @workgroup_size(256)
-    fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-
-      let index: u32 = GlobalInvocationID.x;
-
-
-      if (groupBuffer[index] > 1) {
-        dragon(index);
-      }
-      //mutateField(index);
-      if (length(direction[index]) == 0.) {
-        direction[index] = vec3<f32>(0, 0, -1);
-      }
-        //  direction[index] = cross(direction[index], direction[index+1]);
-        //  posBuffer[index] =  vec4<f32>(direction[index], 1.) + posBuffer[index];
-        //  return;
-
-      var pos = posBuffer[index];
-
-      //applyMagnets(pos.xyz);
-
-      var r = reset[index];
-      runAlongRoute(pos.xyz, f32(index));
-
-      //applyMagnets(pos.xyz);
-      var abc = posBuffer[index];
-
-      var vf = hash(pos.xyz);
-
-      let t = uniforms.time;
-    
-     //direction[index] = direction[index] + vec3<f32>(.00001 * f32(index), 0., 0.);
-     posBuffer[index] = vec4<f32>(pos.xyz + .01 * direction[index].xyz,  1);
-
-     direction[index] *= .0;
-   
-
-      //wind turbulence
-      ${useCurlNoise ? "posBuffer[index] = posBuffer[index] + .01 * vec4<f32>(curlNoise(posBuffer[index].xyz), 1);" : ""}
-      //sphere
-      //posBuffer[index] = vec4<f32>(curlNoise(posBuffer[index].xyz), 1);
-      //posBuffer[index] = posbuffer[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
-
-      var mouse = (uniforms.mouse - .5) * vec2<f32>(2,-2);
-      if (distance(posBuffer[index].xy, mouse) < .1) {
-        // direction[index].x = direction[index].y;
-        // direction[index].y = -direction[index].x;
-        //posBuffer[index]= vec4<f32>(posBuffer[index].xy - vec2<f32>(distance(posbuffer[index].xy, mouse)), 0., 1.);
-        //posBuffer[index] = posBuffer[index] - vec4<f32>(mouse, 0,0);
-        //direction[index]*= .001;
-      }
-      //helix(index);
-       direction[index] *= .0;
-
-       if (groupBuffer[index] > 1) {
-        direction[index] = direction[index] + .001 * vf;
-       posBuffer[index]= posBuffer[index] + vec4<f32>(direction[index], 1.) * .1;
-      }
-
-      //if (groupBuffer[index] == 8) {  lastMonth(pos.xyz, index); }
-      //draw cool shapes and then dont deform them in the vector field until some time 
-      //var group = groupBuffer[index];
-      //runAlongRoute(pos.xyz, f32(index));
-
-      // if (groupBuffer[index] > 8) {
-      //   sphereEvaporate(pos, index);
-      // }
-    }`,
+        code: computeShader,
         exec: function(state2) {
           const device = state2.device;
           const commandEncoder = state2.ctx.commandEncoder = state2.ctx.commandEncoder || device.createCommandEncoder();
@@ -9352,13 +8974,14 @@ fn mutateField(index: u32) -> f32 {
           const descriptor = {
             layout: computePipeline.getBindGroupLayout(0),
             entries: [
-              { binding: 0, resource: { buffer: gridBuffer2 } },
+              { binding: 0, resource: { buffer: gridBuffer } },
               { binding: 1, resource: { buffer: mesh || shapes[0] } },
               { binding: 2, resource: { buffer: uniformsBuffer2 } },
               { binding: 3, resource: { buffer: direction } },
               { binding: 4, resource: { buffer: distancetraveledBuffer } },
               { binding: 5, resource: { buffer: reset } },
-              { binding: 6, resource: { buffer: gridBuffer22 } },
+              { binding: 6, resource: { buffer: gridBuffer2 } },
+              //map
               { binding: 7, resource: { buffer: groupBuffer } }
             ]
           };
@@ -9376,15 +8999,15 @@ fn mutateField(index: u32) -> f32 {
       frames[model] = [];
       let loaded = 0;
       return new Promise(function(resolve) {
-        frameCount.forEach(function(i) {
+        frameCount.forEach(function(i2) {
           fetch(
-            `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i}myfile.bin`
+            `https://raw.githubusercontent.com/stackgpu/Simple-GPU/main/obj/${model}/${i2}myfile.bin`
           ).then((res) => res.arrayBuffer()).then((buffer2) => {
             var floatBuffer = new Float32Array(buffer2);
-            for (let i2 = 0; i2 < floatBuffer.length; i2++) {
-              floatBuffer[4 * i2 + 1] -= 0.5;
+            for (let i3 = 0; i3 < floatBuffer.length; i3++) {
+              floatBuffer[4 * i3 + 1] -= 0.5;
             }
-            frames[model][i] = floatBuffer;
+            frames[model][i2] = floatBuffer;
             loaded += 1;
             if (loaded === frameMax - 1) {
               resolve();
@@ -9396,13 +9019,13 @@ fn mutateField(index: u32) -> f32 {
         });
       });
     }
-    let indexPool = new Array(particlesCount / 4).fill(1).map((d2, i) => i);
+    let indexPool = new Array(particlesCount / 4).fill(1).map((d2, i2) => i2);
     indexPool.alloc = function(n) {
-      let i = 0;
+      let i2 = 0;
       let result3 = [];
-      while (i < n) {
+      while (i2 < n) {
         result3.push(this.shift());
-        i++;
+        i2++;
       }
       pointBufferCount += n;
       return result3;
@@ -9419,10 +9042,10 @@ fn mutateField(index: u32) -> f32 {
         let { x1, y1, y2, x2 } = this;
         let dy = y2 - y1;
         let dx = x2 - x1;
-        let points = new Array(resolution).fill(0).map((d2, i) => {
+        let points = new Array(resolution).fill(0).map((d2, i2) => {
           return [
-            x1 + dx / resolution * i,
-            y1 + dy / resolution * i
+            x1 + dx / resolution * i2,
+            y1 + dy / resolution * i2
           ];
         });
         this.points = points;
@@ -9433,10 +9056,10 @@ fn mutateField(index: u32) -> f32 {
       if (!this.indices.length) {
         this.indices.push(...indexPool.alloc(this.points.length));
       }
-      this.indices.forEach((d2, i) => {
+      this.indices.forEach((d2, i2) => {
         let idx = d2 * 4;
-        this.array[idx] = this.points[i][0];
-        this.array[idx + 1] = this.points[i][1];
+        this.array[idx] = this.points[i2][0];
+        this.array[idx + 1] = this.points[i2][1];
       });
     };
     let rhomboid = function(origin, side, skew) {
@@ -9454,17 +9077,10 @@ fn mutateField(index: u32) -> f32 {
       let lines = [new line(a, b), new line(a, c2), new line(c2, b)];
       lines.forEach((line2) => line2.draw());
     };
-    for (let i = 0; i < 100; i++) {
-      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      rhomboid([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
-      triangle([makeRand() * 5, makeRand() * 5], 0.9, 1);
+    setTimeout(function() {
+      window.location.reload();
+    }, 1e3 * 60 * 60 * 24);
+    for (let i2 = 0; i2 < 100; i2++) {
     }
     window.addEventListener("click", function() {
       let timebetween = 1e3;
@@ -9489,78 +9105,78 @@ fn mutateField(index: u32) -> f32 {
     });
     let particleMesh = [];
     function initParticles() {
-      for (let i = 0; i < 1e6; i++) {
-        particleMesh[i] = { x: -0.9 + i / 1e4, y: 0.9, z: 0, dir: [makeRand(), makeRand()] };
+      for (let i2 = 0; i2 < 1e6; i2++) {
+        particleMesh[i2] = { x: -0.9 + i2 / 1e4, y: 0.9, z: 0, dir: [makeRand(), makeRand()] };
       }
     }
     let keyframeFunctions = [
-      function(p, i, t) {
-        let idx = i / 100;
+      function(p, i2, t) {
+        let idx = i2 / 100;
         let radius = 1;
-        let z = i / 1e5 * 100;
+        let z = i2 / 1e5 * 100;
         p.x = (radius - z) * Math.cos(idx * 360 * Math.PI / 180);
         p.y = (radius - z) * Math.sin(idx * 360 * Math.PI / 180);
         p.z = z;
       },
-      function(p, i, t) {
-        p.x = i / 1e3;
-        p.y = Math.round(i / 50) / 200;
+      function(p, i2, t) {
+        p.x = i2 / 1e3;
+        p.y = Math.round(i2 / 50) / 200;
       },
-      function(p, i, t) {
-        p.x = i / 1e3;
-        p.y = i % 100 / 10;
+      function(p, i2, t) {
+        p.x = i2 / 1e3;
+        p.y = i2 % 100 / 10;
       },
-      function(p, i, t) {
-        i *= 1 - t;
-        p.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
-        p.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+      function(p, i2, t) {
+        i2 *= 1 - t;
+        p.x = 0.1 * i2 * Math.cos(t * 90 * Math.PI / 180);
+        p.y = 0.1 * i2 * Math.sin(t * 90 * Math.PI / 180);
       },
       function down(p) {
         p.y -= 0.01;
       },
-      function windshieldWiper(p, i, time2) {
+      function windshieldWiper(p, i2, time2) {
         let t = time2;
-        p.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
-        p.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+        p.x = 0.1 * i2 * Math.cos(t * 90 * Math.PI / 180);
+        p.y = 0.1 * i2 * Math.sin(t * 90 * Math.PI / 180);
       },
-      function(p, i) {
+      function(p, i2) {
         p.x += 0.01;
       },
-      function(p, i, t) {
+      function(p, i2, t) {
         t = 1 - t;
-        p.x = 0.1 * i * Math.cos(t * 90 * Math.PI / 180);
-        p.y = 0.1 * i * Math.sin(t * 90 * Math.PI / 180);
+        p.x = 0.1 * i2 * Math.cos(t * 90 * Math.PI / 180);
+        p.y = 0.1 * i2 * Math.sin(t * 90 * Math.PI / 180);
       },
-      function windshieldWiper(p, i, time2) {
+      function windshieldWiper(p, i2, time2) {
         let t = time2;
-        t += i / 1e3;
-        let idx = i % 10;
+        t += i2 / 1e3;
+        let idx = i2 % 10;
         p.x = 0.01 * idx * Math.cos(t * 360 * Math.PI / 180);
         p.y = 0.01 * idx * Math.sin(t * 360 * Math.PI / 180);
         for (let n = 0; n < 10; n++)
-          if (i > n * 1e3)
+          if (i2 > n * 1e3)
             p.x += n * 0.2;
       },
-      function(p, i, t) {
+      function(p, i2, t) {
         p.x = Math.tan(t * 360 * Math.PI / 180);
         p.y = Math.tan(t * 360 * Math.PI / 180);
       }
     ];
-    function tween(a, b, i) {
-      return a - (a - b) * i / (b - a);
+    function tween(a, b, i2) {
+      return a - (a - b) * i2 / (b - a);
     }
     let count2 = 0;
     function moveParticles() {
       count2 += 1;
-      let i = Math.floor(count2 / 100);
+      let i2 = Math.floor(count2 / 100);
       let fn = keyframeFunctions[0];
       if (!fn)
-        fn = function(i2) {
+        fn = function(i3) {
           count2 = 0;
         };
-      for (let i2 = 0; i2 < 1e5; i2++) {
-        let pt = particleMesh[i2];
-        fn(pt, i2, count2 % 100 / 100);
+      for (let i3 = 0; i3 < 1e5; i3++) {
+        let pt = particleMesh[i3];
+        fn(pt, i3, count2 % 100 / 100);
       }
     }
     let drawParticles = true;
@@ -9596,10 +9212,13 @@ fn mutateField(index: u32) -> f32 {
     }
     if (drawShapes)
       list.set(pointBuffer.slice(0, pointBufferCount));
-    let happyBear = makeBuffer2(list, 0, "bear");
+    let posBuffer = makeBuffer2(list, 0, "bear");
     let vf1 = pickVF(), vf2 = pickVF();
-    const posBuffer = makeBuffer2(import_bunny.default.positions.map((d2) => d2.concat(0)).flat(), 1, "bunny");
-    computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2);
+    vf2 = [];
+    for (var i = 0; i < 1e6; i++) {
+      vf2[i] = [Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0, Math.random() * 1e6 | 0];
+    }
+    computeTransition = makeComputeShader(webgpu, posBuffer, vf1, vf2);
     const blend = {
       color: {
         srcFactor: "src-alpha",
@@ -9616,9 +9235,9 @@ fn mutateField(index: u32) -> f32 {
       blend,
       attributeBuffers: buffers,
       attributeBufferData: [
-        happyBear,
+        posBuffer,
         quadBuffer,
-        happyBear,
+        posBuffer,
         colorBuffer
       ],
       count: 6,
@@ -9658,17 +9277,17 @@ fn mutateField(index: u32) -> f32 {
     function vfPicker() {
       vf1 = pickVF();
       vf2 = vf2;
-      let happyBear2 = makeBuffer2(list, 0, "bear");
-      computeTransition = makeComputeShader(webgpu, happyBear2, vf1, vf2);
+      let happyBear = makeBuffer2(list, 0, "bear");
+      computeTransition = makeComputeShader(webgpu, happyBear, vf1, vf2);
       if (!drawScreen)
-        drawScreen = makeDrawCall(happyBear2, drawDescriptor);
-      drawScreen.swapAttributeBuffer(happyBear2, 0);
+        drawScreen = makeDrawCall(happyBear, drawDescriptor);
+      drawScreen.swapAttributeBuffer(happyBear, 0);
     }
     basic();
     async function basic() {
-      let happyBear2 = makeBuffer2(list, 0, "bear");
+      let happyBear = makeBuffer2(list, 0, "bear");
       vfPicker();
-      drawScreen = makeDrawCall(happyBear2, drawDescriptor);
+      drawScreen = makeDrawCall(happyBear, drawDescriptor);
       shapes.push(posBuffer);
       shapes.push(dragonBuffer);
       const device = webgpu.device;
@@ -9732,7 +9351,7 @@ fn mutateField(index: u32) -> f32 {
       }
       let hello = [];
       let abc = new Float32Array(1);
-      let elapsed = Date.now();
+      let startTime = Date.now();
       setInterval(function() {
         abc[0] = performance.now();
         device.queue.writeBuffer(
@@ -9743,7 +9362,7 @@ fn mutateField(index: u32) -> f32 {
           abc.byteLength
         );
         if (window.writeTime) {
-          elapsed = Date.now() % 3e3;
+          var elapsed = Date.now() - startTime;
           window.writeTime(elapsed);
         }
       }, 8);
@@ -9789,7 +9408,6 @@ fn mutateField(index: u32) -> f32 {
   @location(0) localPosition: vec2<f32>, // in {-1, +1}^2,
   @location(1) color: vec3<f32>,
   @location(2) globalPosition: vec2<f32>, // in {-1, +1}^2,
-
   };
   
   @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -9797,42 +9415,77 @@ fn mutateField(index: u32) -> f32 {
   @group(0) @binding(2) var mySampler: sampler;
   @group(0) @binding(3) var myTexture: texture_2d<f32>;
   
+  const sphereRadius = 1.;
+  fn xProj(theta:f32, phi:f32) -> f32 {
+    return sphereRadius * sin(theta) * cos(phi);
+  }
+  
+  fn yProj(theta:f32) -> f32 {
+    return sphereRadius * cos(theta);
+  }
+  
+  fn zProj(theta: f32, phi: f32) -> f32 {
+    return 1 + .5 * sin(theta) * sin(phi);
+  }
+  
+  fn toSpherical(pos:vec3<f32>) -> vec3<f32> {
+  
+    var x = pos.x;
+    var y = pos.y;
+    var z = pos.z;
+  
+    var r = sqrt(x * x + y* y + z * z);
+    var \u03B8 = acos(z / r);
+    var \u03C6 = atan(y / x);
+  
+  
+    var x1 = r * sin(\u03B8) * cos(\u03C6);
+    var y1 = r * sin(\u03B8) * sin(\u03C6);
+    var z1 = r * cos(\u03B8);
+  
+    return vec3<f32>(x1, y1, z1);
+    return vec3<f32>(xProj(\u03B8, \u03C6),
+                      yProj(\u03B8),
+                      zProj(\u03B8, \u03C6)
+    );
+  }
+  
+//billboarding - https://glmatrix.net/docs/mat4.js.html#line1224
+
+
   @vertex
   fn main_vertex(@location(0) inPosition: vec4<f32>, @location(1) quadCorner: vec2<f32>,
   @location(2) pos2: vec4<f32>, @location(3) color: vec3<f32>,
   ) -> VSOut {
   var vsOut: VSOut;  
 
-  
+  var asdf = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix;
 
-  vsOut.position = cam.projectionMatrix * cam.viewMatrix * cam.modelMatrix *
- 
+  var eyeMagnitude = pow(determinant(cam.viewMatrix), 100);
+  vsOut.position =
+   asdf *
+   vec4<f32>(inPosition.xy + (.01 / eyeMagnitude) * quadCorner - vec2<f32>(2.), inPosition.z + 2., 1.);
   
-   vec4<f32>(inPosition.xy + (.01) * quadCorner, inPosition.z, 1.);
-  
+   //vsOut.position = vec4<f32>(toSpherical(vsOut.position.xyz), 1.);
   vsOut.localPosition = quadCorner;
   vsOut.globalPosition = inPosition.xy;
-
   
   vsOut.color = color;
   return vsOut;
   }
 
-
-
   const size = 4.0;
-
   const b = 0.3;//size of the smoothed border
 
-fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
-if (x < edge0) {return 0.;}
+  fn smoothStep(edge0:f32, edge1:f32, x:f32) -> f32 {
+    if (x < edge0) {return 0.;}
 
-if (x >= edge1) {return 1.;}
+    if (x >= edge1) {return 1.;}
 
-let c = (x - edge0) / (edge1 - edge0);
+    let c = (x - edge0) / (edge1 - edge0);
 
-return c * c * (3 - 2 * c);
-}
+    return c * c * (3 - 2 * c);
+  }
 
   fn mainImage(globalPosition: vec2<f32>, iResolution: vec2<f32>
     ) -> vec4<f32> {
@@ -9862,7 +9515,7 @@ var color=smoothStep(-b, b, abs(dist- (ringr+stuff+offset)/conv));
     color, 
     color, 
     color, 
-   1.,
+    .5,
     );
 };
 
@@ -9890,9 +9543,7 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   
   lightDir = lightDir / distance; // = normalize(lightDir);
   distance = distance * distance; //This line may be optimised using Inverse square root
-  
-  
-  
+
   var normal = vec3(-1.,-1., 0.);
   
   //Intensity of the diffuse light. Saturate to keep within the 0-1 range.
@@ -9906,20 +9557,12 @@ fn main(uv: vec2<f32>) -> vec4<f32> {
   //This is typically slower than calculating the actual reflection vector
   // due to the normalize function's reciprocal square root
   var H = normalize(lightDir + viewDir);
-  
-  //Intensity of the specular light
   var NdotH = dot(normal, H);
   intensity = pow(saturate(NdotH), .1);
-  
-  //Sum up the specular light factoring
   let col = vec4<f32>(intensity * lightSpecularColor * lightSpecularPower / distance, .1);
   let m = textureSample(myTexture, mySampler, localPosition);
-  //sin(camera.time)
-  //
-
   var c = mainImage(localPosition, vec2<f32>(1000., 1000.));
-  //color.rgb +
-  return vec4<f32>(color.rgb * c.rgb, 1.);
+  return vec4<f32>(color.rgb, 1.);
   }
   `
       } }));

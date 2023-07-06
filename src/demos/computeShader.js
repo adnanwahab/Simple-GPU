@@ -122,6 +122,8 @@ fn simulationStep(id: u32) {
 
   let prev = Place(places[previous].x, places[previous].y, places[previous].z, places[previous].w);
 
+  personBuffer[id].w += .01;
+
   let interpolated = mix(places[previous].zw, places[next].zw  ,personBuffer[id].w);
 
   if (${DRAW_ON_SPHERE}) {   

@@ -1,16 +1,7 @@
 "use strict";
 (() => {
   // src/demos/shader2.js
-  var abc = `
-    struct Uniforms {
-        mouse: vec2<f32>,
-      }
-      @group(0) @binding(0) var<storage,read_write> vectorFieldBuffer: array<vec4<f32>>;
-      @group(0) @binding(1) var<storage,read_write> buffer3: array<vec4<f32>>;
-      @group(0) @binding(2) var<uniform> uniforms: Uniforms;
-      @group(0) @binding(3) var<storage,read_write> velocity: array<vec3<f32>>;
-       @group(0) @binding(4) var myTexture: texture_2d<f32>;
-       @group(0) @binding(5) var<storage,read_write> buffer1: array<vec4<f32>>;
+  var noise = `
 
     fn taylorInvSqrt( r: vec4<f32>) -> vec4<f32>
     {
@@ -159,84 +150,26 @@
     }
     
     
-    fn mrand() ->  f32{
-      return (sfrand() * 2.) - 1.;
-    }
+  //   fn mrand() ->  f32{
+  //     return (sfrand() * 2.) - 1.;
+  //   }
   
-    fn shift (x:f32)->f32 {
-      return (x + 1.) / 2.;
-    }
+  //   fn shift (x:f32)->f32 {
+  //     return (x + 1.) / 2.;
+  //   }
   
-    fn hash (pos: vec3<f32>) -> i32 {
-      //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
+  //   fn hash (pos: vec3<f32>) -> i32 {
+  //     //let idx = shift(pos.x) * 10 + shift(pos.y) * 1000 + shift(pos.z) * 100000;
   
     
-      var x = (pos.x + 1) / 2.;
-      var y = ((pos.y  * -1) + 1) / 2.;
-      //if y > .99999 { y = 0; }
-      //if x < -.5 { x = 0; }
+  //     var x = (pos.x + 1) / 2.;
+  //     var y = ((pos.y  * -1) + 1) / 2.;
+  //     //if y > .99999 { y = 0; }
+  //     //if x < -.5 { x = 0; }
   
-  //    return i32(0);
-      return i32(x * 10 + y * 100);
-      //return vec2<i32>(i32(x * 10), i32(y * 100));
-    }
-    
-      @compute @workgroup_size(256)
-      fn main(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>) {
-        let index: u32 = GlobalInvocationID.x;
-  
-        var pos = buffer3[index];
-  
-        var abc = buffer3[index];
-  
-        //buffer3[index] = pos + .1 * vec4<f32>(curlNoise(vectorFieldBuffer[hash(pos.xyz)].xyz), 1.);
-        var idx = hash(pos.xyz);
-        var stuff =  textureLoad(myTexture,
-          vec2<i32>(idx),
-           //vec3<i32>(i32(shift(pos.x) * 100), i32(shift(pos.y * 255), i32(pos.z * 255)), 
-           0
-           );
-    
-        
-     
-        //vectorFieldBuffer[index] = .1 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-    
-    
-      var vf = vectorFieldBuffer[idx].xyz;
-      //vectorFieldBuffer[idx].xyz;
-      // if (velocity[index].y < .01) {
-      //   velocity[index] = vec3<f32>(-10.);
-      // }
-        velocity[index] *= .01;
-        velocity[index] +=  (.1 * buffer3[index] - buffer1[index]).xyz;
-       
-        buffer3[index] = vec4<f32>(pos.xyz + .1 * velocity[index],  1);
-    
-        //wind turbulenve
-        //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-        
-        //sphere
-        //buffer3[index] = vec4<f32>(curlNoise(buffer3[index].xyz), 1);
-  
-        //buffer3[index] = buffer3[index] + .01 * vec4<f32>(curlNoise(vectorFieldBuffer[index].xyz), 1);
-        ;
-        //buffer3[index].x < 0. ||
-        var mouse = (uniforms.mouse - .5) * 2.;
-        // if (distance(buffer3[index].xy, uniforms.mouse) < .4) {
-        //   velocity[index].x = velocity[index].y;
-        //   velocity[index].y = -velocity[index].x;
-        //   buffer3[index].z += .1;
-  
-        //   //velocity[index]*= .001;
-        // }
-        // velocity[index] =  .01 * vec4<f32>(curlNoise(buffer3[index].xyz), 1).xyz;
-     
-        
-        var p = buffer3[index];
-        if (p.x > 2.){ velocity[index].x = -1000;}
-        if (p.y > 1.) {velocity[index].y = -1000  ;}
-  
-  //      if (p.y > 1.) { velocity[index] = curlNoise(p.xyz);  ;}
-        // if (p.z > 1.){ buffer3[index].z = -1;}
-      }`;
+  // //    return i32(0);
+  //     return i32(x * 10 + y * 100);
+  //     //return vec2<i32>(i32(x * 10), i32(y * 100));
+  //   }
+  `;
 })();
