@@ -2,7 +2,6 @@
 import simpleWebgpuInit from '../lib/main';
 import { mat4, vec3 } from 'https://unpkg.com/gl-matrix@3.1.0/esm/index.js';
 //import simplegpu from "https://cdn.jsdelivr.net/npm/simple-gpu/+esm";
-
 const position = ([
   //float4 position, float4 color, float2 uv,
   [1, -1, 1, 1,   ],

@@ -4,6 +4,7 @@
 //use import to import all 100 and 
 //use unique {demo_title}.html for SEO which imports JS file and module from CDN for reusable Template
 //add demo.js to each index.html that just calls the imported DEMO
+////https://github.com/mikolalysenko/sdf-physics/blob/main/src/demos/sdf-physics.ts
 
 
 
