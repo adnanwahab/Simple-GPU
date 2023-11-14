@@ -7,6 +7,12 @@
 ////https://github.com/mikolalysenko/sdf-physics/blob/main/src/demos/sdf-physics.ts
 
 
+//import prefixSum from "./prefix-sum";
+import matrixMultiply from "./matrix-multiply";
+
+import particleLife from "./particle-life";
+
+import sprites from "./sprites";
 
 import basic from "./basic";
 
@@ -62,14 +68,15 @@ let demoTitles = [
   'texturedCube', 'postProcessing', 'instancedCube',  
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
-  'deferredRendering'
+  'deferredRendering', 'particle-life', 'sprites',
+  'matrix-multiply'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering
+deferredRendering, particleLife, sprites, matrixMultiply
 ]
 
   document.querySelectorAll('input').forEach(e => {

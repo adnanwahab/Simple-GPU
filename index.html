@@ -13,7 +13,17 @@
     <script type="module" src="./demos/index.js">
     </script>
   </head>
-  <body class=" bg-gray-600">
+  <style>
+    html {
+  /* background-color: rgb(17 24 39); */
+  background-color: #101827 !important;
+}
+input {
+  color: #333;
+}
+
+    </style>
+  <body class="text-white">
 
     <div id="swap" class="mt-4">
       <form name="stuff">
@@ -84,7 +94,7 @@
 </label>
 
 
-<label class="inline-flex items-center">
+<!-- <label class="inline-flex items-center">
   postProcessing
   <input
   type="radio"
@@ -92,7 +102,7 @@
   name="postProcessing"
   value="postProcessing"
 />
-</label>
+</label> -->
 
 <label class="inline-flex items-center">
   instancedCube
@@ -124,7 +134,7 @@
 />
 </label>
 
-<label class="inline-flex items-center">
+<!-- <label class="inline-flex items-center">
   points
   <input
   type="radio"
@@ -132,8 +142,8 @@
   name="points"
   value="points"
 />
-</label>
-<label class="inline-flex items-center">
+</label> -->
+<!-- <label class="inline-flex items-center">
   lines
   <input
   type="radio"
@@ -141,7 +151,7 @@
   name="lines"
   value="lines"
 />
-</label>
+</label> -->
 
 <label class="inline-flex items-center">
   computeBoids
@@ -162,7 +172,7 @@
 />
 </label>
 
-<label class="inline-flex items-center">
+<!-- <label class="inline-flex items-center">
   particles
   <input
   type="radio"
@@ -170,9 +180,49 @@
   name="particles"
   value="particles"
 />
+</label> -->
+
+<label class="inline-flex items-center">
+  particle-life
+  <input
+  type="radio"
+  class="form-radio"
+  name="particle-life"
+  value="particle-life"
+/>
 </label>
 
 <label class="inline-flex items-center">
+  sprites
+  <input
+  type="radio"
+  class="form-radio"
+  name="sprites"
+  value="sprites"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  prefix sum
+  <input
+  type="radio"
+  class="form-radio"
+  name="prefix-sum"
+  value="prefix-sum"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  matrix multiply
+  <input
+  type="radio"
+  class="form-radio"
+  name="matrix-multiply"
+  value="matrix-multiply"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
   deferredRendering
   <input
   type="radio"
@@ -180,7 +230,7 @@
   name="deferredRendering"
   value="deferredRendering"
 />
-</label>
+</label> -->
         <!-- <label class="inline-flex items-center">
           texture
           <input
@@ -230,23 +280,23 @@
       </form>
       <!-- <canvas height="500" width="100"></canvas> -->
 
-      <div class=" text-white bg-purple-800 mt-96 m-auto">
-        <h1>declarative and stateless WebGPU</h1>
+      <div class="fixed bottom-0 text-white bg-purple-500 mt-96 m-auto p-5">
+        <h1 class="p-0 mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Declarative and Stateless WebGPU</h1>
         <p>
           Simple-Webgpu is a new functional abstraction for WebGPU.
           
-          using simple-webgpu is easier than writing raw webGPU code because you don't need to manage state or binding. 
+          using simple-webgpu is easier than writing native webGPU code because you don't need to manage state or binding. 
           it's also lighter and faster and has less overhead than many existing 3d frameworks. 
           and it has a functional data-driven style inspired by react.
           
           check out the sections below to learn more!</p>
-        <a class=" font-white" href="https://github.com/shelbernstein/Simple-webgpu/blob/main/readme.md">
+        <a class="font-white" href="https://github.com/adnanwahab/Simple-webgpu/blob/main/readme.md">
           Readme
         </a>
-        <a href="https://github.com/shelbernstein/Simple-webgpu/blob/main/API.md">
+        <a href="https://github.com/adnanwahab/Simple-webgpu/blob/main/API.md">
           API
         </a>
-        <a href="/https://github.com/shelbernstein/Simple-webgpu">
+        <a href="/https://github.com/adnanwahab/Simple-webgpu">
           GitHub
         </a>
       </div>

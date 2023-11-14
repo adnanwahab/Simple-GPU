@@ -81,7 +81,7 @@ async function basic () {
 let webgpu = await simpleWebgpuInit()
 let img = new Image();
 img.src = './data/webgpu.png'
-document.body.appendChild(img)
+//document.body.appendChild(img)
 
 await img.decode();
 //1/4, shader abstraction might get it to 1/10 or 1/5
