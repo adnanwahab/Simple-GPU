@@ -13,12 +13,10 @@
 <br />
 
 <div align="center">
-
-  [![NPM Version](https://img.shields.io/npm/v/simple-webgpu.svg?style=flat-square)](https://npmjs.org/package/simple-gpu)
-  [![Build Status](https://img.shields.io/travis/adnanwahab/simple-gpu.svg?style=flat-square)](https://travis-ci.org/regl-project/regl/)
+  [![NPM Version](https://img.shields.io/npm/v/simple-gpu.svg?style=flat-square)](https://npmjs.org/package/simple-gpu)
+  [![Build Status](https://img.shields.io/travis/adnanwahab/simple-gpu.svg?style=flat-square)](https://travis-ci.org/adnanwahab/simple-gpu/)
   [![Downloads](https://img.shields.io/npm/dm/simple-gpu.svg?style=flat-square)](https://npmjs.org/package/simple-gpu)
   [![Standard](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](https://standardjs.com)
-
 </div>
 
 <div align="center">
@@ -110,30 +108,30 @@ webgpu.frame(({time}) => {
 })
 ```
 
-See this example [live](http://simple-webgpu.com/)
+See this example [live](http://simple-gpu.com/)
 
-### [More examples](http://simple-webgpu.com/)
+### [More examples](http://simple-gpu.com/)
 
-Check out the [gallery](http://simple-webgpu.com/examples/). The source code of all the gallery examples can be found [here](https://github.com/adnanwahab/Simple-webgpu).
+Check out the [gallery](http://simple-gpu.com/examples/). The source code of all the gallery examples can be found [here](https://github.com/adnanwahab/Simple-gpu).
 
 ## Setup
 
-`simple-webgpu` has no dependencies, so setting it up is pretty easy.  There are 3 basic ways to do this:
+`simple-gpu` has no dependencies, so setting it up is pretty easy.  There are 3 basic ways to do this:
 
 ### Live editing
 
 just use observablehq.com and 
 
 ``` js
-require('simple-webgpu')
+require('simple-gpu')
 ```
 
 ### npm
 
-The easiest way to use `simple-webgpu` in a project is via [npm](http://npmjs.com).  Once you have node set up, you can install and use `simple-webgpu` in your project using the following command:
+The easiest way to use `simple-gpu` in a project is via [npm](http://npmjs.com).  Once you have node set up, you can install and use `simple-gpu` in your project using the following command:
 
 ```sh
-npm i -S simple-webgpu
+npm i -S simple-gpu
 ```
 
 For more info on how to use npm, [check out the official docs](https://docs.npmjs.com/).
@@ -142,14 +140,14 @@ If you are using npm, you may also want to try [`vite`](https://github.com/vitej
 
 #### Run time error checking and browserify
 
-By default if you compile `simple-webgpu` with `vite` then all error messages and run time checks are removed.  This is done to reduce the size of the final bundle.  If you are developing an application, you should run browserify using the `--debug` flag in order to enable error messages.  This will also generate source maps which make reading the source code of your application easier.
+By default if you compile `simple-gpu` with `vite` then all error messages and run time checks are removed.  This is done to reduce the size of the final bundle.  If you are developing an application, you should run browserify using the `--debug` flag in order to enable error messages.  This will also generate source maps which make reading the source code of your application easier.
 
 ### Standalone script tag
 
-You can also use `simple-webgpu` as a standalone script if you are really stubborn.  The most recent versions can be found in the `dist/` folder and is also available from [npm cdn](https://npmcdn.com) in both minified and unminified versions.
+You can also use `simple-gpu` as a standalone script if you are really stubborn.  The most recent versions can be found in the `dist/` folder and is also available from [npm cdn](https://npmcdn.com) in both minified and unminified versions.
 
-* *Unminified*: [https://npmcdn.com/regl/dist/regl.js](https://npmcdn.com/regl/dist/regl.js)
-* *Minified*: [https://npmcdn.com/regl/dist/regl.min.js](https://npmcdn.com/regl/dist/regl.min.js)
+* *Unminified*: [https://npmcdn.com/simple-gpu/dist/simple-gpu.js](https://npmcdn.com/simple-gpu/dist/simple-gpu.js)
+* *Minified*: [https://npmcdn.com/simple-gpu/dist/simple-gpu.min.js](https://npmcdn.com/simple-gpu/dist/simple-gpu.min.js)
 
 There are some difference when using `simple-gpu` in standalone.  Because script tags don't assume any sort of module system, the standalone scripts inject a global constructor function which is equivalent to the `module.exports` of `simple-gpu`:
 
@@ -187,27 +185,27 @@ For vanilla HTML in modern browsers, import D3 from jsDelivr:
 * **Minimalism** `simple-gpu` just wraps WebGPU.  It is not a game engine and doesn't have opinions about scene graphs or vector math libraries.   Any feature in WebGPU is accessible, including advanced extensions like TODO
 * **Stability** `simple-gpu` takes interface compatibility and semantic versioning seriously, making it well suited for long lived applications that must be supported for months or years down the road.  It also has no dependencies limiting exposure to risky or unplanned updates.
 
-### [Benchmarks](https://regl-project.github.io/regl/www/bench-results/bench-result-8ea4a7e806beed0b9732)
+### [Benchmarks](https://simple-gpu/benchmarks)
 
 In order to prevent performance regressions, `simple-gpu` is continuously
 benchmarked.  You can run benchmarks locally using `npm run bench` or
 These measurements were taken using our custom scripts `bench-history` and
-`bench-graph`. You can read more about them in [the development guide](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/DEVELOPING.md).
+`bench-graph`. You can read more about them in [the development guide](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/DEVELOPING.md).
 
 
-## [Help Wanted](https://github.com/adnanwahab/simple-gpu//issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+## [Help Wanted](https://github.com/adnanwahab/simple-gpu/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
-simple-gpu is still under active developement, and anyone willing to contribute is very much welcome to do so. Right now, what we need the most is for people to write examples and demos with the framework. This will allow us to find bugs and deficiencies in the API. We have a list of examples we would like to be implemented [here](https://github.com/adnanwahab/simple-webgpu/issues?q=is%3Aopen+is%3Aissue+label%3Aexample), but you are of course welcome to come up with your own examples. To add an example to our gallery of examples, [please send us a pull request!](https://github.com/adnanwahab/simple-webgpu/pulls)
+simple-gpu is still under active developement, and anyone willing to contribute is very much welcome to do so. Right now, what we need the most is for people to write examples and demos with the framework. This will allow us to find bugs and deficiencies in the API. We have a list of examples we would like to be implemented [here](https://github.com/adnanwahab/simple-gpu/issues?q=is%3Aopen+is%3Aissue+label%3Aexample), but you are of course welcome to come up with your own examples. To add an example to our gallery of examples, [please send us a pull request!](https://github.com/adnanwahab/simple-gpu/pulls)
 
 ## [API docs](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/API.md)
 
-`simple-gpu` has extensive API documentation.  You can browse the [docs online here](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/API.md).
+`simple-gpu` has extensive API documentation.  You can browse the [docs online here](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/API.md).
 
 ## [Development](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/DEVELOPING.md)
 
-The latest changes in `simple-gpu` can be found in the [CHANGELOG](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/CHANGES.md).
+The latest changes in `simple-gpu` can be found in the [CHANGELOG](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/CHANGES.md).
 
-[For info on how to build and test headless, see the contributing guide here](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/DEVELOPING.md)
+[For info on how to build and test headless, see the contributing guide here](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/DEVELOPING.md)
 
 ## [License](LICENSE)
 
