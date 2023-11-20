@@ -221,6 +221,25 @@ input {
   value="matrix-multiply"
 />
 </label>
+<label class="inline-flex items-center">
+  ray tracer
+  <input
+  type="radio"
+  class="form-radio"
+  name="raytracer"
+  value="raytracer"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  SDF-GPU-physics
+  <input
+  type="radio"
+  class="form-radio"
+  name="sdf-physics"
+  value="sdf-physics"
+/>
+</label>
 
 <!-- <label class="inline-flex items-center">
   deferredRendering
@@ -280,7 +299,7 @@ input {
       </form>
       <!-- <canvas height="500" width="100"></canvas> -->
 
-      <div class="fixed bottom-0 text-white bg-purple-500 mt-96 m-auto p-5">
+      <div class="fixed bottom-0 text-white mt-96 m-auto p-5 border-t border-gray-500 text-gray-400">
         <h1 class="p-0 mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Declarative and Stateless WebGPU</h1>
         <p>
           Simple-Webgpu is a new functional abstraction for WebGPU.
@@ -290,15 +309,17 @@ input {
           and it has a functional data-driven style inspired by react.
           
           check out the sections below to learn more!</p>
-        <a class="font-white" href="https://github.com/adnanwahab/Simple-webgpu/blob/main/readme.md">
+        <div class="flex space-x-4">
+        <a class="font-white underline" href="https://github.com/adnanwahab/Simple-webgpu/blob/main/readme.md">
           Readme
         </a>
-        <a href="https://github.com/adnanwahab/Simple-webgpu/blob/main/API.md">
+        <a class="underline" href="https://github.com/adnanwahab/Simple-webgpu/blob/main/API.md">
           API
         </a>
-        <a href="/https://github.com/adnanwahab/Simple-webgpu">
+        <a class="underline" href="/https://github.com/adnanwahab/Simple-webgpu">
           GitHub
         </a>
+        </div>
       </div>
     </div>
    

@@ -8,6 +8,15 @@
 
 
 //import prefixSum from "./prefix-sum";
+//import raytracer from "./raytracer";
+//drawing application - photoshop-
+//infinity camera - 3d editor
+//anything industrial designer needs to do
+//retthinking all of it with generative in mind
+
+import sdfPhysics from './sdf-physics'
+import raytracer from './raytracer-demo'
+
 import matrixMultiply from "./matrix-multiply";
 
 import particleLife from "./particle-life";
@@ -69,14 +78,14 @@ let demoTitles = [
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
-  'matrix-multiply'
+  'matrix-multiply', 'raytracer', 'sdf-physics'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering, particleLife, sprites, matrixMultiply
+deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics
 ]
 
   document.querySelectorAll('input').forEach(e => {
@@ -108,4 +117,4 @@ function select(name) {
 }
 
 
-select(window.location.hash.slice(1) || document.querySelector(':checked').value)
+select('particle-life' || window.location.hash.slice(1) || document.querySelector(':checked').value)
