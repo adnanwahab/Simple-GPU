@@ -1,18 +1,5 @@
 
-//TODO put directly in HTML 
-//use import map to import the demos
-//use import to import all 100 and 
-//use unique {demo_title}.html for SEO which imports JS file and module from CDN for reusable Template
-//add demo.js to each index.html that just calls the imported DEMO
-////https://github.com/mikolalysenko/sdf-physics/blob/main/src/demos/sdf-physics.ts
-
-
-//import prefixSum from "./prefix-sum";
-//import raytracer from "./raytracer";
-//drawing application - photoshop-
-//infinity camera - 3d editor
-//anything industrial designer needs to do
-//retthinking all of it with generative in mind
+import prefixSums from './prefix-sum'
 
 import sdfPhysics from './sdf-physics'
 import raytracer from './raytracer-demo'
@@ -54,8 +41,6 @@ import particles from "./particles";
 
 import deferredRendering from "./deferredRendering";
 
-
-
 let defaultDemo = 'physics';
 let data = {}
 
@@ -78,14 +63,15 @@ let demoTitles = [
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
-  'matrix-multiply', 'raytracer', 'sdf-physics'
+  'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
 points, lines, computeBoids, shadowCasting, particles,
 
-deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics
+deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
+prefixSums
 ]
 
   document.querySelectorAll('input').forEach(e => {

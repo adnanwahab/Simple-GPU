@@ -3,10 +3,11 @@
   "version": "0.41.0",
   "description": "simple-gpu is a fast functional WebGPU framework.",
   "scripts": {
-    "start": "node server.js",
+    "start": "vite",
     "dev": "vite",
-    "build": "rm -rf dist && rollup -c ",
-    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test"
+    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "files": [
     "dist/**/*.js",
