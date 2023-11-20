@@ -3,7 +3,7 @@
   🦒
 </div>
 <h1 align="center">
-  simple-gpu
+  Simple-Gpu
 </h1>
 
 <div align="center">
