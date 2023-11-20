@@ -80,7 +80,7 @@ async function basic () {
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 let webgpu = await simpleWebgpuInit()
 let img = new Image();
-img.src = './data/webgpu.png'
+img.src = './data/test.png'
 //document.body.appendChild(img)
 
 await img.decode();

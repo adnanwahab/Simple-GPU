@@ -14,28 +14,24 @@
 
 <div align="center">
 
-  [![NPM Version](https://img.shields.io/npm/v/simple-webgpu.svg?style=flat-square)](https://npmjs.org/package/regl)
-  [![Build Status](https://img.shields.io/travis/regl-project/simple-webgpu.svg?style=flat-square)](https://travis-ci.org/regl-project/regl/)
-  [![Downloads](https://img.shields.io/npm/dm/simple-webgpu.svg?style=flat-square)](https://npmjs.org/package/regl)
+  [![NPM Version](https://img.shields.io/npm/v/simple-webgpu.svg?style=flat-square)](https://npmjs.org/package/simple-gpu)
+  [![Build Status](https://img.shields.io/travis/adnanwahab/simple-gpu.svg?style=flat-square)](https://travis-ci.org/regl-project/regl/)
+  [![Downloads](https://img.shields.io/npm/dm/simple-gpu.svg?style=flat-square)](https://npmjs.org/package/simple-gpu)
   [![Standard](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](https://standardjs.com)
 
 </div>
 
 <div align="center">
   <h3>
-    <a href="https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/API.md">
+    <a href="https://github.com/adnanwahab/simple-gpu/blob/gh-pages/API.md">
       Docs
     </a>
     <span> | </span>
-    <a href="https://gitter.im/mikolalysenko/regl">
-      Regl Chat
-    </a>
-    <span> | </span>
-    <a href="https://npmcdn.com/simple-webgpu/dist/simple-webgpu.js">
+    <a href="https://npmcdn.com/simple-gpu/dist/simple-gpu.js">
       Download
     </a>
     <span> | </span>
-    <a href="https://npmcdn.com/simple-webgpu/dist/simple-webgpu.min.js">
+    <a href="https://npmcdn.com/simple-gpu/dist/simple-gpu.min.js">
       Minified
     </a>
   </h3>
@@ -43,17 +39,17 @@
 
 ## Example
 
-`simple-webgpu` simplifies WebGPU programming by removing as much shared state as it can get away with.  To do this, it replaces the WebGPU API with two fundamental abstractions, **resources** and **commands**:
+`simple-gpu` simplifies WebGPU programming by removing as much shared state as it can get away with.  To do this, it replaces the WebGPU API with two fundamental abstractions, **resources** and **commands**:
 
 * A **resource** is a handle to a GPU resident object, like a texture, FBO or buffer.
 * A **command** is a complete representation of the WebGPU state required to perform some draw call.
 
-To define a command you specify a mixture of static and dynamic data for the object. Once this is done, `simple-webgpu` takes this description and then compiles it into optimized JavaScript code.  For example, here is a simple `simple-webgpu` program to draw a triangle:
+To define a command you specify a mixture of static and dynamic data for the object. Once this is done, `simple-gpu` takes this description and then compiles it into optimized JavaScript code.  For example, here is a simple `simple-gpu` program to draw a triangle:
 
 ```js
 // importing the webgpu module creates a full screen canvas and
 // WebGPU context, and then uses this context to initialize a new webgpu instance
-const webgpu = require('simple-webgpu')
+const webgpu = require('simple-gpu')
 
 // Calling simplewebgpu.init() creates a new partially evaluated draw command
 const drawTriangle = webgpu.init({
@@ -155,7 +151,7 @@ You can also use `simple-webgpu` as a standalone script if you are really stubbo
 * *Unminified*: [https://npmcdn.com/regl/dist/regl.js](https://npmcdn.com/regl/dist/regl.js)
 * *Minified*: [https://npmcdn.com/regl/dist/regl.min.js](https://npmcdn.com/regl/dist/regl.min.js)
 
-There are some difference when using `simple-webgpu` in standalone.  Because script tags don't assume any sort of module system, the standalone scripts inject a global constructor function which is equivalent to the `module.exports` of `simple-webgpu`:
+There are some difference when using `simple-gpu` in standalone.  Because script tags don't assume any sort of module system, the standalone scripts inject a global constructor function which is equivalent to the `module.exports` of `simple-gpu`:
 
 
 For vanilla HTML in modern browsers, import D3 from jsDelivr:
@@ -181,51 +177,35 @@ For vanilla HTML in modern browsers, import D3 from jsDelivr:
   </script>
 </html>
 ```
-## Why `simple-webgpu`
+## Why `simple-gpu`
 
-`simple-webgpu` just removes shared state from WebGPU.  You can do anything you could in regular WebGPU with little overhead and way less debugging. `regl` emphasizes the following values:
+`simple-gpu` just removes shared state and boilerplate from WebGPU. 
+ You can do anything you could in regular WebGPU with little overhead and way less debugging. `simple-gpu` emphasizes the following values:
 
 * **Simplicity** The interface is concise and emphasizes separation of concerns.  Removing shared state helps localize the effects and interactions of code, making it easier to reason about.
-* **Correctness** `simple-webgpu` has more than 30,000 unit tests and above 95% code coverage. In development mode, `regl` performs strong validation and sanity checks on all input data to help you catch errors faster.
-* **Performance**  `simple-webgpu` uses  partial evaluation to remove almost all overhead.
-* **Minimalism** `simple-webgpu` just wraps WebGPU.  It is not a game engine and doesn't have opinions about scene graphs or vector math libraries.   Any feature in WebGPU is accessible, including advanced extensions like TODO
-* **Stability** `simple-webgpu` takes interface compatibility and semantic versioning seriously, making it well suited for long lived applications that must be supported for months or years down the road.  It also has no dependencies limiting exposure to risky or unplanned updates.
+* **Performance**  `simple-gpu` uses  partial evaluation to remove almost all overhead.
+* **Minimalism** `simple-gpu` just wraps WebGPU.  It is not a game engine and doesn't have opinions about scene graphs or vector math libraries.   Any feature in WebGPU is accessible, including advanced extensions like TODO
+* **Stability** `simple-gpu` takes interface compatibility and semantic versioning seriously, making it well suited for long lived applications that must be supported for months or years down the road.  It also has no dependencies limiting exposure to risky or unplanned updates.
 
 ### [Benchmarks](https://regl-project.github.io/regl/www/bench-results/bench-result-8ea4a7e806beed0b9732)
 
-In order to prevent performance regressions, `simple-webgpu` is continuously
+In order to prevent performance regressions, `simple-gpu` is continuously
 benchmarked.  You can run benchmarks locally using `npm run bench` or
-[check them out
-online](https://regl-project.github.io/regl/www/bench.html). The
-[results for the last few days can be found
-here.](https://regl-project.github.io/regl/www/bench-results/bench-result-db4b76e25bd8ed6d7ed9)
-
-TODO
-
 These measurements were taken using our custom scripts `bench-history` and
 `bench-graph`. You can read more about them in [the development guide](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/DEVELOPING.md).
 
-### Projects using simple-webgpu
 
-The following is an incomplete list of projects using regl:
+## [Help Wanted](https://github.com/adnanwahab/simple-gpu//issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
-* [nyc-map](http://nyc-map.org)
-* [visualize mind magic](https://visualize-mind-magic.org)
+simple-gpu is still under active developement, and anyone willing to contribute is very much welcome to do so. Right now, what we need the most is for people to write examples and demos with the framework. This will allow us to find bugs and deficiencies in the API. We have a list of examples we would like to be implemented [here](https://github.com/adnanwahab/simple-webgpu/issues?q=is%3Aopen+is%3Aissue+label%3Aexample), but you are of course welcome to come up with your own examples. To add an example to our gallery of examples, [please send us a pull request!](https://github.com/adnanwahab/simple-webgpu/pulls)
 
+## [API docs](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/API.md)
 
-If you have a project using regl that isn't on this list that you would like to see added, [please send us a pull request!](https://github.com/adnanwahab/simple-webgpu/edit/main/README.md)
+`simple-gpu` has extensive API documentation.  You can browse the [docs online here](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/API.md).
 
-## [Help Wanted](https://github.com/adnanwahab/simple-webgpu//issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+## [Development](https://github.com/adnanwahab/simple-gpu/blob/gh-pages/DEVELOPING.md)
 
-simple-webgpu is still under active developement, and anyone willing to contribute is very much welcome to do so. Right now, what we need the most is for people to write examples and demos with the framework. This will allow us to find bugs and deficiencies in the API. We have a list of examples we would like to be implemented [here](https://github.com/adnanwahab/simple-webgpu/issues?q=is%3Aopen+is%3Aissue+label%3Aexample), but you are of course welcome to come up with your own examples. To add an example to our gallery of examples, [please send us a pull request!](https://github.com/adnanwahab/simple-webgpu/pulls)
-
-## [API docs](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/API.md)
-
-`simple-webgpu` has extensive API documentation.  You can browse the [docs online here](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/API.md).
-
-## [Development](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/DEVELOPING.md)
-
-The latest changes in `simple-webgpu` can be found in the [CHANGELOG](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/CHANGES.md).
+The latest changes in `simple-gpu` can be found in the [CHANGELOG](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/CHANGES.md).
 
 [For info on how to build and test headless, see the contributing guide here](https://github.com/adnanwahab/simple-webgpu/blob/gh-pages/DEVELOPING.md)
 
@@ -236,7 +216,7 @@ All code (c) 2022 BSD License
 #### Asset licenses
 TODO
 
-Many examples use creative commons or public domain artwork for illustrative purposes.  These assets are not included in any of the redistributable packages of regl.
+Many examples use creative commons or public domain artwork for illustrative purposes.  These assets are not included in any of the redistributable packages of simple-gpu.
 
 * Peppers test image for cube comparison is public domain
 * Test video (doggie-chromakey.ogv) by [L0ckergn0me](https://archive.org/details/L0ckergn0me-PixieGreenScreen446), used under creative commons license
@@ -247,25 +227,6 @@ Many examples use creative commons or public domain artwork for illustrative pur
 * Audio track for `audio.js` example is "[Bamboo Cactus](https://archive.org/details/8bp033)" by [8bitpeoples](https://archive.org/details/8bitpeoples).  CC BY-ND-NC 1.0 license
 * Matcap (spheretexture.jpg) by [Ben Simonds](https://bensimonds.com/2010/07/30/matcap-generator/). CC 3 license.
 * Normal map (normaltexture.jpg) by [rubberduck](http://opengameart.org/node/21219). CC0 license.
-
-#### Regl Homage
-Simple-webgpu is an intentional homage of my favorite WebGL module,  [click here to view the original](https://github.com/regl-project/regl), and also d3. My goal with this module was to keep the essence of regl and make it possible to translate the demos with minimal transpilation of just shader code, while keeping the data-fallthrough elements of d3.
-
-
-# Platinum Sp onsors
-<img src="./data/ZOOX_LOGO.png" align="left" hspace="10" vspace="6">
-
-# TODO
-
-
-- [ ] use vite locally and rollup to build bundle 
-- [ ] import module in jupyter notebook (double users, plotly)
-- [ ] autocreate bindgroups
-- [ ] implement regl api
-- [ ] implement reactive constructors in javascript (maybe, vue)
-- [ ] use d3 in demos to set pattern for uniforms for now
-- [ ] https://bost.ocks.org/mike/join - uniforms/attributes
-
 
 # Development 
 when developing locally, use npm run dev - change the module import from
