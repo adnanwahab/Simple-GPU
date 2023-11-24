@@ -14,4 +14,4 @@ RUN npm install
 EXPOSE 80
 
 # Run your app when the container launches
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
