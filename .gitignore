@@ -2,7 +2,6 @@ node_modules
 .DS_Store
 dist-ssr
 *.local
-package-lock.json
 
 # Local Netlify folder
 .netlify
