@@ -23,8 +23,8 @@ RUN apt-get update -qq && \
     apt-get install -y build-essential pkg-config python-is-python3
 
 # Install node modules
-COPY --link package-lock.json package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --production=false
+COPY --link package.json ./
+RUN yarn install 
 
 # Copy application code
 COPY --link . .
