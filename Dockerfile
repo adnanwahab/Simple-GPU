@@ -56,7 +56,7 @@ WORKDIR /usr/src/app
 #Copy package.json and package-lock.json (or yarn.lock)
 #COPY package.json ./
 
-COPY package.json /usr/src/app/
+#COPY package.json /usr/src/app/
 
 RUN ls -la
 
