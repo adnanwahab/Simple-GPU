@@ -5,7 +5,9 @@ FROM node:14
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json (or yarn.lock)
-COPY package*.json ./
+COPY package.json ./
+
+RUN ls -la
 
 # Install project dependencies
 RUN npm install
