@@ -33,7 +33,7 @@ COPY --link . .
 RUN yarn run build
 
 # Remove development dependencies
-RUN yarn install --production=true
+RUN yarn install 
 
 
 # Final stage for app image
@@ -44,4 +44,4 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 80
-CMD [ "/usr/sbin/nginx", "-g", "daemon off;" ]
+CMD [ "npm", "run", "start" ]
