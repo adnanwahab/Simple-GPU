@@ -7,7 +7,8 @@
     "start": "vite",
     "dev": "vite",
     "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "surge dist"
   },
   "files": [
     "dist/**/*.js",
