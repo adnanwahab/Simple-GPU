@@ -3,10 +3,10 @@
   "version": "0.41.0",
   "description": "simple-gpu is a fast functional WebGPU framework.",
   "scripts": {
+    "build": "vite build",
     "start": "vite",
     "dev": "vite",
     "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
-    "build": "vite build",
     "preview": "vite preview"
   },
   "files": [
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "wgpu-matrix": "^2.5.1",
-    "vite": "^2.6.13"
+    "vite": "^5.0.0"
   },
   "keywords": [
     "webgpu",
