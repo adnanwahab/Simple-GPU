@@ -41,6 +41,15 @@ import particles from "./particles";
 
 import deferredRendering from "./deferredRendering";
 
+import kodiak from "./kodiak";
+import kodiak2 from "./kodiak2";
+import gpuLines from "./gpu-lines";
+import gpuSort from './gpu-sort'
+import neuralRenderingRadianceField from './nerf'
+import threejsDemo from './threejs'
+import zed from './zed2i'
+
+
 let defaultDemo = 'physics';
 let data = {}
 
@@ -56,6 +65,8 @@ let draw = await init(options);
   //   requestAnimationFrame(test)
   // });
 }
+//https://playlist.downloader.is/
+//https://www.youtube.com/watch?v=cz7QHNvNFfA&list=PLPJVlVRVmhc4Z01fD57jbzycm9I6W054x
 
 let demoTitles = [
   'basic' , 'hexagon', 'cube',
@@ -63,15 +74,18 @@ let demoTitles = [
   'icosahedron', 'fractalCube', 'points', 'lines',
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
-  'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums'
+  'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',
+  'kodiak', 'kodiak2', 'gpu-lines', 'gpu-sort', 'Neural-Rendering-Radiance-Field',
+  'Threejs', 'zed-2i'
 ]
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
-points, lines, computeBoids, shadowCasting, particles,
+points, lines, computeBoids, shadowCasting, particles, 
 
 deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
-prefixSums
+prefixSums, kodiak, kodiak2, gpuLines, gpuSort, neuralRenderingRadianceField,
+threejsDemo, zed
 ]
 
   document.querySelectorAll('input').forEach(e => {
