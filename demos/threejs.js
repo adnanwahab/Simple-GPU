@@ -168,7 +168,6 @@ const debugObject = {}
 
 // Canvas
 const canvas = document.createElement('canvas')
-document.body.appendChild(canvas)
 
 // Scene
 const scene = new THREE.Scene()
@@ -181,7 +180,7 @@ const textureLoader = new THREE.TextureLoader()
 
 // Draco loader
 const dracoLoader = new DRACOLoader()
-dracoLoader.setDecoderPath('draco/')
+dracoLoader.setDecoderPath('/')
 
 // GLTF loader
 const gltfLoader = new GLTFLoader()
@@ -190,7 +189,8 @@ gltfLoader.setDRACOLoader(dracoLoader)
 /**
  * Textures
  */
-const bakedTexture = textureLoader.load('baked.jpg')
+//const bakedTexture = textureLoader.load('./public/baked.jpg')
+const bakedTexture = textureLoader.load('/baked.jpg')
 bakedTexture.flipY = false
 bakedTexture.colorSpace = THREE.SRGBColorSpace
 
@@ -221,26 +221,62 @@ const portalLightMaterial = new THREE.ShaderMaterial({
 /**
  * Model
  */
-gltfLoader.load(
-    '/portal.glb',
-    (gltf) =>
-    {
-        console.log(gltf)
-        scene.add(gltf.scene)
+try {
+    gltfLoader.load(
+        './portal.glb',
+        (gltf) =>
+        {
+            console.log('GLTF',gltf)
+            scene.add(gltf.scene)
 
-        // Get each object
-        const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
-        const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
-        const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
-        const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
+            // Get each object
+            const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
+            const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
+            const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
+            const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
 
-        // Apply materials
-        bakedMesh.material = bakedMaterial
-        portalLightMesh.material = portalLightMaterial
-        poleLightAMesh.material = poleLightMaterial
-        poleLightBMesh.material = poleLightMaterial
-    }
-)
+            // Apply materials
+            bakedMesh.material = bakedMaterial
+            portalLightMesh.material = portalLightMaterial
+            poleLightAMesh.material = poleLightMaterial
+            poleLightBMesh.material = poleLightMaterial
+        }, () => {
+            console.log('progress!!')
+
+        }, (err) => {
+            
+            console.log('An error occurred while loading the GLTF model:', err)
+        }
+    )
+} catch (error) {
+    console.error('An unexpected error occurred:', error)
+}
+
+// gltfLoader.load(
+//     '/portal.glb',
+//     (gltf) =>
+//     {
+//         console.log('GLTF',gltf)
+//         scene.add(gltf.scene)
+
+//         // Get each object
+//         const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
+//         const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
+//         const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
+//         const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
+
+//         // Apply materials
+//         bakedMesh.material = bakedMaterial
+//         portalLightMesh.material = portalLightMaterial
+//         poleLightAMesh.material = poleLightMaterial
+//         poleLightBMesh.material = poleLightMaterial
+//     }, () => {
+//         console.log('progress')
+
+//     }, (err) => {
+//         console.log('err',err)
+//     }
+// )
 
 /**
  * Fireflies
@@ -346,34 +382,36 @@ const tick = () =>
 {
 
     if (! hasInit) {
+        document.body.appendChild(canvas)
         hasInit = true
-        const gui = new GUI({
-            width: 400
-        })
-        gui
-        .addColor(debugObject, 'clearColor')
-        .onChange(() =>
-        {
-            renderer.setClearColor(debugObject.clearColor)
-        })
+        // const gui = new GUI({
+        //     width: 400
+        // })
+//         gui
+//         .addColor(debugObject, 'clearColor')
+//         .onChange(() =>
+//         {
+//             renderer.setClearColor(debugObject.clearColor)
+//         })
     
-        gui.add(firefliesMaterial.uniforms.uSize, 'value').min(0).max(500).step(1).name('firefliesSize')
+//         gui.add(firefliesMaterial.uniforms.uSize, 'value').min(0).max(500).step(1).name('firefliesSize')
 
 
-    gui
-    .addColor(debugObject, 'portalColorStart')
-    .onChange(() =>
-    {
-        portalLightMaterial.uniforms.uColorStart.value.set(debugObject.portalColorStart)
-    })
+//     gui
+//     .addColor(debugObject, 'portalColorStart')
+//     .onChange(() =>
+//     {
+//         portalLightMaterial.uniforms.uColorStart.value.set(debugObject.portalColorStart)
+//     })
 
-gui
-    .addColor(debugObject, 'portalColorEnd')
-    .onChange(() =>
-    {
-        portalLightMaterial.uniforms.uColorEnd.value.set(debugObject.portalColorEnd)
-    })
+// gui
+//     .addColor(debugObject, 'portalColorEnd')
+//     .onChange(() =>
+//     {
+//         portalLightMaterial.uniforms.uColorEnd.value.set(debugObject.portalColorEnd)
+//     })
     
+//     }
     }
 
 

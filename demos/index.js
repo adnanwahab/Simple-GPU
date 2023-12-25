@@ -117,4 +117,4 @@ function select(name) {
 }
 
 
-select('particle-life' || window.location.hash.slice(1) || document.querySelector(':checked').value)
+select('Threejs' || window.location.hash.slice(1) || document.querySelector(':checked').value)
