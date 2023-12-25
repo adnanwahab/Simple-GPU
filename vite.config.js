@@ -1,4 +1,5 @@
 //import glsl from 'vite-plugin-glsl'
+import react from '@vitejs/plugin-react'
 
 export default {
     //root: './index.html',
@@ -18,6 +19,20 @@ export default {
     },
     plugins:
     [
+        react(),
+        {
+            name: 'load+transform-js-files-as-jsx',
+            async transform(code, id)
+            {
+                if (!id.match(/src\/.*\.js$/))
+                    return null
+
+                return transformWithEsbuild(code, id, {
+                    loader: 'jsx',
+                    jsx: 'automatic',
+                });
+            },
+        },
         //glsl()
     ]
 }

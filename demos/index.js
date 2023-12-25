@@ -30,8 +30,8 @@ import icosahedron from "./icosahedron";
 import hexagon from "./h3-hexagon";
 
 import fractalCube from "./fractal-cube";
-import lines from "./lines";
-import points from "./points";
+//import lines from "./lines";
+//import points from "./points";
 
 import computeBoids from "./computeBoids";
 
@@ -43,14 +43,13 @@ import deferredRendering from "./deferredRendering";
 
 import kodiak from "./kodiak";
 import kodiak2 from "./kodiak2";
-import gpuLines from "./gpu-lines";
+//import gpuLines from "./gpu-lines";
 import gpuSort from './gpu-sort'
 import neuralRenderingRadianceField from './nerf'
 import threejsDemo from './threejs'
 import zed from './zed2i'
 
 
-let defaultDemo = 'physics';
 let data = {}
 
 async function start_loop_static(options) {
@@ -71,7 +70,7 @@ let draw = await init(options);
 let demoTitles = [
   'basic' , 'hexagon', 'cube',
   'texturedCube', 'postProcessing', 'instancedCube',  
-  'icosahedron', 'fractalCube', 'points', 'lines',
+  'icosahedron', 'fractalCube', 
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
   'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',
@@ -81,11 +80,12 @@ let demoTitles = [
 
 let demos = [
 basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, fractalCube,
-points, lines, computeBoids, shadowCasting, particles, 
+computeBoids, shadowCasting, particles, 
 
 deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
-prefixSums, kodiak, kodiak2, gpuLines, gpuSort, neuralRenderingRadianceField,
-threejsDemo, zed
+prefixSums, kodiak, kodiak2,  gpuSort, neuralRenderingRadianceField,
+threejsDemo, zed,
+//gpuLines,
 ]
 
   document.querySelectorAll('input').forEach(e => {
@@ -116,5 +116,6 @@ function select(name) {
   demo()
 }
 
-
-select('Threejs' || window.location.hash.slice(1) || document.querySelector(':checked').value)
+let defaultDemo = 'Threejs'
+defaultDemo = 'kodiak'
+select(defaultDemo || window.location.hash.slice(1) || document.querySelector(':checked').value)
