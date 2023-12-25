@@ -48,9 +48,11 @@ import gpuSort from './gpu-sort'
 import neuralRenderingRadianceField from './nerf'
 import threejsDemo from './threejs'
 import zed from './zed2i'
-
+//make sure the right radio button is selected
+//
 
 let data = {}
+
 
 async function start_loop_static(options) {
   options.data = options.data || data; //extend 
@@ -74,8 +76,12 @@ let demoTitles = [
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
   'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',
-  'kodiak', 'kodiak2', 'gpu-lines', 'gpu-sort', 'Neural-Rendering-Radiance-Field',
-  'Threejs', 'zed-2i'
+  //'kodiak2', 'gpu-lines', 
+  
+  
+  'gpu-sort', 'Neural-Rendering-Radiance-Field',
+  'Threejs', 'kodiak', 
+  //'zed-2i'
 ]
 
 let demos = [
@@ -83,8 +89,9 @@ basic, hexagon, cube, texturedCube, postProcessing, instancedCube, icosahedron, 
 computeBoids, shadowCasting, particles, 
 
 deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
-prefixSums, kodiak, kodiak2,  gpuSort, neuralRenderingRadianceField,
-threejsDemo, zed,
+prefixSums, gpuSort, neuralRenderingRadianceField,
+threejsDemo, kodiak,
+// zed,
 //gpuLines,
 ]
 
@@ -114,6 +121,7 @@ function select(name) {
 
   window.location.hash = name;
   demo()
+  document.querySelector(`input[value="${window.location.hash.slice(1)}"]`).checked = true
 }
 
 let defaultDemo = 'Threejs'

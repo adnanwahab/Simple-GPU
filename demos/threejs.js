@@ -384,6 +384,7 @@ const tick = () =>
     if (! hasInit) {
         document.body.appendChild(canvas)
         hasInit = true
+        console.log('am init ', canvas)
         // const gui = new GUI({
         //     width: 400
         // })
@@ -429,6 +430,7 @@ const tick = () =>
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+    console.log("hii")
 }
 
 //tick()

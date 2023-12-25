@@ -2,7 +2,7 @@
 
 
 function main () {
-    console.log("spaghetti")
+    //console.log("spaghetti")
 }
 
 export default main

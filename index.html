@@ -22,19 +22,6 @@ input {
   color: #333;
 }
 
-html,
-body,
-#root
-{
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    /* background: LightSkyBlue; */
-}
-
 canvas {
   border: 1px dotted LightSkyBlue;
 }
@@ -268,14 +255,7 @@ canvas {
 />
 </label>
 
-<label> 
-argo - lidar visualizer 
-<input
-  type="radio"
-  class="form-radio"
-  name="kodiak"
-  value="kodiak"/>
-</label>
+
 
 
 <!-- <label> 
@@ -325,14 +305,24 @@ argo - lidar visualizer
       value="Threejs"/>
   </label>
 
+
   <label> 
+    argo - lidar visualizer 
+    <input
+      type="radio"
+      class="form-radio"
+      name="kodiak"
+      value="kodiak"/>
+    </label>
+
+  <!-- <label> 
     zed-2i 
     <input
       type="radio"
       class="form-radio"
       name="zed-2i"
       value="zed-2i"/>
-  </label>
+  </label> -->
 <!-- <label class="inline-flex items-center">
   deferredRendering
   <input
