@@ -5,6 +5,10 @@ import * as THREE from 'three';
 import * as d3 from 'd3'
 
 
+import {LASWorkerLoader} from '@loaders.gl/las';
+import App from './lidar.jsx'
+
+
 const CameraView = (props) => {
     const [getData, setData] = useState([])
 
@@ -187,8 +191,9 @@ function main() {
     console.log('hello kodiak')
     return root.render(<>
         <div className="">
-            <div>Hello Kodiak!</div>
-            <VideoSeekPlayer></VideoSeekPlayer>
+            <App></App>
+            {/* <div>Hello Kodiak!</div>
+            <VideoSeekPlayer></VideoSeekPlayer> */}
         </div>
         </>
     )

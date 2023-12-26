@@ -75,12 +75,10 @@ let demoTitles = [
   'icosahedron', 'fractalCube', 
   'computeBoids', 'shadowCasting', 'particles',
   'deferredRendering', 'particle-life', 'sprites',
-  'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',
-  //'kodiak2', 'gpu-lines', 
-  
-  
+  'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',  
   'gpu-sort', 'Neural-Rendering-Radiance-Field',
-  'Threejs', 'kodiak', 
+  'Threejs', 'kodiak',
+  //'gpu-lines',  
   //'zed-2i'
 ]
 
@@ -91,8 +89,9 @@ computeBoids, shadowCasting, particles,
 deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
 prefixSums, gpuSort, neuralRenderingRadianceField,
 threejsDemo, kodiak,
-// zed,
+
 //gpuLines,
+//zed,
 ]
 
   document.querySelectorAll('input').forEach(e => {
@@ -125,5 +124,5 @@ function select(name) {
 }
 
 let defaultDemo = 'Threejs'
-defaultDemo = 'kodiak'
+//defaultDemo = 'kodiak'
 select(defaultDemo || window.location.hash.slice(1) || document.querySelector(':checked').value)
