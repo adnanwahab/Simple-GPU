@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple-GPU - Fast, Functional, Graphics</title>
+    <script type="module" crossorigin src="/assets/index-SieAOsgk.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-0n0-j8ue.css">
+  </head>
+  <style>
+    html {
+  /* background-color: rgb(17 24 39); */
+  background-color: #101827 !important;
+}
+input {
+  color: #333;
+}
+
+    </style>
+  <body class="text-white">
+
+    <div id="swap" class="mt-4">
+      <form name="stuff">
+        <fieldset>
+      <div id="control-panel" class="mt-2">
+    <!-- TODO tesselate hexagons for h3 uniform zoom level for hexagonal binning for data texture usage for 16 million complaints  -->
+
+    <!-- <label class="inline-flex items-center">
+      resizeCanvas
+    <input
+      type="radio"
+      class="form-radio"
+      name="resizeCanvas"
+      value="resizeCanvas"
+      checked
+    />
+  </label> -->
+          <!-- <label class="inline-flex items-center">
+            hexagon
+            <input
+            type="radio"
+            class="form-radio"
+            name="hexagon"
+            value="hexagon"
+          />
+        </label> -->
+        <label class="inline-flex items-center">
+          basic
+          <input
+          type="radio"
+          class="form-radio"
+          name="basic"
+          value="basic"
+        />
+      </label>
+
+    <label class="inline-flex items-center">
+      cube
+    <input
+      type="radio"
+      class="form-radio"
+      name="cube"
+      value="cube"
+      checked
+    />
+  </label>
+
+  <label class="inline-flex items-center">
+    texturedCube
+  <input
+    type="radio"
+    class="form-radio"
+    name="texturedCube"
+    value="texturedCube"
+    checked
+  />
+</label>
+
+<label class="inline-flex items-center">
+  fractalCube
+<input
+  type="radio"
+  class="form-radio"
+  name="fractalCube"
+  value="fractalCube"
+  checked
+/>
+</label>
+
+
+<!-- <label class="inline-flex items-center">
+  postProcessing
+  <input
+  type="radio"
+  class="form-radio"
+  name="postProcessing"
+  value="postProcessing"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  instancedCube
+  <input
+  type="radio"
+  class="form-radio"
+  name="instancedCube"
+  value="instancedCube"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  icosahedron
+  <input
+  type="radio"
+  class="form-radio"
+  name="icosahedron"
+  value="icosahedron"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  hexagon
+  <input
+  type="radio"
+  class="form-radio"
+  name="hexagon"
+  value="hexagon"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  points
+  <input
+  type="radio"
+  class="form-radio"
+  name="points"
+  value="points"
+/>
+</label> -->
+<!-- <label class="inline-flex items-center">
+  lines
+  <input
+  type="radio"
+  class="form-radio"
+  name="lines"
+  value="lines"
+/>
+</label> -->
+<label class="inline-flex items-center">
+  prefix sums
+  <input
+  type="radio"
+  class="form-radio"
+  name="prefixSums"
+  value="prefixSums"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  computeBoids
+  <input
+  type="radio"
+  class="form-radio"
+  name="computeBoids"
+  value="computeBoids"
+/>
+</label>
+<label class="inline-flex items-center">
+  shadowCasting
+  <input
+  type="radio"
+  class="form-radio"
+  name="shadowCasting"
+  value="shadowCasting"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  particles
+  <input
+  type="radio"
+  class="form-radio"
+  name="particles"
+  value="particles"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  particle-life
+  <input
+  type="radio"
+  class="form-radio"
+  name="particle-life"
+  value="particle-life"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  sprites
+  <input
+  type="radio"
+  class="form-radio"
+  name="sprites"
+  value="sprites"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  prefix sum
+  <input
+  type="radio"
+  class="form-radio"
+  name="prefix-sum"
+  value="prefix-sum"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  matrix multiply
+  <input
+  type="radio"
+  class="form-radio"
+  name="matrix-multiply"
+  value="matrix-multiply"
+/>
+</label>
+<label class="inline-flex items-center">
+  ray tracer
+  <input
+  type="radio"
+  class="form-radio"
+  name="raytracer"
+  value="raytracer"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  SDF-GPU-physics
+  <input
+  type="radio"
+  class="form-radio"
+  name="sdf-physics"
+  value="sdf-physics"
+/>
+</label>
+
+<label> 
+kodiak
+<input
+  type="radio"
+  class="form-radio"
+  name="kodiak"
+  value="kodiak"/>
+</label>
+<label> 
+  kodiak2
+  <input
+    type="radio"
+    class="form-radio"
+    name="kodiak2"
+    value="kodiak2"/>
+  </label>
+
+
+  <label> 
+    gpu-lines
+    <input
+      type="radio"
+      class="form-radio"
+      name="gpu-lines"
+      value="gpu-lines"/>
+  </label>
+
+  <label> 
+    gpu-sort
+    <input
+      type="radio"
+      class="form-radio"
+      name="gpu-sort"
+      value="gpu-sort"/>
+  </label>
+
+
+  <label> 
+    Neural-Rendering-Radiance-Field
+    <input
+      type="radio"
+      class="form-radio"
+      name="Neural-Rendering-Radiance-Field"
+      value="Neural-Rendering-Radiance-Field"/>
+  </label>
+
+  <label> 
+    Threejs 
+    <input
+      type="radio"
+      class="form-radio"
+      name="Threejs"
+      value="Threejs"/>
+  </label>
+
+  <label> 
+    zed-2i 
+    <input
+      type="radio"
+      class="form-radio"
+      name="zed-2i"
+      value="zed-2i"/>
+  </label>
+<!-- <label class="inline-flex items-center">
+  deferredRendering
+  <input
+  type="radio"
+  class="form-radio"
+  name="deferredRendering"
+  value="deferredRendering"
+/>
+</label> -->
+        <!-- <label class="inline-flex items-center">
+          texture
+          <input
+          type="radio"
+          class="form-radio"
+          name="texture"
+          value="texture"
+          
+          />
+      </label> -->
+
+
+        <!-- <label class="inline-flex items-center">
+          texture
+          <input
+          type="radio"
+          class="form-radio"
+          name="texture"
+          value="texture"
+          
+          />
+      </label> -->
+
+    <!-- <label class="inline-flex items-center">
+    postProcessing
+    <input
+    type="radio"
+    class="form-radio"
+    name="postProcessing"
+    value="postProcessing"
+    />
+    </label> -->
+          <!-- <label class="inline-flex items-center">
+        line-primitives
+        <input
+        type="radio"
+        class="form-radio"
+        name="line-primitives"
+        value="line-primitives"
+        /> 
+       </label>  
+      -->
+
+      
+      </div>
+    </fieldset>
+      </form>
+      <!-- <canvas height="500" width="100"></canvas> -->
+
+      <div class="fixed bottom-0 text-white mt-96 m-auto p-5 border-t border-gray-500 text-gray-400">
+        <h1 class="p-0 mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Declarative and Stateless WebGPU</h1>
+        <p>
+          Simple-Webgpu is a new functional abstraction for WebGPU.
+          
+          using simple-webgpu is easier than writing native webGPU code because you don't need to manage state or binding. 
+          it's also lighter and faster and has less overhead than many existing 3d frameworks. 
+          and it has a functional data-driven style inspired by react.
+          
+          check out the sections below to learn more!</p>
+        <div class="flex space-x-4">
+        <a class="font-white underline" href="https://github.com/adnanwahab/Simple-gpu/blob/deploy/readme.md">
+          Readme
+        </a>
+        <a class="underline" href="https://github.com/adnanwahab/Simple-gpu/blob/deploy/API.md">
+          API
+        </a>
+        <a class="underline" href="https://github.com/adnanwahab/Simple-gpu">
+          GitHub
+        </a>
+        </div>
+      </div>
+    </div>
+   
+  </body>
+</html>

@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+dist-ssr
+*.local
+
+# Local Netlify folder
+.netlify
+.vercel
+*.jar
