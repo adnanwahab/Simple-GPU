@@ -1,11 +1,44 @@
 import ReactDOM from 'react-dom/client'
 const root = ReactDOM.createRoot(document.querySelector('#root'))
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState} from 'react';
 import * as THREE from 'three';
 import * as d3 from 'd3'
 
+
+const CameraView = (props) => {
+    const [getData, setData] = useState([])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            // Construct the URL with query parameters
+            const queryParams = new URLSearchParams({
+                'time': props.time,
+                'segment_id': 'segment_id'
+            });
+            let url = `http://localhost:3000/frameData?${queryParams}`;
+            url = `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/master/test_data/100.json`
+        
+            // Make a GET request
+            fetch(url)
+                .then(response => response.json())
+                .then(data => setData(Object.values(data)))
+                .catch(error => console.log('Error:', error));
+        };
+
+        // Call the fetchData function
+        fetchData();
+    }, [props.time]); 
+
+    let imgTags = getData.map((url, index) => {
+        return <img key={index} width={'90px'} height='90px' src={`data:image/jpeg;base64,${url}`}/>
+    })
+
+    return <>{imgTags}<div>wow cool</div></>
+}
+
 const ThreeComponent = (props) => {
     const canvasRef = useRef();
+    const [getPointCloud, setPointCloud] = useState(false)
 
 
     useEffect(() => {
@@ -15,23 +48,25 @@ const ThreeComponent = (props) => {
                 'time': props.time,
                 'segment_id': 'segment_id'
             });
-            const url = `http://localhost:3000/frameData?${queryParams}`;
+            let url = `http://localhost:3000/frameData?${queryParams}`;
+            url = `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/master/test_data/15X0DAhrkKITYGr5FzGLEHrq0DXBk3AR-315966479660007000.csv`
         
             // Make a GET request
-            fetch(url)
-                .then(response => response.json())
-                .then(data => console.log(data))
-                .catch(error => console.log('Error:', error));
+            const data = await d3.dsv(",", "https://raw.githubusercontent.com/adnanwahab/Simple-GPU/master/test_data/15X0DAhrkKITYGr5FzGLEHrq0DXBk3AR-315966479660007000.csv");
+            setPointCloud(data)
+            //console.log('pointcloud', data)
         };
 
         // Call the fetchData function
         fetchData();
     }, [props.time]); 
 
+
+
     useEffect(() => {
         // Initialize the scene, camera, and renderer
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 2000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight * .9);
         canvasRef.current.appendChild(renderer.domElement);
@@ -45,11 +80,28 @@ const ThreeComponent = (props) => {
         camera.position.z = 5;
         camera.position.y = -2.5;
         camera.position.x = 2.9;
-        canvasRef.current.style.opacity = .1
-
-
+        //canvasRef.current.style.opacity = .1
         // Animation loop
         const animate = () => {
+            if (getPointCloud) {
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                for (let i = 0; i < getPointCloud.length; i++) {
+                    let point = getPointCloud[i]
+                    const x = point.x
+                    const y = point.y
+                    const z = point.z
+                    vertices.push(x, y, z);
+                }
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+                // Material for Points
+                const material = new THREE.PointsMaterial({ color: 0xff0000, size: 100.5 });
+
+                // Creating the Point Cloud
+                const pointCloud = new THREE.Points(geometry, material);
+                scene.add(pointCloud);
+            }            
             requestAnimationFrame(animate);
 
             // Update your scene here
@@ -105,7 +157,7 @@ function VideoSeekPlayer(props) {
         // Set up the interval
         const interval = setInterval(() => {
             setTime(prevTime => prevTime + 1); // Increment the time
-        }, 1000); // 1000 milliseconds = 1 second
+        }, 5000); // 1000 milliseconds = 1 second
 
         // Clear the interval on unmount
         return () => {
@@ -116,7 +168,8 @@ function VideoSeekPlayer(props) {
 
 
     return <div className='mt-48'>
-                <ThreeComponent time={getTime}/>
+    <CameraView time={getTime}></CameraView>
+    <ThreeComponent time={getTime}/>
     <div><PlayButton></PlayButton></div>
     <div 
     onMouseMove = {(e) => handleOnMouseMove(e)}
@@ -135,8 +188,7 @@ function main() {
     return root.render(<>
         <div className="">
             <div>Hello Kodiak!</div>
-            <VideoSeekPlayer>
-             </VideoSeekPlayer>
+            <VideoSeekPlayer></VideoSeekPlayer>
         </div>
         </>
     )
