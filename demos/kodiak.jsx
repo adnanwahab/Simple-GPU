@@ -2,9 +2,31 @@ import ReactDOM from 'react-dom/client'
 const root = ReactDOM.createRoot(document.querySelector('#root'))
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
+import * as d3 from 'd3'
 
-const ThreeComponent = () => {
+const ThreeComponent = (props) => {
     const canvasRef = useRef();
+
+
+    useEffect(() => {
+        const fetchData = async () => {
+            // Construct the URL with query parameters
+            const queryParams = new URLSearchParams({
+                'time': props.time,
+                'segment_id': 'segment_id'
+            });
+            const url = `http://localhost:3000/frameData?${queryParams}`;
+        
+            // Make a GET request
+            fetch(url)
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.log('Error:', error));
+        };
+
+        // Call the fetchData function
+        fetchData();
+    }, [props.time]); 
 
     useEffect(() => {
         // Initialize the scene, camera, and renderer
@@ -93,8 +115,8 @@ function VideoSeekPlayer(props) {
 
 
 
-    return <div>
-    {props.children}
+    return <div className='mt-48'>
+                <ThreeComponent time={getTime}/>
     <div><PlayButton></PlayButton></div>
     <div 
     onMouseMove = {(e) => handleOnMouseMove(e)}
@@ -114,8 +136,7 @@ function main() {
         <div className="">
             <div>Hello Kodiak!</div>
             <VideoSeekPlayer>
-                <ThreeComponent />
-            </VideoSeekPlayer>
+             </VideoSeekPlayer>
         </div>
         </>
     )
