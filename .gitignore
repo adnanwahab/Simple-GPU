@@ -7,3 +7,6 @@ dist-ssr
 .netlify
 .vercel
 *.jar
+docs/.vitepress/dist
+
+docs/.vitepress/cache

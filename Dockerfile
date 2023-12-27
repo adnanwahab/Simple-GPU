@@ -1,27 +1,52 @@
-#Use an official Node runtime as a parent image
-FROM node:14
+# syntax = docker/dockerfile:1
 
-#Set the working directory in the container
-WORKDIR /usr/src/app
+# Adjust NODE_VERSION as desired
+ARG NODE_VERSION=21.4.0
+FROM node:${NODE_VERSION}-slim as base
 
-#Copy package.json and package-lock.json (or yarn.lock)
-#COPY package.json ./
+LABEL fly_launch_runtime="Vite"
 
-#COPY package.json /usr/src/app/
+# Vite app lives here
+WORKDIR /app
 
-RUN ls -la
+# Set production environment
+ENV NODE_ENV="production"
+ARG YARN_VERSION=1.22.19
+RUN npm install -g yarn@$YARN_VERSION --force
 
-#Install project dependencies
-RUN npm install
 
-# Bundle app source inside the Docker image
-COPY . .
+# Throw-away build stage to reduce size of final image
+FROM base as build
 
-# Build your app
-RUN npm run build
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
-# Your app runs on port 3000, so expose this port
-EXPOSE 3000
+# Install node modules
+COPY --link package-lock.json package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production=false
 
-# Define the command to run your app (adjust the start script according to your project)
-CMD ["npm", "run", "dev"]
+# Copy application code
+COPY --link . .
+
+# Build application
+RUN yarn run build
+
+# Remove development dependencies
+RUN yarn install --production=true
+
+
+# Final stage for app image
+FROM nginx
+
+# Install packages needed for deployment
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y dnsutils && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Copy built application
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Start the server by default, this can be overwritten at runtime
+EXPOSE 80
+CMD [ "/usr/sbin/nginx", "-g", "daemon off;" ]
