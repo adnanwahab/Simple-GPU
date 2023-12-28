@@ -11,7 +11,8 @@
     "deploy": "surge dist kodiak-awahab.surge.sh",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr src/entry-server.js",
-    "server": "node server"
+    "server": "node server",
+    "tesla": "surge dist tesla-awahab.surge.sh"
   },
   "files": [
     "dist/**/*.js",
