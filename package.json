@@ -81,5 +81,9 @@
         "dnsutils"
       ]
     }
-  }
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "author": ""
 }
