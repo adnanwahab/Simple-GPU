@@ -10,3 +10,6 @@ dist-ssr
 docs/.vitepress/dist
 
 docs/.vitepress/cache
+
+
+src/waymo-open-dataset-tutorial.ipynb
