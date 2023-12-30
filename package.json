@@ -8,11 +8,13 @@
     "dev": "vite",
     "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
     "preview": "vite preview",
-    "deploy": "surge dist kodiak-awahab.surge.sh",
+    "deploy": "npm run build && surge dist kodiak-awahab.surge.sh",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr src/entry-server.js",
     "server": "node server",
-    "tesla": "surge dist tesla-awahab.surge.sh"
+    "tesla": "npm run build && surge dist tesla-awahab.surge.sh",
+    "simple-gpu": "npm run build && surge dist simple-gpu.surge.sh"
+
   },
   "files": [
     "dist/**/*.js",
