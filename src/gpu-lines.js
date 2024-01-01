@@ -1,15 +1,175 @@
 // //https://observablehq.com/@rreusser/strange-attractors-on-the-gpu-part-2
 
 // //https://observablehq.com/@kylebarron/geoarrow-and-geoparquet-in-deck-gl
+let currentColumn = 0
 
 
+
+let selectedAttractor = {"deriv":"alpha * x * (1.0 - y) - beta * z,\n      -gamma * y * (1.0 - x * x),\n      mu * x","parameters":{"alpha":3,"beta":2.2,"gamma":1,"mu":1.51},"dt":0.02,"initializationOrigin":[1,1,0],"transform":{"0":2.4492935397342132e-17,"1":0,"2":-0.4000000059604645,"3":0,"4":0,"5":0.4000000059604645,"6":0,"7":0,"8":0.4000000059604645,"9":0,"10":2.4492935397342132e-17,"11":0,"12":0,"13":-0.30000001192092896,"14":0,"15":1},"tex":["\\alpha x (1 - y) - \\beta z","-y (1 - x^2)","\\mu x"],"references":[{"url":"https://arxiv.org/abs/1311.6128","title":"A 3D Strange Attractor with a Distinctive Silhouette. The Butterfly Effect Revisited","authors":["S. Bouali"],"deets":"(2013)."}]}
+let userAttractorParameters = {
+  alpha: 3.0,
+  beta: 2.2,
+  gamma: 1,
+  mu: 1.51,
+}
+
+
+const regl = createREGLLatest({
+  //canvas,
+  //extensions: ['ANGLE_instanced_arrays']
+  attributes: {
+    antialias: true,
+    preserveDrawingBuffer: true
+  },
+  extensions: [
+    'OES_standard_derivatives',
+    'ANGLE_instanced_arrays',
+    'OES_texture_float'
+  ],
+  optionalExtensions: ['OES_vertex_array_object']
+});
+function normalizeConfig(opts) {
+  const normalized = Object.assign(
+    {},
+    {
+      pixelRatio: devicePixelRatio,
+      attributes: {},
+      extensions: [],
+      optionalExtensions: [],
+      profile: false
+    },
+    opts || {}
+  );
+  delete normalized.width;
+  delete normalized.height;
+  return normalized;
+}
+
+const config = normalizeConfig({});
+
+let state = (() => {
+  const fbo = regl.framebuffer({
+    depthStencil: false,
+    //height: config.particleCount,
+    height: 1024,
+    //width: config.stepCount,
+    width: 10,
+    colorType: 'float',
+    colorFormat: 'rgba'
+  });
+
+  // Clean up resources when Observable reevaluates this cell
+  //invalidation.then(() => fbo.destroy());
+
+  return fbo;
+})()
+
+let tmpState = (() => {
+  const fbo = regl.framebuffer({
+    depthStencil: false,
+    //height: config.particleCount,
+    height: 1024,
+    width: 1,
+    colorType: 'float',
+    colorFormat: 'rgba'
+  });
+  //invalidation.then(() => fbo.destroy());
+  return fbo;
+})();
+
+
+let parsedAttractorShader = { 
+  params: {
+    alpha: 3.0,
+    beta: 2.2,
+    gamma: 1,
+    mu: 1.51
+  },
+  uniforms: {
+    alpha: 3.0,
+    beta: 2.2,
+    gamma: 1,
+    mu: 1.51
+  },
+  glsl: `uniform float alpha;
+  uniform float beta;
+  uniform float gamma;
+  uniform float mu;
+  vec3 derivative (float x, float y, float z, float t) {
+    return vec3(
+      alpha * x * (1.0 - y) - beta * z,
+      -gamma * y * (1.0 - x * x),
+      mu * x
+    );
+  }`
+}
+import bunny from "https://cdn.skypack.dev/bunny@1.0.1"
+import normals from "https://cdn.skypack.dev/angle-normals@1.0.0"
 import createREGLLatest from 'https://cdn.skypack.dev/regl@2.1.0?min'
-//import reglLines from 'https://unpkg.com/regl-gpu-lines@2.2.0/dist/regl-gpu-lines.js'
-//import reglLines from './reglLines'
-//import reglLines from ''
-import reglLines from 'https://cdn.skypack.dev/regl-gpu-lines';
+import reglLines from 'regl-gpu-lines';
+//import {createReglCamera} from './createReglCamera';
+import createReglCamera from "https://cdn.skypack.dev/regl-camera@2.1.1"
+//const canvas = document.createElement("canvas");
+//document.body.appendChild(canvas)
 
-import {createReglCamera} from './createReglCamera';
+
+
+let camera = createReglCamera(regl, {
+  element: regl._gl.canvas,
+  center: [0, 3.5, 0],
+  theta: (3.0 * Math.PI) / 4.0,
+  phi: Math.PI / 6.0,
+  distance: 20.0,
+  damping: 0,
+  noScroll: true,
+  renderOnDirty: true
+})
+
+let viewport = {
+  width: innerWidth * .7,
+  height: innerHeight * .7,
+  pixelRatio: devicePixelRatio
+}
+
+let drawBunny = regl({
+  frag: `
+    precision mediump float;
+    varying vec3 vnormal;
+    void main () {
+      gl_FragColor = vec4(vnormal * 0.75 + 0.25, 1.0);
+    }`,
+  vert: `
+    precision mediump float;
+    uniform mat4 projection, view;
+    attribute vec3 position, normal;
+    varying vec3 vnormal;
+    void main () {
+      vnormal = normal;
+      gl_Position = projection * view * vec4(position, 1.0);
+    }`,
+  attributes: {
+    position: bunny.positions,
+    normal: normals(bunny.cells, bunny.positions)
+  },
+  elements: bunny.cells
+})
+
+// let regl = createREGLLatest(this, {
+//   canvas: canvas,
+//   width: viewport.width,
+//   height: viewport.height,
+//   pixelRatio: viewport.pixelRatio,
+//   attributes: {
+//     antialias: ~contextOpts.indexOf('Antialiasing'),
+//     preserveDrawingBuffer: true
+//   },
+//   extensions: [
+//     'OES_standard_derivatives',
+//     'ANGLE_instanced_arrays',
+//     'OES_texture_float'
+//   ],
+//   optionalExtensions: ['OES_vertex_array_object']
+// })
 
 let contextOpts = [
     'Antialiasing'
@@ -36,60 +196,8 @@ let lineData = {
     miterLimit: 2,
   }
 
-// const config = {
-//     particleCount: 4096,
-//     stepCount: 2000
-// }
-
-const canvas = document.createElement("canvas");
-document.body.appendChild(canvas)
-
-function normalizeConfig(opts) {
-    const normalized = Object.assign(
-      {},
-      {
-        pixelRatio: devicePixelRatio,
-        attributes: {},
-        extensions: [],
-        optionalExtensions: [],
-        profile: false
-      },
-      opts || {}
-    );
-    delete normalized.width;
-    delete normalized.height;
-    return normalized;
-  }
-
-const config = normalizeConfig({});
-
-//const regl = createREGLLatest({ canvas, ...JSON.parse(JSON.stringify(config)) });
-
-let viewport = {
-    width: innerWidth * .7,
-    height: innerHeight * .7,
-    pixelRatio: devicePixelRatio
-}
 
 
-let regl = createREGLLatest(this, {
-    canvas: canvas,
-    width: viewport.width,
-    height: viewport.height,
-    pixelRatio: viewport.pixelRatio,
-    attributes: {
-      antialias: ~contextOpts.indexOf('Antialiasing'),
-      preserveDrawingBuffer: true
-    },
-    extensions: [
-      'OES_standard_derivatives',
-      'ANGLE_instanced_arrays',
-      'OES_texture_float'
-    ],
-    optionalExtensions: ['OES_vertex_array_object']
-})
-//console.log(regl)
-  
 
 
 const positions = (() => {
@@ -106,6 +214,14 @@ const positions = (() => {
     return positions;
   })();
 
+  let capOrientation = (() => {
+    let orientation = [];
+    const { particleCount } = config;
+    for (let j = 0; j < particleCount; j++) {
+      orientation.push(reglLines.CAP_START, reglLines.CAP_END);
+    }
+    return orientation;
+  })();
 
   const endpointPositions = (() => {
     let positions = [];
@@ -126,6 +242,16 @@ const positions = (() => {
 
   let position = regl.buffer(positions);
   let vertexAttributes = { position }
+
+  let endpointAttributes = (() => {
+    let position = regl.buffer(endpointPositions);
+    let orientation = regl.buffer(new Uint8Array(capOrientation));
+    // invalidation.then(() => {
+    //   position.destroy();
+    //   orientation.destroy();
+    // });
+    return { position, orientation };
+  })()
 
 
 //   let lineData = {
@@ -188,46 +314,9 @@ function reglCanvas(currentCanvas, opts) {
     }
   
     return canvas;
-  }
-let shader = `
-#pragma param: alpha = 3.0
-#pragma param: beta = 2.20
-#pragma param: gamma = 1.0
-#pragma param: mu = 1.510
-
-vec3 derivative (float x, float y, float z, float t) {
-  return vec3(
-    alpha * x * (1.0 - y) - beta * z,
-    -gamma * y * (1.0 - x * x),
-    mu * x
-  );
 }
-`
 
-let actions = ['Simulate']
-function main() {
-      console.log('does this work')
-      mainDrawLoop = (() => {
-        //actions;
-        initializeState;
-        const simulate = ~actions.simulateOpts.indexOf('Simulate');
-        camera.taint();
-        let frame = regl.frame(({ tick }) => {
-          try {
-            renderFrame({ simulate, tick });
-          } catch (e) {
-            console.error(e);
-            frame && frame.cancel();
-            frame = null;
-          }
-        });
-        // invalidation.then(() => {
-        //   frame && frame.cancel();
-        //   frame = null;
-        // });
-      })
-}
-//console.log(regl)
+
 let drawLines = reglLines(regl, {
     vert: `
       precision highp float;
@@ -357,7 +446,7 @@ let drawLineShadows = reglLines(regl, {
   })
 
 
-  copyStateColumn = regl({
+  let copyStateColumn = regl({
     vert: `
       precision mediump float;
       attribute vec2 xy;
@@ -390,11 +479,117 @@ let drawLineShadows = reglLines(regl, {
     count: 3
   })
 
-  
-//new stuff
-let t = 0
+const integrate = regl({
+  vert: `
+    precision highp float;
+    attribute vec2 xy;
+    varying vec2 srcTexCoord;
+    uniform float srcTexCoordU;
+    void main () {
+      // Map clip coords ([-1, 1] x [-1, 1]) to texture coords
+      // ([0, 1] x [0, 1]) and store in a varying to be used
+      // in the fragment shader:
+      srcTexCoord = vec2(srcTexCoordU, 0.5 * xy.y + 0.5);
+      gl_Position = vec4(xy, 0, 1);
+    }`,
+  frag: `
+    precision highp float;
+    uniform sampler2D srcTex;
+    uniform float _dt, _t;
+    varying vec2 srcTexCoord;
+
+    ${parsedAttractorShader.glsl}
+
+    vec3 _deriv (vec3 p, float t) {
+      // Unpack, for convenience
+      return derivative(p.x, p.y, p.z, t);
+    }
+
+    void main () {
+      vec3 p = texture2D(srcTex, srcTexCoord).xyz;
+
+      // Runge-Kutta 4th order integration
+      vec3 k1 = _deriv(p, _t);
+      vec3 k2 = _deriv(p + (0.5 * _dt) * k1, _t + 0.5 * _dt);
+      vec3 k3 = _deriv(p + (0.5 * _dt) * k2, _t + 0.5 * _dt);
+      vec3 k4 = _deriv(p + _dt * k3, _t + _dt);
+
+      // Evaluate the derivative there and use for a whole step:
+      gl_FragColor = vec4(p + (_dt / 6.0) * (k1 + k4 + 2.0 * (k2 + k3)), 1);
+
+      // If the particle diverges off to infinity, place it back near the origin
+      if (dot(gl_FragColor.xyz, gl_FragColor.xyz) > 1e6) {
+        gl_FragColor.xyz *= 0.0001;
+      }
+    }`,
+  attributes: {
+    // A single big triangle which covers the viewport, [-1, 1] x [-1, 1],
+    // and draws to all texels
+    xy: [[-4, -4], [0, 4], [4, -4]]
+  },
+  uniforms: {
+    _dt: regl.prop('dt'),
+    _t: regl.prop('t'),
+    srcTex: regl.prop('src'),
+    srcTexCoordU: (ctx, props) => (props.srcColumn + 0.5) / config.stepCount,
+    ...parsedAttractorShader.uniforms
+  },
+  framebuffer: regl.prop('dst'),
+  count: 3
+})
+
+let customLineConfig = regl({
+  uniforms: {
+    color1: regl.prop('color1'),
+    color2: regl.prop('color2'),
+    borderColor: regl.prop('borderColor'),
+    src: regl.prop('src'),
+    squareCap: (ctx, props) => props.cap === 'square',
+    fade: regl.prop('fade'),
+    width: (ctx, props) => props.width * ctx.pixelRatio,
+    borderWidth: (ctx, props) => [
+      2.0 * props.borderWidth * ctx.pixelRatio + 0.75,
+      2.0 * props.borderWidth * ctx.pixelRatio - 0.75
+    ],
+    antialiasThreshold: (ctx, props) =>
+      1.0 - 2.0 / (ctx.pixelRatio * props.width),
+    pixelRatio: regl.context('pixelRatio'),
+    transform: regl.prop('transform'),
+    texOffset: regl.prop('texOffset'),
+    particleCount: regl.prop('particleCount'),
+    colorBy: regl.prop('colorBy'),
+    shading: regl.prop('shading')
+  },
+  blend: {
+    enable: !~contextOpts.indexOf('Antialiasing'),
+    func: {
+      srcRGB: 'src alpha',
+      srcAlpha: 1,
+      dstRGB: 'one minus src alpha',
+      dstAlpha: 1
+    },
+    equation: {
+      rgb: 'add',
+      alpha: 'add'
+    }
+  },
+  depth: {
+    enable: regl.prop('depth')
+  }
+})
+
+let drawLinesVAO = (() => {
+  const vao = drawLines.vao({
+    vertexAttributes,
+    endpointAttributes
+  });
+  return vao;
+})()
+
+let t = 0;
 function renderFrame({ simulate = false, dTheta = 0, tick = 0 } = {}) {
     if (dTheta) camera.params.dTheta = dTheta;
+    console.log('rendering a frame')
     camera(({ dirty }) => {
       if (!simulate && !dirty) return;
   
@@ -446,17 +641,17 @@ function renderFrame({ simulate = false, dTheta = 0, tick = 0 } = {}) {
         texOffset
       };
   
-      if (displayParams.shadow && camera.state.eye[1] > -0.5) {
-        const shadowColor = [1, 1, 1].fill(1 - displayParams.shadow).concat(1);
-        customLineConfig(
-          {
-            ...lines,
-            depth: false,
-            color1: shadowColor
-          },
-          () => drawLineShadows({ ...lineData, vao: shadowLinesVAO })
-        );
-      }
+      // if (displayParams.shadow && camera.state.eye[1] > -0.5) {
+      //   const shadowColor = [1, 1, 1].fill(1 - displayParams.shadow).concat(1);
+      //   customLineConfig(
+      //     {
+      //       ...lines,
+      //       depth: false,
+      //       color1: shadowColor
+      //     },
+      //     () => drawLineShadows({ ...lineData, vao: shadowLinesVAO })
+      //   );
+      // }
   
       //if (~displayParams.opts.indexOf('Axes'))
       //  drawAxes({ transform: selectedAttractor.transform });
@@ -467,13 +662,69 @@ function renderFrame({ simulate = false, dTheta = 0, tick = 0 } = {}) {
   
       if (true) drawFancyAxes();
     });
+}
+
+let actions = ['Simulate']
+let mainDrawLoop
+function hexRgbToFloat (hex) {
+  let match
+  if ((match = hex.match(/#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/))) {
+    return [parseInt(match[1], 16) / 255, parseInt(match[2], 16) / 255, parseInt(match[3], 16) / 255]
+  } else if ((match = hex.match(/#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])/))) {
+    return [parseInt(match[1], 16) / 15, parseInt(match[2], 16) / 15, parseInt(match[3], 16) / 15]
   }
+  return [0, 0, 0]
+}
+let displayParams =  {
+  width: 10,
+  fade: 0.25,
+  borderOpacity: 0.8,
+  borderWidth: 0.5,
+  shading: 0.1,
+  shadow: 0.07,
+  colorBy: "radius",
+  color1: "#1c51a6",
+  color2: "#8de2a7",
+  borderColor: "#492727",
+  opts: ["Axes"],
+}
+let lineParams =  {
+  join: "bevel",
+  cap: "round",
+  capResolution: 5,
+  joinResolution: 3,
+  miterLimit: 2
+}
 
+function main() {
+      document.body.innerHTML += 'make this work'
+      console.log('does this work?')
+      // mainDrawLoop = (() => {
+      //   console.log('it should  work')
+      //   const simulate = ~actions.simulateOpts.indexOf('Simulate');
+      //   camera.taint();
+      //   let frame = regl.frame(({ tick }) => {
+      //     try {
+      //       renderFrame({ simulate, tick });
+      //     } catch (e) {
+      //       console.error(e);
+      //       frame && frame.cancel();
+      //       frame = null;
+      //     }
+      //   });
+      // })
+  //const simulate = ~actions.simulateOpts.indexOf('Simulate');
+  const simulate = true
+  document.querySelector('#root').appendChild(regl._gl.canvas)
+  regl.frame(() => {
+    //console.log('this is a frame')
+    camera(function (context) {
+      console.log('this should render', context)
+      regl.clear({ color: [0, 0.1, 0.26, 1] });
+      drawBunny();
+      //renderFrame({ simulate, tick: context.tick });
+    });
+  })
+}
 
-
-
-// export default main
-// function main() {
-//     console.log('hmm')
-// }
 export default main

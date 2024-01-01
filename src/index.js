@@ -43,13 +43,13 @@ import deferredRendering from "./deferredRendering";
 
 import kodiak from "./kodiak";
 import kodiak2 from "./kodiak2";
-//import gpuLines from "./gpu-lines";
 import gpuSort from './gpu-sort'
 import neuralRenderingRadianceField from './nerf'
 import threejsDemo from './threejs'
 import zed from './zed2i'
 //make sure the right radio button is selected
-//
+import gpuLines from "./gpu-lines";
+
 
 let data = {}
 
@@ -78,7 +78,7 @@ let demoTitles = [
   'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',  
   'gpu-sort', 'Neural-Rendering-Radiance-Field',
   'Threejs', 'kodiak',
-  //'gpu-lines',  
+  'gpu-lines',  
   //'zed-2i'
 ]
 
@@ -89,8 +89,7 @@ computeBoids, shadowCasting, particles,
 deferredRendering, particleLife, sprites, matrixMultiply, raytracer, sdfPhysics,
 prefixSums, gpuSort, neuralRenderingRadianceField,
 threejsDemo, kodiak,
-
-//gpuLines,
+gpuLines,
 //zed,
 ]
 
@@ -124,5 +123,5 @@ function select(name) {
 }
 
 let defaultDemo = 'Threejs'
-//defaultDemo = 'kodiak'
+defaultDemo = 'gpu-lines'
 select(defaultDemo || window.location.hash.slice(1) || document.querySelector(':checked').value)

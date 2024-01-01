@@ -14,7 +14,6 @@
     "server": "node server",
     "tesla": "npm run build && surge dist tesla-awahab.surge.sh",
     "simple-gpu": "npm run build && surge dist simple-gpu.surge.sh"
-
   },
   "files": [
     "dist/**/*.js",
@@ -56,6 +55,7 @@
     "lil-gui": "^0.19.0",
     "react": "18.2",
     "react-dom": "18.2",
+    "regl-gpu-lines": "^2.4.1",
     "three": "^0.158.0"
   },
   "keywords": [
