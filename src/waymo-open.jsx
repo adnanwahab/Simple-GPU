@@ -306,10 +306,6 @@ window.addEventListener('resize', () =>
     firefliesMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
 })
 
-/**
- * Camera
- */
-// Base camera
 const camera = new THREE.PerspectiveCamera(45, sizes.width / sizes.height, 0.1, 100)
 camera.position.x = 4
 camera.position.y = 2
@@ -324,7 +320,7 @@ controls.enableDamping = true
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
+    canvas,
     antialias: true
 })
 renderer.setSize(sizes.width, sizes.height)
