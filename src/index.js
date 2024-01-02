@@ -50,6 +50,8 @@ import zed from './zed2i'
 //make sure the right radio button is selected
 import gpuLines from "./gpu-lines";
 
+import waymo from './waymo-open'
+
 
 let data = {}
 
@@ -78,7 +80,8 @@ let demoTitles = [
   'matrix-multiply', 'raytracer', 'sdf-physics', 'prefixSums',  
   'gpu-sort', 'Neural-Rendering-Radiance-Field',
   'Threejs', 'kodiak',
-  'gpu-lines',  
+  'gpu-lines', 
+  'waymo-open' 
   //'zed-2i'
 ]
 
@@ -91,6 +94,7 @@ prefixSums, gpuSort, neuralRenderingRadianceField,
 threejsDemo, kodiak,
 gpuLines,
 //zed,
+waymo
 ]
 
   document.querySelectorAll('input').forEach(e => {
@@ -123,5 +127,6 @@ function select(name) {
 }
 
 let defaultDemo = 'Threejs'
-defaultDemo = 'gpu-lines'
+//defaultDemo = 'gpu-lines'
+defaultDemo = 'waymo-open'
 select(defaultDemo || window.location.hash.slice(1) || document.querySelector(':checked').value)

@@ -1,8 +1,8 @@
 // //https://observablehq.com/@rreusser/strange-attractors-on-the-gpu-part-2
-
+//https://github.com/rreusser/regl-gpu-lines/tree/main
 // //https://observablehq.com/@kylebarron/geoarrow-and-geoparquet-in-deck-gl
 let currentColumn = 0
-
+import { mat4, mat3, vec4, quat, vec3 } from 'gl-matrix'
 
 
 let selectedAttractor = {"deriv":"alpha * x * (1.0 - y) - beta * z,\n      -gamma * y * (1.0 - x * x),\n      mu * x","parameters":{"alpha":3,"beta":2.2,"gamma":1,"mu":1.51},"dt":0.02,"initializationOrigin":[1,1,0],"transform":{"0":2.4492935397342132e-17,"1":0,"2":-0.4000000059604645,"3":0,"4":0,"5":0.4000000059604645,"6":0,"7":0,"8":0.4000000059604645,"9":0,"10":2.4492935397342132e-17,"11":0,"12":0,"13":-0.30000001192092896,"14":0,"15":1},"tex":["\\alpha x (1 - y) - \\beta z","-y (1 - x^2)","\\mu x"],"references":[{"url":"https://arxiv.org/abs/1311.6128","title":"A 3D Strange Attractor with a Distinctive Silhouette. The Butterfly Effect Revisited","authors":["S. Bouali"],"deets":"(2013)."}]}
@@ -587,6 +587,156 @@ let drawLinesVAO = (() => {
 })()
 
 let t = 0;
+let drawFancyAxes = (() => {
+  const boxVertices = regl.buffer(
+    [0, 1, 2].map(() => [
+      [-1, -1, -1],
+      [1, -1, -1],
+      [1, 1, -1],
+      [-1, 1, -1],
+      [-1, -1, 1],
+      [1, -1, 1],
+      [1, 1, 1],
+      [-1, 1, 1]
+    ])
+  );
+  const boxFaceNormal = regl.buffer(
+    [0, 1, 2].map(i =>
+      [...Array(8).keys()].map(() =>
+        [0, 1, 2].map(j => (i === (5 - j) % 3 ? 1 : 0))
+      )
+    )
+  );
+  const boxFaceTangent = regl.buffer(
+    [0, 1, 2].map(i =>
+      [...Array(8).keys()].map(() =>
+        [0, 1, 2].map(j => (i === (3 - j) % 3 ? 1 : 0))
+      )
+    )
+  );
+  const boxFaceBitangent = regl.buffer(
+    [0, 1, 2].map(i =>
+      [...Array(8).keys()].map(() =>
+        [0, 1, 2].map(j => (i === (4 - j) % 3 ? 1 : 0))
+      )
+    )
+  );
+  // prettier-ignore
+  const boxFaceElements = regl.elements([
+    [0, 1, 2],
+    [0, 2, 3],
+    [6, 4, 7],
+    [6, 5, 4],
+    
+    [0, 4, 5].map(i => i + 8),
+    [0, 5, 1].map(i => i + 8),
+    [2, 7, 3].map(i => i + 8),
+    [2, 6, 7].map(i => i + 8),
+    
+    [1, 5, 2].map(i => i + 16),
+    [2, 5, 6].map(i => i + 16),
+    [0, 3, 7].map(i => i + 16),
+    [0, 7, 4].map(i => i + 16),
+  ]);
+  // invalidation.then(() => {
+  //   boxVertices.destroy();
+  //   boxFaceElements.destroy();
+  //   boxFaceNormal.destroy();
+  //   boxFaceTangent.destroy();
+  //   boxFaceBitangent.destroy();
+  // });
+
+  const transform = mat4.create();
+  const normalMatrix = mat3.create();
+
+  const drawFaces = regl({
+    vert: `
+    precision highp float;
+    uniform mat4 uProjectionView, transform;
+    uniform mat3 normalMatrix;
+    attribute vec3 position, tangent, bitangent, normal;
+    varying vec2 coord;
+    varying vec3 p, n, t, b;
+
+    
+    void main () {
+      p = (transform * vec4(position, 1)).xyz;
+      n = normalMatrix * normal;
+      t = normalMatrix * tangent;
+      b = normalMatrix * bitangent;
+      coord = vec2(dot(position, b), dot(position, t));
+      gl_Position = uProjectionView * vec4(p, 1);
+    }`,
+    frag: `
+    #extension GL_OES_standard_derivatives : enable
+    precision mediump float;
+    varying vec2 coord;
+    varying vec3 p, n, t, b;
+    uniform vec3 eye;
+
+    float gridFactor (vec2 parameter, float width) {
+      vec2 d = fwidth(parameter);
+      vec2 looped = 0.5 - abs(mod(parameter, 1.0) - 0.5);
+      vec2 a2 = smoothstep(d * (width + 0.5), d * (width - 0.5), looped);
+      return max(a2.x, a2.y);
+    }
+
+    void main () {
+      float vDotN = dot(normalize(p - eye), n);
+      float fade = smoothstep(0.02, 0.25, abs(vDotN));
+      float alpha = fade * 0.25 * (
+        gridFactor(coord * 4.0, 0.5) + 
+        0.2 * gridFactor(coord * 10.0 * 4.0, 0.5)
+      );
+      gl_FragColor = vec4(vec3(0), alpha);
+      if (alpha < 0.001) discard;
+    }`,
+    attributes: {
+      position: boxVertices,
+      normal: boxFaceNormal,
+      tangent: boxFaceTangent,
+      bitangent: boxFaceBitangent
+    },
+    uniforms: {
+      transform: mat4.scale(
+        mat4.create(),
+        mat4.fromTranslation(transform, [0, 1.5, 0]),
+        [2, 2, 2]
+      ),
+      normalMatrix: mat3.normalFromMat4(
+        normalMatrix,
+        mat4.scale(
+          mat4.create(),
+          mat4.translate(mat4.create(), mat4.create(), [0, 1.5, 0]),
+          [2, 2, 2]
+        )
+      ),
+      eye: regl.context('eye')
+    },
+    depth: { enable: true, mask: true },
+    cull: { enable: true, face: 'back' },
+    blend: {
+      enable: true,
+      func: {
+        srcRGB: 'src alpha',
+        dstRGB: 'one minus src alpha',
+        srcAlpha: 1,
+        dstAlpha: 1
+      },
+      equation: { rgb: 'add', alpha: 'add' }
+    },
+    primitive: 'triangles',
+    elements: boxFaceElements
+  });
+
+  function labelMaker() {}
+
+  return function() {
+    drawFaces();
+  };
+})()
+
+
 function renderFrame({ simulate = false, dTheta = 0, tick = 0 } = {}) {
     if (dTheta) camera.params.dTheta = dTheta;
     console.log('rendering a frame')
@@ -656,11 +806,11 @@ function renderFrame({ simulate = false, dTheta = 0, tick = 0 } = {}) {
       //if (~displayParams.opts.indexOf('Axes'))
       //  drawAxes({ transform: selectedAttractor.transform });
   
-      customLineConfig(lines, () => {
-        drawLines({ ...lineData, vao: drawLinesVAO });
-      });
+      // customLineConfig(lines, () => {
+      //   drawLines({ ...lineData, vao: drawLinesVAO });
+      // });
   
-      if (true) drawFancyAxes();
+      //if (true) drawFancyAxes();
     });
 }
 
