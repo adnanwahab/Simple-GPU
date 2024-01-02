@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-
+let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 const firefliesVertexShader = `uniform float uTime;
 uniform float uPixelRatio;
 uniform float uSize;
@@ -205,44 +205,6 @@ const portalLightMaterial = new THREE.ShaderMaterial({
     fragmentShader: portalFragmentShader
 })
 
-/**
- * Model
- */
-try {
-    gltfLoader.load(
-        'portal.glb',
-    (gltf) =>
-        {
-            console.log('GLTF',gltf)
-            scene.add(gltf.scene)
-
-            // Get each object
-            const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
-            const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
-            const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
-            const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
-
-            // Apply materials
-            bakedMesh.material = bakedMaterial
-            portalLightMesh.material = portalLightMaterial
-            poleLightAMesh.material = poleLightMaterial
-            poleLightBMesh.material = poleLightMaterial
-        }, () => {
-            console.log('progress!!')
-
-        }, (err) => {
-            
-            console.log('An error occurred while loading the GLTF model:', err)
-        }
-    )
-} catch (error) {
-    console.error('An unexpected error occurred:', error)
-}
-
-/**
- * Fireflies
- */
-// Geometry
 const firefliesGeometry = new THREE.BufferGeometry()
 const firefliesCount = 30
 const positionArray = new Float32Array(firefliesCount * 3)
