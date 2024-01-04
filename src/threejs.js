@@ -224,12 +224,8 @@ const portalLightMaterial = new THREE.ShaderMaterial({
  * Model
  */
 try {
-    gltfLoader.load(
-        'portal.glb',
-    (gltf) =>
-        {
-            console.log('GLTF',gltf)
-            scene.add(gltf.scene)
+    gltfLoader.load('portal.glb', (gltf) =>{
+        scene.add(gltf.scene)
 
             // Get each object
             const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
@@ -243,10 +239,8 @@ try {
             poleLightAMesh.material = poleLightMaterial
             poleLightBMesh.material = poleLightMaterial
         }, () => {
-            console.log('progress!!')
-
+            //console.log('progress!!')
         }, (err) => {
-            
             console.log('An error occurred while loading the GLTF model:', err)
         }
     )

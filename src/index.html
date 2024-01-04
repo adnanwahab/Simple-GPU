@@ -418,6 +418,9 @@ canvas {
    
 
     <script>
+      if (window.location.host !== 'localhost:5173') {
+
+
       window['_fs_host'] = 'fullstory.com';
       window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
       window['_fs_org'] = '10XSCS';
@@ -437,6 +440,10 @@ canvas {
       },g.shutdown=function(){h("shutdown")},g.restart=function(){h("restart")},g.log=function(b,d){h("log",{level:b,msg:d})},g.consent=function(b){
       h("setIdentity",{consent:!arguments.length||b})}}(),s="fetch",f="XMLHttpRequest",g._w={},g._w[f]=m[f],g._w[s]=m[s],m[s]&&(m[s]=function(){
       return g._w[s].apply(this,arguments)}),g._v="2.0.0")}(window,document,window._fs_namespace,"script",window._fs_script);
+      console.log('fullstory active due to deployment')
+    } else {
+      //console.log('fullstory not active because localHost')
+    }
     </script>
   </body>
 </html>
