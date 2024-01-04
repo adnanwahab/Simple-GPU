@@ -1,0 +1,15 @@
+node_modules
+.DS_Store
+dist-ssr
+*.local
+
+# Local Netlify folder
+.netlify
+.vercel
+*.jar
+docs/.vitepress/dist
+
+docs/.vitepress/cache
+
+
+src/waymo-open-dataset-tutorial.ipynb
