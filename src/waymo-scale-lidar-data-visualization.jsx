@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react'
-//import ReactDOM from 'react-dom/client'
+import classNames from 'classnames';
+
 import { createRoot } from 'react-dom/client';
 
 import * as THREE from 'three'
@@ -170,11 +171,13 @@ function VideoSeekPlayer() {
         setTime(percent * 100)
     }
 
-    return (<div 
-    onMouseMove = {(e) => handleOnMouseMove(e)}
-    style={{width: `${getTime}%`}} aria-valuemax="100" aria-valuemin="0" role="progressbar" data-state="indeterminate" data-max="100" className="relative h-2 overflow-hidden rounded-full bg-primary/20 w-[100%] pointer-cursor">
-        <div data-state="indeterminate" data-max="100" className="cursor-pointer h-full w-full flex-1 bg-primary transition-all bg-pink-500" style={{transform: `translateX(-34%)`}}>
-        </div>
+    return (<div className="relative h-2 overflow-hidden rounded-full bg-red-500 w-full pointer-cursor"
+                onMouseMove = {(e) => handleOnMouseMove(e)}
+                aria-valuemax="100" aria-valuemin="0" role="progressbar" data-state="indeterminate" data-max="100" >
+            <div 
+            style={{width: `${getTime}%`}} 
+            data-state="indeterminate" data-max="100" className="cursor-pointer h-full w-full flex-1 bg-primary transition-all bg-pink-500" style={{transform: `translateX(-34%)`}}>
+            </div>
         </div>
     )
 }
@@ -201,11 +204,19 @@ function MainComponent() {
     }, [scene_num]);
 
     let scenes = Array.from({length: 8}, (_, i) => `Scene_${i+1}`)
+
+    
     let listView = (<ul className='border border-blue-500'>
         {scenes.map((scene, idx) => {
+        let isActive = scene_num === idx;
+        const sceneItemClasses = classNames({
+            'bg-pink-500': isActive,
+            'p-2 border border-blue-500 hover:bg-pink-500': true, 
+            });
+
             return <li 
             onClick={() => setSceneNum(idx)}
-            className="p-2 border border-blue-500 hover:bg-pink-500" key={idx}>
+            className={sceneItemClasses} key={idx}>
                 {scene}
             </li>
         })}
@@ -214,17 +225,13 @@ function MainComponent() {
     return (
         <>
             <div className="absolute left-0 top-0 z-10">
-                {/* <span className="pb-5">Hello Tesla!!</span> */}
                 {listView}
             </div>
             <div className="absolute left-24 top-0 z-10">
-                {/* <span className="pb-5">Hello Tesla!!</span> */}
                 <CameraView />
             </div>
-            <div className="absolute left-24 top-28 z-10">
-                <span className="pb-5">Hello Tesla!!</span>
-
-
+            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500">
+                <span className="pb-5 hidden">Hello Tesla!!</span>
                 <PlayButton />
                 <VideoSeekPlayer />
             </div>
