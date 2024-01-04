@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple-GPU - Fast, Functional, Graphics</title>
+    <link
+      href="./data/tailwind.min.css"
+      rel="stylesheet"
+    />
+    
+    
+    <script type="module" crossorigin src="./assets/index-d02c12af.js"></script>
+    <link rel="stylesheet" href="./assets/index-2265f48c.css">
+  </head>
+  <style>
+    html {
+  /* background-color: rgb(17 24 39); */
+  background-color: #101827 !important;
+}
+input {
+  color: #333;
+}
+
+canvas {
+  border: 1px dotted LightSkyBlue;
+}
+
+    </style>
+  <body class="text-white">
+    <div id="root-2" class="h-5/6"></div>
+    <div id="root" class="h-5/6"></div>
+    
+
+    <div id="swap" class="mt-4">
+      <form name="stuff">
+        <fieldset>
+      <div id="control-panel" class="mt-2">
+    <!-- TODO tesselate hexagons for h3 uniform zoom level for hexagonal binning for data texture usage for 16 million complaints  -->
+
+    <!-- <label class="inline-flex items-center">
+      resizeCanvas
+    <input
+      type="radio"
+      class="form-radio"
+      name="resizeCanvas"
+      value="resizeCanvas"
+      checked
+    />
+  </label> -->
+          <!-- <label class="inline-flex items-center">
+            hexagon
+            <input
+            type="radio"
+            class="form-radio"
+            name="hexagon"
+            value="hexagon"
+          />
+        </label> -->
+        <label class="inline-flex items-center">
+          basic
+          <input
+          type="radio"
+          class="form-radio"
+          name="basic"
+          value="basic"
+        />
+      </label>
+
+    <label class="inline-flex items-center">
+      cube
+    <input
+      type="radio"
+      class="form-radio"
+      name="cube"
+      value="cube"
+    />
+  </label>
+
+  <label class="inline-flex items-center">
+    texturedCube
+  <input
+    type="radio"
+    class="form-radio"
+    name="texturedCube"
+    value="texturedCube"
+  />
+</label>
+
+<label class="inline-flex items-center">
+  fractalCube
+<input
+  type="radio"
+  class="form-radio"
+  name="fractalCube"
+  value="fractalCube"
+/>
+</label>
+
+
+<!-- <label class="inline-flex items-center">
+  postProcessing
+  <input
+  type="radio"
+  class="form-radio"
+  name="postProcessing"
+  value="postProcessing"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  instancedCube
+  <input
+  type="radio"
+  class="form-radio"
+  name="instancedCube"
+  value="instancedCube"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  icosahedron
+  <input
+  type="radio"
+  class="form-radio"
+  name="icosahedron"
+  value="icosahedron"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  hexagon
+  <input
+  type="radio"
+  class="form-radio"
+  name="hexagon"
+  value="hexagon"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  points
+  <input
+  type="radio"
+  class="form-radio"
+  name="points"
+  value="points"
+/>
+</label> -->
+<!-- <label class="inline-flex items-center">
+  lines
+  <input
+  type="radio"
+  class="form-radio"
+  name="lines"
+  value="lines"
+/>
+</label> -->
+<label class="inline-flex items-center">
+  prefix sums
+  <input
+  type="radio"
+  class="form-radio"
+  name="prefixSums"
+  value="prefixSums"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  computeBoids
+  <input
+  type="radio"
+  class="form-radio"
+  name="computeBoids"
+  value="computeBoids"
+/>
+</label>
+<label class="inline-flex items-center">
+  shadowCasting
+  <input
+  type="radio"
+  class="form-radio"
+  name="shadowCasting"
+  value="shadowCasting"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  particles
+  <input
+  type="radio"
+  class="form-radio"
+  name="particles"
+  value="particles"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  particle-life
+  <input
+  type="radio"
+  class="form-radio"
+  name="particle-life"
+  value="particle-life"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  sprites
+  <input
+  type="radio"
+  class="form-radio"
+  name="sprites"
+  value="sprites"
+/>
+</label>
+
+<!-- <label class="inline-flex items-center">
+  prefix sum
+  <input
+  type="radio"
+  class="form-radio"
+  name="prefix-sum"
+  value="prefix-sum"
+/>
+</label> -->
+
+<label class="inline-flex items-center">
+  matrix multiply
+  <input
+  type="radio"
+  class="form-radio"
+  name="matrix-multiply"
+  value="matrix-multiply"
+/>
+</label>
+<label class="inline-flex items-center">
+  ray tracer
+  <input
+  type="radio"
+  class="form-radio"
+  name="raytracer"
+  value="raytracer"
+/>
+</label>
+
+<label class="inline-flex items-center">
+  SDF-GPU-physics
+  <input
+  type="radio"
+  class="form-radio"
+  name="sdf-physics"
+  value="sdf-physics"
+/>
+</label>
+
+
+
+
+<!-- <label> 
+  kodiak2
+  <input
+    type="radio"
+    class="form-radio"
+    name="kodiak2"
+    value="kodiak2"/>
+  </label>  -->
+
+
+
+
+  <label> 
+    gpu-sort
+    <input
+      type="radio"
+      class="form-radio"
+      name="gpu-sort"
+      value="gpu-sort"/>
+  </label>
+
+
+  <label> 
+    Neural-Rendering-Radiance-Field
+    <input
+      type="radio"
+      class="form-radio"
+      name="Neural-Rendering-Radiance-Field"
+      value="Neural-Rendering-Radiance-Field"/>
+  </label>
+
+  <label> 
+    Threejs  - Baked Lighting
+    <input
+      type="radio"
+      class="form-radio"
+      name="Threejs"
+      value="Threejs"/>
+  </label>
+
+
+  <!-- <label> 
+    argo - lidar visualizer 
+    <input
+      type="radio"
+      class="form-radio"
+      name="kodiak"
+      value="kodiak"/>
+    </label> -->
+
+  <!-- <label> 
+    gpu-lines
+  <input
+      type="radio"
+      class="form-radio"
+      name="gpu-lines"
+      value="gpu-lines"/>
+  </label> -->
+
+
+  <label> 
+    waymo-scale-lidar-data-visualization
+  <input
+      type="radio"
+      class="form-radio"
+      name="waymo-scale-lidar-data-visualization"
+      value="waymo-scale-lidar-data-visualization"/>
+  </label>
+
+  
+
+  <!-- <label> 
+    zed-2i 
+    <input
+      type="radio"
+      class="form-radio"
+      name="zed-2i"
+      value="zed-2i"/>
+  </label> -->
+<!-- <label class="inline-flex items-center">
+  deferredRendering
+  <input
+  type="radio"
+  class="form-radio"
+  name="deferredRendering"
+  value="deferredRendering"
+/>
+</label> -->
+        <!-- <label class="inline-flex items-center">
+          texture
+          <input
+          type="radio"
+          class="form-radio"
+          name="texture"
+          value="texture"
+          
+          />
+      </label> -->
+
+
+        <!-- <label class="inline-flex items-center">
+          texture
+          <input
+          type="radio"
+          class="form-radio"
+          name="texture"
+          value="texture"
+          
+          />
+      </label> -->
+
+    <!-- <label class="inline-flex items-center">
+    postProcessing
+    <input
+    type="radio"
+    class="form-radio"
+    name="postProcessing"
+    value="postProcessing"
+    />
+    </label> -->
+          <!-- <label class="inline-flex items-center">
+        line-primitives
+        <input
+        type="radio"
+        class="form-radio"
+        name="line-primitives"
+        value="line-primitives"
+        /> 
+       </label>  
+      -->
+
+      
+      </div>
+    </fieldset>
+      </form>
+      <!-- <canvas height="500" width="100"></canvas> -->
+
+      <div class="fixed bottom-0 text-white mt-96 m-auto p-5 border-t border-gray-500 text-gray-400">
+        <h1 class="p-0 mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Declarative and Stateless WebGPU</h1>
+        <p>
+          Simple-Webgpu is a new functional abstraction for WebGPU.
+          
+          using simple-webgpu is easier than writing native webGPU code because you don't need to manage state or binding. 
+          it's also lighter and faster and has less overhead than many existing 3d frameworks. 
+          and it has a functional data-driven style inspired by react.
+          
+          check out the sections below to learn more!</p>
+        <div class="flex space-x-4">
+        <a class="font-white underline" href="https://github.com/adnanwahab/Simple-gpu/blob/deploy/readme.md">
+          Readme
+        </a>
+        <a class="underline" href="https://github.com/adnanwahab/Simple-gpu/blob/deploy/API.md">
+          API
+        </a>
+        <a class="underline" href="https://github.com/adnanwahab/Simple-gpu">
+          GitHub
+        </a>
+        </div>
+      </div>
+    </div>
+   
+
+    <script>
+      if (window.location.host !== 'localhost:5173') {
+
+
+      window['_fs_host'] = 'fullstory.com';
+      window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
+      window['_fs_org'] = '10XSCS';
+      window['_fs_namespace'] = 'FS';
+      !function(m,n,e,t,l,o,g,y){var s,f,a=function(h){
+      return!(h in m)||(m.console&&m.console.log&&m.console.log('FullStory namespace conflict. Please set window["_fs_namespace"].'),!1)}(e)
+      ;function j(b){var h,d=[];function k(){h&&(d.forEach((function(b){var d;try{d=b[h[0]]&&b[h[0]](h[1])}catch(h){return void(b[3]&&b[3](h))}
+      d&&d.then?d.then(b[2],b[3]):b[2]&&b[2](d)})),d.length=0)}function r(b){return function(d){h||(h=[b,d],k())}}return b(r(0),r(1)),{
+      then:function(b,h){return j((function(r,i){d.push([b,h,r,i]),k()}))}}}a&&(g=m[e]=function(){var b=function(b,d,k,r){function i(i,c){
+      h(b,d,k,i,c,r)}r=r||2;var c,u=/Async$/;return u.test(b)?(b=b.replace(u,""),"function"==typeof Promise?new Promise(i):j(i)):h(b,d,k,c,c,r)}
+      ;function h(h,d,k,r,i,c){return b._api?b._api(h,d,k,r,i,c):(b.q&&b.q.push([h,d,k,r,i,c]),null)}return b.q=[],b}(),y=function(b){function h(h){
+      "function"==typeof h[4]&&h[4](new Error(b))}var d=g.q;if(d){for(var k=0;k<d.length;k++)h(d[k]);d.length=0,d.push=h}},function(){
+      (o=n.createElement(t)).async=!0,o.crossOrigin="anonymous",o.src="https://"+l,o.onerror=function(){y("Error loading "+l)}
+      ;var b=n.getElementsByTagName(t)[0];b.parentNode.insertBefore(o,b)}(),function(){function b(){}function h(b,h,d){g(b,h,d,1)}function d(b,d,k){
+      h("setProperties",{type:b,properties:d},k)}function k(b,h){d("user",b,h)}function r(b,h,d){k({uid:b},d),h&&k(h,d)}g.identify=r,g.setUserVars=k,
+      g.identifyAccount=b,g.clearUserCookie=b,g.setVars=d,g.event=function(b,d,k){h("trackEvent",{name:b,properties:d},k)},g.anonymize=function(){r(!1)
+      },g.shutdown=function(){h("shutdown")},g.restart=function(){h("restart")},g.log=function(b,d){h("log",{level:b,msg:d})},g.consent=function(b){
+      h("setIdentity",{consent:!arguments.length||b})}}(),s="fetch",f="XMLHttpRequest",g._w={},g._w[f]=m[f],g._w[s]=m[s],m[s]&&(m[s]=function(){
+      return g._w[s].apply(this,arguments)}),g._v="2.0.0")}(window,document,window._fs_namespace,"script",window._fs_script);
+      console.log('fullstory active due to deployment')
+    } else {
+      //console.log('fullstory not active because localHost')
+    }
+    </script>
+  </body>
+</html>

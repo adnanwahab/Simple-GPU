@@ -1,0 +1,14 @@
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/0.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/1.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/2.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/3.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/4.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/5.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/6.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/8.json
+https://lidar-now.scale.ai/example_data/pandaset/scene-3/9.json
+https://scale-static-assets.s3-us-west-2.amazonaws.com/hesai/raw_data/2019-5-11/hesai_data_1557541331/undistorted/front_camera/1557541446.850677lf.jpg
+https://scale-static-assets.s3-us-west-2.amazonaws.com/hesai/raw_data/2019-5-11/hesai_data_1557541331/undistorted/left_camera/1557541446.819331lf.jpg
+  https://scale-static-assets.s3-us-west-2.amazonaws.com/hesai/raw_data/2019-5-11/hesai_data_1557541331/undistorted/front_right_camera/1557541447.760731lf.jpg
+https://scale-static-assets.s3-us-west-2.amazonaws.com/hesai/raw_data/2019-5-11/hesai_data_1557541331/undistorted/left_camera/1557541446.819331lf.jpg
