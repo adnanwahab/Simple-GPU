@@ -1,3 +1,5 @@
+//https://scale.com/open-av-datasets/pandaset
+
 import {useState, useEffect} from 'react'
 import classNames from 'classnames';
 
@@ -30,7 +32,6 @@ const firefliesFragmentShader = `void main() {
     gl_FragColor = vec4(1.0, 1.0, 1.0, strength);
 }`
 const canvas = document.createElement('canvas')
-//setTimeout(function () { document.querySelector('#root').appendChild(canvas) })
 console.log('json!!', json)
 const scene = new THREE.Scene()
 const firefliesGeometry = new THREE.BufferGeometry()
@@ -111,58 +112,6 @@ function CameraView () {
     </div>
 }
 
-
-
-// function main() {
-//     tick()
-//     let content = json.images.map((image, idx) => {
-//         return <img 
-//         height="100px"
-//         width="200px"
-        
-//         key={idx} className="camera-view-image" src={image.image_url} />
-//     })
-
-//     document.querySelector('#root').appendChild(canvas)
-//     let rootElement = document.querySelector('#root');
-//     rootElement.style.display = 'flex';
-//     rootElement.style.justifyContent = 'space-between';
-// }
-
-// function main() {
-//     const [scene_num, setSceneNum] = useState(1)
-
-//     useEffect(() => {
-//         //tick()
-//         console.log('scene Num changes!', scene_num)
-//     }, [scene_num])
-
-
-//     tick()
-//     let scenes = Array.from({length: 8}, (_, i) => `Scene_${i+1}`)
-
-//     let listView = (<ul className='border border-blue-500'>
-//         {scenes.map((scene, idx) => {
-//             return <li 
-//             onClick={() => setSceneNum(idx)}
-//             className="p-2 border border-blue-500 hover:bg-pink-500" key={idx}>
-//                 {scene}
-//             </li>
-//         })}
-//     </ul>)
-//     let reactNode = (
-//         <>
-//             <div className="absolute left-0 top-0 z-10">
-//             {listView}
-//             </div>
-//         </>
-//     )
-//     const domNode = document.getElementById('root');
-//     const root = createRoot(domNode);
-//     root.render(reactNode)
-//     document.querySelector('#root-2').appendChild(canvas)
-// }
-
 function VideoSeekPlayer() {
     let [getTime, setTime] = useState(0)
 
@@ -175,7 +124,7 @@ function VideoSeekPlayer() {
                 onMouseMove = {(e) => handleOnMouseMove(e)}
                 aria-valuemax="100" aria-valuemin="0" role="progressbar" data-state="indeterminate" data-max="100" >
             <div 
-            style={{width: `${getTime}%`}} 
+            // style={{width: `${getTime}%`}} 
             data-state="indeterminate" data-max="100" className="cursor-pointer h-full w-full flex-1 bg-primary transition-all bg-pink-500" style={{transform: `translateX(-34%)`}}>
             </div>
         </div>
@@ -200,7 +149,7 @@ function MainComponent() {
     const [scene_num, setSceneNum] = useState(1);
 
     useEffect(() => {
-        console.log('scene Num changes!', scene_num);
+        console.log('scene Num changes!', scene_num + 1);
     }, [scene_num]);
 
     let scenes = Array.from({length: 8}, (_, i) => `Scene_${i+1}`)
@@ -245,7 +194,6 @@ function main() {
     root.render(<MainComponent />);
     document.body.appendChild(canvas)
     tick()
-    // Your other code here...
 }
 
 export default main
