@@ -1,14 +1,9 @@
-//https://scale.com/open-av-datasets/pandaset
-
 import {useState, useEffect} from 'react'
 import classNames from 'classnames';
-
 import { createRoot } from 'react-dom/client';
-
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
-let json = await fetch(data_url).then(res => res.json())
+
 const firefliesVertexShader = `uniform float uTime;
 uniform float uPixelRatio;
 uniform float uSize;
@@ -32,7 +27,9 @@ const firefliesFragmentShader = `void main() {
     gl_FragColor = vec4(1.0, 1.0, 1.0, strength);
 }`
 const canvas = document.createElement('canvas')
-console.log('json!!', json)
+let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
+let json = await fetch(data_url).then(res => res.json())
+
 const scene = new THREE.Scene()
 const firefliesGeometry = new THREE.BufferGeometry()
 const point_count = json.points.length;
@@ -60,8 +57,11 @@ const firefliesMaterial = new THREE.ShaderMaterial({ uniforms: {
     blending: THREE.AdditiveBlending,
     depthWrite: false
 })
+
 const fireflies = new THREE.Points(firefliesGeometry, firefliesMaterial)
+
 scene.add(fireflies)
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -195,7 +195,7 @@ function main() {
     document.body.appendChild(canvas)
     tick()
 }
-
+window.camera = camera
 export default main
 
 
