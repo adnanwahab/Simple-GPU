@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import firefliesVertexShader from './fireFliesVertexShader'
 import firefliesFragmentShader from './fireFliesFragmentShader'
+import './App.css';
 
 
 const sizes = {
@@ -12,8 +13,6 @@ const sizes = {
     height: window.innerHeight
 }
 const clock = new THREE.Clock()
-let data = (scene_num, frame_num) => 
-`https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/${scene_num}/${frame_num}.json`
 
 let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 let json = await fetch(data_url).then(res => res.json())
@@ -45,10 +44,43 @@ const firefliesMaterial = new THREE.ShaderMaterial({ uniforms: {
     depthWrite: false
 })
 
+const fireflies = new THREE.Points(firefliesGeometry, firefliesMaterial)
 
-function ThreeScene() {
+function ThreeScene(props) {
     const visualizerRef = useRef(null);
-  
+    const [jsonData, setJsonData] = useState(false)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            let make_url = (scene_num, frame_num) => 
+                `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/scene_${scene_num}/${frame_num}.json`
+
+            let data_url = make_url(props.scene_num, props.frame_num)
+            //data_url = `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/scene_1/1.json`
+            //let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
+            let response = await fetch(data_url)
+            console.log('data_url', data_url)
+            let json = await response.json()
+            setJsonData(json)
+            const point_count = json.points.length;
+            console.log('pointCount', point_count)
+            const positionArray = new Float32Array(point_count * 3)
+            const scaleArray = new Float32Array(point_count)
+
+            for(let i = 0; i < point_count; i++) {
+                positionArray[i * 3 + 0] = json.points[i].x
+                positionArray[i * 3 + 1] = json.points[i].y
+                positionArray[i * 3 + 2] = json.points[i].z
+
+                scaleArray[i] = Math.random()
+            }
+            firefliesGeometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3))
+            firefliesGeometry.setAttribute('aScale', new THREE.BufferAttribute(scaleArray, 1))
+        }
+    
+        fetchData()
+    }, [props.scene_num, props.frame_num])
+
     useEffect(() => {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -56,10 +88,9 @@ function ThreeScene() {
       renderer.setSize(window.innerWidth, window.innerHeight);
       visualizerRef.current.appendChild(renderer.domElement);
   
-      const fireflies = new THREE.Points(firefliesGeometry, firefliesMaterial)
       scene.add(fireflies)
 
-      camera.position.z = 5;
+      camera.position.z = 15;
   
       // Animation loop
       const animate = function () {
@@ -87,7 +118,7 @@ function ThreeScene() {
         scene.dispose();
       };
     }, []);
-  
+
     return <div ref={visualizerRef} />;
   }
   
@@ -105,22 +136,25 @@ function CameraView (props) {
     </div>
 }
 
-function VideoSeekPlayer() {
+function VideoSeekPlayer(props) {
     let [getTime, setTime] = useState(0)
 
     function handleOnMouseMove(e) {
-        let percent = e.clientX / 628
-        setTime(percent * 100)
+        let percent = e.clientX / e.target.clientWidth
+        percent = Math.round(percent * 6) + 1;
+        console.log(percent)
+        setTime(percent)
+        props.onTimeUpdate(percent)
     }
 
-    return (<div className="relative h-2 overflow-hidden rounded-full bg-red-500 w-full pointer-cursor"
-                onMouseMove = {(e) => handleOnMouseMove(e)}
-                aria-valuemax="100" aria-valuemin="0" role="progressbar" data-state="indeterminate" data-max="100" >
-            <div 
-            // style={{width: `${getTime}%`}} 
-            data-state="indeterminate" data-max="100" className="cursor-pointer h-full w-full flex-1 bg-primary transition-all bg-pink-500" style={{transform: `translateX(-34%)`}}>
-            </div>
-        </div>
+    return (
+    
+        <>
+            <progress 
+            
+            onMouseMove={(e) => handleOnMouseMove(e)}
+            className="progress progress-secondary w-full" value={getTime} max="100" />
+        </>
     )
 }
 
@@ -141,7 +175,6 @@ const PlayButton = ({ size = 24, color = 'pink', ...props }) => (
 function MainComponent() {
     const [scene_num, setSceneNum] = useState(1);
     const [frame_num, setFrameNum] = useState(1);
-
 
     useEffect(() => {
         console.log('scene Num changes!', scene_num + 1);
@@ -170,12 +203,12 @@ function MainComponent() {
             <div className="absolute left-0 top-0 z-10">
                 {listView}
             </div>
-            <div className="absolute left-24 top-0 z-10 hidden">
+            <div className="absolute left-24 top-0 z-10">
                 <CameraView />
             </div>
-            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500 hidden">
+            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500">
                 <PlayButton />
-                <VideoSeekPlayer />
+                <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
             </div>
             <ThreeScene scene_num={scene_num} frame_num={frame_num}/>
         </>
