@@ -56,8 +56,29 @@ function ThreeScene(props) {
                 `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/scene_${scene_num}/${frame_num}.json`
 
             let data_url = make_url(props.scene_num, props.frame_num)
+            data_url = `https://github.com/adnanwahab/Simple-GPU/raw/adnan/static/scale/scene_8/typedArrayFile.bin`
             //data_url = `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/scene_1/1.json`
             //let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
+            try {
+            const response = await fetch('https://simple-gpu.surge.sh/static/scale/scene_8/typedArrayFile.bin', {
+
+            });
+                
+            // Check if the request was successful
+            if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                const typedArray = new Float32Array(arrayBuffer);
+
+                // Process the typedArray as needed
+                console.log(typedArray);
+            } else {
+                console.error('Failed to fetch data:', response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+
+
             let response = await fetch(data_url)
             console.log('data_url', data_url)
             let json = await response.json()
