@@ -46,7 +46,7 @@ lidarPaths.forEach(function (path, index) {
     typedArray[index * numFields + 1] = point.y;
     typedArray[index * numFields + 2] = point.z;
     typedArray[index * numFields + 3] = point.i;
-    typedArray[index * numFields + 4] = point.d;
+    typedArray[index * numFields + 4] = point.t;
   });
   const buffer = Buffer.from(typedArray.buffer);
   fs.writeFile(path.replace('.json', '.bin'), buffer, (err) => {

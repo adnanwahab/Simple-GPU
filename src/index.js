@@ -25,6 +25,7 @@ import gpuLines from "./gpu-lines";
 
 import zed from './zed2i'
 import waymo from './waymo-scale-lidar-data-visualization'
+import mineSweeper from './mine-sweeper'
 
 
 let demoTitles = [
@@ -37,7 +38,9 @@ let demoTitles = [
   'gpu-sort', 'Neural-Rendering-Radiance-Field',
   'Threejs', 'kodiak',
   'gpu-lines', 
-  'waymo-scale-lidar-data-visualization' 
+  'waymo-scale-lidar-data-visualization',
+
+  'mine-sweeper'
   //'zed-2i'
 ]
 
@@ -50,7 +53,8 @@ prefixSums, gpuSort, neuralRenderingRadianceField,
 threejsDemo, kodiak,
 gpuLines,
 //zed,
-waymo
+waymo,
+mineSweeper
 ]
 
   document.querySelectorAll('input').forEach(e => {
@@ -74,10 +78,15 @@ function select(name) {
 
   window.location.hash = name;
   demo()
-  document.querySelector(`input[value="${window.location.hash.slice(1)}"]`).checked = true
+  const selected = document.querySelector(`input[value="${window.location.hash.slice(1)}"]`)
+  if (selected) selected.checked = true
 }
 
 let defaultDemo = 'Threejs'
 //defaultDemo = 'gpu-lines'
 defaultDemo = 'waymo-scale-lidar-data-visualization'
 select(defaultDemo || window.location.hash.slice(1) || document.querySelector(':checked').value)
+
+
+//select('mine-sweeper')
+

@@ -1,0 +1,34 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: 100vh;
+}
+
+.grid {
+  margin: 20px 0px;
+  display: flex;
+  align-self: center;
+  flex-direction: column;
+}
+
+.mines-count {
+  padding: 5px 10px;
+  margin-top: 20px;
+  font-weight: 400;
+  color: white;
+  border-radius: 5px;
+  align-self: center;
+  text-align: center;
+  justify-content: center;
+  background-color: #cec075;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+}
+
+.row:not(last-child) {
+  margin-bottom: 5px;
+}

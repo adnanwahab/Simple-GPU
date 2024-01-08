@@ -1,0 +1,48 @@
+.cell {
+  display: flex;
+  background-color: rgb(136, 80, 83);
+  min-width: 30px;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.cell:not(first-child) {
+  margin-left: 5px;
+}
+
+.cell:focus {
+  outline: none;
+}
+
+.cell.hidden {
+  background-color: rgb(91, 66, 69);
+}
+.cell.hidden:hover {
+  background-color: rgb(111, 76, 79);
+}
+
+/* Flagged incorrectly*/
+.cell.is-flag:not(.is-mine):not(.hidden) {
+  background-color: rgb(175, 62, 77);
+}
+
+/* Flagged correctly */
+.cell.is-flag.is-mine:not(.hidden) {
+  background-color: #4f8755;
+}
+
+/* Clicked on a mine*/
+.cell.is-mine.is-clicked {
+  background-color: rgb(175, 62, 77);
+}
+
+/* Empty revealed cells*/
+.cell.is-empty:not(.hidden):not(.is-mine):not(.is-flagged) {
+  background-color: rgb(121, 65, 68);
+}

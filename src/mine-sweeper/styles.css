@@ -1,0 +1,22 @@
+@import url("https://fonts.googleapis.com/css?family=Roboto&display=swap");
+
+body {
+  margin: 0px;
+}
+
+.app {
+  font-family: "Roboto", sans-serif;
+  background-color: rgb(157, 169, 160);
+  height: 100vh;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* RGB palette
+color1: rgba(192, 202, 173, 1);
+color2: rgba(157, 169, 160, 1);
+color3: rgba(101, 76, 79, 1);
+color4: rgba(206, 192, 117, 1);
+color5: rgba(175, 62, 77, 1);
+ */

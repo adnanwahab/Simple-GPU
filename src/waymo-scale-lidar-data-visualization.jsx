@@ -7,7 +7,6 @@ import firefliesVertexShader from './fireFliesVertexShader'
 import firefliesFragmentShader from './fireFliesFragmentShader'
 import './App.css';
 
-
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -57,43 +56,20 @@ function ThreeScene(props) {
 
             let data_url = make_url(props.scene_num, props.frame_num)
             data_url = `https://github.com/adnanwahab/Simple-GPU/raw/adnan/static/scale/scene_8/typedArrayFile.bin`
-            //data_url = `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/scene_1/1.json`
-            //let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
-            try {
-            const response = await fetch('https://simple-gpu.surge.sh/static/scale/scene_8/typedArrayFile.bin', {
+            const response = await fetch(`https://simple-gpu.surge.sh/scale/scene_${props.scene_num}/2.bin`);
 
-            });
-                
-            // Check if the request was successful
-            if (response.ok) {
-                const arrayBuffer = await response.arrayBuffer();
-                const typedArray = new Float32Array(arrayBuffer);
+            if (! response.ok) return console.error('that shouldnt happen..')
+            const arrayBuffer = await response.arrayBuffer();
+            const typedArray = new Float32Array(arrayBuffer);
+            console.log(typedArray)
+            console.log(typedArray.length);
+            for(let i = 0; i < typedArray.length; i += 5) {
+                positionArray[i * 5 + 0] = typedArray[i]
+                positionArray[i * 5 + 1] = typedArray[i + 1]
+                positionArray[i * 5 + 2] = typedArray[i + 2]
 
-                // Process the typedArray as needed
-                console.log(typedArray);
-            } else {
-                console.error('Failed to fetch data:', response.status);
-            }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
-
-
-            let response = await fetch(data_url)
-            console.log('data_url', data_url)
-            let json = await response.json()
-            setJsonData(json)
-            const point_count = json.points.length;
-            console.log('pointCount', point_count)
-            const positionArray = new Float32Array(point_count * 3)
-            const scaleArray = new Float32Array(point_count)
-
-            for(let i = 0; i < point_count; i++) {
-                positionArray[i * 3 + 0] = json.points[i].x
-                positionArray[i * 3 + 1] = json.points[i].y
-                positionArray[i * 3 + 2] = json.points[i].z
-
-                scaleArray[i] = Math.random()
+                //scaleArray[i] = typedArray[i + 3] * .01
+                scaleArray[i] = 1
             }
             firefliesGeometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3))
             firefliesGeometry.setAttribute('aScale', new THREE.BufferAttribute(scaleArray, 1))
@@ -114,6 +90,9 @@ function ThreeScene(props) {
       camera.position.z = 15;
   
       // Animation loop
+      const controls = new OrbitControls(camera, renderer.domElement)
+      controls.enableDamping = true
+
       const animate = function () {
         requestAnimationFrame(animate);
         const elapsedTime = clock.getElapsedTime()
@@ -161,20 +140,27 @@ function VideoSeekPlayer(props) {
     let [getTime, setTime] = useState(0)
 
     function handleOnMouseMove(e) {
-        let percent = e.clientX / e.target.clientWidth
-        percent = Math.round(percent * 6) + 1;
-        console.log(percent)
-        setTime(percent)
-        props.onTimeUpdate(percent)
+        const element = e.target;
+        const rect = element.getBoundingClientRect();
+        const x = e.clientX - rect.left; // x position within the element.
+        const width = rect.right - rect.left;
+        const percent = (x / width) * 100;
+        const roundedPercent = Math.round(percent / 100 * 7);
+        setTime(roundedPercent)
+        props.onTimeUpdate(roundedPercent)
     }
 
     return (
-    
         <>
-            <progress 
-            
+            <div 
             onMouseMove={(e) => handleOnMouseMove(e)}
-            className="progress progress-secondary w-full" value={getTime} max="100" />
+            className="absolute left-24 top-28 z-10 bg-gray-500">
+                <PlayButton />
+                <div className="inline">frame #{getTime} - hover to change frame</div>
+                <progress 
+                className="block progress progress-secondary w-96" value={getTime} max="7" />
+            </div>
+
         </>
     )
 }
@@ -186,7 +172,7 @@ const PlayButton = ({ size = 24, color = 'pink', ...props }) => (
         viewBox="0 0 24 24" 
         fill='aliceblue' 
         xmlns="http://www.w3.org/2000/svg" 
-        className="cursor-pointer"
+        className="cursor-pointer inline"
         {...props}
     >
         <path d="M8 5v14l11-7-11-7z" fill="pink"/>
@@ -227,10 +213,7 @@ function MainComponent() {
             <div className="absolute left-24 top-0 z-10">
                 <CameraView />
             </div>
-            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500">
-                <PlayButton />
-                <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
-            </div>
+            <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
             <ThreeScene scene_num={scene_num} frame_num={frame_num}/>
         </>
     );
