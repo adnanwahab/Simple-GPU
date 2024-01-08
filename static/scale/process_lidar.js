@@ -25,7 +25,7 @@ function readDirectories(dirPath) {
 }
 
 // Replace 'startPath' with your starting directory
-const startPath = __dirname;
+const startPath = __dirname + '/scene_6'
 readDirectories(startPath);
 
 
@@ -34,8 +34,7 @@ console.log(lidarPaths.length)
 
 lidarPaths.forEach(function (path, index) {
   let data = JSON.parse(fs.readFileSync(path));
-  console.log(path)
-  const jsonData = data
+    const jsonData = data
   const points = jsonData.points;
 
 
