@@ -122,7 +122,6 @@ function ThreeScene(props) {
     return <div ref={visualizerRef} />;
   }
   
-
 function CameraView (props) {
     let content = json.images.map((image, idx) => {
         return (<div className="basis-1/6" key={idx}>
@@ -131,9 +130,12 @@ function CameraView (props) {
         </div>)
     })
 
-    return <div className="flex flex-row">
-        {content}
-    </div>
+    return (
+        <div className="absolute left-24 top-0 z-10">
+        <div className="flex flex-row">
+            {content}
+        </div>
+    </div>)
 }
 
 function VideoSeekPlayer(props) {
@@ -179,14 +181,8 @@ const PlayButton = ({ size = 24, color = 'pink', ...props }) => (
     </svg>
 );
 
-function MainComponent() {
-    const [scene_num, setSceneNum] = useState(1);
-    const [frame_num, setFrameNum] = useState(1);
-
-    useEffect(() => {
-        console.log('scene Num changes!', scene_num + 1);
-    }, [scene_num]);
-
+function SceneListView(props) {
+    let {scene_num} = props;
     let scenes = Array.from({length: 8}, (_, i) => `Scene_${i+1}`)
 
     let listView = (<ul className='border border-blue-500'>
@@ -203,16 +199,25 @@ function MainComponent() {
                 {scene}
             </li>
         })}
-    </ul>)
+    </ul>);
+
+    return (<div className="absolute left-0 top-0 z-10">
+        {listView}
+    </div>);
+}
+
+function MainComponent() {
+    const [scene_num, setSceneNum] = useState(1);
+    const [frame_num, setFrameNum] = useState(1);
+
+    useEffect(() => {
+        console.log('scene Num changes!', scene_num + 1);
+    }, [scene_num]);
 
     return (
         <>
-            <div className="absolute left-0 top-0 z-10">
-                {listView}
-            </div>
-            <div className="absolute left-24 top-0 z-10">
-                <CameraView />
-            </div>
+            <SceneListView></SceneListView>
+            <CameraView />
             <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
             <ThreeScene scene_num={scene_num} frame_num={frame_num}/>
         </>
