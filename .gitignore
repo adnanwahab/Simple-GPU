@@ -1,4 +1,4 @@
-node_modules
+node_modules/*
 .DS_Store
 dist-ssr
 *.local
@@ -13,3 +13,5 @@ docs/.vitepress/cache
 
 
 src/waymo-open-dataset-tutorial.ipynb
+dist/*
+dist/
