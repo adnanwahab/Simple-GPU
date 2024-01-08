@@ -1,5 +1,7 @@
 {
+  "baseUrl": "types",
   "compilerOptions": {
+    "baseUrl": "types",
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
@@ -13,7 +15,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "typeRoots": [ "./node_modules/@webgpu/types", "./node_modules/@types"],
+    "typeRoots": [ "./node_modules/@webgpu/types", "./node_modules/@types", "types"],
     "allowJs": true
 
   },

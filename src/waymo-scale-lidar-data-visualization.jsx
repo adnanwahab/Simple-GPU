@@ -5,6 +5,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import firefliesVertexShader from './fireFliesVertexShader'
 import firefliesFragmentShader from './fireFliesFragmentShader'
+
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -12,7 +14,6 @@ const sizes = {
 const clock = new THREE.Clock()
 let data = (scene_num, frame_num) => 
 `https://raw.githubusercontent.com/adnanwahab/Simple-GPU/adnan/static/scale/${scene_num}/${frame_num}.json`
-
 
 let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 let json = await fetch(data_url).then(res => res.json())
@@ -91,31 +92,6 @@ function ThreeScene() {
   }
   
 
-
-// window.addEventListener('resize', () => {
-//     sizes.width = window.innerWidth
-//     sizes.height = window.innerHeight * .86;
-//     camera.aspect = sizes.width / sizes.height
-//     camera.updateProjectionMatrix()
-//     renderer.setSize(sizes.width, sizes.height)
-//     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-//     firefliesMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
-// })
-// const camera = new THREE.PerspectiveCamera(45, sizes.width / sizes.height, 0.1, 100)
-// camera.position.x = 4
-// camera.position.y = 2
-// camera.position.z = 4
-// scene.add(camera)
-//const controls = new OrbitControls(camera, canvas)
-//controls.enableDamping = true
-// const renderer = new THREE.WebGLRenderer({
-//     canvas,
-//     antialias: true
-// })
-// renderer.setSize(sizes.width, sizes.height)
-// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-// renderer.setClearColor('#333')
-
 function CameraView (props) {
     let content = json.images.map((image, idx) => {
         return (<div className="basis-1/6" key={idx}>
@@ -164,6 +140,8 @@ const PlayButton = ({ size = 24, color = 'pink', ...props }) => (
 
 function MainComponent() {
     const [scene_num, setSceneNum] = useState(1);
+    const [frame_num, setFrameNum] = useState(1);
+
 
     useEffect(() => {
         console.log('scene Num changes!', scene_num + 1);
@@ -192,15 +170,14 @@ function MainComponent() {
             <div className="absolute left-0 top-0 z-10">
                 {listView}
             </div>
-            <div className="absolute left-24 top-0 z-10">
+            <div className="absolute left-24 top-0 z-10 hidden">
                 <CameraView />
             </div>
-            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500">
-                <span className="pb-5 hidden">Hello Tesla!!</span>
+            <div className="absolute left-24 top-28 z-10 w-full bg-gray-500 hidden">
                 <PlayButton />
                 <VideoSeekPlayer />
             </div>
-            <ThreeScene />
+            <ThreeScene scene_num={scene_num} frame_num={frame_num}/>
         </>
     );
 }
@@ -210,5 +187,31 @@ function main() {
     const root = createRoot(domNode);
     root.render(<MainComponent />);
 }
-//window.camera = camera
 export default main
+
+
+
+//window.camera = camera
+// window.addEventListener('resize', () => {
+//     sizes.width = window.innerWidth
+//     sizes.height = window.innerHeight * .86;
+//     camera.aspect = sizes.width / sizes.height
+//     camera.updateProjectionMatrix()
+//     renderer.setSize(sizes.width, sizes.height)
+//     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+//     firefliesMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
+// })
+// const camera = new THREE.PerspectiveCamera(45, sizes.width / sizes.height, 0.1, 100)
+// camera.position.x = 4
+// camera.position.y = 2
+// camera.position.z = 4
+// scene.add(camera)
+//const controls = new OrbitControls(camera, canvas)
+//controls.enableDamping = true
+// const renderer = new THREE.WebGLRenderer({
+//     canvas,
+//     antialias: true
+// })
+// renderer.setSize(sizes.width, sizes.height)
+// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+// renderer.setClearColor('#333')
