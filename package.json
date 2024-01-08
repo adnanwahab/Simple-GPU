@@ -49,6 +49,7 @@
     "@deck.gl/core": "^8.9.33",
     "@deck.gl/layers": "^8.9.33",
     "@deck.gl/react": "^8.9.33",
+    "@headlessui/react": "^1.7.18",
     "@loaders.gl/las": "^4.0.4",
     "@types/three": "^0.160.0",
     "apache-arrow": "^14.0.2",
