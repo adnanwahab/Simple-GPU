@@ -61,8 +61,8 @@ function ThreeScene(props) {
             if (! response.ok) return console.error('that shouldnt happen..')
             const arrayBuffer = await response.arrayBuffer();
             const typedArray = new Float32Array(arrayBuffer);
-            console.log(typedArray)
-            console.log(typedArray.length);
+            //console.log(typedArray)
+            //console.log(typedArray.length);
             for(let i = 0; i < typedArray.length; i += 5) {
                 positionArray[i * 5 + 0] = typedArray[i]
                 positionArray[i * 5 + 1] = typedArray[i + 1]
@@ -131,10 +131,10 @@ function CameraView (props) {
     })
 
     return (
-        <div className="absolute left-24 top-0 z-10">
-        <div className="flex flex-row">
-            {content}
-        </div>
+        <div className="absolute left-24 top-0 z-10 w-5/6">
+            <div className="flex flex-row">
+                {content}
+            </div>
     </div>)
 }
 
@@ -194,7 +194,7 @@ function SceneListView(props) {
             });
 
             return <li 
-            onClick={() => setSceneNum(idx)}
+            onClick={() => props.setSceneNum(idx)}
             className={sceneItemClasses} key={idx}>
                 {scene}
             </li>
@@ -216,7 +216,7 @@ function MainComponent() {
 
     return (
         <>
-            <SceneListView></SceneListView>
+            <SceneListView sceneNum={scene_num} setSceneNum={setSceneNum}></SceneListView>
             <CameraView />
             <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
             <ThreeScene scene_num={scene_num} frame_num={frame_num}/>
