@@ -50,6 +50,7 @@
     "@deck.gl/layers": "^8.9.33",
     "@deck.gl/react": "^8.9.33",
     "@loaders.gl/las": "^4.0.4",
+    "@types/three": "^0.160.0",
     "apache-arrow": "^14.0.2",
     "body-parser": "^1.20.2",
     "classnames": "^2.5.1",
