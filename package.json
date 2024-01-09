@@ -1,17 +1,24 @@
 {
   "name": "simple-gpu",
-  "version": "0.41.0",
-  "description": "simple-gpu is a fast functional WebGPU framework.",
+  "version": "0.9.0",
+  "description": "simple-gpu is a fast functional WebGPU extension for Three.js",
+
+  "type": "module",
   "scripts": {
+    "dev": "node server",
+    "build-ssr": "npm run build:client && npm run build:server",
     "build": "vite build",
-    "start": "vite",
-    "dev": "vite",
-    "test": "TZ=America/Los_Angeles mocha 'test/**/*-test.js' && eslint src test",
-    "preview": "vite preview",
+
     "build:client": "vite build --outDir dist/client",
-    "build:server": "vite build --outDir dist/server --ssr src/entry-server.js",
-    "server": "node server",
-    "deploy": "npm run build && surge dist simple-gpu.surge.sh"
+    "build:server": "vite build --ssr src/entry-server.jsx --outDir dist/server",
+    "generate": "vite build --outDir dist/static && npm run build:server && node prerender",
+    "serve": "NODE_ENV=production node server",
+    "debug": "node --inspect-brk server",
+
+
+
+    "deploy": "npm run build && surge dist simple-gpu.surge.sh",
+    "start": "vite"
   },
   "files": [
     "dist/**/*.js",

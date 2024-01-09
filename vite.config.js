@@ -1,8 +1,26 @@
-//import glsl from 'vite-plugin-glsl'
+// //import glsl from 'vite-plugin-glsl'
+// import react from '@vitejs/plugin-react'
+
+// export default {
+//     plugins:[react()],
+//     publicDir: '../static/',
+//     build: {
+//         outDir: '../dist', // Output in the dist/ folder
+//         emptyOutDir: true, // Empty the folder first
+//         sourcemap: true, // Add sourcemap
+//         target: 'esnext'
+//     }
+// }
+
+
 import react from '@vitejs/plugin-react'
 
 export default {
-    //root: './src/',
+    // server: {
+    //     port: 3000,
+    //     open: true,
+    // },
+    root: './src/',
     publicDir: '../static/',
     base: './',
     build:

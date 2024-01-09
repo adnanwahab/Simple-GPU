@@ -8,9 +8,12 @@ A Three.JS extension module for webgpu
 www.kaggle.com/competitions/blood-vessel-segmentation 
 [] - blog roomba+
 [] - video screenshot gif using pupeteer.js
-
+https://vitejs.dev/guide/migration.html
+https://vitejs.dev/guide/ssr.html
+https://v4.vitejs.dev/guide/ssr.html
 https://v4.vitejs.dev/guide/dep-pre-bundling.html
 https://apps.amandaghassaei.com/gpu-io/examples/wave2d/
+react-native
 
 <div align="center">
   🐢

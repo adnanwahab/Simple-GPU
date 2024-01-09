@@ -1,5 +1,5 @@
 import React from "react";
-import Board from "../Board";
+import Board from "../Cell";
 
 import "./style.css";
 
