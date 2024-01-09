@@ -1,6 +1,10 @@
 import React, {useState, useEffect, useRef, useReducer} from 'react'
+type VideoSeekPlayerProps = {
+    onTimeUpdate: (time: number) => void
+}
 
-export default function VideoSeekPlayer(props) {
+
+export default function VideoSeekPlayer(props: VideoSeekPlayerProps) {
     let [getTime, setTime] = useState<number>(0)
 
     function handleOnMouseMove(e) {

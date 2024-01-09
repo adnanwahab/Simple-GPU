@@ -1,7 +1,12 @@
 import classNames from 'classnames';
 import React from 'react';
 
-export default function SceneListView(props) {
+type SceneListViewProps = {
+    scene_num: number;
+    setSceneNum: (scene_num: number) => void;
+}
+
+export default function SceneListView(props:SceneListViewProps) {
     let {scene_num} = props;
     let scenes = Array.from({length: 8}, (_, i) => `Scene_${i+1}`)
 

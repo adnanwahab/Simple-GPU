@@ -10,8 +10,6 @@ const reducer = (count: number, newValue: number): number => {
   return newValue
 }
 
-
-
 let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 let json = await fetch(data_url).then(res => res.json())
 
@@ -74,11 +72,15 @@ type Action = {
     type: 'increment' | 'decrement' | 'reset'
 }
 
-export default function ThreeVisualizer(props) {
+type ThreeVisualizerProps = {
+  scene_num: number;
+  frame_num: number;
+}
+
+export default function ThreeVisualizer(props:ThreeVisualizerProps) {
     const [count, dispatch] = useReducer(reducer, 0)
     const visualizerRef = useRef(null);
-    const [jsonData, setJsonData] = useState(false)
-
+    
     useEffect(() => {
         const fetchData = async () => {
             let make_url = (scene_num, frame_num) => 

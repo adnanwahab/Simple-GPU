@@ -45,6 +45,8 @@ type DeviceGpsPose = {
 
 let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 let json = await fetch(data_url).then(res => res.json())
+let sceneData: SceneData = json;
+console.log(sceneData)
 
 type InitialState = {
     count: number;
@@ -85,7 +87,7 @@ function MainComponent() {
 
     return (
         <>
-            <SceneListView sceneNum={scene_num} setSceneNum={setSceneNum}></SceneListView>
+            <SceneListView scene_num={scene_num} setSceneNum={setSceneNum}></SceneListView>
             <CameraView json={json}/>
             <VideoSeekPlayer onTimeUpdate={(time) => setFrameNum(time)} />
             <ThreeVisualizer scene_num={scene_num} frame_num={frame_num}/>
