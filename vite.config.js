@@ -2,7 +2,7 @@
 import react from '@vitejs/plugin-react'
 
 export default {
-    root: './src/',
+    //root: './src/',
     publicDir: '../static/',
     base: './',
     build:

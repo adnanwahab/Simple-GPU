@@ -1,3 +1,14 @@
+A Three.JS extension module for webgpu
+
+[ ] - benchmarks
+[ ] - karaoke
+[ ] - NeRF
+[ ] - Zed 2i
+[ ] - Spatial Machine Learning Demo for https://
+www.kaggle.com/competitions/blood-vessel-segmentation 
+[] - blog roomba+
+[] - video screenshot gif using pupeteer.js
+
 https://v4.vitejs.dev/guide/dep-pre-bundling.html
 https://apps.amandaghassaei.com/gpu-io/examples/wave2d/
 
