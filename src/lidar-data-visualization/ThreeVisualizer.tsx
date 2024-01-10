@@ -6,10 +6,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 const clock = new THREE.Clock()
 
-const reducer = (count: number, newValue: number): number => {
-  return newValue
-}
-
 let data_url = `https://lidar-now.scale.ai/example_data/pandaset/scene-3/7.json`
 let json = await fetch(data_url).then(res => res.json())
 
@@ -42,35 +38,6 @@ const firefliesMaterial = new THREE.ShaderMaterial({ uniforms: {
 
 const fireflies = new THREE.Points(firefliesGeometry, firefliesMaterial)
 
-type ReducerState = ReturnType<typeof reducer>
-
-type InitialState = {
-    count: number;
-    draftCount: string | number
-}
-
-const initialState: InitialState = {
-    count: 0,
-    draftCount: 0
-}
-
-const action = {
-    type: 'increment',
-    payload: 1
-}
-
-const reducer2 = (state = initialState, action: any) => {
-    const {count, draftCount} = state;
-
-    if (action.type === 'increment') {
-        return {count: count + 1, draftCount: draftCount}
-    }
-
-}
-
-type Action = {
-    type: 'increment' | 'decrement' | 'reset'
-}
 
 type ThreeVisualizerProps = {
   scene_num: number;
@@ -78,7 +45,6 @@ type ThreeVisualizerProps = {
 }
 
 export default function ThreeVisualizer(props:ThreeVisualizerProps) {
-    const [count, dispatch] = useReducer(reducer, 0)
     const visualizerRef = useRef(null);
     
     useEffect(() => {

@@ -76,8 +76,16 @@ type Action = {
     type: 'increment' | 'decrement' | 'reset'
 }
 
+type ReducerState = ReturnType<typeof reducer>
+
+const reducer = (count: number, newValue: number): number => {
+    return newValue
+}
+
 
 function MainComponent() {
+    const [count, dispatch] = useReducer(reducer, 0)
+
     const [scene_num, setSceneNum] = useState<number>(1);
     const [frame_num, setFrameNum] = useState<number>(1);
 
