@@ -13,9 +13,7 @@ https://spectrum.ieee.org/xerox-parc
 8080 = cooperative-robotics.com - fastapi
 cgi-tools.dev - scripts/index.ts #8000 = bun
 https://jupyter.cgi-tools.dev/lab? - 8888
-# robotic surgeon - 2026 - approved by jesse + david, palmer luckey @ anduril + mikola + socket.dev
+# robotic surgeon - 2026
 https://github.com/observablehq/framework-runtime - https://observablehq.com/framework/
 https://once.com/writebook - https://www.gitbook.com/
-https://www.brendangregg.com/
 
-# text 713-677-3669
