@@ -121,8 +121,5 @@ files.cooperative-robotics.com {
 	header Access-Control-Allow-Headers "Content-Type"
 }
 
-#8888 jupyter
-
-#8080 === bun
-
-# 8000 === cgi-tools.dev
+#8000 = python fastapi - cgi-tools.dev
+#8080 = bun cooperative-robotics.com
